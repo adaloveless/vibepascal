@@ -747,6 +747,8 @@ Const
 
   function str_opt_get(s: string; index: dword; spliiter: string='.'): string;
   function str_opt_get_int(s: string; index: dword; spliiter: string='.'): integer;
+  procedure unleashed_set_options(opts: array of ansistring);
+  procedure unleashed_set_setting(arg, val: ansistring);
 
   type
     toptansi = record
@@ -759,10 +761,16 @@ Const
       fpcsignature:  toptansi;
       linkerversion: toptansi;
       osversion:     toptansi;
+      override_mode: boolean;
+      override_more: set of tmodeswitch;
+      oldmodeswitches: tmodeswitches;
+      rttiwhitelist: array of ansistring;
     end = (
       fpcsignature:  (isset: false; value: '');
       linkerversion: (isset: false; value: '');
       osversion:     (isset: true;  value: 'XP');
+      override_mode: false;
+      override_more: []
     );
 
 implementation
@@ -1825,6 +1833,45 @@ implementation
    function str_opt_get_int(s: string; index: dword; spliiter: string='.'): integer;
    begin
      if not TryStrToInt(str_opt_get(s, index, spliiter), result) then result := 0;
+   end;
+
+   procedure unleashed_set_options(opts: array of ansistring);
+   var
+     i: integer;
+   begin
+     // keep current modeswitches for restoration, only if not yet overriden
+     if not unleashedsettings.override_mode then unleashedsettings.oldmodeswitches := current_settings.modeswitches;
+
+     // using {$unleashed} directive overrides modeswitches
+     unleashedsettings.override_mode := true;
+     current_settings.modeswitches := unleashedmodeswitches;
+
+     for i := 0 to high(opts) do case opts[i] of
+       // restore previous mode
+       'off': begin
+         unleashedsettings.override_mode := false;
+         current_settings.modeswitches := unleashedsettings.oldmodeswitches;
+       end;
+       // enable no_rtti modeswitch
+       'nortti', 'nortti+': begin
+         current_settings.modeswitches := current_settings.modeswitches+[m_no_rtti];
+         unleashedsettings.override_more := unleashedsettings.override_more+[m_no_rtti];
+       end;
+       'nortti-': begin
+         current_settings.modeswitches := current_settings.modeswitches-[m_no_rtti];
+         unleashedsettings.override_more := unleashedsettings.override_more-[m_no_rtti];
+       end;
+     end;
+   end;
+
+   procedure unleashed_set_setting(arg, val: ansistring);
+   begin
+     case arg of
+       'fpcsignature':  begin unleashedsettings.fpcsignature.isset := true;  unleashedsettings.fpcsignature.value  := val; end;
+       'linkerversion': begin unleashedsettings.linkerversion.isset := true; unleashedsettings.linkerversion.value := val; end;
+       'osversion':     begin unleashedsettings.osversion.isset := true;     unleashedsettings.osversion.value     := val; end;
+       'rttiexpose':    begin unleashedsettings.rttiwhitelist := val.Split(' ');                                           end;
+     end;
    end;
 
 initialization
