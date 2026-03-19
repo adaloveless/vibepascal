@@ -27,7 +27,7 @@ uses
 uses
   Classes, SysUtils, db, dbf, fpdbexport;
 {$ENDIF FPC_DOTTEDUNITS}
-  
+
 Type
 
   { TDBFExportFieldItem }
@@ -42,10 +42,11 @@ Type
   { TDBFExportFormatSettings }
 
   TTableFormat = (tfDBaseIII,tfDBaseIV,tfDBaseVII,tfFoxPro,tfVisualFoxPro);
-  
+
   TDBFExportFormatSettings = class(TExportFormatSettings)
   private
     FAutoRename: Boolean;
+    FLanguageID: Byte;
     FTableFormat: TTableFormat;
   public
     Procedure Assign(Source : TPersistent); override;
@@ -53,6 +54,7 @@ Type
   Published
     Property TableFormat : TTableFormat Read FTableFormat Write FTableFormat;
     Property AutoRenameFields : Boolean Read FAutoRename Write FAutoRename;
+    Property LanguageID: Byte Read FLanguageID Write FLanguageID;
   end;
   { TFPCustomDBFExport }
 
@@ -91,14 +93,14 @@ Type
     Property FormatSettings;
     Property OnExportRow;
   end;
-  
+
 Procedure RegisterDBFExportFormat;
 Procedure UnRegisterDBFExportFormat;
 
 Const
   SDBFExport = 'DBF';
   SDBFFilter = '*.dbf';
-  
+
 ResourceString
   SErrFailedToDeleteFile = 'Failed to delete existing DBF file: %s';
   SDBFDescription = 'DBF files';
@@ -127,7 +129,7 @@ Const
 Var
   NameCounter : Integer;
   NewFieldName : String;
-  
+
 begin
   If (Length(ThisExportField.ExportedName)>MaxFieldNameLength) then
     begin
@@ -151,7 +153,7 @@ function TFPCustomDBFExport.BindFields: Boolean;
 Const
   // Translate tableformat to tablelevel
   Levels : Array[TTableFormat] of integer = (3,4,7,25,30);
-  
+
 Var
   EF : TDBFExportFieldItem;
   i : Integer;
@@ -209,11 +211,13 @@ procedure TFPCustomDBFExport.DoBeforeExecute;
 
 Var
   FE : Boolean;
-  
+
 begin
   Inherited;
   FDBF:=TDBF.Create(Self);
   FDBF.TableName:=FFileName;
+  if FormatSettings.LanguageID <> 0 then
+    FDBF.LanguageID := FormatSettings.LanguageID;
   FDBF.DefaultBufferCount:=2;
   FE:=FileExists(FFileName);
   If FAppendData and FE then
@@ -226,6 +230,7 @@ begin
         Raise EDataExporter.CreateFmt(SErrFailedToDeleteFile,[FFileName]);
       end;
     end;
+
 end;
 
 procedure TFPCustomDBFExport.DoAfterExecute;
@@ -251,7 +256,7 @@ procedure TFPCustomDBFExport.ExportField(EF: TExportFieldItem);
 
 Var
   F : TDBFExportFieldItem;
-  
+
 begin
   F:=EF as TDBFExportFieldItem;
   With F do
@@ -296,12 +301,13 @@ procedure TDBFExportFormatSettings.Assign(Source: TPersistent);
 
 Var
   FS : TDBFExportFormatSettings;
-  
+
 begin
   If Source is TDBFExportFormatSettings then
     begin
     FS:=Source as TDBFExportFormatSettings;
     AutoRenameFields:=FS.AutoRenameFields;
+    LanguageID := FS.LanguageID;
     TableFormat:=FS.TableFormat;
     end;
   inherited Assign(Source);
@@ -312,6 +318,7 @@ begin
   inherited InitSettings;
   FAutoRename:=true; // sensible to avoid duplicate table names
   FTableFormat:=tfDBaseIV; //often used
+  FLanguageID := 0;  // will be replaced by LanguageID of dbf to be exported
 end;
 
 end.

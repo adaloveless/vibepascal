@@ -29,12 +29,16 @@ Unit AoptObj;
 
 {$i fpcdefs.inc}
 
+{$if not defined(JVM) and not defined(WASM)}
+{$define CPU_SUPPORTS_OPT_COND_JUMP}
+{$endif}
+
   { general, processor independent objects for use by the assembler optimizer }
 
   Interface
 
     uses
-      globtype,
+      sysutils,globtype,
       aasmbase,aasmcpu,aasmtai,aasmdata,
       cclasses,
       cgbase,cgutils,
@@ -69,7 +73,7 @@ Unit AoptObj;
       TOpAction = (OpAct_Read, OpAct_Write, OpAct_Modify, OpAct_Unknown);
 
     { ************************************************************************* }
-    { * Object to hold information on which regiters are in use and which not * }
+    { * Object to hold information on which registers are in use and which not *}
     { ************************************************************************* }
 
       { TUsedRegs }
@@ -110,10 +114,10 @@ Unit AoptObj;
         { content of this register. If Typ = con_const, then   }
         { Longint(StartMod) = value of the constant)           }
         StartMod: Tai;
-        { starts at 0, gets increased everytime the register is }
+        { starts at 0, gets increased every time the register is}
         { written to                                            }
         WState: TStateInt;
-        { starts at 0, gets increased everytime the register is read }
+        { starts at 0, gets increased every time the register is read}
         { from                                                       }
         RState: TStateInt;
         { how many instructions starting with StarMod does the block }
@@ -258,7 +262,7 @@ Unit AoptObj;
 
         UsedRegs: TAllUsedRegs;
 
-        { _AsmL is the PAasmOutpout list that has to be optimized,     }
+        { _AsmL is the PAasmOutput list that has to be optimized,      }
         { _BlockStart and _BlockEnd the start and the end of the block }
         { that has to be optimized and _LabelInfo a pointer to a       }
         { TLabelInfo record                                            }
@@ -296,10 +300,14 @@ Unit AoptObj;
         { instruction                                                  }
         class function FindLabel(L: TasmLabel; Var hp: Tai): Boolean; static;
 
+        { returns true if p is after p2 or before                                    }
+        { and the number of instructions between p and p2 in out variable count      }
+        function GetInstructionDistance(p,p2: Tai; out count: ASizeInt) : boolean;
+
         { inserts new_one between prev and foll in AsmL }
         Procedure InsertLLItem(prev, foll, new_one: TLinkedListItem);
 
-        { If P is a Tai object releveant to the optimizer, P is returned
+        { If P is a Tai object relevant to the optimizer, P is returned
           If it is not relevant tot he optimizer, the first object after P
           that is relevant is returned                                     }
         class function SkipHead(P: Tai): Tai; static;
@@ -356,7 +364,7 @@ Unit AoptObj;
         { removes hp from asml then frees it }
         procedure RemoveInstruction(const hp: tai); inline;
 
-       { traces sucessive jumps to their final destination and sets it, e.g.
+       { traces successive jumps to their final destination and sets it, e.g.
          je l1                je l3
          <code>               <code>
          l1:       becomes    l1:
@@ -365,7 +373,7 @@ Unit AoptObj;
          l2:                  l2:
          jmp l3               jmp l3
 
-         the level parameter denotes how deeep we have already followed the jump,
+         the level parameter denotes how deep we have already followed the jump,
          to avoid endless loops with constructs such as "l5: ; jmp l5"           }
         function GetFinalDestination(hp: taicpu; level: longint): boolean;
 
@@ -415,10 +423,9 @@ Unit AoptObj;
 
         { If a group of labels are clustered, change the jump to point to the last one that is still referenced }
         function CollapseLabelCluster(jump: tai; var lbltai: tai): TAsmLabel;
-{$if not defined(JVM) and not defined(WASM)}
+{$ifdef CPU_SUPPORTS_OPT_COND_JUMP}
         function OptimizeConditionalJump(CJLabel: TAsmLabel; var p: tai; hp1: tai; var stoploop: Boolean): Boolean;
-{$endif not JVM and not WASM}
-
+{$endif}
         { Function to determine if the jump optimisations can be performed }
         function CanDoJumpOpts: Boolean; virtual;
 
@@ -443,7 +450,7 @@ Unit AoptObj;
       private
         procedure DebugMsg(const s: string; p: tai);
 
-        { Utilty function for the UpdateUsedRegs family of methods }
+        { Utility function for the UpdateUsedRegs family of methods }
         class function GetNextRegUpdatePoint(var p : Tai; pTerm: tai): Boolean; static;
       End;
 
@@ -758,10 +765,10 @@ Unit AoptObj;
           End
         Else
       {write something to a pointer location, so
-         * with uncertain optimzations on:
+         * with uncertain optimizations on:
             - do not destroy registers which contain a local/global variable or a
               parameter, except if DestroyRefs is called because of a "movsl"
-         * with uncertain optimzations off:
+         * with uncertain optimizations off:
             - destroy every register which contains a memory location
             }
             For Counter := LoGPReg to HiGPReg Do
@@ -787,7 +794,7 @@ Unit AoptObj;
 
       Procedure TPaiProp.DestroyAllRegs(var InstrSinceLastMod: TInstrSinceLastMod);
       {Var Counter: TRegister;}
-      Begin {initializes/desrtoys all registers}
+      Begin {initializes/destroys all registers}
       (*!!!!!!!!!
         For Counter := LoGPReg To HiGPReg Do
           Begin
@@ -1220,7 +1227,7 @@ Unit AoptObj;
           i : TRegisterType;
       begin
         for i:=low(TRegisterType) to high(TRegisterType) do
-          regs[i].Free;
+          regs[i].free; // no nil needed
       end;
 
 
@@ -1264,7 +1271,10 @@ Unit AoptObj;
              (TempP.typ In SkipInstr + [ait_label,ait_align]) Do
           If (TempP.typ <> ait_Label) Or
              (Tai_label(TempP).labsym <> L)
-            Then GetNextInstruction(TempP, TempP)
+            Then
+               begin
+                 GetNextInstruction(TempP, TempP);
+               end
             Else
               Begin
                 hp := TempP;
@@ -1272,6 +1282,42 @@ Unit AoptObj;
                 exit
               End;
         FindLabel := False;
+      End;
+
+      function TAOptObj.GetInstructionDistance(p,p2: Tai; out count: ASizeInt) : boolean;
+      Var TempP: Tai;
+      Begin
+        { Forward search }
+        TempP := p;
+        count:=0;
+        While Assigned(TempP) Do
+          Begin
+            if TempP.typ=ait_instruction then
+              inc(count);
+            If (TempP<>p2) then
+              TempP:=tai(TempP.Next)
+            Else
+              Begin
+                GetInstructionDistance := true;
+                exit
+              End;
+          End;
+	{ Search p after p2 }
+        TempP := p2;
+        count:=0;
+        While Assigned(TempP) Do
+          Begin
+            If TempP.typ=ait_instruction then
+              dec(count);
+            If (TempP<>p) then
+              TempP:=tai(TempP.Next)
+            Else
+              Begin
+                GetInstructionDistance := true;
+                exit
+              End;
+          End;
+        GetInstructionDistance := false;
       End;
 
       Procedure TAOptObj.InsertLLItem(prev, foll, new_one : TLinkedListItem);
@@ -1477,7 +1523,7 @@ Unit AoptObj;
         if (reg = NR_STACK_POINTER_REG) or
           (reg = current_procinfo.framepointer) or
            not(assigned(p1)) then
-          { this happens with registers which are loaded implicitely, outside the }
+          { this happens with registers which are loaded implicitly, outside the  }
           { current block (e.g. esi with self)                                    }
           exit;
 
@@ -1625,7 +1671,7 @@ Unit AoptObj;
     procedure TAOptObj.RemoveInstruction(const hp: tai); inline;
       begin
         AsmL.Remove(hp);
-        hp.Free;
+        hp.Free; // no nil needed
       end;
 
 
@@ -1715,6 +1761,7 @@ Unit AoptObj;
           begin
             asml.remove(hp2);
             hp2.free;
+            hp2 := nil;
           end;
         { Anything except A_NOP must be left in place: these instructions
           execute before branch, so code stays correct if branch is removed. }
@@ -1760,7 +1807,7 @@ Unit AoptObj;
 {$endif}
 {$endif not avr}
 {$ifdef mips}
-        { MIPS conditional jump instructions also conntain register
+        { MIPS conditional jump instructions also contain register
           operands. A proper implementation is needed here. }
         internalerror(2020071301);
 {$endif}
@@ -1825,6 +1872,7 @@ Unit AoptObj;
                     end;
                   asml.remove(hp1);
                   hp1.free;
+                  hp1 := nil;
                 end
               else
                 p:=hp1;
@@ -2044,6 +2092,7 @@ Unit AoptObj;
 {$endif EXTDEBUG}
                 asml.Remove(hp);
                 hp.Free;
+                hp := nil;
                 Exit;
               end;
             else
@@ -2090,11 +2139,15 @@ Unit AoptObj;
           end;
       end;
 
-{$if not defined(JVM) and not defined(WASM)}
+{$ifdef CPU_SUPPORTS_OPT_COND_JUMP}
     function TAOptObj.OptimizeConditionalJump(CJLabel: TAsmLabel; var p: tai; hp1: tai; var stoploop: Boolean): Boolean;
       var
         hp2: tai;
         NCJLabel: TAsmLabel;
+{$ifdef CPU_BC_HAS_SIZE_LIMIT}
+	hpncg : tai;
+	count  : ASizeInt;
+{$endif CPU_BC_HAS_SIZE_LIMIT}
       begin
         Result := False;
         while (hp1 <> BlockEnd) do
@@ -2115,6 +2168,9 @@ Unit AoptObj;
                       stoploop := False;
 
                     hp2 := getlabelwithsym(NCJLabel);
+{$ifdef CPU_BC_HAS_SIZE_LIMIT}
+                    hpncg :=hp2;
+{$endif CPU_BC_HAS_SIZE_LIMIT}
                     if Assigned(hp2) then
                       { Collapse the cluster now to aid optimisation and potentially
                         cut down on the number of iterations required }
@@ -2142,7 +2198,12 @@ Unit AoptObj;
                         Exit;
                       end;
 
-                    if FindLabel(CJLabel, hp2) then
+                    if FindLabel(CJLabel, hp2)
+{$ifdef CPU_BC_HAS_SIZE_LIMIT}
+                       and assigned(hpncg) and GetInstructionDistance(p, hpncg, count) and
+                       (abs(count) < BC_max_distance)
+{$endif CPU_BC_HAS_SIZE_LIMIT}
+                        then
                       begin
                         { change the following jumps:
                             jmp<cond> CJLabel         jmp<inv_cond> NCJLabel
@@ -2305,7 +2366,7 @@ Unit AoptObj;
           end;
 
       end;
-{$endif not JVM and not WASM}
+{$endif CPU_SUPPORTS_OPT_COND_JUMP}
 
     function TAOptObj.CollapseZeroDistJump(var p: tai; ThisLabel: TAsmLabel): Boolean;
       var
@@ -2392,10 +2453,10 @@ Unit AoptObj;
                         { Might have caused some earlier labels to become dead }
                         stoploop := False;
                     end
-{$if not defined(JVM) and not defined(WASM)}
+{$ifdef CPU_SUPPORTS_OPT_COND_JUMP}
                   else if (taicpu(p).opcode {$ifdef z80}in{$else}={$endif} aopt_condjmp) then
                     ThisPassResult := OptimizeConditionalJump(ThisLabel, p, hp1, stoploop)
-{$endif not JVM and not WASM}
+{$endif CPU_SUPPORTS_OPT_COND_JUMP}
                     ;
                 end;
 
@@ -2408,7 +2469,7 @@ Unit AoptObj;
 
 
     function TAOptObj.GetFinalDestination(hp: taicpu; level: longint): boolean;
-      {traces sucessive jumps to their final destination and sets it, e.g.
+      {traces successive jumps to their final destination and sets it, e.g.
        je l1                je l3       <code>               <code>
        l1:       becomes    l1:
        je l2                je l3
@@ -2763,6 +2824,7 @@ Unit AoptObj;
         PassCount := 0;
 
         { Pass 2 is only executed multiple times under -O3 and above }
+        NotFirstIteration := False;
         repeat
           stoploop := True;
           p := BlockStart;
@@ -2783,6 +2845,9 @@ Unit AoptObj;
             end;
 
           Inc(PassCount);
+
+          if not stoploop then
+            NotFirstIteration := True;
 
         until stoploop or not (cs_opt_level3 in current_settings.optimizerswitches) or (PassCount >= MaxPasses_Pass2);
       end;
@@ -2845,12 +2910,14 @@ Unit AoptObj;
 {$ifdef x86}
                 taicpu(p).SetOperandOrder(op_att);
 {$endif x86}
-                commentstr:='Instruction reads';
+                commentstr:='Instruction reads from';
                 registers_found:=false;
                 for ri in tregisterindex do
                   begin
                     reg:=regnumber_table[ri];
-                    if (reg<>NR_NO) and InstructionLoadsFromReg(reg,p) then
+                    if (reg<>NR_NO) and InstructionLoadsFromReg(reg,p) and
+                      { Modified registers are handled below }
+                      not RegModifiedByInstruction(reg,p) then
                       begin
                         commentstr:=commentstr+' '+std_regname(reg);
                         registers_found:=true;
@@ -2858,7 +2925,22 @@ Unit AoptObj;
                   end;
                 if not registers_found then
                   commentstr:=commentstr+' no registers';
-                commentstr:=commentstr+' and writes new values in';
+                commentstr:=commentstr+', modifies';
+                registers_found:=false;
+                for ri in tregisterindex do
+                  begin
+                    reg:=regnumber_table[ri];
+                    if (reg<>NR_NO) and RegModifiedByInstruction(reg,p) and
+                      { Pure writes are handled below }
+                      not RegLoadedWithNewValue(reg,p) then
+                      begin
+                        commentstr:=commentstr+' '+std_regname(reg);
+                        registers_found:=true;
+                      end;
+                  end;
+                if not registers_found then
+                  commentstr:=commentstr+' no registers';
+                commentstr:=commentstr+' and writes new values to';
                 registers_found:=false;
                 for ri in tregisterindex do
                   begin

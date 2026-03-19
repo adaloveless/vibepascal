@@ -60,7 +60,7 @@ interface
          { Label for debug or other non-program information }
          AT_METADATA,
          { label for data that must always be accessed indirectly, because it
-           is handled explcitely in the system unit or (e.g. RTTI and threadvar
+           is handled explicitly in the system unit or (e.g. RTTI and threadvar
            tables) -- never seen in an assembler/assembler writer, always
            changed to AT_DATA }
          AT_DATA_FORCEINDIRECT,
@@ -181,7 +181,9 @@ interface
          sec_heap,
          { dwarf based/gcc style exception handling }
          sec_gcc_except_table,
-         sec_arm_attribute
+         sec_arm_attribute,
+         { Used for GNU .note sections }
+         sec_note
        );
 
        TObjCAsmSectionType = sec_objc_class..sec_objc_protolist;
@@ -258,7 +260,7 @@ interface
 
     type
       { Procedure variable to allow for special handling of
-        the occurence of use of a global variable,
+        the occurrence of use of a global variable,
         used by PIC code generation to request GOT loading }
       TGlobalUsedProcedure = procedure;
 

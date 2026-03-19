@@ -63,7 +63,7 @@ implementation
         l: longint;
         reg: tregister;
       begin
-        { WebAssebly instructions never have more than one memory (virtual register)
+        { WebAssembly instructions never have more than one memory (virtual register)
           operand, so there is no danger of superregister conflicts }
         for l:=0 to instr.ops-1 do
           if (instr.oper[l]^.typ=top_reg) and (instr.oper[l]^.reg<>NR_LOCAL_FRAME_POINTER_REG) then
@@ -194,7 +194,7 @@ implementation
               p:=Tai(load.next);
               { the load }
               list.remove(load);
-              load.free;
+              load.free; // no nil needed
 
               result:=true;
             end;
@@ -298,7 +298,7 @@ implementation
                             p.free;
                             p:=tai(next.next);
                             list.remove(next);
-                            next.free;
+                            next.free; // no nil needed
                             removedsomething:=true;
                             continue;
                           end;
@@ -469,7 +469,7 @@ implementation
         spill_temps[R_FPUREGISTER]:=Nil;
         spill_temps[R_FUNCREFREGISTER]:=Nil;
         spill_temps[R_EXTERNREFREGISTER]:=Nil;
-        templist.free;
+        templist.free; // no nil needed
         { Not needed anymore }
         wasmfuncreftype.owner.deletedef(wasmfuncreftype);
       end;

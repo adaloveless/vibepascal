@@ -18,10 +18,6 @@ interface
 
 {$define FPC_IS_SYSTEM}
 
-{$IFNDEF FPC_DISABLE_MONITOR}
-{$DEFINE SYSTEM_HAS_FEATURE_MONITOR}
-{$ENDIF}
-
 {$linklib m}
 
 { include system-independent routine headers }
@@ -85,7 +81,7 @@ function paramstr(l: longint) : shortstring;
   s: shortstring;
   s1: shortstring;
  begin
-   { stricly conforming POSIX applications  }
+   { strictly conforming POSIX applications }
    { have the executing filename as argv[0] }
      if ( l>= 0) and (l < argc) then
        paramstr:=strpas(argv[l])

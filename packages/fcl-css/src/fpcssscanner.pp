@@ -33,14 +33,15 @@ Type
   TCSSToken =  (
     ctkUNKNOWN,
     ctkEOF,
+    ctkINVALID,
     ctkWHITESPACE,
     ctkCOMMENT,
     ctkSEMICOLON,
-    ctkLPARENTHESIS,
+    ctkLPARENTHESIS, // round bracket
     ctkRPARENTHESIS,
-    ctkLBRACE,
+    ctkLBRACE, // curly bracket
     ctkRBRACE,
-    ctkLBRACKET,
+    ctkLBRACKET, // edged bracket
     ctkRBRACKET,
     ctkCOMMA,
     ctkEQUALS,
@@ -129,10 +130,12 @@ Type
 
   TCSSScannerOption = (csoExtendedIdentifiers,csoReturnComments,csoReturnWhiteSpace,csoDisablePseudo);
   TCSSScannerOptions = set of TCSSScannerOption;
-  TCSSScannerWarnEvent = procedure(Sender: TObject; Msg: TCSSString) of object;
+  TCSSScannerWarnEvent = function(Sender: TObject; Msg: TCSSString; aRow, aCol: integer
+    ): boolean of object; // returns true to continue, false to raise an exception
 
   TCSSScanner = class
   private
+    FPreviousToken: TCSSToken;
     FOnWarn: TCSSScannerWarnEvent;
     FOptions: TCSSScannerOptions;
     FSourceFile: TLineReader;
@@ -183,8 +186,9 @@ Type
     property CurColumn: Integer read GetCurColumn;
     property CurToken: TCSSToken read FCurToken;
     property CurTokenString: TCSSString read FCurTokenString;
+    property PreviousToken: TCSSToken read FPreviousToken;
     property DisablePseudo : Boolean Index csoDisablePseudo Read GetOption Write SetOption;
-    property OnWarn: TCSSScannerWarnEvent read FOnWarn write FOnWarn;
+    property OnWarn: TCSSScannerWarnEvent read FOnWarn write FOnWarn; // if not set raise ECSSScanner
   end;
 
 function SafeFormat(const Fmt: TCSSString; const Args: array of const): TCSSString;
@@ -520,25 +524,40 @@ begin
               begin
               S:=UTF8Encode(ReadUniCodeEscape);
               end;
-        #0  : DoError(SErrOpenString);
+        #0  :
+          begin
+          DoError(SErrOpenString);
+          exit(ctkINVALID);
+          end
       else
         DoError(SErrInvalidCharacter, [TokenStr[0]]);
+        S:='';
       end;
       SetLength(FCurTokenString, OLen + Len+1+Length(S));
       if Len > 0 then
+        begin
         Move(TokenStart^, FCurTokenString[OLen + 1], Len);
-      Move(S[1],FCurTokenString[OLen + Len+1],Length(S));
-      Inc(OLen, Len+Length(S));
-      // Next char
-      // Inc(TokenStr);
+        Inc(OLen, Len);
+        end;
+      if S>'' then
+        begin
+        Move(S[1],FCurTokenString[OLen + 1],Length(S));
+        Inc(OLen, Length(S));
+        end;
       TokenStart := TokenStr+1;
       end;
     if TokenStr[0] = #0 then
+      begin
       DoError(SErrOpenString);
+      exit(ctkINVALID);
+      end;
     Inc(TokenStr);
     end;
   if TokenStr[0] = #0 then
+    begin
     DoError(SErrOpenString);
+    exit(ctkINVALID);
+    end;
   Len := TokenStr - TokenStart;
   SetLength(FCurTokenString, OLen + Len);
   if Len > 0 then
@@ -791,12 +810,16 @@ begin
     end
   else if (CurTokenString='url(') then
     begin
-    Result:=ctkURL;
     If TokenStr[0] in ['"',''''] then
-      DoStringLiteral
+      begin
+      Result:=DoStringLiteral;
+      if Result<>ctkSTRING then
+        exit;
+      Result:=ctkURL;
+      end
     else
       begin
-      result:=EatBadURL;
+      Result:=EatBadURL;
       end;
     If (result<>ctkEOF) and (TokenStr[0] in [')']) then
       Inc(TokenStr);
@@ -876,6 +899,7 @@ function TCSSScanner.DoFetchToken: TCSSToken;
   end;
 
 begin
+  FPreviousToken:=FCurToken;
   if TokenStr = nil then
     begin
     if not FetchLine then
@@ -898,7 +922,7 @@ begin
     '/' :
       Result:=CommentDiv;
     #9, ' ':
-      Result := DoWhiteSpace;
+      Result:=DoWhiteSpace;
     '#':
       Result:=DoHash;
     '\':
@@ -1025,6 +1049,11 @@ Var
   S : TCSSString;
 
 begin
+  if Assigned(OnWarn) then
+    begin
+    if OnWarn(Self,Msg,CurRow,CurColumn) then
+      exit;
+    end;
   S:=Format('Error at (%d,%d): ',[CurRow,CurColumn])+Msg;
   Raise ECSSScanner.Create(S);
 end;

@@ -182,7 +182,6 @@ OBJCUNIT=objc
 OBJCBASEUNIT=objcbase
 OBJPASUNIT=objpas
 OS2DEFUNIT=OS2Api.os2def
-PAGEMEMUNIT=System.PageMem
 PILOTUNIT=PalmApi.Pilot
 PMBIDIUNIT=OS2Api.pmbidi
 PMBITMAPUNIT=OS2Api.pmbitmap
@@ -263,6 +262,7 @@ WASIAPIUNIT=WASIApi.WASIApi
 WASIUTILUNIT=WASIApi.WASIUtil
 WATCOMUNIT=WatcomApi.WatCom
 WEBASSEMBLYUNIT=Wasm.Api
+WASMSEMUNIT=Wasm.Semaphore
 WIN31UNIT=WinApi.Win31
 WINDIRSUNIT=WinApi.WinDirs
 WINDOWSUNIT=WinApi.Windows
@@ -450,7 +450,6 @@ OBJCUNIT=objc
 OBJCBASEUNIT=objcbase
 OBJPASUNIT=objpas
 OS2DEFUNIT=os2def
-PAGEMEMUNIT=pagemem
 PILOTUNIT=pilot
 PMBIDIUNIT=pmbidi
 PMBITMAPUNIT=pmbitmap
@@ -531,6 +530,7 @@ WASIAPIUNIT=wasiapi
 WASIUTILUNIT=wasiutil
 WATCOMUNIT=watcom
 WEBASSEMBLYUNIT=webassembly
+WASMSEMUNIT=wasmsem
 WIN31UNIT=win31
 WINDIRSUNIT=windirs
 WINDOWSUNIT=windows
@@ -1050,12 +1050,20 @@ System.SysUtils$(PPUEXT) : $(NSINC)/System.SysUtils.pp $(SYSUTILS_DEPS)
 #
 # Classes
 #
+# Add intrinsics unit dependency for all CPUs
+# which use internal CPU dependent compiler inline number
+# as we plan to externalize all such inlined CPU functions
+# into intrinsics unit
+ifneq ($(findstring $(ARCH),aarch64 arm powerpc powerpc64 riscv64 riscv32),)
+CLASSES_DEPS_CPU:=$(CLASSES_DEPS_CPU) $(INTRINSICSUNIT)$(PPUEXT)
+endif
+
 CLASSES_DEPS=$(CLASSESDIR)/classes.pp $(TTHREADINCDIR)/tthread.inc $(wildcard $(OBJPASDIR)/classes/*.inc) \
 	     $(SYSTEMUNIT)$(PPUEXT) $(OBJPASUNIT)$(PPUEXT) $(SORTBASEUNIT)$(PPUEXT) \
              $(SYSUTILSUNIT)$(PPUEXT) $(TYPINFOUNIT)$(PPUEXT) $(RTLCONSTSUNIT)$(PPUEXT) \
              $(FGLUNIT)$(PPUEXT) $(TYPESUNIT)$(PPUEXT) \
              $(CLASSES_DEPS_OS) $(CLASSES_DEPS_CPU)
- 
+
 classes$(PPUEXT) : $(CLASSES_DEPS)
         $(COMPILER) -Fi$(OBJPASDIR)/classes $(CLASSES_OPT) $<
 
@@ -1201,6 +1209,21 @@ mmx$(PPUEXT) : $(MMX_DEPS)
 System.CPU.MMX$(PPUEXT) : $(NSINC)/System.CPU.MMX.pp $(MMX_DEPS)
 	$(COMPILER) $(MMX_OPT) $<
 
+
+#
+# Intrinsics
+#
+
+INTRINSICS_DEPS=$(PROCINC)/intrinsics.pp \
+         $(SYSTEMUNIT)$(PPUEXT) \
+         $(INTRINSICS_DEPS_OS) $(INTRINSICS_DEPS_CPU)
+
+intrinsics$(PPUEXT) : $(INTRINSICS_DEPS)
+	$(COMPILER) $(INTRINSICS_OPT) $<
+
+System.Intrinsics$(PPUEXT) : $(NSINC)/System.Intrinsics.pp $(INTRINSICS_DEPS)
+	$(COMPILER) $(INTRINSICS_OPT) $<
+
 #
 # X86
 #
@@ -1343,7 +1366,9 @@ else
 ifeq ($(OS_TARGET),android)
   RTLDEFSINCDIR = $(LINUXINC)
 else
+ifeq ($(RTLDEFSINCDIR),) 
   RTLDEFSINCDIR = $(OSDIR)
+endif
 endif
 endif
 

@@ -34,7 +34,7 @@ uses
     gdbint,
   {$endif GDBMI}
 {$endif NODEBUG}
-  FPConst,FPUsrScr;
+  FPConst,FPUsrScr,FPSwitch;
 
 type
     TEditor = TCodeEditor;
@@ -55,6 +55,7 @@ type
       constructor Init(var Bounds: TRect);
       constructor InitKb(var Bounds: TRect);
       procedure   HandleEvent(var Event: TEvent); virtual;
+      function    GetPalette: PPalette; virtual;
     end;
 
     PFPClockView = ^TFPClockView;
@@ -87,6 +88,8 @@ type
       constructor Init(var Bounds: TRect; ATitle: TTitleStr; ASourceFileID: word; AContext: THelpCtx; ANumber: Integer);
       destructor  Done;virtual;
       procedure   InitHelpView; virtual;
+      procedure   SetState(AState: Word; Enable: Boolean); virtual;
+      procedure   UpdateCommands; virtual;
       procedure   Show; {virtual;}
       procedure   Hide; {virtual;}
       procedure   HandleEvent(var Event: TEvent); virtual;
@@ -138,7 +141,8 @@ type
     TSourceEditor = object(TFileEditor)
       CompileStamp : longint;
       CodeCompleteTip: PFPToolTip;
-      {for nested comments managment}
+      {for nested comments management}
+      SwitchesNestedComments : boolean;
       NestedComments : boolean;
       FixedNestedComments : TPoint;
       NestnessPoints:TNestnessPoints;
@@ -336,46 +340,9 @@ type
     PFPDlgWindow = ^TFPDlgWindow;
     TFPDlgWindow = object(TDlgWindow)
       procedure   HandleEvent(var Event: TEvent); virtual;
+      procedure   CalcBounds (Var Bounds: TRect; Delta: TPoint); virtual;
     end;
 
-(*
-    PTabItem = ^TTabItem;
-    TTabItem = record
-      Next : PTabItem;
-      View : PView;
-      Dis  : boolean;
-    end;
-
-    PTabDef = ^TTabDef;
-    TTabDef = record
-      Next     : PTabDef;
-      Name     : PString;
-      Items    : PTabItem;
-      DefItem  : PView;
-      ShortCut : AnsiChar;
-    end;
-
-    PTab = ^TTab;
-    TTab = object(TGroup)
-      TabDefs   : PTabDef;
-      ActiveDef : integer;
-      DefCount  : word;
-      constructor Init(var Bounds: TRect; ATabDef: PTabDef);
-      function    AtTab(Index: integer): PTabDef; virtual;
-      procedure   SelectTab(Index: integer); virtual;
-      function    TabCount: integer;
-      procedure   SelectNextTab(Forwards: boolean);
-      function    Valid(Command: Word): Boolean; virtual;
-      procedure   ChangeBounds(var Bounds: TRect); virtual;
-      procedure   HandleEvent(var Event: TEvent); virtual;
-      function    GetPalette: PPalette; virtual;
-      procedure   Draw; virtual;
-      procedure   SetState(AState: Word; Enable: Boolean); virtual;
-      destructor  Done; virtual;
-    private
-      InDraw: boolean;
-    end;
-*)
 
     PScreenView = ^TScreenView;
     TScreenView = object(TScroller)
@@ -397,6 +364,7 @@ type
     PFPChDirDialog = ^TFPChDirDialog;
     TFPChDirDialog = object(TEditChDirDialog)
       constructor Init(AOptions: Word; HistoryId: Sw_Word);
+      procedure   SizeLimits (Var Min, Max: TPoint); Virtual;
     end;
 
     PFPAboutDialog = ^TFPAboutDialog;
@@ -407,6 +375,20 @@ type
     private
       Scroller: PTextScroller;
       TitleST : PStaticText;
+    end;
+
+    TFPVerticalResizeDialog = object(TCenterDialog)
+      procedure   CalcBounds (Var Bounds: TRect; Delta: TPoint); virtual;
+    end;
+
+    PFPSwitchesDialog = ^TFPSwitchesDialog;
+    TFPSwitchesDialog = object(TFPVerticalResizeDialog)
+      SwitchesCount : Sw_Integer;
+      VScrollBar : PScrollBar;
+      RB: PScrollerRadioButtons;
+      constructor Init(Bounds: TRect; ATitle, ALabel: String; ASwitches : PSwitches );
+      procedure   ChangeBounds (Var Bounds: TRect); virtual;
+      procedure   SizeLimits (Var Min, Max: TPoint); virtual;
     end;
 
     PFPASCIIChart = ^TFPASCIIChart;
@@ -486,6 +468,7 @@ function GetNextEditorBounds(var Bounds: TRect): boolean;
 function OpenEditorWindow(Bounds: PRect; FileName: string; CurX,CurY: sw_integer): PSourceWindow;
 function IOpenEditorWindow(Bounds: PRect; FileName: string; CurX,CurY: sw_integer; ShowIt: boolean): PSourceWindow;
 function LastSourceEditor : PSourceWindow;
+function SourceOnDesktop(SearchFor:PSourceWindow) : PSourceWindow;
 function SearchOnDesktop(FileName : string;tryexts:boolean) : PSourceWindow;
 function TryToOpenFile(Bounds: PRect; FileName: string; CurX,CurY: sw_integer;tryexts: boolean): PSourceWindow;
 function TryToOpenFileMulti(Bounds: PRect; FileName: string; CurX,CurY: sw_integer;tryexts: boolean): PSourceWindow;
@@ -496,6 +479,7 @@ function LocateSourceFile(const FileName: string; tryexts: boolean): string;
 function SearchWindow(const Title: string): PWindow;
 
 function StartEditor(Editor: PCodeEditor; FileName: string): boolean;
+procedure UpdateScrollBar(RB : PScrollerRadioButtons; VScrollBar : PScrollBar);
 
 {$ifdef VESA}
 procedure InitVESAScreenModes;
@@ -510,7 +494,7 @@ const
       EditorCmds  : TCommandSet =
         ([cmPrint,cmFind,cmReplace,cmSearchAgain,cmJumpLine,cmHelpTopicSearch,cmSelectAll,cmUnselect]);
       CompileCmds : TCommandSet =
-        ([cmMake,cmBuild,cmRun]);
+        ([cmMake,cmBuild,cmRun,cmStepOver,cmTraceInto,cmContToCursor]);
 
       CalcClipboard   : extended = 0;
 
@@ -579,11 +563,11 @@ uses
      ag68kgas,
   {$endif}
 {$ifdef USE_EXTERNAL_COMPILER}
-   fpintf, { superseeds version_string of version unit }
+   fpintf, { supersedes version_string of version unit }
 {$endif USE_EXTERNAL_COMPILER}
   {$ifdef VESA}Vesa,{$endif}
   FPSymbol,FPDebug,FPVars,FPUtils,FPCompil,FPHelp,
-  FPTools,FPIDE,FPCodTmp,FPCodCmp,FPSwitch;
+  FPTools,FPIDE,FPCodTmp,FPCodCmp;
 
 const
   RSourceEditor: TStreamRec = (
@@ -1304,6 +1288,8 @@ Const
     2,{ssCommentSuffix}
     1,{ssStringPrefix}
     1,{ssStringSuffix}
+    1,{ssStringMultiLinePrefix}
+    1,{ssStringMultiLineSuffix}
     2,{ssDirectivePrefix}
     {2,}{ssDirectiveSuffix}
     1,{ssAsmPrefix}
@@ -1319,6 +1305,8 @@ Const
   FreePascalCommentSuffix2 : string[2] = '*)';
   FreePascalStringPrefix : string[1] = '''';
   FreePascalStringSuffix : string[1] = '''';
+  FreePascalStringMultiLinePrefix : string[1] = '`';
+  FreePascalStringMultiLineSuffix : string[1] = '`';
   FreePascalDirectivePrefix1 : string[2] = '{$';
   FreePascalDirectivePrefix2 : string[3] = '(*$';
   //FreePascalDirectiveSuffix1 : string[1] = '}';
@@ -1354,6 +1342,10 @@ begin
       GetSpecSymbol:=@FreePascalStringPrefix;
     ssStringSuffix :
       GetSpecSymbol:=@FreePascalStringSuffix;
+    ssStringMultiLinePrefix :
+      GetSpecSymbol:=@FreePascalStringMultiLinePrefix;
+    ssStringMultiLineSuffix :
+      GetSpecSymbol:=@FreePascalStringMultiLineSuffix;
     { must be uppercased to avoid calling UpCaseStr in MatchesAnyAsmSymbol PM }
     ssAsmPrefix :
       GetSpecSymbol:=@FreePascalAsmPrefix;
@@ -1382,9 +1374,10 @@ begin
   IsAsmReservedWord:=IsFPAsmReservedWord(S);
 end;
 
-function TSourceEditor.ParseSourceNestedComments(X,Y : sw_integer): boolean;
 const cModeNestedComments : array [TCompilerMode] of boolean =
  (false,true{fpc},true{objfpc},false,false,false,false,false,false,false);
+
+function TSourceEditor.ParseSourceNestedComments(X,Y : sw_integer): boolean;
 
 function CompilerModeToNestedComments(AMode: String; ACurrentNestedComments:boolean):boolean;
 var SourceCompilerMode : TCompilerMode;
@@ -1441,11 +1434,12 @@ var CurrentCompilerMode : TCompilerMode;
 begin
   CurrentCompilerMode:=TCompilerMode(CompilerModeSwitches^.GetCurrSelParamID);
   NestedComments:=cModeNestedComments[CurrentCompilerMode];
+  SwitchesNestedComments:=NestedComments;
   ParseSourceNestedComments:=NestedComments;
   ResultIsSet:=false;
   RegisterNestnessPoint(0,0);
   if (not IsFlagSet(efSyntaxHighlight)) then
-  begin {not ment to be syntax highlighted }
+  begin { not meant to be syntax highlighted }
     FixedNestedComments.Y:=0;
     FixedNestedComments.X:=0;
     exit;
@@ -1617,7 +1611,7 @@ begin
     IsNestedComments:=NestedComments;
   end else
   begin
-    lastNC:=NestedComments;
+    lastNC:=SwitchesNestedComments;
     if NestPos>0 then
       for iPos:=0 to NestPos-1 do
       begin
@@ -1673,6 +1667,9 @@ var Points : TNestnessPoints;
     iPos,iFrom,oNest : sw_integer;
 begin
   NestedCommentsChangeCheck:=false;
+  if SwitchesNestedComments<>cModeNestedComments[TCompilerMode(CompilerModeSwitches^.GetCurrSelParamID)] then
+    FixedNestedComments.Y:=2000000; {force to parse again}
+
   if (FixedNestedComments.Y>=CurLine) then
   begin
     if FixedNestedComments.Y>=2000000 then
@@ -2348,6 +2345,12 @@ begin
   inherited HandleEvent(Event);
 end;
 
+function TFPHeapView.GetPalette: PPalette;
+const P: string[length(CFPClockView)] = CFPClockView;
+begin
+  GetPalette:=@P;
+end;
+
 constructor TFPClockView.Init(var Bounds: TRect);
 begin
   inherited Init(Bounds);
@@ -2498,6 +2501,28 @@ begin
   GetExtent(R); R.Grow(-1,-1);
   HelpView:=New(PFPHelpViewer, Init(R, HSB, VSB));
   HelpView^.GrowMode:=gfGrowHiX+gfGrowHiY;
+end;
+
+procedure TFPHelpWindow.SetState(AState: Word; Enable: Boolean);
+var OldState: word;
+begin
+  OldState:=State;
+  inherited SetState(AState,Enable);
+  if ((AState and sfActive)<>0) and (((OldState xor State) and sfActive)<>0) then
+    UpdateCommands;
+end;
+
+procedure TFPHelpWindow.UpdateCommands;
+var Active, Visible: boolean;
+begin
+  Visible:=GetState(sfVisible);
+  Active:=GetState(sfActive) and Visible;
+  SetCmdState(SourceCmds+CompileCmds,False);
+  SetCmdState(EditorCmds,True);
+  if Assigned(HelpView) then
+    HelpView^.ChangeCommands;
+  SetCmdState([cmHide],Active);
+  SetCmdState([cmTile,cmCascade,cmTileVertical,cmStepped,cmSteppedReverse],Visible or IsThereAnyVisibleEditorWindow);
 end;
 
 procedure TFPHelpWindow.Show;
@@ -2680,7 +2705,8 @@ begin
     SetCmdState(SourceCmds+CompileCmds,Active);
     SetCmdState(EditorCmds,Active);
   end;
-  SetCmdState(ToClipCmds+FromClipCmds+NulClipCmds+UndoCmd+RedoCmd+[cmHide],Active);
+  Editor^.ChangeCommands;
+  SetCmdState([cmHide],Active);
   SetCmdState([cmTile,cmCascade,cmTileVertical,cmStepped,cmSteppedReverse],Visible or IsThereAnyVisibleEditorWindow);
   Message(Application,evBroadcast,cmCommandSetChanged,nil);
 end;
@@ -3765,394 +3791,49 @@ begin
 end;
 
 
-(*
-constructor TTab.Init(var Bounds: TRect; ATabDef: PTabDef);
+procedure TFPDlgWindow.CalcBounds (Var Bounds: TRect; Delta: TPoint);
+var InX,InY: boolean;
+    R : TRect;
+    D : Sw_Integer;
 begin
-  inherited Init(Bounds);
-  Options:=Options or ofSelectable or ofFirstClick or ofPreProcess or ofPostProcess;
-  GrowMode:=gfGrowHiX+gfGrowHiY+gfGrowRel;
-  TabDefs:=ATabDef;
-  ActiveDef:=-1;
-  SelectTab(0);
-  ReDraw;
-end;
-
-function TTab.TabCount: integer;
-var i: integer;
-    P: PTabDef;
-begin
-  I:=0; P:=TabDefs;
-  while (P<>nil) do
-    begin
-      Inc(I);
-      P:=P^.Next;
-    end;
-  TabCount:=I;
-end;
-
-function TTab.AtTab(Index: integer): PTabDef;
-var i: integer;
-    P: PTabDef;
-begin
-  i:=0; P:=TabDefs;
-  while (I<Index) do
-    begin
-      if P=nil then RunError($AA);
-      P:=P^.Next;
-      Inc(i);
-    end;
-  AtTab:=P;
-end;
-
-procedure TTab.SelectTab(Index: integer);
-var P: PTabItem;
-    V: PView;
-begin
-  if ActiveDef<>Index then
+  if assigned(Owner) then
   begin
-    if Owner<>nil then Owner^.Lock;
-    Lock;
-    { --- Update --- }
-    if TabDefs<>nil then
-       begin
-         DefCount:=1;
-         while AtTab(DefCount-1)^.Next<>nil do Inc(DefCount);
-       end
-       else DefCount:=0;
-    if ActiveDef<>-1 then
-    begin
-      P:=AtTab(ActiveDef)^.Items;
-      while P<>nil do
-        begin
-          if P^.View<>nil then Delete(P^.View);
-          P:=P^.Next;
-        end;
-    end;
-    ActiveDef:=Index;
-    P:=AtTab(ActiveDef)^.Items;
-    while P<>nil do
+    GetBounds(R);
+    InX:=(R.B.X)<=(Owner^.Size.X-Delta.X);
+    InY:=(R.B.Y)<=(Owner^.Size.Y-Delta.Y);
+  end;
+  inherited CalcBounds(Bounds,Delta);
+  if assigned(Owner) then
+  begin
+    R:=Bounds;
+    {keep within bounds if was before}
+    if InX then
+      if (R.B.X)>(Owner^.Size.X) then
       begin
-        if P^.View<>nil then Insert(P^.View);
-        P:=P^.Next;
+        D:=Owner^.Size.X-R.B.X;
+        R.B.X:=R.B.X+D;
+        R.A.X:=R.A.X+D;
+        if R.A.X<0 then
+        begin
+          R.B.X:=R.B.X-R.A.X;
+          R.A.X:=0;
+        end;
       end;
-    V:=AtTab(ActiveDef)^.DefItem;
-    if V<>nil then V^.Select;
-    ReDraw;
-    { --- Update --- }
-    UnLock;
-    if Owner<>nil then Owner^.UnLock;
-    DrawView;
+    if InY then
+      if (R.B.Y)>(Owner^.Size.Y) then
+      begin
+        D:=Owner^.Size.Y-R.B.Y;
+        R.B.Y:=R.B.Y+D;
+        R.A.Y:=R.A.Y+D;
+        if R.A.Y<0 then
+        begin
+          R.B.Y:=R.B.Y-R.A.Y;
+          R.A.Y:=0;
+        end;
+      end;
+    Bounds:=R;
   end;
 end;
-
-procedure TTab.ChangeBounds(var Bounds: TRect);
-var D: TPoint;
-procedure DoCalcChange(P: PView);
-var
-  R: TRect;
-begin
-  if P^.Owner=nil then Exit; { it think this is a bug in TV }
-  P^.CalcBounds(R, D);
-  P^.ChangeBounds(R);
-end;
-var
-    P: PTabItem;
-    I: integer;
-begin
-  D.X := Bounds.B.X - Bounds.A.X - Size.X;
-  D.Y := Bounds.B.Y - Bounds.A.Y - Size.Y;
-  inherited ChangeBounds(Bounds);
-  for I:=0 to TabCount-1 do
-  if I<>ActiveDef then
-    begin
-      P:=AtTab(I)^.Items;
-      while P<>nil do
-        begin
-          if P^.View<>nil then DoCalcChange(P^.View);
-          P:=P^.Next;
-        end;
-    end;
-end;
-
-procedure TTab.SelectNextTab(Forwards: boolean);
-var Index: integer;
-begin
-  Index:=ActiveDef;
-  if Index=-1 then Exit;
-  if Forwards then Inc(Index) else Dec(Index);
-  if Index<0 then Index:=DefCount-1 else
-  if Index>DefCount-1 then Index:=0;
-  SelectTab(Index);
-end;
-
-procedure TTab.HandleEvent(var Event: TEvent);
-var Index : integer;
-    I     : integer;
-    X     : integer;
-    Len   : byte;
-    P     : TPoint;
-    V     : PView;
-    CallOrig: boolean;
-    LastV : PView;
-    FirstV: PView;
-function FirstSelectable: PView;
-var
-    FV : PView;
-begin
-  FV := First;
-  while (FV<>nil) and ((FV^.Options and ofSelectable)=0) and (FV<>Last) do
-        FV:=FV^.Next;
-  if FV<>nil then
-    if (FV^.Options and ofSelectable)=0 then FV:=nil;
-  FirstSelectable:=FV;
-end;
-function LastSelectable: PView;
-var
-    LV : PView;
-begin
-  LV := Last;
-  while (LV<>nil) and ((LV^.Options and ofSelectable)=0) and (LV<>First) do
-        LV:=LV^.Prev;
-  if LV<>nil then
-    if (LV^.Options and ofSelectable)=0 then LV:=nil;
-  LastSelectable:=LV;
-end;
-begin
-  if (Event.What and evMouseDown)<>0 then
-     begin
-       MakeLocal(Event.Where,P);
-       if P.Y<3 then
-          begin
-            Index:=-1; X:=1;
-            for i:=0 to DefCount-1 do
-                begin
-                  Len:=CStrLen(AtTab(i)^.Name^);
-                  if (P.X>=X) and (P.X<=X+Len+1) then Index:=i;
-                  X:=X+Len+3;
-                end;
-            if Index<>-1 then
-               SelectTab(Index);
-          end;
-     end;
-  if Event.What=evKeyDown then
-     begin
-       Index:=-1;
-       case Event.KeyCode of
-            kbCtrlTab :
-              begin
-                SelectNextTab((Event.KeyShift and kbShift)=0);
-                ClearEvent(Event);
-              end;
-            kbTab,kbShiftTab  :
-              if GetState(sfSelected) then
-                 begin
-                   if Current<>nil then
-                   begin
-                   LastV:=LastSelectable; FirstV:=FirstSelectable;
-                   if ((Current=LastV) or (Current=PLabel(LastV)^.Link)) and (Event.KeyCode=kbShiftTab) then
-                      begin
-                        if Owner<>nil then Owner^.SelectNext(true);
-                      end else
-                   if ((Current=FirstV) or (Current=PLabel(FirstV)^.Link)) and (Event.KeyCode=kbTab) then
-                      begin
-                        Lock;
-                        if Owner<>nil then Owner^.SelectNext(false);
-                        UnLock;
-                      end else
-                   SelectNext(Event.KeyCode=kbShiftTab);
-                   ClearEvent(Event);
-                   end;
-                 end;
-       else
-       for I:=0 to DefCount-1 do
-           begin
-             if Upcase(GetAltChar(Event.KeyCode))=AtTab(I)^.ShortCut
-                then begin
-                       Index:=I;
-                       ClearEvent(Event);
-                       Break;
-                     end;
-           end;
-       end;
-       if Index<>-1 then
-          begin
-            Select;
-            SelectTab(Index);
-            V:=AtTab(ActiveDef)^.DefItem;
-            if V<>nil then V^.Focus;
-          end;
-     end;
-  CallOrig:=true;
-  if Event.What=evKeyDown then
-     begin
-     if ((Owner<>nil) and (Owner^.Phase=phPostProcess) and (GetAltChar(Event.KeyCode)<>#0)) or GetState(sfFocused)
-        then
-        else CallOrig:=false;
-     end;
-  if CallOrig then inherited HandleEvent(Event);
-end;
-
-function TTab.GetPalette: PPalette;
-begin
-  GetPalette:=nil;
-end;
-
-procedure TTab.Draw;
-var B     : TDrawBuffer;
-    i     : integer;
-    C1,C2,C3,C : word;
-    HeaderLen  : integer;
-    X,X2       : integer;
-    Name       : PString;
-    ActiveKPos : integer;
-    ActiveVPos : integer;
-    FC   : AnsiChar;
-    ClipR      : TRect;
-procedure SWriteBuf(X,Y,W,H: integer; var Buf);
-var i: integer;
-begin
-  if Y+H>Size.Y then H:=Size.Y-Y;
-  if X+W>Size.X then W:=Size.X-X;
-  if Buffer=nil then WriteBuf(X,Y,W,H,Buf)
-                else for i:=1 to H do
-                         Move(Buf,Buffer^[X+(Y+i-1)*Size.X],W*2);
-end;
-procedure ClearBuf;
-begin
-  MoveChar(B,' ',C1,Size.X);
-end;
-begin
-  if InDraw then Exit;
-  InDraw:=true;
-  { - Start of TGroup.Draw - }
-{  if Buffer = nil then
-  begin
-    GetBuffer;
-  end; }
-  { - Start of TGroup.Draw - }
-
-  C1:=GetColor(1); C2:=(GetColor(7) and $f0 or $08)+GetColor(9)*256; C3:=GetColor(8)+GetColor({9}8)*256;
-  HeaderLen:=0; for i:=0 to DefCount-1 do HeaderLen:=HeaderLen+CStrLen(AtTab(i)^.Name^)+3; Dec(HeaderLen);
-  if HeaderLen>Size.X-2 then HeaderLen:=Size.X-2;
-
-  { --- 1. sor --- }
-  ClearBuf; MoveChar(B[0],''#$B3'',C1,1); MoveChar(B[HeaderLen+1],''#$B3'',C1,1);
-  X:=1;
-  for i:=0 to DefCount-1 do
-      begin
-        Name:=AtTab(i)^.Name; X2:=CStrLen(Name^);
-        if i=ActiveDef
-           then begin
-                  ActiveKPos:=X-1;
-                  ActiveVPos:=X+X2+2;
-                  if GetState(sfFocused) then C:=C3 else C:=C2;
-                end
-           else C:=C2;
-        MoveCStr(B[X],' '+Name^+' ',C); X:=X+X2+3;
-        MoveChar(B[X-1],''#$B3'',C1,1);
-      end;
-  SWriteBuf(0,1,Size.X,1,B);
-
-  { --- 0. sor --- }
-  ClearBuf; MoveChar(B[0],''#$DA'',C1,1);
-  X:=1;
-  for i:=0 to DefCount-1 do
-      begin
-        if I<ActiveDef then FC:=#$DA
-                       else FC:=#$BF;
-        X2:=CStrLen(AtTab(i)^.Name^)+2;
-        MoveChar(B[X+X2],{''#$C2''}FC,C1,1);
-        if i=DefCount-1 then X2:=X2+1;
-        if X2>0 then
-        MoveChar(B[X],''#$C4'',C1,X2);
-        X:=X+X2+1;
-      end;
-  MoveChar(B[HeaderLen+1],#$BF,C1,1);
-  MoveChar(B[ActiveKPos],#$DA,C1,1); MoveChar(B[ActiveVPos],#$BF,C1,1);
-  SWriteBuf(0,0,Size.X,1,B);
-
-  { --- 2. sor --- }
-  MoveChar(B[1],#$C4,C1,Max(HeaderLen,0)); MoveChar(B[HeaderLen+2],#$C4,C1,Max(Size.X-HeaderLen-3,0));
-  MoveChar(B[Size.X-1],#$BF,C1,1);
-  MoveChar(B[ActiveKPos],#$D9,C1,1);
-  if ActiveDef=0 then MoveChar(B[0],#$B3,C1,1)
-                 else MoveChar(B[0],{#$C3}#$DA,C1,1);
-  MoveChar(B[HeaderLen+1],#$C4{''#$C1''},C1,1); MoveChar(B[ActiveVPos],#$C0,C1,1);
-  MoveChar(B[ActiveKPos+1],' ',C1,Max(ActiveVPos-ActiveKPos-1,0));
-  SWriteBuf(0,2,Size.X,1,B);
-
-  { --- marad#$82k sor --- }
-  ClearBuf; MoveChar(B[0],''#$B3'',C1,1); MoveChar(B[Size.X-1],''#$B3'',C1,1);
-  for i:=3 to Size.Y-1 do
-    SWriteBuf(0,i,Size.X,1,B);
-  { SWriteBuf(0,3,Size.X,Size.Y-4,B); this was wrong
-    because WriteBuf then expect a buffer of size size.x*(size.y-4)*2 PM }
-
-  { --- Size.X . sor --- }
-  MoveChar(B[0],''#$C0'',C1,1); MoveChar(B[1],''#$C4'',C1,Max(Size.X-2,0)); MoveChar(B[Size.X-1],''#$D9'',C1,1);
-  SWriteBuf(0,Size.Y-1,Size.X,1,B);
-
-  { - End of TGroup.Draw - }
-  if Buffer <> nil then
-  begin
-    Lock;
-    Redraw;
-    UnLock;
-  end;
-  if Buffer <> nil then WriteBuf(0, 0, Size.X, Size.Y, Buffer^) else
-  begin
-    GetClipRect(ClipR);
-    Redraw;
-    GetExtent(ClipR);
-  end;
-  { - End of TGroup.Draw - }
-  InDraw:=false;
-end;
-
-function TTab.Valid(Command: Word): Boolean;
-var PT : PTabDef;
-    PI : PTabItem;
-    OK : boolean;
-begin
-  OK:=true;
-  PT:=TabDefs;
-  while (PT<>nil) and (OK=true) do
-        begin
-          PI:=PT^.Items;
-          while (PI<>nil) and (OK=true) do
-                begin
-                  if PI^.View<>nil then OK:=OK and PI^.View^.Valid(Command);
-                  PI:=PI^.Next;
-                end;
-          PT:=PT^.Next;
-        end;
-  Valid:=OK;
-end;
-
-procedure TTab.SetState(AState: Word; Enable: Boolean);
-begin
-  inherited SetState(AState,Enable);
-  if (AState and sfFocused)<>0 then DrawView;
-end;
-
-destructor TTab.Done;
-var P,X: PTabDef;
-procedure DeleteViews(P: PView);
-begin
-  if P<>nil then Delete(P);
-end;
-begin
-  ForEach(TCallbackProcParam(@DeleteViews));
-  inherited Done;
-  P:=TabDefs;
-  while P<>nil do
-        begin
-          X:=P^.Next;
-          DisposeTabDef(P);
-          P:=X;
-        end;
-end;
-*)
 
 
 constructor TScreenView.Init(var Bounds: TRect; AHScrollBar, AVScrollBar: PScrollBar;
@@ -4329,6 +4010,21 @@ function LastSourceEditor : PSourceWindow;
 
 begin
   LastSourceEditor:=PSourceWindow(Desktop^.FirstThat(@IsSearchedSource));
+end;
+
+function SourceOnDesktop(SearchFor:PSourceWindow) : PSourceWindow;
+
+function IsSearchedSource(P: PView) : boolean;
+begin
+  if assigned(P) and
+     (TypeOf(P^)=TypeOf(TSourceWindow)) then
+       IsSearchedSource:=(PSourceWindow(P)=SearchFor)
+     else
+       IsSearchedSource:=false;
+end;
+
+begin
+  SourceOnDesktop:=PSourceWindow(Desktop^.FirstThat(@IsSearchedSource));
 end;
 
 
@@ -4632,6 +4328,7 @@ var
   S : String;
 begin
    inherited init(AOptions,HistoryId);
+   GrowMode := gfGrowAll + gfGrowRel;                 { Set window growmodes }
    HelpCtx:=hcChangeDir;
    {replace TInputLine with TEditorInputLine in order to be able to use Clipboard in it}
    DirInput^.getData(S);
@@ -4639,11 +4336,11 @@ begin
    DInput := New(PEditorInputLine, Init(R, FileNameLen+4));
    DInput^.GrowMode:=gfGrowHiX;
    DInput^.SetData(S);
-   InsertBefore(DInput,DirInput); {insert before to preserv order as it was}
+   InsertBefore(DInput,DirInput); {insert before to preserve order as it was}
    Delete(DirInput);
    Dispose(DirInput,done);
    DirInput:=DInput;
-   Control:=DirInput^.Next; {here we make assumption that THistory control will folow}
+   Control:=DirInput^.Next; {here we make assumption that THistory control will follow}
    while (Control<> nil) do
    begin
      if TypeOf(Control^) = TypeOf(THistory) then
@@ -4657,10 +4354,18 @@ begin
    {resize}
    if Desktop^.Size.Y > 26 then
      GrowTo(Size.X,Desktop^.Size.Y-6);
-   if Desktop^.Size.X > 80 then
-     GrowTo(Min(Desktop^.Size.X-(80-Size.X),102),Size.Y);
+   if Desktop^.Size.X > 60 then
+     GrowTo(Min(Desktop^.Size.X-(60-Size.X),102),Size.Y);
    {set focus on the new input line}
    DirInput^.Focus;
+end;
+
+procedure TFPChDirDialog.SizeLimits (Var Min, Max: TPoint);
+begin
+  Min.X:=40;
+  Min.Y:=20;
+  Max.X:=WUtils.Min(102,WUtils.Max(40,ScreenWidth-2));
+  Max.Y:=WUtils.Max(20,Desktop^.Size.Y-6);
 end;
 
 constructor TFPAboutDialog.Init;
@@ -4714,7 +4419,7 @@ begin
   else
 {$endif NODEBUG}
     R2.Move(0,2);
-  Insert(New(PStaticText, Init(R2, ^C'Copyright (C) 1998-2020 by')));
+  Insert(New(PStaticText, Init(R2, ^C'Copyright (C) 1998-2026 by')));
   R2.Move(0,2);
   Insert(New(PStaticText, Init(R2, ^C'B'#$82'rczi G'#$A0'bor')));
   R2.Move(0,1);
@@ -4731,12 +4436,21 @@ begin
   AddLine('');
   AddLine(^C'< Compiler development >');
   AddLine(^C'Carl-Eric Codere');
+  AddLine(^C'Charlie Balogh');
   AddLine(^C'Daniel Mantione');
   AddLine(^C'Florian Kl'#$84'mpfl');
   AddLine(^C'Jonas Maebe');
-  AddLine(^C'Mich'#$84'el Van Canneyt');
+  AddLine(^C'Joost van der Sluis');
+  AddLine(^C'Marco Van de Voort');
+  AddLine(^C'Mattias Gaertner');
+  AddLine(^C'Micha'#$89'l Van Canneyt');
+  AddLine(^C'Nikolay Nikolov');
   AddLine(^C'Peter Vreman');
   AddLine(^C'Pierre Muller');
+  AddLine(^C'Sergei Gorelkin');
+  AddLine(^C'Sven/Sarah Barth');
+  AddLine(^C'Tomas Hajny');
+  AddLine(^C'Yuriy Sydorov');
   AddLine('');
   AddLine(^C'< IDE development >');
   AddLine(^C'B'#$82'rczi G'#$A0'bor');
@@ -4789,6 +4503,148 @@ begin
       end;
   end;
   inherited HandleEvent(Event);
+end;
+
+procedure TFPVerticalResizeDialog.CalcBounds (Var Bounds: TRect; Delta: TPoint);
+var R : TRect;
+   OptimalHeight : Sw_Integer;
+   DeltaWidth, DeltaHeight : Sw_Integer;
+   SizeY : Sw_Integer;
+   Mi,Ma : TPoint;
+begin
+  SizeLimits(Mi,Ma);
+  OptimalHeight:=Ma.Y;
+  GetBounds(R);
+  { relocate horizontally }
+  DeltaWidth:=CalcMiddleDelta(Owner^.Size.X, Delta.X, R.A.X, R.B.X);
+  Bounds.A.X:=R.A.X+DeltaWidth;
+  Bounds.B.X:=R.B.X+DeltaWidth;
+  { resize vertically }
+  SizeY:=Owner^.Size.Y;
+  if SizeY >= OptimalHeight then
+  begin
+    DeltaHeight:=R.B.Y-R.A.Y;
+    if DeltaHeight > (SizeY - Delta.Y) then {if over boundaries}
+    begin
+      R.A.Y:=0;      { simulate as if fit exatcly in boundaries}
+      R.B.Y:=SizeY-Delta.Y;   { full height  for better center }
+      DeltaHeight:=R.B.Y-R.A.Y;
+    end;
+    if DeltaHeight  <> OptimalHeight then
+    begin
+      {full height}
+      DeltaHeight:=OptimalHeight-DeltaHeight;
+      R.B.Y:=R.B.Y+DeltaHeight div 2;
+      DeltaHeight:=DeltaHeight-(DeltaHeight div 2);
+      R.A.Y:=R.A.Y-DeltaHeight;
+    end;
+  end else
+  begin
+    DeltaHeight:=R.B.Y-R.A.Y;
+    if ((SizeY >= Mi.Y) and (SizeY<> DeltaHeight))
+      or  ((SizeY < Mi.Y) and (Mi.Y<> DeltaHeight)) then
+    begin
+      { resize a notch }
+
+      if (( SizeY< Mi.Y) and (Mi.Y<> DeltaHeight)) then
+      begin
+        DeltaHeight:=Mi.Y-DeltaHeight;
+      end else
+      begin
+        DeltaHeight:=(SizeY)-DeltaHeight;
+      end;
+
+      if DeltaHeight > 0  then
+      begin
+        { enlarge }
+        R.A.Y:=R.A.Y-DeltaHeight div 2;
+        DeltaHeight:=DeltaHeight-(DeltaHeight div 2);
+        R.B.Y:=R.B.Y+DeltaHeight;
+
+        if R.A.Y<0 then
+        begin
+          R.B.Y:=R.B.Y-R.A.Y;
+          R.A.Y:=0;
+        end;
+
+      end else
+      begin
+        DeltaHeight:=abs(DeltaHeight);
+        { shrink }
+        R.A.Y:=R.A.Y+DeltaHeight div 2;
+        DeltaHeight:=DeltaHeight-(DeltaHeight div 2);
+        R.B.Y:=R.B.Y-DeltaHeight;
+      end;
+    end;
+  end;
+  { relocate vertically }
+  DeltaWidth:=CalcMiddleDelta(Owner^.Size.Y, Delta.Y, R.A.Y, R.B.Y);
+  Bounds.A.Y:=R.A.Y+DeltaWidth;
+  Bounds.B.Y:=R.B.Y+DeltaWidth;
+end;
+
+constructor TFPSwitchesDialog.Init(Bounds: TRect; ATitle, ALabel: String; ASwitches : PSwitches );
+var R,R2,R3: TRect;
+    TargetCount,TargetHeight,I: Sw_Integer;
+    LastItem: PSItem;
+    LI: PSItem;
+    L: longint;
+    V : PView;
+begin
+  TargetCount:=ASwitches^.ItemCount;
+  R:=Bounds;
+  TargetHeight:=R.B.Y-R.A.Y-4;
+
+  inherited Init(R, ATitle);
+  SwitchesCount:=TargetCount;
+  GetExtent(R); R.Grow(-3,-1); Inc(R.A.Y);
+  R2.Copy(R); Inc(R2.A.Y); R2.B.Y:=R2.A.Y+TargetHeight;
+  {have scroll bar for Targets only if they does not fit in view}
+  VScrollBar :=nil;
+  //if TargetHeight<>TargetCount then
+  begin
+    Dec(R2.B.X);
+    R3.Copy(R2);R3.A.X:=R3.B.X; R3.B.X:=R3.B.X+1;
+    R3.B.Y:=R3.B.Y-3; {-3 because of InsertButtons later}
+    VScrollBar := New(PScrollBar, Init(R3));
+    VScrollBar^.GrowMode := gfGrowHiY;
+    Insert(VScrollBar);
+  end;
+  LastItem:=nil;
+  for I:=TargetCount-1 downto 0 do
+    LastItem:=NewSItem(ASwitches^.ItemName(I), LastItem);
+  New(RB, Init(R2, LastItem, VScrollBar));
+  L:=ord(ASwitches^.GetCurrSel);
+  RB^.SetData(L);
+  RB^.CentreSelected;
+
+  Insert(RB);
+  R2.Copy(R);
+  R2.B.Y:=R2.A.Y+1;
+  Insert(New(PLabel, Init(R2, ALabel, RB)));
+
+  InsertButtons(@self);
+  V:=First;
+  V^.GrowMode := gfGrowLoY + gfGrowHiY; { Cancel button glued to bottom line }
+  V:=V^.Next;
+  V^.GrowMode := gfGrowLoY + gfGrowHiY; { Ok button glued to bottom line }
+  RB^.GrowMode := gfGrowHiY;
+  RB^.Select;
+end;
+
+procedure TFPSwitchesDialog.ChangeBounds (Var Bounds: TRect);
+var SizeY, Y : Sw_Integer;
+begin
+  inherited ChangeBounds (Bounds);
+  UpdateScrollBar(RB,VScrollBar);
+end;
+
+procedure TFPSwitchesDialog.SizeLimits (Var Min, Max: TPoint);
+begin
+  Min.X:=Size.X;
+  Min.Y:=10;
+  Max.X:=Size.X;
+  Max.Y:=SwitchesCount+7;
 end;
 
 constructor TFPASCIIChart.Init;
@@ -4993,6 +4849,7 @@ var DontClear: boolean;
     S: string;
     LineCount,LinesScroll : Sw_Integer;
 begin
+  TView.HandleEvent(Event);   { get focus on view if not already }
   case Event.What of
     evKeyDown :
       begin
@@ -5105,6 +4962,23 @@ end;
 function TFPCodeMemo.IsReservedWord(const S: string): boolean;
 begin
   IsReservedWord:=IsFPReservedWord(S);
+end;
+
+procedure UpdateScrollBar(RB : PScrollerRadioButtons; VScrollBar : PScrollBar);
+var Y, SizeY : Sw_Integer;
+begin
+  if assigned(RB) then
+  begin
+    if VScrollBar<> nil then
+      begin
+        Y:=RB^.Strings.count;
+        SizeY:=Min(Y,RB^.Size.Y);
+        if (Y>=SizeY) and (SizeY>0) then
+           VScrollBar^.SetParams(0, 0,Y-SizeY, SizeY-1, VScrollBar^.ArStep);     { Set vert scrollbar }
+        VScrollBar^.SetValue(RB^.Value);                                     { scroll to current item }
+        RB^.CentreSelected;
+      end;
+  end;
 end;
 
 

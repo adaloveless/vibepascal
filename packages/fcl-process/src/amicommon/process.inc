@@ -202,7 +202,7 @@ begin
     else
     {$endif}
     begin
-      // if no streams needed we still use the old sychronous way
+      // if no streams needed we still use the old synchronous way
       FProcessID := 0;
       cos := BPTR(0);
       repeat
@@ -211,7 +211,7 @@ begin
       until not FileExists(TempName);
       //sysdebugln('TProcess start: "' + ExecName + ' ' + Params+'"  >' + TempName);
       cos := AmigaDos.DosOpen(PAnsiChar(TempName), MODE_READWRITE);
-      FExitCode := LongInt(amigados.Execute(PAnsiChar(ExecName + ' ' + Params), BPTR(0), cos));
+      FExitCode := Cardinal(amigados.Execute(PAnsiChar(ExecName + ' ' + Params), BPTR(0), cos));
       DosSeek(cos, 0, OFFSET_BEGINNING);
     end;
     //FExitCode := ExecuteProcess (ExecName, Params);
@@ -265,7 +265,7 @@ end;
 function TIODescriptor.SysIsTypeSupported(AValue: TIOType): Boolean;
 begin
   Result:=True;
-end; 
+end;
 
 
 function TIODescriptor.SysCreateFileNameHandle(const aFileName: string): THandle;
@@ -294,13 +294,13 @@ function TIODescriptor.SysCreatePipeHandle: THandle;
 var
   TempName : AnsiString;
   HIn,HOut : BPTR;
-  
+
 begin
   // MVC : This should be moved to CreatePipeHandles.
   TempName := 'PIPE:PrO_' + HexStr(Self) + HexStr(GetTickCount, 8);
   if ProcessHandleType=phtInput then
     TempName:=TempName+'i'
-  else  
+  else
     TempName:=TempName+'o';
   // Read handle
   HIn := DOSOpen(PAnsiChar(TempName), MODE_OLDFILE);
@@ -322,10 +322,11 @@ begin
       FOurHandle:=THandle(HIn);
       end;
   end;
-  
+
 end;
 
 function TIODescriptor.SysPrepareCreatedHandleForProcess(aHandle: THandle): THandle;
 begin
   Result:=aHandle;
-end;   
+end;
+

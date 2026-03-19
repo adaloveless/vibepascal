@@ -477,13 +477,13 @@ begin
               { if DestS is used somewhere in the middle of the expression,
                 we need to make sure the original string still exists after
                 we empty/modify DestS -- not necessary on JVM platform, ansistrings
-                are not explicitly refrence counted there }
+                are not explicitly reference counted there }
               lowstart:=nonemptystart;
               break;
             end;
         end;
     end;
-  { Start with empty DestS if we start with concatting
+  { Start with empty DestS if we start with concatenating
     the first (non-empty) array element }
   if lowstart=nonemptystart then
     DestS:='';
@@ -764,9 +764,9 @@ var
 begin
   Pos:=0;
   SubstrLen:=Length(SubStr);
-  if (Length(SubStr)>0) and (Offset>0) and (Offset<=Length(Source)) then
+  if (SubstrLen>0) and (Offset>0) and (Offset<=Length(Source)) then
    begin
-     MaxLen:=Length(source)-Length(SubStr);
+     MaxLen:=Length(source)-SubStrLen;
      i:=Offset-1;
      while (i<=MaxLen) do
       begin
@@ -798,7 +798,7 @@ begin
   SubstrLen:=Length(SubStr);
   if (SubstrLen>0) and (Offset>0) and (Offset<=Length(Source)) then
    begin
-     MaxLen:=Length(source)-Length(SubStr);
+     MaxLen:=Length(source)-SubStrLen;
      i:=Offset-1;
      while (i<=MaxLen) do
       begin

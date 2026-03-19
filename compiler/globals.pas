@@ -56,7 +56,7 @@ interface
           m_out,m_default_para,m_duplicate_names,m_hintdirective,
           m_property,m_default_inline,m_except,m_advanced_records,
           m_array_operators,m_prefixed_attributes,m_underscoreisseparator,
-          m_function_references,m_anonymous_functions];
+          m_function_references,m_anonymous_functions,m_multiline_strings];
        delphiunicodemodeswitches = delphimodeswitches + [m_systemcodepage,m_default_unicodestring];
        fpcmodeswitches =
          [m_fpc,m_string_pchar,m_nested_comment,m_repeat_forward,
@@ -68,7 +68,7 @@ interface
           m_property,m_default_inline,m_except];
        unleashedmodeswitches = objfpcmodeswitches+[m_default_ansistring,m_underscoreisseparator,m_duplicate_names,
         m_advanced_records,m_array_operators,m_anonymous_functions,m_function_references,
-        m_statement_expressions,m_array_equality,m_inline_var];
+        m_statement_expressions,m_array_equality,m_inline_var,m_multiline_strings];
        tpmodeswitches =
          [m_tp7,m_tp_procvar,m_duplicate_names];
 {$ifdef gpc_mode}
@@ -202,8 +202,17 @@ Const
         { CPU targets with microcontroller support can add a controller specific unit }
          controllertype   : tcontrollertype;
 
-         { WARNING: this pointer cannot be written as such in record token }
+         { WARNING: pmessage cannot be written as such in record token
+              pmessage is the top of a stack of message/verbosity changes
+              RestoreLocalVerbosity applies the current stack. }
          pmessage : pmessagestaterecord;
+
+         lineendingtype : tlineendingtype;
+
+         whitespacetrimcount : word;
+
+         whitespacetrimauto : boolean;
+
 {$if defined(generic_cpu)}
          case byte of
 {$endif}
@@ -228,6 +237,15 @@ Const
 
     const
       LinkMapWeightDefault = 1000;
+{$ifdef CPU_BC_HAS_SIZE_LIMIT}
+    {$if defined(POWERPC) or defined(POWERPC64)}
+      { instructions are 4-byte long and relative jump distance
+        a signed 16-bit signed integer, code as
+        reduced by a small amount to avoid troubles
+        as distance can be modified by optimizations. }
+      BC_max_distance = ($8000 div 4) - $100;
+    {$endif}
+{$endif CPU_BC_HAS_SIZE_LIMIT}
 
     type
       TLinkRec = record
@@ -264,7 +282,8 @@ Const
         psf_packenum_changed,
         psf_packrecords_changed,
         psf_setalloc_changed,
-        psf_asmmode_changed
+        psf_asmmode_changed,
+        psf_optimizerswitches_changed
       );
       tpendingstateflags = set of tpendingstateflag;
 
@@ -279,6 +298,7 @@ Const
         nextpackrecords : shortint;
         nextsetalloc : shortint;
         nextasmmode : tasmmode;
+        nextoptimizerswitches : toptimizerswitches;
         flags : tpendingstateflags;
       end;
 
@@ -628,8 +648,8 @@ Const
         fputype : fpu_soft;
   {$endif riscv32}
   {$ifdef riscv64}
-        cputype : cpu_rv64imac;
-        optimizecputype : cpu_rv64imac;
+        cputype : cpu_rv64imafdc;
+        optimizecputype : cpu_rv64imafdc;
         asmcputype : cpu_none;
         fputype : fpu_fd;
   {$endif riscv64}
@@ -677,6 +697,9 @@ Const
         tlsmodel : tlsm_none;
         controllertype : ct_none;
         pmessage : nil;
+        lineendingtype : le_platform;
+        whitespacetrimcount : 0;
+        whitespacetrimauto : false;
 {$if defined(i8086) or defined(GENERIC_CPU)}
         x86memorymodel : mm_small;
 {$endif defined(i8086) or defined(GENERIC_CPU)}
@@ -1310,7 +1333,7 @@ implementation
            ishexstr(copy(s,16,4)) and ishexstr(copy(s,21,4)) and
            ishexstr(copy(s,26,12)) then begin
           GUID.D1:=dword(hexstr2longint(copy(s,2,8)));
-          { these values are arealdy in the correct range (4 chars = word) }
+          { these values are already in the correct range (4 chars = word) }
           GUID.D2:=word(hexstr2longint(copy(s,11,4)));
           GUID.D3:=word(hexstr2longint(copy(s,16,4)));
           for i:=0 to 1 do
@@ -1718,15 +1741,25 @@ implementation
      begin
        calldoneprocs;
        librarysearchpath.Free;
+       librarysearchpath := nil;
        unitsearchpath.Free;
+       unitsearchpath := nil;
        objectsearchpath.Free;
+       objectsearchpath := nil;
        includesearchpath.Free;
+       includesearchpath := nil;
        frameworksearchpath.Free;
+       frameworksearchpath := nil;
        LinkLibraryAliases.Free;
+       LinkLibraryAliases := nil;
        LinkLibraryOrder.Free;
+       LinkLibraryOrder := nil;
        packagesearchpath.Free;
+       packagesearchpath := nil;
        namespacelist.Free;
+       namespacelist := nil;
        premodule_namespacelist.Free;
+       premodule_namespacelist := nil;
        current_namespacelist:=Nil;
      end;
 
@@ -1739,6 +1772,7 @@ implementation
         do_release:=false;
         do_make:=true;
         codegenerror:=false;
+        global_unit_count:=0;
 
         { Output }
         OutputFileName:='';

@@ -127,7 +127,7 @@ implementation
     symtable,symsym,
     tgobj,
     procinfo,cpupi;
-                  
+
   const
     TOpCmp2AsmCond: array[TOpCmp] of TAsmCond = (
       C_None,
@@ -500,7 +500,7 @@ implementation
           it saves us a register }
         else if (op in [OP_MUL,OP_IMUL]) and ispowerof2(a,l1) then
           a_op_const_reg_reg(list,OP_SHL,size,l1,src,dst)
-        { we cannot make use of SUB(X) here because the inital shift might overflow }
+        { we cannot make use of SUB(X) here because the initial shift might overflow }
         else if (op in [OP_MUL,OP_IMUL]) and (a=3) then
           list.concat(taicpu.op_reg_reg_reg(A_ADDX2,dst,src,src))
         else if (op in [OP_MUL,OP_IMUL]) and (a=5) then
@@ -976,7 +976,7 @@ implementation
               OC_GTE: op:=C_GEZ;
             else
               Internalerror(2020030806);
-            end;     
+            end;
             instr:=taicpu.op_reg_sym(A_B,reg,l);
             instr.condition:=op;
             instr.is_jmp:=true;

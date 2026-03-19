@@ -33,7 +33,8 @@ uses fmodule;
     function proc_package(curr: tmodule) : boolean;
     function proc_program(curr: tmodule; islibrary : boolean) : boolean;
     function proc_program_declarations(curr : tmodule; islibrary : boolean) : boolean;
-    procedure finish_unit(module:tmodule);
+    function finish_compile_unit(module:tmodule): boolean;
+    function finish_unit(module:tmodule): boolean;
 
 implementation
 
@@ -53,7 +54,6 @@ implementation
        pkgutil,
        wpobase,
        scanner,pbase,pexpr,psystem,psub,pgenutil,pparautl,ncgvmt,ncgrtti,
-       ctask,
        cpuinfo;
 
 
@@ -81,6 +81,7 @@ implementation
                KeepShared.Concat(s);
             end;
            DLLscanner.Free;
+           DLLscanner := nil;
            { Recreate import section }
            if (target_info.system in [system_i386_win32,system_i386_wdosx]) then
             begin
@@ -97,6 +98,7 @@ implementation
               curr.linkOtherSharedLibs.add(s,link_always);
             end;
            KeepShared.Free;
+           KeepShared := nil;
          end;
 
         { allow a target-specific pass over all assembler code (used by LLVM
@@ -184,45 +186,40 @@ implementation
         CheckResourcesUsed:=found;
       end;
 
-    function AddUnit(curr : tmodule; const s:string;addasused:boolean): tppumodule;
+    function AddUnit(curr : tmodule; const s:string; addasused:boolean = true): tppumodule;
       var
         hp : tppumodule;
         unitsym : tunitsym;
-        isnew,load_ok : boolean;
+        isnew : boolean;
+        uu: tused_unit;
 
       begin
         { load unit }
         hp:=registerunit(curr,s,'',isnew);
         if isnew then
           usedunits.concat(tused_unit.create(hp,true,addasused,nil));
-        load_ok:=hp.loadppu(curr);
-        hp.adddependency(curr,curr.in_interface);
-        if not load_ok then
-          { We must schedule a compile. }
-          task_handler.addmodule(hp);
+        hp.adddependency(curr,curr.in_interface); { adddependency before loadppu for invalid cycle test }
+        hp.loadppu(curr);
+        tmodule.finish_module(hp);
 
         { add to symtable stack }
         if assigned(hp.globalsymtable) then
           symtablestack.push(hp.globalsymtable);
         if (m_mac in current_settings.modeswitches) and
             assigned(hp.globalmacrosymtable) then
-           macrosymtablestack.push(hp.globalmacrosymtable);
+          macrosymtablestack.push(hp.globalmacrosymtable);
         { insert unitsym }
         unitsym:=cunitsym.create(hp.modulename^,hp);
         inc(unitsym.refs);
         tabstractunitsymtable(curr.localsymtable).insertunit(unitsym);
         if addasused then
+        begin
           { add to used units }
-          curr.addusedunit(hp,false,unitsym);
+          uu:=curr.addusedunit(hp,false,unitsym);
+          uu.dependent_added:=true;
+        end;
         result:=hp;
       end;
-
-
-    function AddUnit(curr :tmodule; const s:string):tppumodule;
-      begin
-        result:=AddUnit(curr,s,true);
-      end;
-
 
     function maybeloadvariantsunit(curr : tmodule) : boolean;
       var
@@ -310,6 +307,7 @@ implementation
               internalerror(2024020701);
             curr.used_units.Remove(uu);
             uu.Free;
+            uu := nil;
            { remove the module }
             loaded_units.Remove(hp);
             unloaded_units.Concat(hp);
@@ -346,7 +344,7 @@ implementation
            exit;
          end;
 
-        { insert the system unit, it is allways the first. Load also the
+        { insert the system unit, it is always the first. Load also the
           internal types from the system unit }
         Sys:=AddUnit(curr,'system');
         Result:=Assigned(Sys) and (Sys.State in [ms_processed,ms_compiled]);
@@ -354,9 +352,9 @@ implementation
 
         { load_intern_types resets the scanner... }
         current_scanner.tempcloseinputfile;
-        state:=tglobalstate.create(true);
+        state:=tglobalstate.create(false);
         load_intern_types;
-        state.restore(true);
+        state.restore;
         FreeAndNil(state);
         current_scanner.tempopeninputfile;
 
@@ -377,7 +375,8 @@ implementation
       end;
 
 
-    { Return true if all units were loaded, no recompilation needed. }
+    { load default units, like language mode units
+      Return true if all units were loaded, no recompilation needed. }
     function loaddefaultunits(curr :tmodule) : boolean;
 
       Procedure CheckAddUnit(s: string);
@@ -555,7 +554,9 @@ implementation
             end;
           if (current_settings.controllertype=ct_esp32c3) then
             begin
-              if idf_version>=50200 then
+              if idf_version>=50300 then
+                CheckAddUnit('esp32c3idf_50300')
+              else if idf_version>=50200 then
                 CheckAddUnit('esp32c3idf_50200')
               else if idf_version>=50000 then
                 CheckAddUnit('esp32c3idf_50000')
@@ -574,8 +575,8 @@ implementation
 {$endif RISCV32}
       end;
 
-
-    { Return true if all units were loaded, no recompilation needed. }
+    { Load units provided on the command line
+      Return true if all units were loaded, no recompilation needed. }
     function loadautounits(curr: tmodule) : boolean;
 
       Procedure CheckAddUnit(s: string);
@@ -618,15 +619,15 @@ implementation
       begin
         consume(_USES);
         repeat
-          s:=pattern;
-          sorg:=orgpattern;
+          s:=current_scanner.pattern;
+          sorg:=current_scanner.orgpattern;
           filepos:=current_tokenpos;
           consume(_ID);
-          while token=_POINT do
+          while current_scanner.token=_POINT do
             begin
               consume(_POINT);
-              s:=s+'.'+pattern;
-              sorg:=sorg+'.'+orgpattern;
+              s:=s+'.'+current_scanner.pattern;
+              sorg:=sorg+'.'+current_scanner.orgpattern;
               consume(_ID);
             end;
           { support "<unit> in '<file>'" construct, but not for tp7 }
@@ -678,9 +679,9 @@ implementation
            end
           else
            Message1(sym_e_duplicate_id,s);
-          if token=_COMMA then
+          if current_scanner.token=_COMMA then
            begin
-             pattern:='';
+             current_scanner.pattern:='';
              consume(_COMMA);
            end
           else
@@ -691,33 +692,34 @@ implementation
     function loadunits(curr: tmodule; frominterface : boolean) : boolean;
 
       var
-         s  : ansistring;
-         pu  : tused_unit;
-         state: tglobalstate;
-         isLoaded : Boolean;
-         mwait : tmodule;
-         lu : tmodule;
+        pu  : tused_unit;
+        state: tglobalstate;
+        lu : tmodule;
 
-         procedure restorestate;
-
-         begin
-           state.restore(true);
-           if assigned(current_scanner) and (current_module.scanner=current_scanner) then
+        procedure restorestate;
+          begin
+            state.restore;
+            if assigned(current_scanner) and (current_module.scanner=current_scanner) then
               begin
-              if assigned(current_scanner.inputfile) then
-                current_scanner.tempopeninputfile;
+                if assigned(current_scanner.inputfile) then
+                  current_scanner.tempopeninputfile;
               end;
-           state.free;
-         end;
+            state.free;
+            state := nil;
+          end;
 
       begin
         Result:=true;
-        mwait:=nil;
         current_scanner.tempcloseinputfile;
-        state:=tglobalstate.create(true);
-         { Load the units }
-         pu:=tused_unit(curr.used_units.first);
-         while assigned(pu) do
+        state:=tglobalstate.create(false);
+
+        { reset verbosity (otherwise the used units would use curr's pmessage) }
+        current_settings.pmessage:=nil;
+        RestoreLocalVerbosity(nil);
+
+        { Load the units }
+        pu:=tused_unit(curr.used_units.first);
+        while assigned(pu) do
           begin
             lu:=pu.u;
             { Only load the units that are in the current
@@ -725,38 +727,40 @@ implementation
             if pu.in_uses and
                (pu.in_interface=frominterface) then
              begin
-               if (lu.state in [ms_processed, ms_compiled,ms_compiling_waitimpl]) then
-                 isLoaded:=true
-               else if (lu.state=ms_registered) then
-                  // try to load
-                 isLoaded:=tppumodule(lu).loadppu(curr)
-               else
-                 isLoaded:=False;
-               isLoaded:=IsLoaded and not lu.is_reset ;
-               if not IsLoaded then
-                 begin
-                   if mwait=nil then
-                     mwait:=lu;
-                   // In case of is_reset, the task handler will discard the state if the module was already there
-                   task_handler.addmodule(lu);
-                 end;
-               IsLoaded:=Isloaded and not curr.is_reset;
-               Result:=Result and IsLoaded;
-               { If we were reset, then used_units is no longer correct, and we must exit at once. }
-               if curr.is_reset then
+               { adddependency before loadppu for invalid cycle test }
+               if not pu.dependent_added then
+               begin
+                 pu.dependent_added:=true;
+                 lu.adddependency(curr,frominterface);
+               end;
+               { always call loadppu for the cycle test }
+               tppumodule(lu).loadppu(curr);
+               if not (curr.state in [ms_compile,ms_compiling_wait,ms_compiling_waitintf,ms_compiling_waitimpl]) then
+               begin
+                 {$IFDEF DEBUG_PPU_CYCLES}
+                 writeln('loadunits STOPPED ',curr.modulename^,' ',curr.statestr);
+                 {$ENDIF}
+                 Result:=false;
                  break;
-               { is our module compiled? then we can stop }
-               if curr.state in [ms_compiled,ms_processed] then
-                 break;
-               { add this unit to the dependencies }
-               lu.adddependency(curr,frominterface);
+               end;
+               if not lu.interface_compiled or lu.do_reload or tmodule.ctask_fast_backtrack then
+               begin
+                 { an used unit is delayed
+                   Important: do not break, load the remaining uses section, so the scheduler
+                              has more information about cycles }
+                 {$IFDEF DEBUG_PPU_CYCLES}
+                 writeln('PPUALGO loadunits ',curr.modulename^,' ',curr.statestr,' ',BoolToStr(pu.in_interface,'interface','implementation'),' uses "',pu.u.modulename^,'", state=',pu.u.statestr,', waiting ...');
+                 {$ENDIF}
+                 tmodule.ctask_fast_backtrack:=true;
+                 Result:=false;
+               end;
                { check hints }
                pu.check_hints;
              end;
             pu:=tused_unit(pu.next);
           end;
 
-         Restorestate;
+        Restorestate;
       end;
 
      {
@@ -963,7 +967,7 @@ implementation
         ps:=cprocsym.create('$'+name);
         { always register the symbol }
         ps.register_sym;
-        { main are allways used }
+        { main are always used }
         inc(ps.refs);
         st.insertsym(ps);
         pd:=tprocdef(cnodeutils.create_main_procdef(target_info.cprefix+name,potype,ps));
@@ -1061,7 +1065,7 @@ implementation
         deprecated_seen:=false;
         repeat
           last_is_deprecated:=false;
-          case idtoken of
+          case current_scanner.idtoken of
             _LIBRARY :
               begin
                 include(moduleopt,mo_hint_library);
@@ -1095,17 +1099,17 @@ implementation
             else
               break;
           end;
-          consume(Token);
+          consume(current_scanner.token);
           { handle deprecated message }
-          if ((token=_CSTRING) or (token=_CCHAR)) and last_is_deprecated then
+          if ((current_scanner.token=_CSTRING) or (current_scanner.token=_CCHAR)) and last_is_deprecated then
             begin
               if deprecatedmsg<>nil then
                 internalerror(201001221);
-              if token=_CSTRING then
-                deprecatedmsg:=stringdup(cstringpattern)
+              if current_scanner.token=_CSTRING then
+                deprecatedmsg:=stringdup(current_scanner.cstringpattern)
               else
-                deprecatedmsg:=stringdup(pattern);
-              consume(token);
+                deprecatedmsg:=stringdup(current_scanner.pattern);
+              consume(current_scanner.token);
               include(moduleopt,mo_has_deprecated_msg);
             end;
         until false;
@@ -1144,7 +1148,9 @@ type
       var
         init_procinfo,
         finalize_procinfo : tcgprocinfo;
-        i,j : integer;
+        {$ifdef DEBUG_UNITWAITING}
+        i: integer;
+        {$ENDIF}
         finishstate:pfinishstate;
 
 
@@ -1190,7 +1196,7 @@ type
             curr.mainfilepos:=init_procinfo.entrypos;
 
             { parse finalization section }
-            if token=_FINALIZATION then
+            if current_scanner.token=_FINALIZATION then
               begin
                 { Compile the finalize }
                 finalize_procinfo:=create_main_proc(make_mangledname('',curr.localsymtable,'finalize$'),potype_unitfinalize,curr.localsymtable);
@@ -1200,15 +1206,13 @@ type
           end;
 
         { remove all units that we are waiting for that are already waiting for
-          us => breaking up circles }
-        for i:=0 to curr.waitingunits.count-1 do
-          for j:=curr.waitingforunit.count-1 downto 0 do
-            if curr.waitingunits[i]=curr.waitingforunit[j] then
-              curr.waitingforunit.delete(j);
+          us => breaking up cycles }
+        curr.remove_waitforunit_cycles;
 
     {$ifdef DEBUG_UNITWAITING}
-        Writeln('Units waiting for ', curr.modulename^, ': ',
-          curr.waitingforunit.Count);
+        Writeln('Unit ', curr.modulename^, ' is waiting for units: ');
+        for i:=curr.waitingforunit.count-1 downto 0 do
+          writeln('  ',i,'/',curr.waitingforunit.count,' ',tmodule(curr.waitingforunit[i]).realmodulename^);
     {$endif}
         result:=curr.waitingforunit.count=0;
 
@@ -1219,7 +1223,7 @@ type
         curr.finishstate:=finishstate;
 
         if result then
-          finish_unit(curr)
+          result:=finish_compile_unit(curr)
         else
           curr.state:=ms_compiling_waitfinish;
       end;
@@ -1277,11 +1281,11 @@ type
             Message1(unit_f_errors_in_unit,tostr(Errorcount));
             status.skip_error:=true;
             symtablestack.pop(curr.globalsymtable);
-
+            curr.state:=ms_moduleerror;
 {$ifdef DEBUG_NODE_XML}
             XMLFinalizeNodeFile('unit');
 {$endif DEBUG_NODE_XML}
-            exit;
+            exit(false);
           end;
 
         { we need to be able to reference these in descendants,
@@ -1289,17 +1293,14 @@ type
         if (target_cpu=tsystemcpu.cpu_wasm32) then
           add_synthetic_interface_classes_for_st(curr.globalsymtable,true,false);
 
-        { Our interface is compiled, generate CRC and switch to implementation }
-        if not(cs_compilesystem in current_settings.moduleswitches) and
-          (Errorcount=0) then
-           tppumodule(curr).getppucrc;
+        { Our interface is compiled, generate interface CRC and switch to implementation }
+        {$IFDEF Debug_WaitCRC}
+        writeln('parse_unit_interface_declarations ',curr.realmodulename^);
+        {$ENDIF}
+        if Errorcount=0 then
+          tppumodule(curr).getppucrc;
         curr.in_interface:=false;
         curr.interface_compiled:=true;
-
-        { First reload all units depending on our interface, we need to do this
-          in the implementation part to prevent erroneous circular references }
-        tppumodule(curr).setdefgeneration;
-        tppumodule(curr).reload_flagged_units;
 
         { Parse the implementation section }
         if (m_mac in current_settings.modeswitches) and try_to_consume(_END) then
@@ -1310,7 +1311,7 @@ type
         parse_only:=false;
 
         { create static symbol table }
-        curr.localsymtable:=tstaticsymtable.create(curr.modulename^,curr.moduleid);
+        curr.localsymtable:=tstaticsymtable.create(curr.realmodulename^,curr.moduleid);
 
 
         { Insert _GLOBAL_OFFSET_TABLE_ symbol if system uses it }
@@ -1320,11 +1321,11 @@ type
             consume(_IMPLEMENTATION);
             Message1(unit_u_loading_implementation_units,curr.modulename^);
             { Read the implementation units }
-            if token=_USES then
+            if current_scanner.token=_USES then
               begin
               parseusesclause(curr);
-              if not loadunits(curr,false) then
-                 curr.state:=ms_compiling_waitimpl;
+              if not loadunits(curr,false) or tmodule.ctask_fast_backtrack then
+                curr.state:=ms_compiling_waitimpl;
               { do not consume the semicolon yet, because the units in the uses clause
                 may not yet be loaded and conditional compilation expressions may
                 depend on symbols from those units }
@@ -1343,7 +1344,7 @@ type
         { Can we continue compiling ? }
         result:=curr.state<>ms_compiling_waitimpl;
         if result then
-          result:=proc_unit_implementation(curr)
+          result:=proc_unit_implementation(curr);
       end;
 
     function proc_unit(curr: tmodule):boolean;
@@ -1365,12 +1366,12 @@ type
          if curr.is_initial then
           Status.IsExe:=false;
 
-         unitname:=orgpattern;
+         unitname:=current_scanner.orgpattern;
          consume(_ID);
-         while token=_POINT do
+         while current_scanner.token=_POINT do
            begin
              consume(_POINT);
-             unitname:=unitname+'.'+orgpattern;
+             unitname:=unitname+'.'+current_scanner.orgpattern;
              consume(_ID);
            end;
 
@@ -1409,7 +1410,7 @@ type
             ) then
            Message2(unit_e_illegal_unit_name,curr.realmodulename^,s1^);
          if (curr.modulename^='SYSTEM') then
-          include(current_settings.moduleswitches,cs_compilesystem);
+           include(current_settings.moduleswitches,cs_compilesystem);
          dispose(s2);
          dispose(s1);
 
@@ -1468,7 +1469,7 @@ type
 
          { insert qualifier for the system unit (allows system.writeln) }
          if not(cs_compilesystem in current_settings.moduleswitches) and
-            (token=_USES) then
+            (current_scanner.token=_USES) then
            begin
              // We do this as late as possible.
              if Assigned(curr) then
@@ -1476,7 +1477,7 @@ type
              else
                current_namespacelist:=Nil;
              parseusesclause(curr);
-             load_ok:=loadunits(curr,true) and load_ok;
+             load_ok:=loadunits(curr,true) and load_ok and not tmodule.ctask_fast_backtrack;
              { has it been compiled at a higher level ?}
              if curr.state in [ms_compiled,ms_processed] then
                begin
@@ -1509,7 +1510,13 @@ type
            result:=parse_unit_interface_declarations(curr);
       end;
 
-    procedure finish_unit(module:tmodule);
+    procedure module_is_done(curr: tmodule);inline;
+      begin
+        dispose(pfinishstate(curr.finishstate));
+        curr.finishstate:=nil;
+      end;
+
+    function finish_compile_unit(module: tmodule): boolean;
 
       function is_assembler_generated:boolean;
       var
@@ -1527,27 +1534,22 @@ type
           end;
       end;
 
-      procedure module_is_done(curr: tmodule);inline;
-        begin
-          dispose(pfinishstate(curr.finishstate));
-          curr.finishstate:=nil;
-        end;
-
       var
 {$ifdef EXTDEBUG}
         store_crc,
 {$endif EXTDEBUG}
-        store_interface_crc,
-        store_indirect_crc: cardinal;
         force_init_final : boolean;
         init_procinfo,
         finalize_procinfo : tcgprocinfo;
-        i : longint;
         ag : boolean;
         finishstate : tfinishstate;
-        waitingmodule : tmodule;
+        old_module: tmodule;
       begin
+         result:=true;
          { curr is now module }
+
+         old_module:=current_module;
+         set_current_module(module);
 
          if not assigned(module.finishstate) then
            internalerror(2012091801);
@@ -1562,8 +1564,8 @@ type
          // This needs to be done before we generate the VMTs
          if (target_cpu=tsystemcpu.cpu_wasm32) then
            begin
-           add_synthetic_interface_classes_for_st(module.globalsymtable,false,true);
-           add_synthetic_interface_classes_for_st(module.localsymtable,true,true);
+             add_synthetic_interface_classes_for_st(module.globalsymtable,false,true);
+             add_synthetic_interface_classes_for_st(module.localsymtable,true,true);
            end;
 
          { generate construction functions for all attributes in the unit:
@@ -1691,10 +1693,12 @@ type
             Message1(unit_f_errors_in_unit,tostr(Errorcount));
             status.skip_error:=true;
             module_is_done(module);
+            module.state:=ms_moduleerror;
 {$ifdef DEBUG_NODE_XML}
             XMLFinalizeNodeFile('unit');
 {$endif DEBUG_NODE_XML}
-            exit;
+            set_current_module(old_module);
+            exit(false);
           end;
 
          { if an Objective-C module, generate rtti and module info }
@@ -1740,89 +1744,140 @@ type
            end;
 
          if ag then
-          begin
-            { create callframe info }
-            create_dwarf_frame;
-            { assemble }
-            create_objectfile(module);
-          end;
-
-         { Write out the ppufile after the object file has been created }
-         store_interface_crc:=module.interface_crc;
-         store_indirect_crc:=module.indirect_crc;
-{$ifdef EXTDEBUG}
-         store_crc:=module.crc;
-{$endif EXTDEBUG}
-         if (Errorcount=0) then
-           tppumodule(module).writeppu;
-
-         if not(cs_compilesystem in current_settings.moduleswitches) then
            begin
-             if store_interface_crc<>module.interface_crc then
-               Message1(unit_u_interface_crc_changed,module.ppufilename);
-             if store_indirect_crc<>module.indirect_crc then
-               Message1(unit_u_indirect_crc_changed,module.ppufilename);
+             { create callframe info }
+             create_dwarf_frame;
+             { assemble }
+             create_objectfile(module);
            end;
+
+        { remove all waits for this unit }
+        module.remove_all_waitsforthisunit;
+
+        { compute CRC }
+        if ErrorCount=0 then
+          begin
+          if not module.are_all_used_units_compiled then
+            begin
+              { Some used units are still compiling, so their CRCs can change.
+                Compute the final CRC of this module and wait.
+                Needed for compiling circular dependent units. }
+              {$IF defined(Debug_WaitCRC) or defined(Debug_FreeParseMem)}
+              writeln('finish_compile_unit ',module.realmodulename^,' waiting for used unit CRCs...');
+              {$ENDIF}
+              tppumodule(module).getppucrc;
+              module.crc_final:=true;
+              module.state:=ms_compiled_waitcrc;
+              set_current_module(old_module);
+              exit(false);
+            end;
+          end;
+        set_current_module(old_module);
+
+        result:=finish_unit(module);
+      end;
+
+    function finish_unit(module: tmodule): boolean;
+
+      var
 {$ifdef EXTDEBUG}
-         if not(cs_compilesystem in current_settings.moduleswitches) then
-           if (store_crc<>module.crc) then
-             Message1(unit_u_implementation_crc_changed,module.ppufilename);
+        store_crc,
+{$endif EXTDEBUG}
+        store_interface_crc,
+        store_indirect_crc : cardinal;
+{$ifdef debug_devirt}
+        i : longint;
+{$endif}
+        hstatus : TFPCHeapStatus;
+        old_module: tmodule;
+
+      begin
+        {$IF defined(Debug_WaitCRC) or defined(Debug_FreeParseMem)}
+        writeln('finish_unit ',module.realmodulename^,' write ppu and free mem...');
+        {$ENDIF}
+        result:=ErrorCount=0;
+
+        old_module:=current_module;
+        set_current_module(module);
+
+        { Write out the ppufile after the object file has been created }
+        store_interface_crc:=module.interface_crc;
+        store_indirect_crc:=module.indirect_crc;
+{$ifdef EXTDEBUG}
+        store_crc:=module.crc;
+{$endif EXTDEBUG}
+        if result then
+          tppumodule(module).writeppu;
+
+        if not(cs_compilesystem in current_settings.moduleswitches) then
+          begin
+            if store_interface_crc<>module.interface_crc then
+              Message1(unit_u_interface_crc_changed,module.ppufilename);
+            if store_indirect_crc<>module.indirect_crc then
+              Message1(unit_u_indirect_crc_changed,module.ppufilename);
+          end;
+{$ifdef EXTDEBUG}
+        if not(cs_compilesystem in current_settings.moduleswitches) then
+          if (store_crc<>module.crc) then
+            Message1(unit_u_implementation_crc_changed,module.ppufilename);
 {$endif EXTDEBUG}
 
-         { release unregistered defs/syms from the localsymtable }
-         free_unregistered_localsymtable_elements(module);
-         { release local symtables that are not needed anymore }
-         free_localsymtables(module.globalsymtable);
-         free_localsymtables(module.localsymtable);
+        { release unregistered defs/syms from the localsymtable }
+        free_unregistered_localsymtable_elements(module);
+        { release local symtables that are not needed anymore }
+        free_localsymtables(module.globalsymtable);
+        free_localsymtables(module.localsymtable);
 
-         { leave when we got an error }
-         if (Errorcount>0) and not status.skip_error then
+        { leave when we got an error }
+        if (Errorcount>0) and not status.skip_error then
           begin
             Message1(unit_f_errors_in_unit,tostr(Errorcount));
             status.skip_error:=true;
             module_is_done(module);
+            module.state := ms_moduleerror;
 {$ifdef DEBUG_NODE_XML}
             XMLFinalizeNodeFile('unit');
 {$endif DEBUG_NODE_XML}
+            set_current_module(old_module);
             exit;
           end;
 
 {$ifdef debug_devirt}
-         { print out all instantiated class/object types }
-         writeln('constructed object/class/classreftypes in ',module.realmodulename^);
-         for i := 0 to module.wpoinfo.createdobjtypes.count-1 do
-           begin
-             write('  ',tdef(module.wpoinfo.createdobjtypes[i]).GetTypeName);
-             case tdef(module.wpoinfo.createdobjtypes[i]).typ of
-               objectdef:
-                 case tobjectdef(module.wpoinfo.createdobjtypes[i]).objecttype of
-                   odt_object:
-                     writeln(' (object)');
-                   odt_class:
-                     writeln(' (class)');
-                   else
-                     internalerror(2008101103);
-                 end;
-               else
-                 internalerror(2008101104);
-             end;
-           end;
+        { print out all instantiated class/object types }
+        writeln('constructed object/class/classreftypes in ',module.realmodulename^);
+        for i := 0 to module.wpoinfo.createdobjtypes.count-1 do
+          begin
+            write('  ',tdef(module.wpoinfo.createdobjtypes[i]).GetTypeName);
+            case tdef(module.wpoinfo.createdobjtypes[i]).typ of
+              objectdef:
+                case tobjectdef(module.wpoinfo.createdobjtypes[i]).objecttype of
+                  odt_object:
+                    writeln(' (object)');
+                  odt_class:
+                    writeln(' (class)');
+                  else
+                    internalerror(2008101103);
+                end;
+              else
+                internalerror(2008101104);
+            end;
+          end;
 
-         for i := 0 to module.wpoinfo.createdclassrefobjtypes.count-1 do
-           begin
-             write('  Class Of ',tdef(module.wpoinfo.createdclassrefobjtypes[i]).GetTypeName);
-             case tdef(module.wpoinfo.createdclassrefobjtypes[i]).typ of
-               objectdef:
-                 case tobjectdef(module.wpoinfo.createdclassrefobjtypes[i]).objecttype of
-                   odt_class:
-                     writeln(' (classrefdef)');
-                   else
-                     internalerror(2008101105);
-                 end
-               else
-                 internalerror(2008101102);
-             end;
-           end;
+        for i := 0 to module.wpoinfo.createdclassrefobjtypes.count-1 do
+          begin
+            write('  Class Of ',tdef(module.wpoinfo.createdclassrefobjtypes[i]).GetTypeName);
+            case tdef(module.wpoinfo.createdclassrefobjtypes[i]).typ of
+              objectdef:
+                case tobjectdef(module.wpoinfo.createdclassrefobjtypes[i]).objecttype of
+                  odt_class:
+                    writeln(' (classrefdef)');
+                  else
+                    internalerror(2008101105);
+                end
+              else
+                internalerror(2008101102);
+            end;
+          end;
 {$endif debug_devirt}
 
         Message1(unit_u_finished_compiling,module.modulename^);
@@ -1830,17 +1885,22 @@ type
         module_is_done(module);
         module.end_of_parsing;
 
-        for i:=0 to module.waitingunits.count-1 do
-          begin
-            waitingmodule:=tmodule(module.waitingunits[i]);
-            waitingmodule.remove_from_waitingforunits(module);
-          end;
-
 {$ifdef DEBUG_NODE_XML}
         XMLFinalizeNodeFile('unit');
 {$endif DEBUG_NODE_XML}
-      end;
+        if ((status.verbosity and V_Status)<>0) then
+        begin
+          {$IF defined(Debug_FreeParseMem)}
+          writeln('finish_unit ',module.realmodulename^,' wrote ppu and freed mem.');
+          {$ENDIF}
+          hstatus:=GetFPCHeapStatus;
+          WriteLn(DStr(hstatus.CurrHeapUsed shr 10),'/',DStr(hstatus.CurrHeapSize shr 10),' Kb Used');
+        end;
 
+        module.state:=ms_compiled;
+
+        set_current_module(old_module);
+      end;
 
     function proc_package(curr: tmodule) : boolean;
       var
@@ -1897,12 +1957,12 @@ type
          { consume _PACKAGE word }
          consume(_ID);
 
-         module_name:=orgpattern;
+         module_name:=current_scanner.orgpattern;
          consume(_ID);
-         while token=_POINT do
+         while current_scanner.token=_POINT do
            begin
              consume(_POINT);
-             module_name:=module_name+'.'+orgpattern;
+             module_name:=module_name+'.'+current_scanner.orgpattern;
              consume(_ID);
            end;
 
@@ -1934,39 +1994,39 @@ type
 
          { insert after the unit symbol tables the static symbol table }
          { of the program                                             }
-         curr.localsymtable:=tstaticsymtable.create(curr.modulename^,curr.moduleid);
+         curr.localsymtable:=tstaticsymtable.create(curr.realmodulename^,curr.moduleid);
 
          { ensure that no packages are picked up from the options }
          packagelist.clear;
 
-         // There should always be a requires, except for the system package. So we load here
+         { There should always be a requires, except for the system package. So we load here }
          if Assigned(curr) then
            curr.Loadlocalnamespacelist
          else
            current_namespacelist:=Nil;
 
          {Read the packages used by the package we compile.}
-         if (token=_ID) and (idtoken=_REQUIRES) then
+         if (current_scanner.token=_ID) and (current_scanner.idtoken=_REQUIRES) then
            begin
              { consume _REQUIRES word }
              consume(_ID);
              while true do
                begin
-                 if token=_ID then
+                 if current_scanner.token=_ID then
                    begin
-                     module_name:=orgpattern;
+                     module_name:=current_scanner.orgpattern;
                      consume(_ID);
-                     while token=_POINT do
+                     while current_scanner.token=_POINT do
                        begin
                          consume(_POINT);
-                         module_name:=module_name+'.'+orgpattern;
+                         module_name:=module_name+'.'+current_scanner.orgpattern;
                          consume(_ID);
                        end;
                      add_package(module_name,false,true);
                    end
                  else
                    consume(_ID);
-                 if token=_COMMA then
+                 if current_scanner.token=_COMMA then
                    consume(_COMMA)
                  else
                    break;
@@ -1991,21 +2051,21 @@ type
                  def_system_macro('FPC_HAS_FEATURE_'+featurestr[feature]);
            end;
 
-         {Load the units used by the program we compile.}
-         if (token=_ID) and (idtoken=_CONTAINS) then
+         { Load the units used by the program we compile. }
+         if (current_scanner.token=_ID) and (current_scanner.idtoken=_CONTAINS) then
            begin
              { consume _CONTAINS word }
              consume(_ID);
              while true do
                begin
-                 if token=_ID then
+                 if current_scanner.token=_ID then
                    begin
-                     module_name:=orgpattern;
+                     module_name:=current_scanner.orgpattern;
                      consume(_ID);
-                     while token=_POINT do
+                     while current_scanner.token=_POINT do
                        begin
                          consume(_POINT);
-                         module_name:=module_name+'.'+orgpattern;
+                         module_name:=module_name+'.'+current_scanner.orgpattern;
                          consume(_ID);
                        end;
                      hp:=AddUnit(curr,module_name);
@@ -2017,7 +2077,7 @@ type
                    end
                  else
                    consume(_ID);
-                 if token=_COMMA then
+                 if current_scanner.token=_COMMA then
                    consume(_COMMA)
                  else break;
                end;
@@ -2121,11 +2181,13 @@ type
            begin
              Message1(unit_f_errors_in_unit,tostr(Errorcount));
              status.skip_error:=true;
+             curr.state:=ms_moduleerror;
              pkg.free;
-             exit;
+             pkg := nil;
+             exit(false);
            end;
 
-         { remove all unused units, this happends when units are removed
+         { remove all unused units, this happens when units are removed
            from the uses clause in the source and the ppu was already being loaded }
          hp:=tmodule(loaded_units.first);
          while assigned(hp) do
@@ -2202,15 +2264,17 @@ type
           begin
             Message1(unit_f_errors_in_unit,tostr(Errorcount));
             status.skip_error:=true;
+            curr.state:=ms_moduleerror;
             pkg.free;
-            exit;
+            pkg := nil;
+            exit(false);
           end;
 
          if (not curr.is_unit) then
            begin
              { we add all loaded units that are not part of a package to the
                package; this includes units in the "contains" section as well
-               as implicitely imported ones }
+               as implicitly imported ones }
              hp:=tmodule(loaded_units.first);
              while assigned(hp) do
               begin
@@ -2262,6 +2326,7 @@ type
                       begin
                         loaded_units.remove(hp);
                         hp.free;
+                        hp := nil;
                       end;
                     hp:=hp2;
                   end;
@@ -2276,9 +2341,12 @@ type
               begin
                 Message1(unit_f_errors_in_unit,tostr(Errorcount));
                 status.skip_error:=true;
+                curr.state:=ms_moduleerror;
+                result:=false;
               end;
 
              pkg.free;
+             pkg := nil;
           end;
       end;
 
@@ -2300,6 +2368,9 @@ type
               linker.AddModuleFiles(sysinitmod);
             { Does any unit use checkpointer function }
             program_uses_checkpointer:=false;
+            { before freeing modules, free used_units }
+            curr.used_units.free;
+            curr.used_units:=TLinkedList.Create;
             { insert all .o files from all loaded units and
               unload the units, we don't need them anymore.
               Keep the curr because that is still needed }
@@ -2320,6 +2391,7 @@ type
                  begin
                    loaded_units.remove(hp);
                    hp.free;
+                   hp := nil;
                  end;
                hp:=hp2;
              end;
@@ -2348,7 +2420,6 @@ type
       var
         sysinitmod, hp,hp2 : tmodule;
         resources_used : boolean;
-
 
       begin
         sysinitmod:=nil;
@@ -2381,6 +2452,7 @@ type
           begin
             Message1(unit_f_errors_in_unit,tostr(Errorcount));
             status.skip_error:=true;
+            curr.state:=ms_moduleerror;
             exit;
           end;
 
@@ -2494,6 +2566,7 @@ type
           begin
             Message1(unit_f_errors_in_unit,tostr(Errorcount));
             status.skip_error:=true;
+            curr.state:=ms_moduleerror;
             exit;
           end;
         { create the executable when we are at level 1 }
@@ -2508,7 +2581,7 @@ type
            status.skip_error:=true;
          end;
 
-        curr.state:=ms_processed;
+        curr.state:=ms_compiled;
 
       end;
 
@@ -2561,7 +2634,7 @@ type
         { create whole program optimisation information }
         curr.wpoinfo:=tunitwpoinfo.create;
 
-        { The program intialization needs an alias, so it can be called
+        { The program initialization needs an alias, so it can be called
           from the bootstrap code.}
         if islibrary then
          begin
@@ -2574,6 +2647,7 @@ type
                call_through_new_name(main_procinfo.procdef,target_info.cprefix+'FPC_LIBMAIN');
                initpd:=main_procinfo.procdef;
                main_procinfo.free;
+               main_procinfo := nil;
              end;
 
            main_procinfo:=create_main_proc(make_mangledname('',curr.localsymtable,mainaliasname),potype_proginit,curr.localsymtable);
@@ -2613,7 +2687,7 @@ type
         curr.mainfilepos:=main_procinfo.entrypos;
 
         { finalize? }
-        if token=_FINALIZATION then
+        if current_scanner.token=_FINALIZATION then
           begin
              { Parse the finalize }
              finalize_procinfo:=create_main_proc(make_mangledname('',curr.localsymtable,'finalize$'),potype_unitfinalize,curr.localsymtable);
@@ -2631,7 +2705,7 @@ type
           add_synthetic_interface_classes_for_st(curr.localsymtable,true,true);
 
         { generate construction functions for all attributes in the program }
-        { before write_vmts that asume attributes for methods is ready }
+        { before write_vmts that assume attributes for methods is ready }
         generate_attr_constrs(curr.used_rtti_attrs);
 
         { Generate VMTs }
@@ -2724,12 +2798,12 @@ type
 
       begin
         consume(_LIBRARY);
-        program_name:=orgpattern;
+        program_name:=current_scanner.orgpattern;
         consume(_ID);
-        while token=_POINT do
+        while current_scanner.token=_POINT do
          begin
            consume(_POINT);
-           program_name:=program_name+'.'+orgpattern;
+           program_name:=program_name+'.'+current_scanner.orgpattern;
            consume(_ID);
          end;
         curr.setmodulename(program_name);
@@ -2768,31 +2842,31 @@ type
         begin
           sc:=nil;
           consume(_PROGRAM);
-          program_name:=orgpattern;
+          program_name:=current_scanner.orgpattern;
           consume(_ID);
-          while token=_POINT do
+          while current_scanner.token=_POINT do
             begin
               consume(_POINT);
-              program_name:=program_name+'.'+orgpattern;
+              program_name:=program_name+'.'+current_scanner.orgpattern;
               consume(_ID);
             end;
           curr.setmodulename(program_name);
           if (target_info.system in systems_unit_program_exports) then
             exportlib.preparelib(program_name);
-          if token=_LKLAMMER then
+          if current_scanner.token=_LKLAMMER then
             begin
                consume(_LKLAMMER);
                paramnum:=1;
                repeat
                  if m_isolike_program_para in current_settings.modeswitches then
                    begin
-                     if (pattern<>'INPUT') and (pattern<>'OUTPUT') then
+                     if (current_scanner.pattern<>'INPUT') and (current_scanner.pattern<>'OUTPUT') then
                        begin
                          { the symtablestack is not setup here, so text must be created later on }
                          Setlength(sc,length(sc)+1);
                          with sc[high(sc)] do
                            begin
-                             name:=pattern;
+                             name:=current_scanner.pattern;
                              nr:=paramnum;
                            end;
                          inc(paramnum);
@@ -2874,7 +2948,7 @@ type
              proc_library_header(curr);
              consume_semicolon_after_loaded:=true;
            end
-         else if token=_PROGRAM then
+         else if current_scanner.token=_PROGRAM then
            { is there an program head ? }
            begin
              proc_program_header(curr,sc);
@@ -2903,7 +2977,7 @@ type
 
          { insert after the unit symbol tables the static symbol table
            of the program                                              }
-         curr.localsymtable:=tstaticsymtable.create(curr.modulename^,curr.moduleid);
+         curr.localsymtable:=tstaticsymtable.create(curr.realmodulename^,curr.moduleid);
 
          { load system unit }
          load_ok:=loadsystemunit(curr);
@@ -2914,7 +2988,7 @@ type
 
          { global switches are read, so further changes aren't allowed }
          curr.in_global:=false;
-  
+
          { system unit is loaded, now insert feature defines }
          for feature:=low(tfeature) to high(tfeature) do
            if feature in features then
@@ -2940,7 +3014,7 @@ type
            end;
 
          { Load the units used by the program we compile. }
-         if token=_USES then
+         if current_scanner.token=_USES then
            begin
              // We can do this here: if there is no uses then the namespace directive makes no sense.
              if Assigned(curr) then
@@ -2951,12 +3025,16 @@ type
              load_ok:=loadunits(curr,false) and load_ok;
              curr.consume_semicolon_after_uses:=true;
            end
-         else
+         else begin
            curr.consume_semicolon_after_uses:=false;
+           if tmodule.ctask_fast_backtrack then
+             load_ok:=false; { some used units are not fully compiled }
+         end;
 
+         if curr.is_initial then
+           load_ok:=false; { delay program, so ctask can finish all units }
          if not load_ok then
            curr.state:=ms_compiling_wait;
-
 
          { Can we continue compiling ? }
 

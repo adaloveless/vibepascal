@@ -274,7 +274,7 @@ type
      LPDRVCALLBACK = DRVCALLBACK;
      PDRVCALLBACK = DRVCALLBACK;
 
-{* CALLBACK_MSGQUEUE - client process sets up a MsgQueuue that receives WAVEMSG structures.
+{* CALLBACK_MSGQUEUE - client process sets up a MsgQueue that receives WAVEMSG structures.
 *  Note that structure fields are identical to arguments to a callback function
 *  but we put the message field first to allow for multi-functional message queues.
 *}
@@ -319,35 +319,35 @@ function sndAlias(ch0:AnsiChar; ch1:AnsiChar):DWORD;
 const
       SND_ALIAS_SYSTEMASTERISK        = SND_ALIAS_START+
                                         (DWORD(AnsiChar('S')) or
-                                         DWORD(AnsiChar('*')));
+                                         (DWORD(AnsiChar('*')) shl 8));
 
       SND_ALIAS_SYSTEMQUESTION        = SND_ALIAS_START+
                                         (DWORD(AnsiChar('S')) or
-                                         DWORD(AnsiChar('?')));
+                                         (DWORD(AnsiChar('?')) shl 8));
 
       SND_ALIAS_SYSTEMHAND            = SND_ALIAS_START+
                                         (DWORD(AnsiChar('S')) or
-                                         DWORD(AnsiChar('H')));
+                                         (DWORD(AnsiChar('H')) shl 8));
 
       SND_ALIAS_SYSTEMEXIT            = SND_ALIAS_START+
                                         (DWORD(AnsiChar('S')) or
-                                         DWORD(AnsiChar('E')));
+                                         (DWORD(AnsiChar('E')) shl 8));
 
       SND_ALIAS_SYSTEMSTART           = SND_ALIAS_START+
                                         (DWORD(AnsiChar('S')) or
-                                         DWORD(AnsiChar('S')));
+                                         (DWORD(AnsiChar('S')) shl 8));
 
       SND_ALIAS_SYSTEMWELCOME         = SND_ALIAS_START+
                                         (DWORD(AnsiChar('S')) or
-                                         DWORD(AnsiChar('W')));
+                                         (DWORD(AnsiChar('W')) shl 8));
 
       SND_ALIAS_SYSTEMEXCLAMATION     = SND_ALIAS_START+
                                         (DWORD(AnsiChar('S')) or
-                                         DWORD(AnsiChar('!')));
+                                         (DWORD(AnsiChar('!')) shl 8));
 
       SND_ALIAS_SYSTEMDEFAULT         = SND_ALIAS_START+
                                         (DWORD(AnsiChar('S')) or
-                                         DWORD(AnsiChar('D')));
+                                         (DWORD(AnsiChar('D')) shl 8));
 
       SND_ALIAS      = $00010000;   // name is a WIN.INI [sounds] entry
       SND_FILENAME   = $00020000;   // name is a file name
@@ -715,7 +715,7 @@ type
 
 const
       MIDIPATCHSIZE   = 128;
-      
+
 type
      PATCHARRAY = array[0..MIDIPATCHSIZE-1] of word;
      LPPATCHARRAY = ^PATCHARRAY;
@@ -1166,7 +1166,7 @@ function midiInMessage(hmi:HMIDIIN; uMsg:UINT; dw1:DWORD; dw2:DWORD):MMRESULT; e
 function midiInMessage(hmi:HMIDIIN; uMsg:UINT; dw1:DWORD; dw2:DWORD):DWORD; external MIDIDLL name 'midiInMessage'; // index
 {$ENDIF} // _WIN32
 
-{$ENDIF} // MMNOMIDI 
+{$ENDIF} // MMNOMIDI
 
 
 
@@ -1359,7 +1359,7 @@ type
     PMIXERCONTROL = ^tMIXERCONTROL;
     LPMIXERCONTROL = ^tMIXERCONTROL;
 
-const    
+const
 //* */
 //*  MIXERCONTROL.fdwControl */
 //* */
@@ -1545,7 +1545,7 @@ const
 
       MIXER_SETCONTROLDETAILSF_QUERYMASK  = $0000000F;
 
-{$ENDIF} // MMNOMIXER 
+{$ENDIF} // MMNOMIXER
 
 
 {$IFNDEF MMNOTIMER}
@@ -1713,7 +1713,7 @@ const
       MMIO_READ       = $00000000;      //* open file for reading only */
       MMIO_WRITE      = $00000001;      //* open file for writing only */
       MMIO_READWRITE  = $00000002;      //* open file for reading and writing */
-      
+
 //* various MMIO flags */
       MMIO_FHOPEN             = $0010;  //* mmioClose: keep file handle open */
       MMIO_EMPTYBUF           = $0010;  //* mmioFlush: empty the I/O buffer */

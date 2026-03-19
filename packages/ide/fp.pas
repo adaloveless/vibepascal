@@ -172,7 +172,7 @@ begin
             else
             if (copy(Param,3,1)='-') then
               StartupOptions:=StartupOptions and not soHeapMonitor;
-            OverrideLastDirOption:=true;
+            OverrideHeapMonitor:=true;
           end else
 {$ifdef go32v2}
         if (UpcaseStr(Param)='NOLFN') or (UpcaseStr(Param)='N') then
@@ -196,7 +196,7 @@ begin
             ShowReadme:=true;
           end else
         case Upcase(Param[1]) of
-          'C' : { custom config file (BP compatiblity) }
+          'C' : { custom config file (BP compatibility) }
            if BeforeINI then
             begin
               delete(param,1,1); // delete C
@@ -225,6 +225,7 @@ begin
               else
               if (Param='-') then
                 StartupOptions:=StartupOptions and (not soReturnToLastDir);
+              OverrideLastDirOption:=true;
             end;
           'S' :
              if Length(Param)=1 then
@@ -368,10 +369,21 @@ const bullet='*';
 const bullet=#254;
 {$endif}
 
+{ For DOS in program active current directory is actual system current }
+{ directory. Have to save and restore on exit.                         }
+{$ifdef go32v2}
+var
+  DirectoryInvokeFpFrom : String;
+  ChDirRes : Word;
+{$endif}
+
 var
   _GDBVersion: String;
 
 BEGIN
+{$ifdef go32v2}
+  GetDir(0,DirectoryInvokeFpFrom);  {save for restore on exit}
+{$endif}
 {$IFDEF HasSignal}
   EnableCatchSignals;
 {$ENDIF}
@@ -427,6 +439,8 @@ BEGIN
   writeln(stderr,'If program stops, try again using -novesa option');
   flush(stderr);
   InitVESAScreenModes;
+  if RegisteredVesaVideoModeCount > 0 then
+    SetVESAVideoDriver;
 {$endif}
   InitRedir;
 {$ifndef NODEBUG}
@@ -470,7 +484,7 @@ BEGIN
   { why are the screen contents parsed at startup? Gabor
     to be able to find location of error in last compilation
     from command line PM }
-  ParseUserScreen;
+  {ParseUserScreen;  comment out, it takes a lot of time and serves only to very particular use case (M) }
 
 {$IFDEF HASAMIGA}
   SetAmigaWindowTitle;
@@ -480,6 +494,7 @@ BEGIN
   IDEApp.Update;
   IDEApp.UpdateMode;
   IDEApp.UpdateTarget;
+  IDEApp.UpdateClockAndHeap;
 
   ProcessParams(false);
 
@@ -613,6 +628,15 @@ BEGIN
 {$if defined(windows)}
   SetConsoleMode(GetStdHandle(cardinal(Std_Input_Handle)),StartupConsoleMode);
 {$endif defined(windows)}
+{$ifdef go32v2}
+  {$push}
+  {$i-}
+  ChDir(DirectoryInvokeFpFrom); {restore active directory we invoke fp from }
+  ChDirRes:=IOResult;
+  if (ChDirRes<>0) then
+    writeln('Failed to restore start up directory ',DirectoryInvokeFpFrom,' error=',ChDirRes);
+  {$pop}
+{$endif}
   StreamError:=nil;
 {$ifdef DEBUG}
   if CloseImmediately then

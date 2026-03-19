@@ -89,7 +89,7 @@ interface
          function  rtti_mangledname(rt:trttitype):TSymStr;virtual;abstract;
          function  OwnerHierarchyName: string; virtual; abstract;
          function  OwnerHierarchyPrettyName: string; virtual; abstract;
-         function  fullownerhierarchyname(skipprocparams:boolean):TSymStr;virtual;abstract;
+         function  fullownerhierarchyname(skipprocparams:boolean;use_pretty : boolean):TSymStr;virtual;abstract;
          function  unique_id_str: string;
          function  size:asizeint;virtual;abstract;
          function  packedbitsize:asizeint;virtual;
@@ -418,7 +418,7 @@ implementation
 
     function tdef.fulltypename:string;
       begin
-        result:=fullownerhierarchyname(false);
+        result:=fullownerhierarchyname(false,false);
         if assigned(typesym) and
            not(typ in [procvardef,procdef]) and
            (typesym.realname[1]<>'$') then
@@ -535,7 +535,7 @@ implementation
           origowner:=origowner.defowner.owner;
         { if the def is in an exceptionsymtable, we can't create a reusable
           def because the original one will be freed when the (always
-          temprary) exceptionsymtable is freed }
+          temporary) exceptionsymtable is freed }
         if origowner.symtabletype=exceptsymtable then
           internalerror(2015111701)
         else if origowner.symtabletype=localsymtable then
@@ -626,8 +626,8 @@ implementation
     destructor  Tsym.destroy;
       begin
         stringdispose(deprecatedmsg);
-        if assigned(RefList) then
-          RefList.Free;
+        RefList.Free;
+        RefList := nil;
         inherited Destroy;
       end;
 
@@ -905,15 +905,28 @@ implementation
 
 
     procedure tderef.build(s:TObject);
+
+       procedure do_internal_error(i : integer);noreturn;
+       // local proc so we do not have an implicit try..finally in the build proc.
+       var
+         msg : ansistring;
+       begin
+         if assigned(s) then
+           msg:=S.ToString
+         else
+           msg:='Nil object';
+         internalerror(i,'Cannot build:'+msg);
+       end;
+
       var
         len  : byte;
         st   : TSymtable;
         data : array[0..255] of byte;
         idx : word;
+
       begin
         { skip length byte }
         len:=1;
-
         if assigned(s) then
          begin
 { TODO: ugly hack}
@@ -922,7 +935,7 @@ implementation
                { if it has been registered but it wasn't put in a symbol table,
                  this symbol shouldn't be written to a ppu }
                if tsym(s).SymId=symid_registered_nost then
-                 Internalerror(2015102504);
+                 do_internal_error(2015102504);
                if not tsym(s).registered then
                  tsym(s).register_sym;
                st:=FindUnitSymtable(tsym(s).owner)
@@ -931,15 +944,16 @@ implementation
              begin
                { same as above }
                if tdef(s).defid=defid_registered_nost then
-                 Internalerror(2015102501);
+                 do_internal_error(2015102501);
                if tdef(s).typ=errordef then
-                 Internalerror(2024011501);
+                 do_internal_error(2024011501);
                if not tdef(s).registered then
                  tdef(s).register_def;
                st:=FindUnitSymtable(tdef(s).owner);
              end
            else
-             internalerror(2016090204);
+             // Unknown object type
+             do_internal_error(2016090204);
            if not st.iscurrentunit then
              begin
                { register that the unit is needed for resolving }
@@ -1099,7 +1113,7 @@ implementation
          2 : p.column:=(getbyte shl 16) or getword;
          3 : p.column:=getlongint;
         end;
-        p.moduleindex:=current_module.unit_index;
+        p.moduleindex:=current_module.moduleid;
       end;
 
 
@@ -1271,7 +1285,7 @@ implementation
           putlongint(d.dataidx)
         else
 {$endif}
-        if d.dataidx=-1 then
+        if (d.dataidx=-1) and not crc_only then
           internalerror(2019022201)
         else
           putlongint(d.dataidx);
@@ -1330,10 +1344,15 @@ initialization
 
 finalization
   memmanglednames.free;
+  memmanglednames := nil;
   memprocpara.free;
+  memprocpara := nil;
   memprocparast.free;
+  memprocparast := nil;
   memproclocalst.free;
+  memproclocalst := nil;
   memprocnodetree.free;
+  memprocnodetree := nil;
 {$endif MEMDEBUG}
 
 end.

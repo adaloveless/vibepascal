@@ -239,7 +239,10 @@ begin
   jpeg_read_header(@FInfo, TRUE);
 
   FWidth := FInfo.image_width;
-  FHeight := FInfo.image_height;  
+  FHeight := FInfo.image_height;
+
+  if (FWidth <= 0) or (FHeight <= 0) or (FWidth > 65535) or (FHeight > 65535) then
+    raise FPImageException.Create('Invalid JPEG dimensions');
 
   if FInfo.saw_EXIF_marker and (FInfo.orientation >= Ord(Low(TExifOrientation))) and (FInfo.orientation <= Ord(High(TExifOrientation))) then
     FOrientation := TExifOrientation(FInfo.orientation)
@@ -389,7 +392,7 @@ var
       JCS_GRAYSCALE :
         for x:=0 to FInfo.output_width-1 do
         begin
-          c:= SampRow^[x] shl 8;
+          c:= SampRow^[x] * 257;
           Color.Red:=c;
           Color.Green:=c;
           Color.Blue:=c;
@@ -423,9 +426,9 @@ var
 
           Color.Blue :=  (FInfo.sample_range_limit^[yy + cconvert^.Cb_b_tab^[cb]]);
 
-          Color.Red:=Color.Red shl 8;
-          Color.Green:=Color.Green shl 8;
-          Color.Blue:=Color.Blue shl 8;
+          Color.Red:=Color.Red * 257;
+          Color.Green:=Color.Green * 257;
+          Color.Blue:=Color.Blue * 257;
 
           SetPixel(x, y, Color);
         end;
@@ -433,12 +436,13 @@ var
         for x:=0 to FInfo.output_width-1 do
           SetPixel(x, y, CMYKToRGB(SampRow^[x*4+0], SampRow^[x*4+1], SampRow^[x*4+2], SampRow^[x*4+3]));
       else
-        for x:=0 to FInfo.output_width-1 do begin
-          Color.Red:=SampRow^[x*3+0] shl 8;
-          Color.Green:=SampRow^[x*3+1] shl 8;
-          Color.Blue:=SampRow^[x*3+2] shl 8;
-          SetPixel(x, y, Color);
-        end;
+        if (FInfo.out_color_components = 3) then 
+          for x:=0 to FInfo.output_width-1 do begin
+            Color.Red:=SampRow^[x*3+0] * 257;
+            Color.Green:=SampRow^[x*3+1] * 257;
+            Color.Blue:=SampRow^[x*3+2] * 257;
+            SetPixel(x, y, Color);
+          end;
       end;
 
       inc(y);
@@ -456,7 +460,7 @@ var
       ASize.Width := ASize.Height;
       ASize.Height := iInt;
     end;
-  end;  
+  end;
 
 begin
   InitReadingPixels;
@@ -468,7 +472,7 @@ begin
   jpeg_start_decompress(@FInfo);
 
   LOutputSize := Size(FInfo.output_width, FInfo.output_height);
-  TranslateSize(LOutputSize);  
+  TranslateSize(LOutputSize);
   FWidth := LOutputSize.Width;
   FHeight := LOutputSize.Height;
   Img.SetSize(FWidth, FHeight);
@@ -651,9 +655,9 @@ end;
 
 function TFPReaderJPEG.CMYKToRGB(const C, M, Y, K: Byte): TFPColor;
 begin
-  Result.Red := ((C*K) div 255) shl 8;
-  Result.Green := ((M*K) div 255) shl 8;
-  Result.Blue := ((Y*K) div 255) shl 8;
+  Result.Red := ((C*K) div 255) * 257;
+  Result.Green := ((M*K) div 255) * 257;
+  Result.Blue := ((Y*K) div 255) * 257;
   Result.Alpha := alphaOpaque;
 end;
 

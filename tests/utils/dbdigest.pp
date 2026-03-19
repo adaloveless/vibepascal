@@ -2,7 +2,7 @@
     This file is part of the Free Pascal test suite.
     Copyright (c) 2002 by the Free Pascal development team.
 
-    This program inserts the last tests run 
+    This program inserts the last tests run
     into TESTSUITE database.
 
     See the file COPYING.FPC, included in this distribution,
@@ -343,7 +343,7 @@ begin
   Writeln('   --svncompilerrevision=REV      set revision of used compiler');
   Writeln('   --svntestsrevision=REV         set revision of testsuite files');
   Writeln('   --svnrtlrevision=REV           set revision of RTL');
-  Writeln('   --svnpackagesrevision=REV      set revison of packages');
+  Writeln('   --svnpackagesrevision=REV      set revision of packages');
   Writeln('');
   Writeln('If -T is specified, no test run options may be specified');
   Writeln('');
@@ -386,7 +386,7 @@ function TDBDigestApplication.ProcessCommandLine(var aConfig: TDigestConfig; var
       Result[1+I]:=S[I];
       if (S[I]<>'verbose') and (S[I]<>'sql') then
         Result[1+I]:=Result[1+I]+':';
-      end;  
+      end;
   end;
 
 var

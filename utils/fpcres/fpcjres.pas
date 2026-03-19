@@ -15,7 +15,7 @@
 
 {
   Java's internal resource file handling system is based on simply loading
-  files from withing the package name space. We reserve the namespace
+  files from within the package name space. We reserve the namespace
   org.freepascal.rawresources for this purpose.
 
   This program creates a jar file (= zip file) containing all specified files.
@@ -82,10 +82,10 @@ const
   SNoInputFiles = 'No input files';
   SNoOutputFile = 'No output file name specified';
   SCannotReadConfFile ='Can''t read config file ''%s''';
-  
+
   SCantOpenFile = 'Can''t open file ''%s''';
   SUnknownInputFormat = 'No known file format detected for file ''%s''';
-  
+
   SCantCreateDirHier = 'Can''t create directory hierarchy ''%s''';
   SCantCreateFile = 'Can''t create file ''%s''';
 

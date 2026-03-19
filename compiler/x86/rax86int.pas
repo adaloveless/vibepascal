@@ -162,6 +162,8 @@ Unit Rax86int;
         'LOW','OFFSET','SIZEOF','VMTOFFSET','SEG','TYPE','PTR','MOD','SHL','SHR','NOT','AND',
         'OR','XOR','WRT','GOTPCREL');
 
+      high_priority_tokens: set of tasmtoken = [AS_STAR,AS_SLASH,AS_MOD,AS_SHL,AS_SHR,AS_NOT,AS_AND,AS_OR,AS_XOR];
+
       token2str : array[tasmtoken] of string[10] = (
         '','Label','LLabel','String','Integer',
         ',','[',']','(',
@@ -275,7 +277,7 @@ Unit Rax86int;
       begin
         is_register:=false;
         actasmregister:=masm_regnum_search(lower(s));
-        { don't acceps "flags" as register name in an instruction }
+        { don't accept "flags" as register name in an instruction }
         if (getsupreg(actasmregister)=RS_DEFAULTFLAGS) and (getregtype(actasmregister)=getregtype(NR_DEFAULTFLAGS)) then
           actasmregister:=NR_NO;
         if actasmregister<>NR_NO then
@@ -312,7 +314,7 @@ Unit Rax86int;
       begin
         actoperextention := '';
 
-        c:=scanner.c;
+        c:=current_scanner.c;
         { save old token and reset new token }
         prevasmtoken:=actasmtoken;
         actasmtoken:=AS_NONE;
@@ -403,7 +405,7 @@ Unit Rax86int;
         else { else firsttoken }
          begin
            case c of
-             '@' : { possiblities : - local label reference , such as in jmp @local1 }
+             '@' : { possibilities : - local label reference , such as in jmp @local1}
                    {                - @Result, @Code or @Data special variables.     }
                begin
                  actasmpattern:=c;
@@ -1283,6 +1285,7 @@ Unit Rax86int;
         sym : tsym;
         srsymtable : TSymtable;
         hastypecast : boolean;
+	stop_at_plus_minus: boolean;
       Begin
         { reset }
         value:=0;
@@ -1299,6 +1302,7 @@ Unit Rax86int;
         parenlevel:=0;
         sym:=nil;
         needvmtofs:=FALSE;
+	stop_at_plus_minus:=(prevasmtoken in high_priority_tokens);
         Repeat
           { Support ugly delphi constructs like: [ECX].1+2[EDX] }
           if (cseif_isref in in_flags) and (actasmtoken=AS_LBRACKET) then
@@ -1374,6 +1378,8 @@ Unit Rax86int;
               end;
             AS_PLUS:
               Begin
+                if (parenlevel=0) and stop_at_plus_minus then
+                 break;
                 Consume(AS_PLUS);
                 if (cseif_isref in in_flags) and ((actasmtoken=AS_REGISTER) or (actasmtoken=AS_LBRACKET)) then
                  break;
@@ -1381,6 +1387,8 @@ Unit Rax86int;
               end;
             AS_MINUS:
               Begin
+                if (parenlevel=0) and stop_at_plus_minus then
+                 break;
                 Consume(AS_MINUS);
                 expr:=expr + '-';
               end;
@@ -2834,7 +2842,7 @@ Unit Rax86int;
               Message1(asmr_e_invalid_override_and_opcode,actasmpattern);
           end;
         { pushf/popf/pusha/popa have to default to 16 bit in Intel mode
-          (Intel manual and Delphi-compatbile) -- setting the opsize for
+          (Intel manual and Delphi-compatible) -- setting the opsize for
           these instructions doesn't change anything in the internal assember,
           so change the opcode }
         if (instr.opcode=A_POPF) then
@@ -3202,7 +3210,7 @@ Unit Rax86int;
       inexpression:=FALSE;
       firsttoken:=TRUE;
      { sets up all opcode and register tables in uppercase
-       done in the construtor now
+       done in the constructor now
       if not _asmsorted then
        Begin
          SetupTables;

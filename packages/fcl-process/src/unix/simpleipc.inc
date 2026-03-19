@@ -49,7 +49,7 @@ Type
     FFileName: String;
     FStream: TFileStream;
   Public
-    Constructor Create(AOWner : TSimpleIPCClient); override;
+    Constructor Create(aOwner : TSimpleIPCClient); override;
     Procedure Connect; override;
     Procedure Disconnect; override;
     Procedure SendMessage(MsgType : TMessageType; AStream : TStream); override;
@@ -62,14 +62,14 @@ Type
 implementation
 {$endif}
 
-constructor TPipeClientComm.Create(AOWner: TSimpleIPCClient);
+constructor TPipeClientComm.Create(aOwner: TSimpleIPCClient);
 begin
-  inherited Create(AOWner);
+  inherited Create(aOwner);
   FFileName:=Owner.ServerID;
   If (Owner.ServerInstance<>'') then
     FFileName:=FFileName+'-'+Owner.ServerInstance;
   if FFileName[1]<>'/' then
-    FFileName:=GetTempDir(true)+FFileName;
+    FFileName:=GetTempDir(aOwner.SystemGlobal)+FFileName;
 end;
 
 
@@ -77,7 +77,7 @@ procedure TPipeClientComm.Connect;
 begin
   If Not ServerRunning then
     DoError(SErrServerNotActive,[Owner.ServerID]);
-  // Use the sharedenynone line to allow more then one client 
+  // Use the sharedenynone line to allow more then one client
   // communicating with one server at the same time
   // see also mantis 15219
   FStream:=TFileStream.Create(FFileName,fmOpenWrite+fmShareDenyNone);
@@ -109,7 +109,7 @@ begin
   Result:=FileExists(FFileName);
   // it's possible to have a stale file that is not open for reading which will
   // cause fpOpen to hang/block later when .Active is set to true while it
-  // wait's for the pipe to be opened on the other end
+  // waits for the pipe to be opened on the other end
   if Result then
   begin
     // O_WRONLY | O_NONBLOCK causes fpOpen to return -1 if the file is not open for reading
@@ -155,10 +155,10 @@ constructor TPipeServerComm.Create(AOWner: TSimpleIPCServer);
 begin
   inherited Create(AOWner);
   FFileName:=Owner.ServerID;
-  If Not Owner.Global then
+  If not Owner.Global then
     FFileName:=FFileName+'-'+IntToStr(fpGetPID);
   if FFileName[1]<>'/' then
-    FFileName:=GetTempDir(Owner.Global)+FFileName;
+    FFileName:=GetTempDir(Owner.SystemGlobal)+FFileName;
 end;
 
 
@@ -167,12 +167,14 @@ procedure TPipeServerComm.StartServer;
 const
   PrivateRights = S_IRUSR or S_IWUSR;
   GlobalRights  = PrivateRights or S_IRGRP or S_IWGRP or S_IROTH or S_IWOTH;
-  Rights : Array [Boolean] of Integer = (PrivateRights,GlobalRights);  
-    
+  Rights : Array [Boolean] of Integer = (PrivateRights,GlobalRights);
+
 begin
   If not FileExists(FFileName) then
     If (fpmkFifo(FFileName,438)<>0) then
       DoError(SErrFailedToCreatePipe,[FFileName]);
+  if not Owner.Global then
+    fpChmod(FFileName,&600);
   FStream:=TFileStream.Create(FFileName,fmOpenReadWrite+fmShareDenyNone,Rights[Owner.Global]);
 end;
 

@@ -91,7 +91,7 @@ begin
     For I:=0 to N-1 do
       hdr[i]:=ReadChar(Stream);
     Result:=(hdr[0] = 'P')
-            and (hdr[1] in ['1'..'7']) 
+            and (hdr[1] in ['1'..'7'])
             and (hdr[2] in WhiteSpaces);
   finally
     Stream.Position := oldPos;
@@ -106,7 +106,7 @@ begin
     begin
     repeat
       Result:=ReadChar(Stream);
-{If we encounter comment then eate line}
+{If we encounter comment then eat line}
       if DropWhiteSpaces='#' then
       repeat
         Result:=ReadChar(Stream);
@@ -188,7 +188,9 @@ begin
   else
     FMaxVal:=ReadInteger(Stream);
   If (FWidth<=0) or (FHeight<=0) or (FMaxVal<=0) then
-    Raise Exception.Create('Invalid PNM header data');
+    Raise FPImageException.Create('Invalid PNM header data');
+  if (FWidth > 100000) or (FHeight > 100000) then
+    Raise FPImageException.Create('PNM dimensions too large');
   case FBitMapType of
     1: FBitPP := 1;                  // 1bit PP (text)
     2: FBitPP := 8 * SizeOf(Word);   // Grayscale (text)
@@ -216,7 +218,7 @@ begin
   Img.SetSize(FWidth,FHeight);
   Case FBitmapType of
     5,6 : FScanLineSize:=(FBitPP div 8) * FWidth;
-  else  
+  else
     FScanLineSize:=FBitPP*((FWidth+7) shr 3);
   end;
   GetMem(FScanLine,FScanLineSize);

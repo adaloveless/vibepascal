@@ -3,7 +3,7 @@
     Copyright (c) 2022 by Michael Van Canneyt, michael@freepascal.org
 
     Prefix units in uses clause of a single program or unit.
-    
+
     See the file COPYING.FPC, included in this distribution,
     for details about the copyright.
 
@@ -16,8 +16,12 @@ program prefixunits;
 
 {$mode objfpc}
 {$H+}
- 
-uses cwstring, SysUtils, Classes, custapp, prefixer;
+
+uses
+  {$IFDEF UNIX}
+  cwstring,
+  {$ENDIF}
+  Classes, SysUtils, custapp, prefixer;
 
 type
 

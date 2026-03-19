@@ -27,7 +27,7 @@ implementation
 
 {$IFDEF FPC_DOTTEDUNITS}
 uses
-  MacOsApi.Video,DOSApi.GO32;
+  System.Console.Video,DOSApi.GO32;
 {$ELSE FPC_DOTTEDUNITS}
 uses
   video,go32;
@@ -70,7 +70,7 @@ const
     cursor. Normally, when the mouse cursor is drawn by the int 33h mouse
     driver (and not by this unit), the driver internally maintains a 'hide
     counter', so that if you call HideMouse multiple times, you need to call
-    ShowMouse the same number of times. When the mouse cursor is customly
+    ShowMouse the same number of times. When the mouse cursor is customarily
     drawn by this unit, we use this variable in order to maintain the same
     behaviour. }
   CustomMouse_HideCount: longint = 1;
@@ -80,6 +80,10 @@ const
   oldmousey : longint = -1;
   mouselock : boolean = false;
 
+  { mouse wheel scroll up or down }
+  MouseButton_4_5 = MouseButton4 or MouseButton5;
+
+{$ASMMODE ATT}
 { if the cursor is drawn by this the unit, we must be careful }
 { when drawing while the interrupt handler is called          }
 procedure lockmouse;assembler;
@@ -99,12 +103,22 @@ procedure unlockmouse;
   end;
 
 
-{$ASMMODE ATT}
 procedure MouseInt;assembler;
 asm
         pushl   %edi
         pushl   %ebx
-        movb    %bl,mousebuttons
+        movb    %bh,%al
+        xorb    %bh,%bh
+        cmpb    $0,%al
+        je  .LNoWheel
+        { mouse wheel }
+        jg  .LWheelUp
+        orw     MouseButton4,%bx
+        jmp .LNoWheel
+.LWheelUp:
+        orw     MouseButton5,%bx
+.LNoWheel:
+        movw    %bx,mousebuttons
         movw    %cx,mousewherex
         movw    %dx,mousewherey
         shrw    $3,%cx
@@ -165,13 +179,30 @@ asm
 .Lmouse_nocursor:
         cmpb    MouseEventBufSize,PendingMouseEvents
         je      .Lmouse_exit
+        leal    PendingMouseEvent,%eax
+
+        movl    PendingMouseTail,%edi
+        cmpl    %eax,%edi
+        jne     .Lmouse_tail_with_offset
+        addl    MouseEventBufSize*8,%edi
+.Lmouse_tail_with_offset:
+        subl    $8,%edi { previous event }
+        cmpw    %bx,(%edi)
+        jne     .Lmouse_add_event
+        cmpw    %cx,2(%edi)
+        jne     .Lmouse_add_event
+        cmpw    %dx,4(%edi)
+        jne     .Lmouse_add_event
+        testb   MouseButton_4_5, %bl
+        jne     .Lmouse_add_event
+        jmp     .Lmouse_exit  { mouse event isn't uniq, don't add it }
+.Lmouse_add_event:
         movl    PendingMouseTail,%edi
         movw    %bx,(%edi)
         movw    %cx,2(%edi)
         movw    %dx,4(%edi)
         movw    $0,6(%edi)
         addl    $8,%edi
-        leal    PendingMouseEvent,%eax
         addl    MouseEventBufSize*8,%eax
         cmpl    %eax,%edi
         jne     .Lmouse_nowrap
@@ -183,7 +214,6 @@ asm
         popl   %ebx
         popl   %edi
 end;
-
 
 
 PROCEDURE Mouse_Trap; ASSEMBLER;
@@ -548,8 +578,14 @@ begin
     Mouse_Action($ffff, @MouseInt);                    { Set masks/interrupt }
   drawmousecursor:=false;
   CustomMouse_MouseIsVisible:=false;
+  {
   if (screenwidth>80) or (screenheight>50) then
     DoCustomMouse(true);
+  }
+  {
+  if (screenwidth=132){ or (screenheight>50)} then
+    DoCustomMouse(true);
+  }
   ShowMouse;
 end;
 
@@ -593,8 +629,8 @@ begin
           Dec(CustomMouse_HideCount);
         if (CustomMouse_HideCount=0) and not(CustomMouse_MouseIsVisible) then
           begin
-             oldmousex:=getmousex-1;
-             oldmousey:=getmousey-1;
+             oldmousex:=getmousex{-1};
+             oldmousey:=getmousey{-1};
              mem[videoseg:(((screenwidth*oldmousey)+oldmousex)*2)+1]:=
                mem[videoseg:(((screenwidth*oldmousey)+oldmousex)*2)+1] xor $7f;
              CustomMouse_MouseIsVisible:=true;
@@ -698,7 +734,15 @@ asm
         pushl   %ebp
         int     $0x33
         popl    %ebp
-        movw    %bx,%ax
+        movb    %bl,%al
+        cmpb    $0,%bh
+        je      .Lexit
+        { mouse wheel }
+        jg      .LWheelUp
+        orw     MouseButton5,%ax
+        jmp     .Lexit
+.LWheelUp:
+        orw     MouseButton4,%ax
         jmp     .Lexit
 .LGetMouseButtonsError:
         xorl    %eax,%eax
@@ -716,6 +760,10 @@ asm
         movw    y,%dx
         shll    $3,%ecx {character based convert to pixels: x * 8}
         shll    $3,%edx {character based convert to pixels: y * 8}
+        cmpw    $40,ScreenWidth
+        jne     .Lmorethan40cols
+        shll    $1,%ecx
+.Lmorethan40cols:
         movl    $4,%eax
         pushl   %ebp
         int     $0x33
@@ -811,7 +859,10 @@ begin
      else
        MouseEvent.Action:=MouseActionDown;
    end;
+  if ((MouseEvent.Buttons and (MouseButton4 or MouseButton5)) <> 0) then
+    MouseEvent.Action:=MouseActionDown;
   LastMouseEvent:=MouseEvent;
+  LastMouseEvent.Buttons:=LastMouseEvent.Buttons and (not (MouseButton4 or MouseButton5));
 end;
 
 

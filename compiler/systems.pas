@@ -161,7 +161,7 @@ interface
                                                 // The original result (if it exists) is passed as an extra parameter
             tf_no_backquote_support,
             { do not generate an object file when smartlinking is turned on,
-              this is usefull for architectures which require a small code footprint }
+              this is useful for architectures which require a small code footprint }
             tf_no_objectfiles_when_smartlinking,
             { indicates that the default value of the ts_cld target switch is 'on' for this target }
             tf_cld,
@@ -174,7 +174,7 @@ interface
             tf_use_psabieh,
             { use high level cfi directives to generate call frame information }
             tf_use_hlcfi,
-            { supports symbol order file (to ensure symbols in vectorised sections are kept in the correct order) }
+            { supports symbol order file (to ensure symbols in vectored sections are kept in the correct order) }
             tf_supports_symbolorderfile,
             { supports hidden/private extern symbols: visible across object files, but local/private in exe/library }
             tf_supports_hidden_symbols,
@@ -266,6 +266,7 @@ interface
                        system_riscv32_linux,system_riscv64_linux,system_xtensa_linux,system_loongarch64_linux];
        systems_dragonfly = [system_x86_64_dragonfly];
        systems_freebsd = [system_aarch64_freebsd,
+                          system_powerpc64_freebsd,
                           system_i386_freebsd,
                           system_x86_64_freebsd];
        systems_netbsd  = [system_i386_netbsd,
@@ -356,7 +357,7 @@ interface
          some newer instructions (like CMOVcc or PREFECTXXX) lead to troubles,
          related to OS or emulator lack of support. }
        systems_i386_default_486 = [system_i386_go32v2, system_i386_watcom,
-                                   system_i386_emx, system_i386_wdosx, 
+                                   system_i386_emx, system_i386_wdosx,
                                    system_i386_beos, system_i386_netware,
                                    system_i386_netwlibc, system_i386_symbian];
 
@@ -472,6 +473,9 @@ interface
 
        systems_support_uf2 = [system_arm_embedded,system_avr_embedded,system_mipsel_embedded,system_xtensa_embedded];
 
+       { x86_64 systems that use the Win64 ABI instead of the SysV one }
+       systems_win64_abi = [system_x86_64_win64];
+
        { all internal COFF writers }
        asms_int_coff = [as_arm_pecoffwince,as_x86_64_pecoff,as_i386_pecoffwince,
                         as_i386_pecoffwdosx,as_i386_pecoff,as_i386_coff];
@@ -501,20 +505,27 @@ interface
          (name: 'EABIHF' ; supported:{$if defined(arm)}true{$else}false{$endif}),
          (name: 'OLDWIN32GNU'; supported:{$ifdef I386}true{$else}false{$endif}),
          (name: 'AARCH64IOS'; supported:{$ifdef aarch64}true{$else}false{$endif}),
-         (name: 'RISCVHF'; supported:{$if defined(riscv32) or defined(riscv64)}true{$else}false{$endif}),
-         (name: 'RISCV32ILP'; supported:{$if defined(riscv32)}true{$else}false{$endif}),
-         (name: 'RISCV32ILPF'; supported:{$if defined(riscv32)}true{$else}false{$endif}),
-         (name: 'RISCV32ILPD'; supported:{$if defined(riscv32)}true{$else}false{$endif}),
-         (name: 'RISCV64LP'; supported:{$if defined(riscv64)}true{$else}false{$endif}),
-         (name: 'RISCV64LPF'; supported:{$if defined(riscv64)}true{$else}false{$endif}),
-         (name: 'RISCV64LPD'; supported:{$if defined(riscv64)}true{$else}false{$endif}),
+         (name: 'ILP32'; supported:{$if defined(riscv32)}true{$else}false{$endif}),
+         (name: 'ILP32F'; supported:{$if defined(riscv32)}true{$else}false{$endif}),
+         (name: 'ILP32D'; supported:{$if defined(riscv32)}true{$else}false{$endif}),
+         (name: 'ILP32E'; supported:{$if defined(riscv32)}true{$else}false{$endif}),
+         (name: 'LP64'; supported:{$if defined(riscv64)}true{$else}false{$endif}),
+         (name: 'LP64F'; supported:{$if defined(riscv64)}true{$else}false{$endif}),
+         (name: 'LP64D'; supported:{$if defined(riscv64)}true{$else}false{$endif}),
+         (name: 'LP64Q'; supported:{$if defined(riscv64)}true{$else}false{$endif}),
          (name: 'LINUX386_SYSV'; supported:{$if defined(i386)}true{$else}false{$endif}),
          (name: 'WINDOWED'; supported:{$if defined(xtensa)}true{$else}false{$endif}),
          (name: 'CALL0'; supported:{$if defined(xtensa)}true{$else}false{$endif}),
          (name: 'O32'; supported:{$if defined(mips)}true{$else}false{$endif}),
          (name: 'N32'; supported:{$if defined(mips)}true{$else}false{$endif}),
          (name: 'O64'; supported:{$if defined(mips)}true{$else}false{$endif}),
-         (name: 'N64'; supported:{$if defined(mips)}true{$else}false{$endif})
+         (name: 'N64'; supported:{$if defined(mips)}true{$else}false{$endif}),
+         (name: 'LP64S'; supported:{$if defined(loongarch64)}true{$else}false{$endif}),
+         (name: 'LP64F'; supported:{$if defined(loongarch64)}true{$else}false{$endif}),
+         (name: 'LP64D'; supported:{$if defined(loongarch64)}true{$else}false{$endif}),
+         (name: 'LP32S'; supported:{$if defined(loongarch32)}true{$else}false{$endif}),
+         (name: 'LP32F'; supported:{$if defined(loongarch32)}true{$else}false{$endif}),
+         (name: 'LP32D'; supported:{$if defined(loongarch32)}true{$else}false{$endif})
        );
 
        cgbackend2str: array[tcgbackend] of ansistring = (
@@ -1057,6 +1068,10 @@ begin
     {$endif}
     {$ifdef aix}
      default_target(system_powerpc64_aix);
+     {$define default_target_set}
+    {$endif}
+    {$ifdef freebsd}
+     default_target(system_powerpc64_freebsd);
      {$define default_target_set}
     {$endif}
   {$endif cpupowerpc64}

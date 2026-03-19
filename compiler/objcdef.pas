@@ -140,6 +140,7 @@ implementation
         for i:=0 to variantstarts.count-1 do
           encodedstr:=encodedstr+'})';
         variantstarts.free;
+        variantstarts := nil;
         encodedstr:=encodedstr+'}';
         result:=true
       end;
@@ -226,7 +227,7 @@ implementation
                   if not objcaddencodedtype(tpointerdef(def).pointeddef,newstate,false,encodedstr,founderror) then
                     begin
                       result:=false;
-                      { report the exact (nested) error defintion }
+                      { report the exact (nested) error definition }
                       exit;
                     end;
                 end;
@@ -260,7 +261,7 @@ implementation
                   if not encoderecst(recname,tabstractrecordsymtable(trecorddef(def).symtable),encodedstr,founderror) then
                     begin
                       result:=false;
-                      { report the exact (nested) error defintion }
+                      { report the exact (nested) error definition }
                       exit;
                     end
                 end
@@ -275,7 +276,7 @@ implementation
                   if not encoderecst(recdef.typename,tabstractrecordsymtable(recdef.symtable),encodedstr,founderror) then
                     begin
                       result:=false;
-                      { report the exact (nested) error defintion }
+                      { report the exact (nested) error definition }
                       exit;
                     end
                 end
@@ -360,7 +361,7 @@ implementation
                       if not objcaddencodedtype(tarraydef(def).elementdef,ris_initial,false,encodedstr,founderror) then
                         begin
                           result:=false;
-                          { report the exact (nested) error defintion }
+                          { report the exact (nested) error definition }
                           exit;
                         end;
                       encodedstr:=encodedstr+']';
@@ -395,7 +396,7 @@ implementation
                       if not encoderecst(def.typename,tabstractrecordsymtable(tobjectdef(def).symtable),encodedstr,founderror) then
                         begin
                           result:=false;
-                          { report the exact (nested) error defintion }
+                          { report the exact (nested) error definition }
                           exit;
                         end
                     end
@@ -508,7 +509,7 @@ implementation
               if not objcdochecktype(tpointerdef(def).pointeddef,newstate,founderror) then
                 begin
                   result:=false;
-                  { report the exact (nested) error defintion }
+                  { report the exact (nested) error definition }
                   exit;
                 end;
             end;
@@ -531,7 +532,7 @@ implementation
                   if not checkrecsttype(tabstractrecordsymtable(trecorddef(def).symtable),recordinfostate,founderror) then
                     begin
                       result:=false;
-                      { report the exact (nested) error defintion }
+                      { report the exact (nested) error definition }
                       exit;
                     end
                 end
@@ -544,7 +545,7 @@ implementation
                   if not checkrecsttype(tabstractrecordsymtable(recdef.symtable),recordinfostate,founderror) then
                     begin
                       result:=false;
-                      { report the exact (nested) error defintion }
+                      { report the exact (nested) error definition }
                       exit;
                     end
                 end;
@@ -562,7 +563,7 @@ implementation
                       if not checkrecsttype(tabstractrecordsymtable(objdef.symtable),recordinfostate,founderror) then
                         begin
                           result:=false;
-                          { report the exact (nested) error defintion }
+                          { report the exact (nested) error definition }
                           exit;
                         end
                     end
@@ -584,7 +585,7 @@ implementation
                       if not objcdochecktype(tarraydef(def).elementdef,ris_initial,founderror) then
                         begin
                           result:=false;
-                          { report the exact (nested) error defintion }
+                          { report the exact (nested) error definition }
                           exit;
                         end;
                     end;
@@ -614,7 +615,7 @@ implementation
                       if not checkrecsttype(tabstractrecordsymtable(tobjectdef(def).symtable),newstate,founderror) then
                         begin
                           result:=false;
-                          { report the exact (nested) error defintion }
+                          { report the exact (nested) error definition }
                           exit;
                         end
                     end

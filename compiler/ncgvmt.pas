@@ -551,7 +551,7 @@ implementation
                }
               tcb.start_internal_data_builder(current_asmdata.AsmLists[al_const],sec_rodata,_class.vmt_mangledname,lists.pubmethodstcb,lab);
               get_tabledef(itp_vmt_intern_tmethodnametable,u32inttype,lists.methodnamerec,count,packrecords,pubmethodsdef,pubmethodsarraydef);
-              { begin record ecompassing the tmethodnametable and the extended method table }
+              { begin record encompassing the tmethodnametable and the extended method table }
               lists.pubmethodstcb.begin_anonymous_record('',packrecords,
                   pubmethodsdef.alignment, targetinfos[target_info.system]^.alignment.recordalignmin);
               { begin tmethodnametable }
@@ -718,6 +718,7 @@ implementation
           end;
 
         classtablelist.free;
+        classtablelist := nil;
       end;
 
 
@@ -923,6 +924,7 @@ implementation
             s,
             sizeof(pint)));
           tcb.free;
+          tcb := nil;
           current_module.add_public_asmsym(sym);
         end;
       s:=make_mangledname('IIDSTR',_class.owner,_class.objname^);
@@ -936,6 +938,7 @@ implementation
         s,
         sizeof(pint)));
       tcb.free;
+      tcb := nil;
       current_module.add_public_asmsym(sym);
     end;
 
@@ -1232,6 +1235,7 @@ implementation
            )
          );
          tcb.free;
+         tcb := nil;
 {$ifdef vtentry}
          { write vtinherit symbol to notify the linker of the class inheritance tree }
          hs:='VTINHERIT'+'_'+_class.vmt_mangledname+'$$';
@@ -1307,7 +1311,7 @@ implementation
                         current_filepos:=pd.fileinfo
                       else
                         begin
-                          current_filepos.moduleindex:=current_module.unit_index;
+                          current_filepos.moduleindex:=current_module.moduleid;
                           current_filepos.fileindex:=1;
                           current_filepos.line:=1;
                           current_filepos.column:=1;
@@ -1325,6 +1329,7 @@ implementation
                            current_debuginfo.insertlineinfo(tmplist);
                       list.concatlist(tmplist);
                       tmplist.Free;
+                      tmplist := nil;
                       current_filepos:=oldfileposinfo;
                     end;
                   end;
@@ -1365,6 +1370,7 @@ implementation
                       if (oo_has_vmt in tobjectdef(def).objectoptions) then
                         vmtwriter.writevmt;
                       vmtwriter.free;
+                      vmtwriter := nil;
                       include(def.defstates,ds_vmt_written);
                     end;
                   if is_class(def) then

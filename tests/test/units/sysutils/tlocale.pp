@@ -1,6 +1,6 @@
 { %interactive }
 
-{$ifdef go32v2}
+{$if defined(go32v2) or defined(wasi)}
   {$define USE_INTERNAL_UNICODE}
 {$endif}
 
@@ -53,7 +53,7 @@ begin
  { Time stuff }
   writeln('TimeSeparator : ', timeseparator);
   writeln('TimeAMstring  : ', timeamstring);
-  writeln('TimePMstring  : ', timepmstring);  
+  writeln('TimePMstring  : ', timepmstring);
   {$ifdef localedebug}
   writeln('orgshorttime  : ', orgformatsettings.shorttimeformat);
   {$endif}

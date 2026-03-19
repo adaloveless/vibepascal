@@ -30,7 +30,7 @@
        Therefore adding new CPU targets should not change the
        values of the pre-existing targets. (CEC)
        FURTHERMORE : Make sure that this branch values, are
-       consistant with the main branch version always.
+       consistent with the main branch version always.
      *)
        tsystemcpu=
        (
@@ -85,9 +85,9 @@
      (* IMPORTANT NOTE:
        the integer value of this enum is stored in PPU
        files to recognize the target, so if you add new targets
-       allways add them at end PM
+       always add them at end PM
        FURTHERMORE : Make sure that this branch values are
-       consistant with the main branch version always. (CEC)
+       consistent with the main branch version always. (CEC)
        *)
      type
        tsystem =
@@ -217,7 +217,8 @@
              system_m68k_human68k,      { 122 }
              system_mipsel_ps1,         { 123 }
              system_wasm32_wasip1threads,{ 124 }
-             system_wasm32_wasip2       { 125 }
+             system_wasm32_wasip2,      { 125 }
+             system_powerpc64_freebsd   { 126 }
        );
 
      type
@@ -385,13 +386,14 @@
             ,abi_eabi,abi_armeb,abi_eabihf
             ,abi_old_win32_gnu
             ,abi_aarch64_darwin
-            ,abi_riscv_hf
             ,abi_riscv_ilp32
             ,abi_riscv_ilp32f
             ,abi_riscv_ilp32d
+            ,abi_riscv_ilp32e
             ,abi_riscv_lp64
             ,abi_riscv_lp64f
             ,abi_riscv_lp64d
+            ,abi_riscv_lp64q
             { stack is aligned and all room for parameters is reserved on
               entry, but depending on the calling convention, the parameters
               may still be removed by the callee (and then the stack needs to
@@ -403,6 +405,12 @@
             ,abi_mips_n32
             ,abi_mips_o64
             ,abi_mips_n64
+            ,abi_loongarch_lp64s
+            ,abi_loongarch_lp64f
+            ,abi_loongarch_lp64d
+            ,abi_loongarch_lp32s
+            ,abi_loongarch_lp32f
+            ,abi_loongarch_lp32d
        );
 
        tcgbackend = (

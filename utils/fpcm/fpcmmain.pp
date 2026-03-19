@@ -157,7 +157,7 @@ interface
       var
         OSCpuPossible : TOsCpuPossible;
 {$else}
-      OSCpuPossible : array[TOS,TCpu] of boolean = 
+      OSCpuPossible : array[TOS,TCpu] of boolean =
       (
         { os          none   i386    m68k  ppc    sparc  x86_64 arm    ppc64  avr    armeb  armel  mips   mipsel mips64 misp64el jvm    i8086  aarch64 wasm32 sparc64 riscv32 riscv64 xtensa z80   loongarch64 }
         { none  }   ( false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,   false, false, false,  false, false, false,  false,  false, false, false),
@@ -165,14 +165,14 @@ interface
         { go32v2 }  ( false, true,  false, false, false, false, false, false, false, false, false, false, false, false, false,   false, false, false,  false, false, false,  false,  false, false, false),
         { win32 }   ( false, true,  false, false, false, false, false, false, false, false, false, false, false, false, false,   false, false, false,  false, false, false,  false,  false, false, false),
         { os2 }     ( false, true,  false, false, false, false, false, false, false, false, false, false, false, false, false,   false, false, false,  false, false, false,  false,  false, false, false),
-        { freebsd } ( false, true,  false, false, false, true,  false, false, false, false, false, false, false, false, false,   false, false, true,   false, false, false,  false,  false, false, false),
+        { freebsd } ( false, true,  false, false, false, true,  false, true,  false, false, false, false, false, false, false,   false, false, true,   false, false, false,  false,  false, false, false),
         { beos }    ( false, true,  false, false, false, false, false, false, false, false, false, false, false, false, false,   false, false, false,  false, false, false,  false,  false, false, false),
         { haiku }   ( false, true,  false, false, false, true,  false, false, false, false, false, false, false, false, false,   false, false, false,  false, false, false,  false,  false, false, false),
         { netbsd }  ( false, true,  true,  true,  true,  true,  true,  false, false, false, false, false, false, false, false,   false, false, false,  false, false, false,  false,  false, false, false),
         { amiga }   ( false, false, true,  true,  false, false, false, false, false, false, false, false, false, false, false,   false, false, false,  false, false, false,  false,  false, false, false),
         { atari }   ( false, false, true,  false, false, false, false, false, false, false, false, false, false, false, false,   false, false, false,  false, false, false,  false,  false, false, false),
         { solaris } ( false, true,  false, false, true,  true,  false, false, false, false, false, false, false, false, false,   false, false, false,  false, false, false,  false,  false, false, false),
-        { qnx }     ( false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,   false, false, false,  false, false, false,  false,  false, false, false),
+        { qnx }     ( false, true,  false, false, false, false, false, false, false, false, false, false, false, false, false,   false, false, false,  false, false, false,  false,  false, false, false),
         { netware } ( false, true,  false, false, false, false, false, false, false, false, false, false, false, false, false,   false, false, false,  false, false, false,  false,  false, false, false),
         { openbsd } ( false, true,  false, false, false, true,  false, false, false, false, false, false, false, false, false,   false, false, false,  false, false, false,  false,  false, false, false),
         { wdosx }   ( false, true,  false, false, false, false, false, false, false, false, false, false, false, false, false,   false, false, false,  false, false, false,  false,  false, false, false),
@@ -1622,7 +1622,7 @@ implementation
          end
         else
          Result:=Variables[IniVar];
-        { Substition asked ? }
+        { Substitution asked ? }
         if dosubst then
          Result:=SubstVariables(Result);
       end;

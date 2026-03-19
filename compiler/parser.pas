@@ -30,7 +30,6 @@ uses fmodule;
 {$ifdef PREPROCWRITE}
     procedure preprocess(const filename:string);
 {$endif PREPROCWRITE}
-    function compile(const filename:string) : boolean;
     function compile_module(module : tmodule) : boolean;
     procedure parsing_done(module : tmodule);
     procedure initparser;
@@ -45,7 +44,7 @@ implementation
       fksysutl,
 {$ENDIF}
       cclasses,
-      globtype,tokens,systems,globals,verbose,switches,globstat,
+      globtype,tokens,systems,globals,verbose,globstat,
       symbase,symtable,symdef,
       finput,fppu,
       aasmdata,
@@ -61,22 +60,19 @@ implementation
        hp,hp2 :  tmodule;
 
     begin
-
-       module.end_of_parsing;
-
        if (module.is_initial) and
           (status.errorcount=0) then
          { Write Browser Collections }
          do_extractsymbolinfo;
 
-       // olddata.restore(false);
+       module.end_of_parsing;
 
        { Restore all locally modified warning messages }
        RestoreLocalVerbosity(current_settings.pmessage);
        current_exceptblock:=0;
        exceptblockcounter:=0;
 
-       { Shut down things when the last file is compiled succesfull }
+       { Shut down things when the last file is compiled successful }
        if (module.is_initial) and (module.state=ms_compiled) and
            (status.errorcount=0) then
          begin
@@ -101,6 +97,7 @@ implementation
               begin
                 loaded_units.remove(hp);
                 hp.free;
+                hp := nil;
               end;
             hp:=hp2;
           end;
@@ -147,10 +144,6 @@ implementation
          InitScannerDirectives;
 
          { scanner }
-         c:=#0;
-         pattern:='';
-         orgpattern:='';
-         cstringpattern:='';
          set_current_scanner(nil);
          switchesstatestackpos:=0;
 
@@ -288,28 +281,31 @@ implementation
              unloaded_units:=nil;
            end;
          { Set default types to nil. At this point they are not valid class pointers. }
-         reset_all_default_types; 
+         reset_all_default_types;
 
          { if there was an error in the scanner, the scanner is
-           still assinged }
+           still assigned }
          if assigned(current_scanner) then
           begin
-            current_scanner.free;
+            current_scanner.free; // no nil needed
             set_current_scanner(nil);
-
           end;
 
          { close scanner }
          DoneScanner;
 
          RTTIWriter.free;
+         RTTIWriter := nil;
 
          { close ppas,deffile }
          asmres.free;
+         asmres := nil;
          deffile.free;
+         deffile := nil;
 
          { free list of .o files }
          SmartLinkOFiles.Free;
+         SmartLinkOFiles := nil;
       end;
 
 
@@ -342,48 +338,48 @@ implementation
          repeat
            current_scanner.readtoken(true);
            preprocfile.AddSpace;
-           case token of
+           case current_scanner.token of
              _ID :
                begin
-                 preprocfile.Add(orgpattern);
+                 preprocfile.Add(current_scanner.orgpattern);
                end;
              _REALNUMBER,
              _INTCONST :
-               preprocfile.Add(pattern);
+               preprocfile.Add(current_scanner.pattern);
              _CSTRING :
                begin
                  i:=0;
-                 while (i<length(cstringpattern)) do
+                 while (i<length(current_scanner.cstringpattern)) do
                   begin
                     inc(i);
-                    if cstringpattern[i]='''' then
+                    if current_scanner.cstringpattern[i]='''' then
                      begin
-                       insert('''',cstringpattern,i);
+                       insert('''',current_scanner.cstringpattern,i);
                        inc(i);
                      end;
                   end;
-                 preprocfile.Add(''''+cstringpattern+'''');
+                 preprocfile.Add(''''+current_scanner.cstringpattern+'''');
                end;
              _CCHAR :
                begin
-                 case pattern[1] of
+                 case current_scanner.pattern[1] of
                    #39 :
-                     pattern:='''''''';
+                     current_scanner.pattern:='''''''';
                    #0..#31,
                    #128..#255 :
                      begin
-                       str(ord(pattern[1]),pattern);
-                       pattern:='#'+pattern;
+                       str(ord(current_scanner.pattern[1]),current_scanner.pattern);
+                       current_scanner.pattern:='#'+current_scanner.pattern;
                      end;
                    else
-                     pattern:=''''+pattern[1]+'''';
+                     current_scanner.pattern:=''''+current_scanner.pattern[1]+'''';
                  end;
-                 preprocfile.Add(pattern);
+                 preprocfile.Add(current_scanner.pattern);
                end;
              _EOF :
                break;
              else
-               preprocfile.Add(tokeninfo^[token].str)
+               preprocfile.Add(tokeninfo^[current_scanner.token].str)
            end;
          until false;
        { free scanner }
@@ -391,6 +387,7 @@ implementation
          set_current_scanner(nil);
        { close }
          preprocfile.free;
+         preprocfile := nil;
       end;
 {$endif PREPROCWRITE}
 
@@ -399,26 +396,15 @@ implementation
                              Compile a source file
 *****************************************************************************}
 
-    function compile(const filename:string) : boolean;
-
-    var
-      m : TModule;
-
-    begin
-      m:=tppumodule.create(nil,'',filename,false);
-      m.state:=ms_compile;
-      result:=compile_module(m);
-    end;
-
     function compile_module(module : tmodule) : boolean;
 
       var
-         hp,hp2 : tmodule;
          finished : boolean;
          sc : tscannerfile;
 
        begin
          Result:=True;
+
          { parsing a procedure or declaration should be finished }
          if assigned(current_procinfo) then
            internalerror(200811121);
@@ -426,11 +412,6 @@ implementation
            internalerror(200811122);
          inc(module.compilecount);
          parser_current_file:=module.mainsource;
-         { Uses heap memory instead of placing everything on the
-           stack. This is needed because compile() can be called
-           recursively }
-         { handle the postponed case first }
-         flushpendingswitchesstate;
 
        { reset parser, a previous fatal error could have left these variables in an unreliable state, this is
          important for the IDE }
@@ -485,44 +466,35 @@ implementation
          { If the compile level > 1 we get a nice "unit expected" error
            message if we are trying to use a program as unit.}
          try
-           try
-             if (token=_UNIT) or (not module.is_initial) then
-               begin
-                 module.is_unit:=true;
-                 finished:=proc_unit(module);
-               end
-             else if (token=_ID) and (idtoken=_PACKAGE) then
-               begin
-                 module.IsPackage:=true;
-                 finished:=proc_package(module);
-               end
-             else
-               finished:=proc_program(module,token=_LIBRARY);
-           except
-             on ECompilerAbort do
+           if (current_scanner.token=_UNIT) or (not module.is_initial) then
+             begin
+               module.is_unit:=true;
+               finished:=proc_unit(module);
+             end
+           else if (current_scanner.token=_ID) and (current_scanner.idtoken=_PACKAGE) then
+             begin
+               module.IsPackage:=true;
+               finished:=proc_package(module);
+             end
+           else
+             finished:=proc_program(module,current_scanner.token=_LIBRARY);
+         except
+           on ECompilerAbort do
+             raise;
+           on Exception do
+             begin
+               { Generate exception_raised message,
+                 but avoid multiple messages by
+                 guarding with exception_raised global variable }
+               if not exception_raised then
+                 begin
+                   exception_raised:=true;
+                   Message(general_e_exception_raised);
+                 end;
                raise;
-             on Exception do
-               begin
-                 { Generate exception_raised message,
-                   but avoid multiple messages by
-                   guarding with exception_raised global variable }
-                 if not exception_raised then
-                   begin
-                     exception_raised:=true;
-                     Message(general_e_exception_raised);
-                   end;
-                 raise;
-               end;
-           end;
-           Result:=Finished;
-           { the program or the unit at the command line should not need to wait
-             for other units }
-           // if (module.is_initial) and not finished then
-           //  internalerror(2012091901);
-         finally
-            if finished then
-              parsing_done(module);
+             end;
          end;
+         Result:=Finished;
     end;
 
 end.

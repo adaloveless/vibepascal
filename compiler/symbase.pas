@@ -127,6 +127,7 @@ interface
        psymtablestackitem = ^TSymtablestackitem;
        TSymtablestackitem = record
          symtable : TSymtable;
+         saved_moduleid : longint;
          next     : psymtablestackitem;
        end;
 
@@ -139,6 +140,11 @@ interface
          procedure push(st:TSymtable); virtual;
          procedure pushafter(st,afterst:TSymtable); virtual;
          procedure pop(st:TSymtable); virtual;
+         { Remove st from anywhere in the stack without raising an error if
+           it is not present.  Used by the CTask PPU-cycle fix to excise a
+           symtable that is about to be freed (via tmodule.reset) from a
+           suspended module's saved symtablestack before RestoreState runs. }
+         procedure remove(st:TSymtable);
          function  top:TSymtable;
          function getcopyuntil(finalst: TSymtable): TSymtablestack;
        end;
@@ -270,9 +276,11 @@ implementation
           exit;
         Clear;
         DefList.Free;
+        DefList := nil;
         { SymList can already be disposed or set to nil for withsymtable, }
         { but in that case Free does nothing                              }
         SymList.Free;
+        SymList := nil;
         stringdispose(name);
         stringdispose(realname);
       end;
@@ -359,7 +367,7 @@ implementation
              checkduplicate(hashedid,sym);
            end;
          { Now we can insert the symbol, any duplicate entries
-           are renamed to an unique (and for users unaccessible) name }
+           are renamed to an unique (and for users inaccessible) name }
          if sym.realname[1]='$' then
            sym.ChangeOwnerAndName(SymList,Copy(sym.realname,2,maxidlen+1))
          else if length(sym.realname)>maxidlen then
@@ -483,6 +491,34 @@ implementation
       end;
 
 
+    procedure TSymtablestack.remove(st: TSymtable);
+      { Remove st from anywhere in the stack.  If st appears more than once
+        (which should not happen in normal operation) all occurrences are
+        removed.  A missing st is silently ignored. }
+      var
+        prev, cur, nxt: psymtablestackitem;
+      begin
+        prev:=nil;
+        cur:=stack;
+        while assigned(cur) do
+          begin
+            nxt:=cur^.next;
+            if cur^.symtable=st then
+              begin
+                if assigned(prev) then
+                  prev^.next:=nxt
+                else
+                  stack:=nxt;
+                dispose(cur);
+                { do NOT update prev ? the item at prev is still valid }
+              end
+            else
+              prev:=cur;
+            cur:=nxt;
+          end;
+      end;
+
+
     function TSymtablestack.top:TSymtable;
       begin
         if not assigned(stack) then
@@ -522,5 +558,6 @@ initialization
 
 finalization
   memrealnames.free;
+  memrealnames := nil;
 {$endif MEMDEBUG}
 end.

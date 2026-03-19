@@ -35,7 +35,7 @@ unit tgobj;
 
     uses
       globals,globtype,
-      symtype,
+      symconst,symdef,symtype,symtable,
       cpubase,cgbase,cgutils,
       aasmtai,aasmdata;
 
@@ -125,7 +125,7 @@ unit tgobj;
 
           { Allocate space for a local }
           procedure getlocal(list: TAsmList; size: asizeint; def: tdef; var ref : treference);
-          procedure getlocal(list: TAsmList; size: asizeint; alignment: shortint; def: tdef; sym : tsym; var ref : treference); virtual;
+          procedure getlocal(list: TAsmList; size: asizeint; alignment,explicitalignment: shortint; def: tdef; sym : tsym; var ref : treference); virtual;
           procedure UnGetLocal(list: TAsmList; const ref : treference);
        end;
        ttgobjclass = class of ttgobj;
@@ -310,7 +310,7 @@ implementation
                   ((adjustedpos=align(adjustedpos,alignment)) or
                    (adjustedpos+hp^.size-size = align(adjustedpos+hp^.size-size,alignment))) then
                 begin
-                  { Slot is the same size then leave immediatly }
+                  { Slot is the same size then leave immediately }
                   if (hp^.size=size) then
                    begin
                      bestprev:=hprev;
@@ -325,8 +325,8 @@ implementation
                      { always closest to the source). We also try to use    }
                      { the block with the worst possible alignment that     }
                      { still suffices. And we pick the block which will     }
-                     { have the best alignmenment after this new block is   }
-                     { substracted from it.                                 }
+                     { have the best alignment after this new block is      }
+                     { subtracted from it.                                  }
                      fitatend:=(adjustedpos+hp^.size-size)=align(adjustedpos+hp^.size-size,alignment);
                      fitatbegin:=adjustedpos=align(adjustedpos,alignment);
                      if assigned(bestslot) then
@@ -708,13 +708,18 @@ implementation
          begin
            if (hp^.pos=ref.temppos.val) then
             begin
+              if hp^.temptype=tt_free then
+                begin
+                  result:=false;
+                  exit;
+                end;
               temp_to_ref(hp, tmpref);
               result:=references_equal(ref, tmpref);
               exit;
             end;
            hp:=hp^.next;
          end;
-        internalerror(2018042601);
+        result:=false
       end;
 
 
@@ -742,20 +747,32 @@ implementation
 
     procedure ttgobj.getlocal(list: TAsmList; size: asizeint; def: tdef; var ref : treference);
       begin
-        getlocal(list, size, def.alignment, def, nil, ref);
+        if def.inheritsfrom(tabstractrecorddef) and (def.typ in [recorddef])  then
+          getlocal(list, size, def.alignment, tabstractrecordsymtable(tabstractrecorddef(def).symtable).explicitrecordalignment, def, nil, ref)
+        else
+          getlocal(list, size, def.alignment, 0, def, nil, ref);
       end;
 
 
-    procedure ttgobj.getlocal(list: TAsmList; size: asizeint; alignment: shortint; def: tdef; sym : tsym; var ref : treference);
+    procedure ttgobj.getlocal(list: TAsmList; size: asizeint; alignment, explicitalignment: shortint; def: tdef; sym : tsym; var ref : treference);
       var
         lalign : shortint;
       begin
         lalign:=used_align(alignment,current_settings.alignment.localalignmin,current_settings.alignment.localalignmax);
-        if (alignment>lalign) then
-          if assigned(sym) then
-            CGMessage1(scanner_w_local_alignment_large_than_max,sym.name)
-          else
-            CGMessage1(scanner_w_local_alignment_large_than_max,def.typename);
+        if (explicitalignment>lalign) then
+          begin
+            if assigned(sym) then
+              CGMessage1(scanner_w_local_alignment_larger_than_max,sym.name)
+            else
+              CGMessage1(scanner_w_local_alignment_larger_than_max,def.typename);
+          end
+        else if (alignment>lalign) and (current_settings.alignment.localalignmax>1) then
+          begin
+            if assigned(sym) then
+              CGMessage1(scanner_n_local_alignment_larger_than_max,sym.name)
+            else
+              CGMessage1(scanner_n_local_alignment_larger_than_max,def.typename);
+	  end;
         alloctemp(list,size,lalign,tt_persistent,def,false,ref);
       end;
 

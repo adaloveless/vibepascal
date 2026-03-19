@@ -89,7 +89,7 @@ interface
           ait_llvmdecl, { llvm symbol declaration (global/external variable, external procdef) }
           ait_llvmmetadatanode, (* llvm metadata node: !id = !{type value, ...} *)
           ait_llvmmetadatareftypedconst, { reference to metadata inside a metadata constant }
-          ait_llvmmetadatarefoperand, { llvm metadata referece: !metadataname !id }
+          ait_llvmmetadatarefoperand, { llvm metadata reference: !metadataname !id }
 {$endif}
 {$ifdef wasm}
           ait_export_name,
@@ -308,10 +308,11 @@ interface
        ,top_asmlist
        ,top_callingconvention
 {$endif llvm}
-{$if defined(riscv32) or defined(riscv64)}
+{$if defined(riscv)}
        ,top_fenceflags
        ,top_roundingmode
-{$endif defined(riscv32) or defined(riscv64)}
+       ,top_realconst
+{$endif defined(riscv)}
 {$ifdef wasm}
        ,top_functype
        ,top_single
@@ -564,6 +565,7 @@ interface
         {$if defined(riscv32) or defined(riscv64)}
             top_fenceflags : (fenceflags : TFenceFlags);
             top_roundingmode : (roundingmode : TRoundingMode);
+            top_realconst : (val_real:bestreal;special_value : TAsmRealSpecialValue);
         {$endif defined(riscv32) or defined(riscv64)}
         {$ifdef wasm}
             top_functype : (functype: TWasmFuncType);
@@ -710,7 +712,7 @@ interface
        end;
 
 
-       { Generates an uninitializised data block }
+       { Generates an uninitialized data block }
        tai_datablock = class(tailineinfo)
           is_global : boolean;
           sym       : tasmsymbol;
@@ -1429,7 +1431,7 @@ implementation
             is_global:=true;
           end
         else
-          Create(_name,_size,def,_typ);
+          Create_global(_name,_size,def,_typ);
       end;
 
 
@@ -1544,7 +1546,7 @@ implementation
             is_global:=true;
           end
         else
-          Createname(_name, _symtyp, siz, def);
+          Createname_global(_name, _symtyp, siz, def);
       end;
 
 
@@ -3011,7 +3013,10 @@ implementation
               and not(r.refaddr in [addr_full,addr_gotpageoffset,addr_gotpage])
 {$endif aarch64}
 {$ifdef riscv}
-              and not(opcode in [A_LA,A_FLD,A_FLQ,A_FLW])
+              and not(opcode=A_LA)
+              and not(opcode=A_FLD)
+              and not(opcode=A_FLQ)
+              and not(opcode=A_FLW)
 {$endif riscv}
               then
               internalerror(200502052);

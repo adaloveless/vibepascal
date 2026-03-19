@@ -17,7 +17,7 @@
   dependent on objpas unit.
 }
 
-{ Disable checks of pointers explictly,
+{ Disable checks of pointers explicitly,
   as we are dealing here with special pointer that
   might be seen as invalid by heaptrc unit CheckPointer function }
 
@@ -53,10 +53,6 @@ type
     // Offset of the binary image forming permanent offset to all retrieved values
     ImgOffset: TExeOffset;
     filename  : shortstring;
-    // Allocate static buffer for reading data
-    buf       : array[0..4095] of byte;
-    bufsize,
-    bufcnt    : longint;
   end;
 
 function OpenExeFile(var e:TExeFile;const fn:shortstring):boolean;
@@ -90,7 +86,7 @@ uses
   strings{$ifdef windows},windows{$endif windows};
 {$ENDIF FPC_DOTTEDUNITS}
 
-function ReadDebugLink(var e:TExeFile;var dbgfn:shortstring):boolean; 
+function ReadDebugLink(var e:TExeFile;var dbgfn:shortstring):boolean;
 
 var
   fn : ansistring;
@@ -1013,7 +1009,7 @@ begin
           end;
       end;
 
-    if ((found_addr=ptruint(-1)) or (found_addr < ptruint(phdr))) and (ptruint(phdr)<ptruint(addr)) then
+    if (found_addr=ptruint(-1)) or ((found_addr < ptruint(phdr)) and (ptruint(phdr)<ptruint(addr))) then
       found_addr:=ptruint(phdr);
     { Set pagesize to a default small value }
     if (pagesize=ptruint(-1)) then
@@ -1575,7 +1571,6 @@ var
 begin
   OpenExeFile:=false;
   fillchar(e,sizeof(e),0);
-  e.bufsize:=sizeof(e.buf);
   e.filename:=fn;
   if fn='' then   // we don't want to read stdin
     exit;
@@ -1620,12 +1615,31 @@ begin
 end;
 
 
+{$ifdef CPUI8086}
+  {$if defined(MSDOS) or defined(WIN16)}
+    {$if defined(FPC_MM_TINY) or defined(FPC_MM_SMALL) or defined(FPC_MM_MEDIUM)}
+      {$define NEED_SMALL_BUFFER_SIZE}
+    {$endif}
+  {$else}
+    {$define NEED_SMALL_BUFFER_SIZE}
+  {$endif}
+{$endif}
+
+{$ifdef NEED_SMALL_BUFFER_SIZE}
+const
+  CheckDbgFile_buf_size = 128;
+{$else}
+const
+  CheckDbgFile_buf_size = 4096;
+{$endif}
 
 function CheckDbgFile(var e:TExeFile;const fn:shortstring;dbgcrc:cardinal):boolean;
 var
   c      : cardinal;
   ofm    : word;
   g      : file;
+  buf    : array[0..CheckDbgFile_buf_size-1] of byte;
+  bufcnt : longint;
 begin
   CheckDbgFile:=false;
   assign(g,fn);
@@ -1640,9 +1654,9 @@ begin
   { We reuse the buffer from e here to prevent too much stack allocation }
   c:=0;
   repeat
-    blockread(g,e.buf,e.bufsize,e.bufcnt);
-    c:=UpdateCrc32(c,e.buf,e.bufcnt);
-  until e.bufcnt<e.bufsize;
+    blockread(g,buf,sizeof(buf),bufcnt);
+    c:=UpdateCrc32(c,buf,bufcnt);
+  until bufcnt<sizeof(buf);
   close(g);
   CheckDbgFile:=(dbgcrc=c);
 end;
@@ -1722,7 +1736,7 @@ begin
               begin
 {$IFDEF DEBUG_LINEINFO}
                 writeln(stderr,'OpenExeFile for ',e.filename+'.dSYM/Contents/Resources/DWARF/'+copy(e.filename,filenamestartpos,length(e.filename)),' did not succeed.');
-{$endif DEBUG_LINEINFO}                
+{$endif DEBUG_LINEINFO}
                 UnmapMachO(mappedexe, mappedexesize);
                 exit;
               end;

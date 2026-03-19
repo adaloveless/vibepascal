@@ -24,7 +24,7 @@
 }
 
 {$IFNDEF FPC_DOTTEDUNITS}
-unit memds;
+unit MemDs;
 {$ENDIF FPC_DOTTEDUNITS}
 
 interface
@@ -1018,9 +1018,9 @@ begin
   Try
     FFilterBuffer:=Buffer;
     OnFilterRecord(Self,Result);
-  Finally  
+  Finally
     RestoreState(SaveState);
-  end;  
+  end;
 end;
 
 function TMemDataset.DataSize: Integer;

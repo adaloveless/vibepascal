@@ -219,6 +219,7 @@ end;
       begin
         FreeDirectoryEntries;
         FDirectoryEntries.Free;
+        FDirectoryEntries := nil;
         inherited destroy;
       end;
 
@@ -390,6 +391,7 @@ end;
     destructor TDirectoryCache.destroy;
       begin
         FDirectories.Free;
+        FDirectories := nil;
         inherited destroy;
       end;
 
@@ -832,7 +834,7 @@ end;
                 end
               else if (oldpos + 1 > oldlen) or (path[oldPos + 1] in ['/', '\']) then
                 begin
-                  {It is "./" or "."  ignor it }
+                  {It is "./" or "."  ignore it }
                   oldPos := oldPos + 2;
                   continue;  {Start over again}
                 end;
@@ -1116,6 +1118,7 @@ end;
              Insert(s);
            end;
           hl.Free;
+          hl := nil;
         end
        else
         begin
@@ -1556,6 +1559,7 @@ end;
     procedure DoneFileUtils;
       begin
         DirCache.Free;
+        DirCache := nil;
       end;
 
 end.

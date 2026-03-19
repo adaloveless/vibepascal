@@ -13,7 +13,7 @@
 
  **********************************************************************}
 {$IFNDEF FPC_DOTTEDUNITS}
-unit jsoncomparer;
+unit JsonComparer;
 {$ENDIF}
 
 {$mode ObjFPC}{$H+}
@@ -58,7 +58,7 @@ resourcestring
   SElementTypesDiffer = 'Element types differ, expected %s, got: %s';
   SElementValueDiffers = 'Expected %s, got: %s';
   SElementIntegerValueDiffers = 'expected %d, got: %d';
-  
+
 { TJSONComparer }
 
 procedure TJSONComparer.addDiff(const aPath,aDiff : String);

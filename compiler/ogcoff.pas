@@ -295,6 +295,9 @@ interface
        COFF_BIG_OBJ_VERSION = 2;
 
     function ReadDLLImports(const dllname:string;readdllproc:Treaddllproc):boolean;
+    procedure MaybeSwap(var v : tcoffsechdr);
+    procedure MaybeSwap(var v : tcoffheader);
+    procedure MaybeSwap(var v : tcoffpeoptheader);
 
 implementation
 
@@ -585,7 +588,7 @@ implementation
          AddrNames,
          AddrOrds   : cardinal;
        end;
-       { MaybeSwap procedures 
+       { MaybeSwap procedures
        tcoffpedatadir = packed record
          vaddr : longword;
          size  : longword;
@@ -643,7 +646,7 @@ implementation
             v.Version:=SwapEndian(v.Version);
             v.Machine:=SwapEndian(v.Machine);
             v.TimeDateStame:=SwapEndian(v.TimeDateStame);
-	    { UUID byte array no swap neeeded }
+	    { UUID byte array no swap needed }
 	    { Assume unused fields are indeed really unused }
             v.NumberOfSections:=SwapEndian(v.NumberOfSections);
             v.PointerToSymbolTable:=SwapEndian(v.PointerToSymbolTable);
@@ -928,7 +931,7 @@ implementation
             v.AddrOrds:=SwapEndian(v.AddrOrds);
           end;
      end;
-  
+
      const
        SymbolMaxGrow = 200*sizeof(coffsymbol);
        StrsMaxGrow   = 8192;
@@ -986,7 +989,8 @@ implementation
           '.stack',
           '.heap',
           '.gcc_except_table',
-          '.ARM.attributes'
+          '.ARM.attributes',
+          '.note'
         );
 
 const go32v2stub : array[0..2047] of byte=(
@@ -1599,7 +1603,7 @@ const pemagic : array[0..3] of byte = (
         sep     : string[3];
         secname : string;
       begin
-        { section type user gives the user full controll on the section name }
+        { section type user gives the user full control on the section name }
         if atype=sec_user then
           result:=aname
         else
@@ -1796,7 +1800,9 @@ const pemagic : array[0..3] of byte = (
     destructor TCoffObjOutput.destroy;
       begin
         FCoffSyms.free;
+        FCoffSyms := nil;
         FCoffStrs.free;
+        FCoffStrs := nil;
         inherited destroy;
       end;
 
@@ -2270,6 +2276,7 @@ const pemagic : array[0..3] of byte = (
     destructor TCoffObjInput.destroy;
       begin
         FCoffSyms.free;
+        FCoffSyms := nil;
         FCoffStrs:=nil;
         FSymTbl:=nil;
         FSecTbl:=nil;
@@ -3432,6 +3439,7 @@ const pemagic : array[0..3] of byte = (
           end;
         { Release }
         FCoffStrs.Free;
+        FCoffStrs := nil;
         result:=true;
       end;
 
@@ -3979,6 +3987,7 @@ const pemagic : array[0..3] of byte = (
             readdllproc(DLLName,FuncName);
           end;
         DLLReader.Free;
+        DLLReader := nil;
       end;
 
 {$ifdef arm}

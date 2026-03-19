@@ -1,4 +1,4 @@
-{$ifdef go32v2}
+{$if defined(go32v2) or defined(wasi)}
   {$define USE_INTERNAL_UNICODE}
 {$endif}
 
@@ -29,7 +29,7 @@ var
   w,w2 : widestring;
   u,u2 : unicodestring;
   a : ansistring;
-  
+
 begin
   setlength(w,1000);
   for i:=1 to 1000 do

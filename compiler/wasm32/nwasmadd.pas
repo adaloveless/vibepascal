@@ -46,7 +46,7 @@ interface
           procedure second_cmpordinal;override;
           procedure second_cmpsmallset;override;
 
-          // special treatement for short-boolean expressions
+          // special treatment for short-boolean expressions
           // using IF block, instead of direct labels
           procedure second_addboolean; override;
        public
@@ -333,7 +333,7 @@ interface
               orn :
                 begin
                    // inside of IF (the condition evaluated as true)
-                   // for "or" must end evalaution immediately - satified!
+                   // for "or" must end evaluation immediately - satisfied!
                    if is_64bit(left.resultdef) then
                      current_asmdata.CurrAsmList.Concat( taicpu.op_const(a_i64_const, 1) )
                    else
@@ -383,7 +383,10 @@ interface
           LOC_CONSTANT:
             thlcgwasm(hlcg).a_cmp_const_loc_stack(current_asmdata.CurrAsmList,left.resultdef,cmpop,right.location.value,left.location);
           else
-            internalerror(2011010413);
+            begin
+              hlcg.location_force_reg(current_asmdata.CurrAsmList,right.location,right.resultdef,right.resultdef,false);
+              thlcgwasm(hlcg).a_cmp_reg_loc_stack(current_asmdata.CurrAsmList,left.resultdef,cmpop,right.location.register,left.location);
+            end;
         end;
         set_result_location_reg;
         thlcgwasm(hlcg).a_load_stack_loc(current_asmdata.CurrAsmList,resultdef,location);

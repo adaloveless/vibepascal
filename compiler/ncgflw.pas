@@ -371,8 +371,10 @@ implementation
              { add all lists together }
              org_list.concatlist(then_list);
              then_list.free;
+             then_list := nil;
              org_list.concatlist(else_list);
              else_list.free;
+             else_list := nil;
              org_list.concatlist(current_asmdata.CurrAsmList);
              current_asmdata.CurrAsmList.free;
              current_asmdata.CurrAsmList := org_list;
@@ -564,7 +566,7 @@ implementation
          breakexceptlabel:=nil;
          doobjectdestroyandreraisestate:=Default(tcgexceptionstatehandler.texceptionstate);
 
-         { this can be called recursivly }
+         { this can be called recursively }
          oldBreakLabel:=nil;
          oldContinueLabel:=nil;
          oldendexceptlabel:=endexceptlabel;
@@ -767,7 +769,7 @@ implementation
          if assigned(exceptvarsym) then
            begin
              location_reset_ref(exceptvarsym.localloc, LOC_REFERENCE, def_cgsize(voidpointertype), voidpointertype.alignment, []);
-             tg.GetLocal(current_asmdata.CurrAsmList, exceptvarsym.vardef.size, voidpointertype.alignment, exceptvarsym.vardef, exceptvarsym, exceptvarsym.localloc.reference);
+             tg.GetLocal(current_asmdata.CurrAsmList, exceptvarsym.vardef.size, voidpointertype.alignment, 0, exceptvarsym.vardef, exceptvarsym, exceptvarsym.localloc.reference);
              hlcg.a_load_reg_ref(current_asmdata.CurrAsmList, exceptlocdef, exceptvarsym.vardef, exceptlocreg, exceptvarsym.localloc.reference);
            end;
          { in the case that another exception is risen
@@ -1009,6 +1011,7 @@ implementation
 
              current_asmdata.CurrAsmList.concatList(tmplist);
              tmplist.free;
+             tmplist := nil;
            end
          else
            cexceptionstatehandler.emit_except_label(current_asmdata.CurrAsmList,exceptframekind,finallyexceptionstate,excepttemps);
@@ -1035,7 +1038,7 @@ implementation
          { don't generate line info for internal cleanup }
          current_asmdata.CurrAsmList.concat(tai_marker.create(mark_NoLineInfoStart));
 
-         { same level as before try, but this part is only executed if an exception occcurred
+         { same level as before try, but this part is only executed if an exception occurred
            -> always fc_in_flowcontrol }
          flowcontrol:=finallyexceptionstate.oldflowcontrol*[fc_catching_exceptions];
          include(flowcontrol,fc_inflowcontrol);
@@ -1052,12 +1055,12 @@ implementation
                  if current_procinfo.procdef.generate_safecall_wrapper then
                    begin
                      handle_safecall_exception;
-                     { we have to jump immediatly as we have to return the value of FPC_SAFECALL }
+                     { we have to jump immediately as we have to return the value of FPC_SAFECALL }
                      hlcg.a_jmp_always(current_asmdata.CurrAsmList,oldCurrExitLabel);
                    end
                  else
                    cexceptionstatehandler.handle_reraise(current_asmdata.CurrAsmList,excepttemps,finallyexceptionstate,exceptframekind);
-                 { we have to load 0 into the execepttemp, else the program thinks an exception happended }
+                 { we have to load 0 into the execepttemp, else the program thinks an exception happened }
                  emit_jump_out_of_try_finally_frame(current_asmdata.CurrAsmList,0,finallyexceptionstate.exceptionlabel,excepttemps,exitfinallylabel);
                end
              else

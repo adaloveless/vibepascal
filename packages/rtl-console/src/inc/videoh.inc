@@ -183,7 +183,7 @@ const {The following constants were variables in the past.
       LowAscii = true;
       NoExtendedFrame = false;
 
-      FVMaxWidth = 240;
+      FVMaxWidth = 1024;
 
 operator = (const a,b : TEnhancedVideoCell) res: Boolean;
 
@@ -231,6 +231,8 @@ function StringDisplayWidth(const S: UnicodeString): Integer;
 { Returns the number of display columns needed for the given string }
 function GetActiveCodePage: TSystemCodePage;
 { Returns the current active legacy code page }
+function GetLegacyCodePage: TSystemCodePage;
+{ Returns the current legacy code page }
 procedure ActivateCodePage(CodePage: TSystemCodePage);
 { Activates a specified legacy code page (if supported) }
 function GetSupportedCodePageCount: Integer;

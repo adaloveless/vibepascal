@@ -299,7 +299,7 @@ Function fpc_Val_smallint_UnicodeStr (Const S : UnicodeString; out Code : ValSIn
 
 {$ifdef FPC_HAS_FEATURE_ANSISTRINGS}
 { A glitch in FPC 3.2.2 prevents inline from working properly here on
-  ARM (causes a dangling pointer and hence heap corrpution). }
+  ARM (causes a dangling pointer and hence heap corruption). }
 Procedure fpc_ansistr_decr_ref (Var S : Pointer); compilerproc; {$if FPC_FULLVERSION>30202}inline;{$ifend}
 Procedure fpc_ansistr_incr_ref (S : Pointer); compilerproc; {$if FPC_FULLVERSION>30202}inline;{$ifend}
 Procedure fpc_AnsiStr_Assign (Var DestS : Pointer;S2 : Pointer); compilerproc;
@@ -724,7 +724,7 @@ procedure fpc_dispatch_by_id(Result: Pointer; const Dispatch: pointer;DispDesc: 
 
 
 {$ifdef FPC_HAS_FEATURE_EXCEPTIONS}
-{$if not defined(FPC_WASM_NATIVE_EXCEPTIONS) and not defined(FPC_WASM_BRANCHFUL_EXCEPTIONS)}
+{$if not defined(FPC_WASM_EXNREF_EXCEPTIONS) and not defined(FPC_WASM_LEGACY_EXCEPTIONS) and not defined(FPC_WASM_BRANCHFUL_EXCEPTIONS)}
 Function fpc_PushExceptAddr (Ft: {$ifdef CPU16}SmallInt{$else}Longint{$endif};_buf,_newaddr : pointer): PJmp_buf ; compilerproc;
 Procedure fpc_PopAddrStack; compilerproc;
 {$endif}
@@ -736,7 +736,7 @@ procedure fpc_Raiseexception (Obj : TObject; AnAddr : CodePointer; AFrame : Poin
 function fpc_PopObjectStack : TObject; compilerproc;
 function fpc_PopSecondObjectStack : TObject; compilerproc;
 Procedure fpc_ReRaise; compilerproc;
-{$if defined(FPC_WASM_NATIVE_EXCEPTIONS) or defined(FPC_WASM_BRANCHFUL_EXCEPTIONS)}
+{$if defined(FPC_WASM_EXNREF_EXCEPTIONS) or defined(FPC_WASM_LEGACY_EXCEPTIONS) or defined(FPC_WASM_BRANCHFUL_EXCEPTIONS)}
 Procedure fpc_ReRaise2; compilerproc;
 {$endif}
 Function fpc_Catches(Objtype : TClass) : TObject; compilerproc;

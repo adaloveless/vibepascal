@@ -27,6 +27,7 @@ Type
     FBaseDescrDir: String;
     FBaseInputDir: String;
     FCurPackage : TFPDocPackage;
+    FDefines: TStrings;
     FExamplesPath: String;
     FProcessedUnits : TStrings;
     FOnLog: TPasParserLogHandler;
@@ -40,6 +41,7 @@ Type
     function GetPackages: TFPDocPackages;
     procedure SetBaseDescrDir(AValue: String);
     procedure SetBaseInputDir(AValue: String);
+    procedure SetDefines(const aValue: TStrings);
     procedure SetExamplesPath(AValue: String);
     procedure SetProjectMacros(AValue: TStrings);
   Protected
@@ -51,7 +53,7 @@ Type
     Procedure DoLog(Const Msg : String);
     procedure DoLog(Const Fmt : String; Args : Array of Const);
     Procedure DoLogSender(Sender : TObject; Const Msg : String);
-    // Create documetation by specified Writer class
+    // Create documentation by specified Writer class
     procedure CreateOutput(APackage: TFPDocPackage; Engine: TFPDocEngine); virtual;
   Public
     Constructor Create(AOwner : TComponent); override;
@@ -73,6 +75,7 @@ Type
     Property ExamplesPath : String Read FExamplesPath Write SetExamplesPath;
     // Macros used when loading the project file
     Property ProjectMacros : TStrings Read FProjectMacros Write SetProjectMacros;
+    Property Defines : TStrings Read FDefines Write SetDefines;
   end;
 
 implementation
@@ -191,6 +194,12 @@ begin
     FBaseInputDir:=IncludeTrailingPathDelimiter(FBaseInputDir);
 end;
 
+procedure TFPDocCreator.SetDefines(const aValue: TStrings);
+begin
+  if FDefines=aValue then Exit;
+  FDefines.Assign(aValue);
+end;
+
 procedure TFPDocCreator.SetExamplesPath(AValue: String);
 begin
   if FExamplesPath=AValue then Exit;
@@ -221,10 +230,12 @@ begin
   FProject.Options.EndianNess:=DefEndianNess;
   FProcessedUnits:=TStringList.Create;
   FProjectMacros:=TStringList.Create;
+  FDefines:=TStringList.Create;
 end;
 
 destructor TFPDocCreator.Destroy;
 begin
+  FreeAndNil(FDefines);
   FreeAndNil(FProcessedUnits);
   FreeAndNil(FProject);
   FreeAndNil(FProjectMacros);
@@ -309,7 +320,7 @@ begin
     For J:=0 to Apackage.Imports.Count-1 do
       begin
       Arg:=Apackage.Imports[j];
-      // conversion import FilePathes
+      // conversion import FilePaths
       WriterClass.SplitImport(Arg,Cmd);
       // create tree of imported objects
       Engine.ReadContentFile(Arg, Cmd);
@@ -342,7 +353,7 @@ begin
           if FProcessedUnits.IndexOf(Cmd)=-1 then
           begin
             FProcessedUnits.Add(Cmd);
-            // Parce sources for OS Target
+            // Parse sources for OS Target
             //WriteLn(Format('Parsing unit: %s', [ExtractFilenameOnly(Cmd)]));
             ParseSource(Engine,Cmd+' '+Arg, Options.OSTarget, Options.CPUTarget,[poUseStreams]); // poSkipDefaultDefs
           end;
@@ -398,6 +409,7 @@ procedure TFPDocCreator.LoadProjectFile(const AFileName: string);
 begin
   With TXMLFPDocOptions.Create(self) do
     try
+      SetDefines(Self.Defines);
       if (ProjectMacros.Count>0) then
         LoadOptionsFromFile(FProject,AFileName,ProjectMacros)
       else

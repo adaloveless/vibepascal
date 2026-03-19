@@ -17,7 +17,7 @@
 {$H+}
 
 {$IFNDEF FPC_DOTTEDUNITS}
-unit custweb;
+unit CustWeb;
 {$ENDIF FPC_DOTTEDUNITS}
 
 Interface
@@ -354,6 +354,8 @@ Var
   MC : TCustomHTTPModuleClass;
   M  : TCustomHTTPModule;
   MN : String;
+  lNewName : string;
+  i : Integer;
 
 begin
   MC:=Sender.ModuleClass;
@@ -362,10 +364,25 @@ begin
   ARequest.GetNextPathInfo;
   M:=FindModule(MC);
   if (M=Nil) then
+    begin
     if Sender.SkipStreaming then
-      M:=MC.CreateNew(Self)
+      M:=MC.CreateNew(Nil)
     else
-      M:=MC.Create(Self);
+      M:=MC.Create(Nil);
+    lNewName:=M.Name;
+    if lNewName<>'' then
+      begin
+      // Make sure we have a unique name.
+      i:=1;
+      While Self.FindComponent(lNewName)<>Nil do
+        begin
+        Inc(I);
+        lNewName:=M.Name+IntTostr(I);
+        end;
+      M.Name:=lNewName;
+      end;
+    Self.InsertComponent(M);
+    end;
   DoCallModule(M,MN,ARequest,AResponse);
 end;
 
@@ -442,7 +459,7 @@ end;
 procedure TWebHandler.Terminate;
 begin
   FTerminated := true;
-  If Assigned(FOnTerminate) then 
+  If Assigned(FOnTerminate) then
     FOnTerminate(Self);
 end;
 
@@ -467,7 +484,7 @@ begin
   If (Result='') then
     begin
     S:=ARequest.PathInfo;
-    If (Length(S)>0) and (S[1]='/') then  
+    If (Length(S)>0) and (S[1]='/') then
       Delete(S,1,1);                      //Delete the leading '/' if exists
     I:=Length(S);
     If (I>0) and (S[I]='/') then

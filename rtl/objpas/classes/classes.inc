@@ -31,7 +31,7 @@ var
  Include all message strings
 
  Add a language with IFDEF LANG_NAME
- just befor the final ELSE. This way English will always be the default.
+ just before the final ELSE. This way English will always be the default.
 }
 
 {$IFDEF LANG_GERMAN}
@@ -49,7 +49,7 @@ var
 {$i bits.inc}
 
 { All streams implementations: }
-{ Tstreams THandleStream TFileStream TResourcseStreams TStringStream }
+{ Tstreams THandleStream TFileStream TResourcesStreams TStringStream }
 { TCustomMemoryStream TMemoryStream }
 {$i streams.inc}
 
@@ -70,10 +70,10 @@ var
 
 { TThread implementation }
 
-{ system independend threading code }
+{ system independent threading code }
 
 var
-  { event executed by SychronizeInternal to wake main thread if it sleeps in
+  { event executed by SynchronizeInternal to wake main thread if it sleeps in
     CheckSynchronize }
   SynchronizeTimeoutEvent: PRtlEvent;
   { the head of the queue containing the entries to be Synchronized - Nil if the
@@ -234,7 +234,7 @@ function ThreadProc(ThreadObjPtr: Pointer): PtrInt;
     //  will call the AfterConstruction method in all cases)
 //    Thread.Suspend;
     try
-      { The thread may be already terminated at this point, e.g. if it was intially
+      { The thread may be already terminated at this point, e.g. if it was initially
         suspended, or if it wasn't ever scheduled for execution for whatever reason.
         So bypass user code if terminated. }
       if not Thread.Terminated then begin
@@ -559,8 +559,12 @@ procedure TThread.Synchronize(AProcedure: TThreadProcedure);
 {$endif}
 
 Function PopThreadQueueHead : TThread.PThreadQueueEntry;
+var
+  lPrev : TThread.PThreadQueueEntry;
+  lNow : TDateTime;
 
 begin
+  lPrev:=Nil;
   Result:=ThreadQueueHead;
   if (Result<>Nil) then
     begin
@@ -569,10 +573,22 @@ begin
     try
 {$endif}
       Result:=ThreadQueueHead;
+      lNow:=Now;
+      While Assigned(Result) and (Result^.ExecuteAfter<>0) and (Result^.ExecuteAfter>lNow) do
+        begin
+        lPrev:=Result;
+        Result:=Result^.Next;
+        end;
       if Result<>Nil then
-        ThreadQueueHead:=ThreadQueueHead^.Next;
-      if Not Assigned(ThreadQueueHead) then
-        ThreadQueueTail := Nil;
+        begin
+        if Assigned(lPrev) then
+          lPrev^.Next:=Result^.Next
+        else
+          ThreadQueueHead:=Result^.Next;
+        // if Result^.Next is Nil, it means we popped the last
+        if Not Assigned(Result^.Next) then
+           ThreadQueueTail := lPrev;
+        end;
 {$ifdef FPC_HAS_FEATURE_THREADING}
     finally
       System.LeaveCriticalSection(ThreadQueueLock);
@@ -666,17 +682,17 @@ end;
 
 class procedure TThread.Queue(aThread: TThread; aMethod: TThreadMethod); static;
 begin
-  InternalQueue(aThread, aMethod, False);
+  InternalQueue(aThread, aMethod, False, 0);
 end;
 
 {$ifdef FPC_HAS_REFERENCE_PROCEDURE}
 class procedure TThread.Queue(aThread: TThread; AProcedure: TThreadProcedure);
 begin
-  InternalQueue(aThread, aProcedure, False);
+  InternalQueue(aThread, aProcedure, False, 0);
 end;
 {$endif}
 
-class procedure TThread.InternalQueue(aThread: TThread; aMethod: TThreadMethod; aQueueIfMain: Boolean); static;
+class procedure TThread.InternalQueue(aThread: TThread; aMethod: TThreadMethod; aQueueIfMain: Boolean; aExecuteAfter: TDateTime); static;
 var
   queueentry: PThreadQueueEntry;
 begin
@@ -684,13 +700,14 @@ begin
   FillChar(queueentry^, SizeOf(TThreadQueueEntry), 0);
   queueentry^.Thread := aThread;
   queueentry^.Method := aMethod;
+  queueentry^.ExecuteAfter:=aExecuteAfter;
 
   { the queueentry is freed by CheckSynchronize (or by RemoveQueuedEvents) }
   ThreadQueueAppend(queueentry, aQueueIfMain);
 end;
 
 {$ifdef FPC_HAS_REFERENCE_PROCEDURE}
-class procedure TThread.InternalQueue(aThread: TThread; aProcedure: TThreadProcedure; aQueueIfMain: Boolean); static;
+class procedure TThread.InternalQueue(aThread: TThread; aProcedure: TThreadProcedure; aQueueIfMain: Boolean; aExecuteAfter: TDateTime); static;
 var
   queueentry: PThreadQueueEntry;
 begin
@@ -698,6 +715,7 @@ begin
   FillChar(queueentry^, SizeOf(TThreadQueueEntry), 0);
   queueentry^.Thread := aThread;
   queueentry^.ThreadProc := aProcedure;
+  queueentry^.ExecuteAfter:=aExecuteAfter;
 
   { the queueentry is freed by CheckSynchronize (or by RemoveQueuedEvents) }
   ThreadQueueAppend(queueentry, aQueueIfMain);
@@ -710,15 +728,28 @@ begin
 end;
 
 
-class procedure TThread.ForceQueue(aThread: TThread; aMethod: TThreadMethod); static;
+class procedure TThread.ForceQueue(aThread: TThread; aMethod: TThreadMethod; aDelay : Integer = 0); static;
+var
+  lEnd : TDateTime;
 begin
-  InternalQueue(aThread, aMethod, True);
+  if aDelay<>0 then
+    lEnd:=Now+aDelay*(1/MSecsPerDay)
+  else
+    lEnd:=0;
+  InternalQueue(aThread, aMethod, True, lEnd);
 end;
 
 {$ifdef FPC_HAS_REFERENCE_PROCEDURE}
-class procedure TThread.ForceQueue(aThread: TThread; aMethod: TThreadProcedure); static;
+class procedure TThread.ForceQueue(aThread: TThread; aMethod: TThreadProcedure; aDelay : Integer = 0); static;
+
+var
+  lEnd : TDateTime;
 begin
-  InternalQueue(aThread, aMethod, True);
+  if aDelay<>0 then
+    lEnd:=Now+aDelay*(1/MSecsPerDay)
+  else
+    lEnd:=0;
+  InternalQueue(aThread, aMethod, True, lEnd);
 end;
 {$endif}
 
@@ -878,7 +909,21 @@ begin
     as volatile, so the access won't be optimized away by the compiler. (KB) }
   for i:=1 to aIterations do
     begin
-      Inc(SpinWaitDummy); // SpinWaitDummy *MUST* be global
+    {$ifndef FPC_USE_INTRINSICS}
+    Inc(SpinWaitDummy); // SpinWaitDummy *MUST* be global
+    {$else}
+    {$IF defined(CPUX86_64) or Defined(CPUI386)}
+    fpc_x86_pause;
+    {$ELSEIF defined(CPUARM)}
+    fpc_arm_yield;
+    {$ELSEIF defined(CPUAARCH64)}
+    fpc_aarch64_yield;
+    {$ELSEIF defined(CPUPOWERPC64) or defined(CPUPOWERPC)}
+    fpc_ppc_yield;
+    {$ELSEIF defined(RISCV) and defined(CPURV_HAS_ZIHINTPAUSE)}
+    fpc_riscv_pause;
+    {$ifend}
+    {$endif FPC_USE_INTRINSICS}
     end;
 end;
 
@@ -897,10 +942,10 @@ class function TThread.GetCPUUsage(var Previous: TSystemTimes): Integer;
 var
   Act : TSystemTimes;
   Load,Idle: QWord;
-  
+
 begin
   Result:=0;
-  if not GetSystemTimes(Act) then 
+  if not GetSystemTimes(Act) then
     exit;
   Load:=(Act.UserTime-Previous.UserTime) +
         (Act.KernelTime-Previous.KernelTime) +
@@ -1453,7 +1498,7 @@ function IsUniqueGlobalComponentName(const aName: string): Boolean;
 begin
   if Assigned(IsUniqueGlobalComponentNameProc) then
     Result:=IsUniqueGlobalComponentNameProc(aName)
-  else 
+  else
     Result:=Not Assigned(FindGlobalComponent(aName));
 end;
 
@@ -1495,7 +1540,7 @@ function CreateComponentfromRes(const res : string;Inst : THandle;var Component 
   var
     ResStream : TResourceStream;
     ResID : TFPResourceHandle;
-    
+
   begin
 
     if Inst=0 then
@@ -1536,7 +1581,7 @@ function DefaultInitHandler(Instance: TComponent; RootAncestor: TClass): Boolean
     try
 {$endif}
       result:=doinit(Instance.ClassType);
-      if Result then 
+      if Result then
         Instance.ReadDeltaState;
 {$ifdef FPC_HAS_FEATURE_THREADING}
     finally
@@ -1640,7 +1685,7 @@ var
   HInst: THandle;
   RootName, Delta, ResName: string;
   S: TStream;
-  
+
 begin
   S:=nil;
   if (Instance=Nil) or (Proc=Nil) then
@@ -2771,7 +2816,7 @@ var
   aPos: Int64;
   Sig: Packed Array[0..3] of byte;
   IntSig : Longint absolute sig;
-  
+
 begin
   Result:=sofUnknown;
   aPos:=Stream.Position;
@@ -2829,7 +2874,7 @@ begin
   IntConstList := TThreadList.Create;
   ClassList := TThreadList.Create;
   ClassAliasList := nil;
-  { on unix this maps to a simple rw synchornizer }
+  { on unix this maps to a simple rw synchronizer }
   GlobalNameSpace := TMultiReadExclusiveWriteSynchronizer.Create;
   RegisterInitComponentHandler(TComponent,@DefaultInitHandler);
 end;

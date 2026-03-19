@@ -527,12 +527,14 @@ implementation
                   if varspez=vs_const then
                     include(tabstractvarsym(srsym).varoptions,vo_is_typed_const);
                   include(tabstractvarsym(srsym).varoptions,vo_is_default_var);
+                  { There is no reliable way to be sure that this symbol will not be used
+                    later on inside some inlined code, so mark it as global }
+                  include(tabstractvarsym(srsym).varoptions,vo_is_public);
                   { The variable has a value assigned }
                   tabstractvarsym(srsym).varstate:=vs_initialised;
 
                   srsymtable.insertsym(srsym);
                   cnodeutils.insertbssdata(tstaticvarsym(srsym));
-
                 end;
               result:=cloadnode.create(srsym,srsymtable);
             end
@@ -1154,6 +1156,7 @@ implementation
                   { parameters coming after it                    }
                   para.right := nil;
                   para.free;
+                  para := nil;
                 end
               else
                 { read of non s/u-8/16bit, or a write }
@@ -1195,15 +1198,18 @@ implementation
               { free the parameter, since it isn't referenced anywhere anymore }
               para.right := nil;
               para.free;
+              para := nil;
               if assigned(lenpara) then
                 begin
                   lenpara.right := nil;
                   lenpara.free;
+                  lenpara := nil;
                 end;
               if assigned(fracpara) then
                 begin
                   fracpara.right := nil;
                   fracpara.free;
+                  fracpara := nil;
                 end;
             end;
 
@@ -1328,7 +1334,7 @@ implementation
           { add fileparameter }
           para.right := filepara.getcopy;
 
-          { create call statment                                             }
+          { create call statement                                            }
           { since the parameters are in the correct order, we have to insert }
           { the statements always at the end of the current block            }
           addstatement(Tstatementnode(newstatement),
@@ -1569,17 +1575,19 @@ implementation
 
         { free the file parameter (it's copied inside the handle_*_read_write methods) }
         filepara.free;
+        filepara := nil;
 
         { if we found an error, simply delete the generated blocknode }
         if found_error then
           begin
             { ensure that the tempinfo is freed correctly by destroying a
               delete node for it
-              Note: this might happen legitimately whe parsing a generic that
-                    passes a undefined type to Write/Read }
+              Note: this might happen legitimately when parsing a generic that
+                    passes an undefined type to Write/Read }
             if assigned(filetemp) then
-              ctempdeletenode.create(filetemp).free;
-            newblock.free
+              ctempdeletenode.create(filetemp).free; // no nil needed
+            newblock.free;
+            newblock := nil;
           end
         else
           begin
@@ -1702,7 +1710,7 @@ implementation
             exit;
           end;
 
-        { we're going to reuse the exisiting para's, so make sure they }
+        { we're going to reuse the existing para's, so make sure they  }
         { won't be disposed                                            }
         left := nil;
 
@@ -1742,7 +1750,7 @@ implementation
           { unsigned para's  }
           begin
             codepara.left := ctypeconvnode.create_internal(codepara.left,valsinttype);
-            { make it explicit, oterwise you may get a nonsense range }
+            { make it explicit, otherwise you may get a nonsense range}
             { check error if the cardinal already contained a value   }
             { > $7fffffff                                             }
             codepara.get_paratype;
@@ -1788,7 +1796,7 @@ implementation
         { the shortstring-longint val routine by default                   }
         if (sourcepara.resultdef.typ = stringdef) then
           procname := procname + tstringdef(sourcepara.resultdef).stringtypname
-        { zero-based arrays (of char) can be implicitely converted to ansistring, but don't do
+        { zero-based arrays (of char) can be implicitly converted to ansistring, but don't do
           so if not needed because the array is too short }
         else if is_zero_based_array(sourcepara.resultdef) and (sourcepara.resultdef.size>255) then
           procname := procname + 'ansistr'
@@ -1800,7 +1808,7 @@ implementation
         { and the source para }
         codepara.right := sourcepara;
         { sizepara either contains nil if none is needed (which is ok, since   }
-        { then the next statement severes any possible links with other paras  }
+        { then the next statement serves any possible links with other paras   }
         { that sourcepara may have) or it contains the necessary size para and }
         { its right field is nil                                               }
         sourcepara.right := sizepara;
@@ -1830,6 +1838,7 @@ implementation
         destpara.left := nil;
         destpara.right := nil;
         destpara.free;
+        destpara := nil;
 
         { check if we used a temp for code and whether we have to store }
         { it to the real code parameter                                 }
@@ -4328,7 +4337,8 @@ implementation
     function tinlinenode.pass_typecheck_cpu : tnode;
       begin
         Result:=nil;
-        internalerror(2017110102);
+
+        Message1(cg_f_unknown_internal_procedure_number,tostr(ord(inlinenumber)));
       end;
 
 
@@ -4338,6 +4348,7 @@ implementation
          shiftconst: longint;
          objdef: tobjectdef;
          sym : tsym;
+         hdef: tdef;
 
       begin
          result:=nil;
@@ -4478,8 +4489,11 @@ implementation
               if (([cs_check_overflow,cs_check_range]*current_settings.localswitches)<>[]) and not(nf_internal in flags) then
 {$endif}
                 begin
-                  { create constant 1 }
-                  hp:=cordconstnode.create(1,left.resultdef,false);
+                  { create constant 1, ensure the data type is large enough }
+                  range_to_type(
+                    min(1,get_min_value(left.resultdef)),
+                    max(1,get_max_value(left.resultdef)),hdef);
+                  hp:=cordconstnode.create(1,hdef,false);
                   typecheckpass(hp);
                   if not is_integer(hp.resultdef) then
                     inserttypeconv_internal(hp,sinttype);
@@ -4488,7 +4502,7 @@ implementation
                   if not is_integer(left.resultdef) then
                     inserttypeconv_internal(left,sinttype);
 
-                  { addition/substraction depending on succ/pred }
+                  { addition/subtraction depending on succ/pred }
                   if inlinenumber=in_succ_x then
                     hp:=caddnode.create(addn,left,hp)
                   else
@@ -4665,14 +4679,14 @@ implementation
             end;
 
           in_slice_x:
-            { slice can be used only in calls for open array parameters, so it has to be converted appropriatly before
+            { slice can be used only in calls for open array parameters, so it has to be converted appropriately before
               if we get here, the array could not be passed to an open array parameter so it is an error }
             CGMessagePos(left.fileinfo,type_e_mismatch);
 
           in_ord_x,
           in_chr_byte:
             begin
-               { should not happend as it's converted to typeconv }
+               { should not happened as it's converted to typeconv }
                internalerror(200104045);
             end;
 
@@ -4832,7 +4846,7 @@ implementation
          temp_pnode: pnode;
       begin
 {$ifndef cpufpemu}
-        { this procedure might be only used for cpus definining cpufpemu else
+        { this procedure might be only used for cpus defining cpufpemu else
           the optimizer might go into an endless loop when doing x*x -> changes }
         internalerror(2011092401);
 {$endif cpufpemu}
@@ -5035,6 +5049,7 @@ implementation
          tempnode: ttempcreatenode;
          newstatement: tstatementnode;
          newblock: tblocknode;
+         hdef: tdef;
        begin
          newblock := internalstatements(newstatement);
          { extra parameter? }
@@ -5049,8 +5064,11 @@ implementation
            end
          else
            begin
-             { no, create constant 1 }
-             hpp := cordconstnode.create(1,tcallparanode(left).left.resultdef,false);
+             { no, create constant 1, ensure the data type is large enough }
+             range_to_type(
+               min(1,get_min_value(tcallparanode(left).left.resultdef)),
+               max(1,get_max_value(tcallparanode(left).left.resultdef)),hdef);
+             hpp:=cordconstnode.create(1,hdef,false)
            end;
          typecheckpass(hpp);
 
@@ -5392,6 +5410,7 @@ implementation
 
             ppn.left:=nil;
             paras.free;
+            paras := nil;
           end
         else
           result:=ccallnode.createintern('fpc_shortstr_copy',paras);
@@ -5852,7 +5871,7 @@ implementation
                      end;
                    if lastchanged then
                      begin
-                       { we concatted all consecutive ones, so typecheck the new one again }
+                       { we concatenated all consecutive ones, so typecheck the new one again }
                        n:=tnode(list[i]);
                        typecheckpass(n);
                        list[i]:=n;
@@ -5886,7 +5905,7 @@ implementation
                      if not is_array_constructor(n.resultdef) then
                        inserttypeconv(n,arrn.resultdef);
                      { we need to ensure that we get a reference counted
-                       assignement for the temp array }
+                       assignment for the temp array }
                      tempnode:=ctempcreatenode.create(arrn.resultdef,arrn.resultdef.size,tt_persistent,true);
                      addstatement(newstatement,tempnode);
                      addstatement(newstatement,cassignmentnode.create(ctemprefnode.create(tempnode),n));
@@ -5951,6 +5970,7 @@ implementation
            end;
 
          list.free;
+         list := nil;
        end;
 
 

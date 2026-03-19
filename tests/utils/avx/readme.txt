@@ -59,7 +59,7 @@ cd ..
 ./avxtestfilecmp -mtmp/*.o -dtmp -s
 
 ***********************************************************************************************************
-x86_64 testing by using self testing fpc executables: 
+x86_64 testing by using self testing fpc executables:
 
 avxtestgenerator -px8664 -ffpcinc -otmp
 avxtestgenerator -px8664 -fnasm -otmp
@@ -73,7 +73,7 @@ for %e in (*.exe) do call %e
 Note:
 While avxtestgenerator supports FASM output, testing with FASM does not work because
 FASM assembles slightly different from FPC, e.g. it swaps base and index register
-in references if this is benefical (e.g. [rbp+rax] => [rax+rbp] saves one byte).
+in references if this is beneficial (e.g. [rbp+rax] => [rax+rbp] saves one byte).
 ****************************************************************************************************
 
 compare binary-files:

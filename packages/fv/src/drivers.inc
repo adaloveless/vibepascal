@@ -16,7 +16,7 @@
 {                                                          }
 {****************[ THIS CODE IS FREEWARE ]*****************}
 {                                                          }
-{     This sourcecode is released for the purpose to       }
+{     This source code is released for the purpose to      }
 {   promote the pascal language on all platforms. You may  }
 {   redistribute it and/or modify with the following       }
 {   DISCLAIMER.                                            }
@@ -84,13 +84,13 @@ USES
 
    {$IFDEF OS_OS2}                                    { OS2 CODE }
      {$IFDEF PPC_Virtual}                             { VIRTUAL PASCAL UNITS }
-       OS2Api.os2def, OS2Base, OS2PMAPI,                     { Standard units }
+       os2def, OS2Base, OS2PMAPI,                     { Standard units }
      {$ENDIF}
      {$IFDEF PPC_Speed}                               { SPEED PASCAL UNITS }
        BseDos, Os2Def,                                { Standard units }
      {$ENDIF}
      {$IFDEF PPC_FPC}                                 { FPC UNITS }
-       OS2Api.doscalls, Os2Def,                              { Standard units }
+       OS2Api.doscalls, OS2Api.Os2Def,                { Standard units }
      {$ENDIF}
    {$ENDIF}
 
@@ -106,7 +106,7 @@ USES
    {$ENDIF}
 
    {$IFDEF OS_AMIGA}
-      dos, Amiga.Core.Amigados,
+      TP.DOS, Amiga.Core.Amigados,
    {$ENDIF}
 
    System.Console.Video,
@@ -114,8 +114,10 @@ USES
 {$ifdef FV_UNICODE}
    FreeVision.UfvCommon,
    System.Unicode.Graphemebreakproperty,
+   FreeVision.Ufvclip,
 {$else FV_UNICODE}
    FreeVision.Fvcommon,
+   FreeVision.Fvclip,
 {$endif FV_UNICODE}
    System.Objects;                                 { GFV standard units }
 {$ELSE FPC_DOTTEDUNITS}
@@ -165,8 +167,10 @@ USES
 {$ifdef FV_UNICODE}
    UFVCommon,
    GraphemeBreakProperty,
+   ufvclip,
 {$else FV_UNICODE}
    FVCommon,
+   fvclip,
 {$endif FV_UNICODE}
    Objects;                                 { GFV standard units }
 {$ENDIF FPC_DOTTEDUNITS}
@@ -327,7 +331,7 @@ CONST
 {***************************************************************************}
 
 { ******************************* REMARK ****************************** }
-{    The TEvent definition is completely compatable with all existing   }
+{    The TEvent definition is completely compatible with all existing   }
 {  code but adds two new fields ID and Data into the message record     }
 {  which helps with WIN/NT and OS2 message processing.                  }
 { ****************************** END REMARK *** Leon de Boer, 11Sep97 * }
@@ -615,13 +619,13 @@ Called automatically by TApplication.Done.
 PROCEDURE DoneVideo;
 
 {-ClearScreen--------------------------------------------------------
-Does nothing provided for compatability purposes only.
+Does nothing provided for compatibility purposes only.
 04Jan97 LdB
 ---------------------------------------------------------------------}
 PROCEDURE ClearScreen;
 
 {-SetVideoMode-------------------------------------------------------
-Does nothing provided for compatability purposes only.
+Does nothing provided for compatibility purposes only.
 04Jan97 LdB
 ---------------------------------------------------------------------}
 PROCEDURE SetVideoMode (Mode: Sw_Word);
@@ -655,7 +659,7 @@ FUNCTION SystemError (ErrorCode: Sw_Integer; Drive: Byte): Sw_Integer;
 {+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++}
 
 {-PrintStr-----------------------------------------------------------
-Does nothing provided for compatability purposes only.
+Does nothing provided for compatibility purposes only.
 30Jun98 LdB
 ---------------------------------------------------------------------}
 PROCEDURE PrintStr (CONST S: String);
@@ -698,23 +702,23 @@ PROCEDURE ShowMouseCursor;
 {                INITIALIZED DOS/DPMI/WIN/NT/OS2 VARIABLES                  }
 {---------------------------------------------------------------------------}
 CONST
-   CheckSnow    : Boolean = False;                    { Compatability only }
+   CheckSnow    : Boolean = False;                    { Compatibility only }
    MouseEvents  : Boolean = False;                    { Mouse event state }
    MouseReverse : Boolean = False;                    { Mouse reversed }
-   HiResScreen  : Boolean = False;                    { Compatability only }
-   CtrlBreakHit : Boolean = False;                    { Compatability only }
-   SaveCtrlBreak: Boolean = False;                    { Compatability only }
-   SysErrActive : Boolean = False;                    { Compatability only }
-   FailSysErrors: Boolean = False;                    { Compatability only }
+   HiResScreen  : Boolean = False;                    { Compatibility only }
+   CtrlBreakHit : Boolean = False;                    { Compatibility only }
+   SaveCtrlBreak: Boolean = False;                    { Compatibility only }
+   SysErrActive : Boolean = False;                    { Compatibility only }
+   FailSysErrors: Boolean = False;                    { Compatibility only }
    ButtonCount  : Byte = 0;                           { Mouse button count }
    DoubleDelay  : Sw_Word = 8;                           { Double click delay }
    RepeatDelay  : Sw_Word = 8;                           { Auto mouse delay }
    SysColorAttr : Sw_Word = $4E4F;                       { System colour attr }
    SysMonoAttr  : Sw_Word = $7070;                       { System mono attr }
-   StartupMode  : Sw_Word = $FFFF;                       { Compatability only }
-   CursorLines  : Sw_Word = $FFFF;                       { Compatability only }
-   ScreenBuffer : Pointer = Nil;                      { Compatability only }
-   SaveInt09    : Pointer = Nil;                      { Compatability only }
+   StartupMode  : Sw_Word = $FFFF;                       { Compatibility only }
+   CursorLines  : Sw_Word = $FFFF;                       { Compatibility only }
+   ScreenBuffer : Pointer = Nil;                      { Compatibility only }
+   SaveInt09    : Pointer = Nil;                      { Compatibility only }
    SysErrorFunc : TSysErrorFunc = {$ifdef FPC}@{$endif}SystemError; { System error ptr }
 
 
@@ -983,7 +987,7 @@ END;
 {---------------------------------------------------------------------------}
 PROCEDURE ExitDrivers; {$IFNDEF PPC_FPC}{$IFNDEF OS_UNIX} FAR; {$ENDIF}{$ENDIF}
 BEGIN
-   DoneSysError;                                      { Relase error trap }
+   DoneSysError;                                      { Release error trap }
    DoneEvents;                                        { Close event driver }
 {   DoneKeyboard;}
    DoneVideo;
@@ -1410,6 +1414,8 @@ begin
      MouseWhere.Y:=e.y;
      Event.Double:=false;
      Event.Triple:=false;
+     if (e.Buttons and (MouseButton4 or MouseButton5))<>0 then
+       e.Action:=MouseActionDown; { wheel buttons process in mouse down event }
      case e.Action of
        MouseActionMove :
          Event.What:=evMouseMove;
@@ -1445,7 +1451,9 @@ begin
                MouseButton5: Event.Wheel:=mwDown;
              end;
              e.Buttons:=e.Buttons and( not word( MouseButton4 or MouseButton5)); {remove wheel buttons for Buttons}
-             AutoTicks:=0;  {there is no "holding down" mouse wheel }
+             { do not temper with AutoTicks because other buttons can be held down while scrolling
+             AutoTicks:=0;}  {there is no "holding down" mouse wheel }
+             LastDouble:=false; { consecutive mouse wheel events all will be double events }
            end;
          end;
        MouseActionUp :
@@ -1512,6 +1520,13 @@ begin
           Event.Id:=SysEvent.x;
           Event.InfoWord:=SysEvent.y;
         end;
+      SysPaste :
+        begin
+          Event.What:=evCommand;
+          Event.Command:=cmPasteText;
+          Event.Id:=SysEvent.Len;
+          Event.InfoPtr:=SysEvent.P;
+        end;
       else
         Event.What:=evNothing;
       end;
@@ -1547,6 +1562,7 @@ BEGIN
      MouseEvents := True;                             { Set initialized flag }
     end;
   InitSystemMsg;
+  InitClip;
 END;
 
 {---------------------------------------------------------------------------}
@@ -1554,6 +1570,7 @@ END;
 {---------------------------------------------------------------------------}
 PROCEDURE DoneEvents;
 BEGIN
+  DoneClip;
   DoneSystemMsg;
   {$IFDEF FPC_DOTTEDUNITS}System.Console.{$ENDIF}Mouse.DoneMouse;
   MouseEvents:=false;
@@ -1638,9 +1655,11 @@ PROCEDURE DoneVideo;
 BEGIN
   if not VideoInitialized then
     exit;
+{$IFNDEF WINDOWS}
   {$IFDEF FPC_DOTTEDUNITS}System.Console.{$ENDIF}Video.SetVideoMode(StartupScreenMode);
   {$IFDEF FPC_DOTTEDUNITS}System.Console.{$ENDIF}Video.ClearScreen;
   {$IFDEF FPC_DOTTEDUNITS}System.Console.{$ENDIF}Video.SetCursorPos(0,0);
+{$ENDIF}
 {$ifdef FV_UNICODE}
   {$IFDEF FPC_DOTTEDUNITS}System.Console.{$ENDIF}Video.DoneEnhancedVideo;
 {$else FV_UNICODE}
@@ -1730,7 +1749,7 @@ VAR W, ResultLength : SmallInt;
      Repeat
        I := L MOD Radix;                              { Radix mod of value }
        S := HexChars[I] + S;                          { Add AnsiChar to string }
-       L := L DIV Radix;                              { Divid by radix }
+       L := L DIV Radix;                              { Divide by radix }
      Until (L = 0);                                   { Until no remainder }
      LongToStr := Sign + S;                           { Return result }
    end;
@@ -1790,10 +1809,10 @@ VAR W, ResultLength : SmallInt;
              Inc(ResultLength,Length(S));
              Continue;
            end;
-           'c': S := AnsiChar(TLongArray(Params)[I]);  { Character parameter }
+           'c': S := Sw_Char (TLongArray(Params)[I]);  { Character parameter }
              'd': S := LongToStr(TLongArray(Params)[I],
                10);                                   { Decimal parameter }
-             's': S := PString(TLongArray(Params)[I])^;{ String parameter }
+             's': S := Sw_String(Pointer(TLongArray(Params)[I])^); { String parameter }
              'x': S := LongToStr(TLongArray(Params)[I],
                16);                                   { Hex parameter }
            end;

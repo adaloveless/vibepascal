@@ -36,7 +36,7 @@ var
    TlsKey : PDWord = @TlsKeyVar;
 
 type
-  TTlsDirectory=packed record
+  TTlsDirectory = record
     data_start, data_end : pointer;
     index_pointer, callbacks_pointer : pointer;
     zero_fill_size : dword;
@@ -74,7 +74,7 @@ procedure Exec_Tls_callback(Handle : pointer; reason : Dword; Reserved : pointer
          Solving it properly needs to move this routine
          to sysinit unit or something like that.
          Exec_Tls_Callback is now part of sysinit unit for win32
-         and the EntryInformation is a constant which sholud prevent troubles }
+         and the EntryInformation is a constant which should prevent troubles }
        DLL_PROCESS_ATTACH:
          begin
            {$ifdef FPC_HAS_INDIRECT_ENTRY_INFORMATION}
@@ -84,9 +84,17 @@ procedure Exec_Tls_callback(Handle : pointer; reason : Dword; Reserved : pointer
            SetupEntryInformation(SysInitEntryInformation);
            {$endif FPC_HAS_INDIRECT_ENTRY_INFORMATION}
            InitHeap;
+         {$ifndef LEGACYHEAP}
+           DeferInitHeapProcessWide;
+         {$endif ndef LEGACYHEAP}
            InitSystemThreads;
          end;
-
+       DLL_PROCESS_DETACH :
+         begin
+         {$ifndef LEGACYHEAP}
+           DoneHeapProcessWide;
+         {$endif ndef LEGACYHEAP}
+         end;
        DLL_THREAD_ATTACH :
          begin
          {  !!! SysInitMultithreading must NOT be called here. Windows guarantees that

@@ -225,7 +225,7 @@ implementation
 
         procedure genitem(t : pcaselabel);
           var
-             range, gap: aint;
+             range, gap, extra: aint;
           begin
              if assigned(t^.less) then
                genitem(t^.less);
@@ -251,13 +251,14 @@ implementation
              else
                begin
                   range := aint(t^._high.svalue - t^._low.svalue);
+                  extra := 0;
                   { it begins with the smallest label, if the value }
                   { is even smaller then jump immediately to the    }
                   { ELSE-label                                }
                   cg.a_reg_alloc(current_asmdata.CurrAsmList, NR_DEFAULTFLAGS);
                   if first then
                     begin
-                       { have we to ajust the first value ? }
+                       { have we to adjust the first value ? }
                        if (t^._low>get_min_value(left.resultdef)) or (get_min_value(left.resultdef)<>0) then
                          cg.a_op_const_reg(current_asmdata.CurrAsmList, OP_SUB, opcgsize, aint(t^._low.svalue), hregister);
                     end
@@ -272,7 +273,7 @@ implementation
                         because A_DEC does not set the correct flags, therefor
                         using a_op_const_reg(OP_SUB) is not possible }
                       if (gap = 1) and (cond_lt in [F_C,F_NC,F_A,F_AE,F_B,F_BE]) then
-                        emit_const_reg(A_SUB, TCGSize2OpSize[opcgsize], gap, hregister)
+                        extra := 1
                       else
                         cg.a_op_const_reg(current_asmdata.CurrAsmList, OP_SUB, opcgsize, gap, hregister);
                       { no jump necessary here if the new range starts at
@@ -285,9 +286,9 @@ implementation
                     because A_DEC does not set the correct flags, therefor
                     using a_op_const_reg(OP_SUB) is not possible }
                   if (cond_le in [F_C,F_NC,F_A,F_AE,F_B,F_BE]) and (range = 1) then
-                    emit_const_reg(A_SUB,TCGSize2OpSize[opcgsize], range, hregister)
+                    emit_const_reg(A_SUB,TCGSize2OpSize[opcgsize], range + extra, hregister)
                   else
-                    cg.a_op_const_reg(current_asmdata.CurrAsmList, OP_SUB, opcgsize, range, hregister);
+                    cg.a_op_const_reg(current_asmdata.CurrAsmList, OP_SUB, opcgsize, range + extra, hregister);
 
                   cg.a_jmp_flags(current_asmdata.CurrAsmList,cond_le,blocklabel(t^.blockid));
                   cg.a_reg_dealloc(current_asmdata.CurrAsmList, NR_DEFAULTFLAGS);
@@ -452,7 +453,7 @@ implementation
              if tnormalset(Aset^)=[] then
                 {The expression...
                     if expr in []
-                 ...is allways false. It should be optimized away in the
+                 ...is always false. It should be optimized away in the
                  resultdef pass, and thus never occur here. Since we
                  do generate wrong code for it, do internalerror.}
                 internalerror(2002072301);
@@ -460,9 +461,9 @@ implementation
              ranges:=false;
              numparts:=0;
              compares:=0;
-             { Lots of comparisions take a lot of time, so do not allow
-               too much comparisions. 8 comparisions are, however, still
-               smalller than emitting the set }
+             { Lots of comparisons take a lot of time, so do not allow
+               too much comparisons. 8 comparisons are, however, still
+               smaller than emitting the set }
              if cs_opt_size in current_settings.optimizerswitches then
                maxcompares:=8
              else
@@ -556,7 +557,7 @@ implementation
          if codegenerror then
           exit;
 
-         { ofcourse not commutative }
+         { of course not commutative }
          if nf_swapped in flags then
           swapleftright;
 
@@ -597,7 +598,7 @@ implementation
 
             current_asmdata.getjumplabel(l);
 
-            { how much have we already substracted from the x in the }
+            { how much have we already subtracted from the x in the  }
             { "x in [y..z]" expression                               }
             adjustment := 0;
 
@@ -619,7 +620,7 @@ implementation
                         cg.a_op_const_reg(current_asmdata.CurrAsmList,OP_SUB,opsize,setparts[i].start-adjustment,pleftreg);
                       end;
 
-                    { new total value substracted from x:           }
+                    { new total value subtracted from x:            }
                     { adjustment + (setparts[i].start - adjustment) }
                     adjustment := setparts[i].start;
 

@@ -52,7 +52,7 @@ type
   out which one was pressed (Gray+ and Simple+). If you need to know which
   was pressed, you'll need to use the untranslated keycodes, which is system
   dependent. System dependent constants may be defined to cover those, with
-  possibily having the same name (but different value). }
+  possibly having the same name (but different value). }
 
   TEnhancedShiftStateElement = (
     essShift,             { either Left or Right Shift is pressed }
@@ -296,6 +296,9 @@ function GetEnhancedKeyEvent: TEnhancedKeyEvent;
 function PollEnhancedKeyEvent: TEnhancedKeyEvent;
 { Checks if a keyevent is available, and returns it if one is found. If no
   event is pending, it returns 0 }
+
+function ConvertToLegacyKeyEvent(const KeyEvent: TEnhancedKeyEvent): TKeyEvent;
+{ Converts to legacy key event as it is returned by GetKeyEvent or PollKeyEvent }
 
 function ConvertEnhancedToLegacyShiftState(const ShiftState: TEnhancedShiftState): Byte;
 { Converts an enhanced shift state (as in TEnhancedKeyEvent.ShiftState) to a

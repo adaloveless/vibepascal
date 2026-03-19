@@ -200,18 +200,28 @@ type
     MaxFixedArenaSize = 64 * 1024;
     MaxKeptFixedArenas = 4;
 
+    { Bin index that corresponds to the minimum size ChooseFixedArenaSize can return.
+      = VarSizeToBinIndex(MinFixedArenaSize - MinFixedArenaSize shr (FirstVarRangeP2 - FirstVarStepP2), roundUp := true) or so.
+      Pure functions could be useful to calculate these with less hardcoding... }
+    MinArenaBinIndex = 96;
+    { Maximum size that can be added by AllocVar(isArena := true) to the original request.
+      BinIndexToVarSize(MinArenaBinIndex) - 1 is possibly the (minimal) ideal value because it guarantees that
+      there will be no tail left unusable for further arenas, but can be arbitrary. }
+    MaxArenaOverallocation = 7968 - 1;
+
   { Adjustable part ends here~ }
 
   const
     SizeIndexBits = 1 + trunc(ln(FixedSizesCount - 1) /  ln(2));
     SizeIndexMask = 1 shl SizeIndexBits - 1;
-    FixedBitPos = {$if SizeIndexBits >= 3} SizeIndexBits {$else} 3 {$endif}; { Variable chunks use 3 low bits for used / last / fixed arena. }
+    FixedBitPos = {$if SizeIndexBits >= 4} SizeIndexBits {$else} 4 {$endif}; { Variable chunks use 4 low bits for used / last / prev. free / fixed arena. }
     FixedFlag = 1 shl FixedBitPos;
     FixedArenaOffsetShift = {$if FixedBitPos + 1 >= 5} FixedBitPos + 1 {$else} 5 {$endif}; { VarSizeQuant is expected to be 2^5. }
 
     UsedFlag = 1 shl 0;
     LastFlag = 1 shl 1;
-    FixedArenaFlag = 1 shl 2;
+    PrevIsFreeFlag = 1 shl 2;
+    FixedArenaFlag = 1 shl 3;
     VarSizeQuant = 1 shl FixedArenaOffsetShift; {$if VarSizeQuant <> 32} {$error Should in principle work but explanations below assume exactly 32. :)} {$endif}
     VarSizeMask = uint32(-VarSizeQuant);
     HugeHeader = 0; { Special header value for huge chunks. FixedFlag must be 0, and the value must be impossible for a variable chunk. 0 turns out to be suitable. :) }
@@ -235,13 +245,15 @@ type
     VarSizesPerClass = 32;
     VarSizesCount = VarSizeClassesCount * VarSizesPerClass;
     L0BinSize = 32;
-    MinEmptyVarHeaderAndPayload = (MaxFixedHeaderAndPayload + 1 shl FirstVarStepP2 + VarSizeQuant - 1) and -VarSizeQuant;
+
+    { Minimum size of the chunk that can be added to varFree.
+      Medium chunks can be smaller than this, all the way down to MinAnyVarHeaderAndPayload defined later in terms of things it must fit;
+      they aren’t visible for varFree searches but are visible for merging with freed neighbors. }
+    MinSearchableVarHeaderAndPayload = (MaxFixedHeaderAndPayload + 1 shl FirstVarStepP2 + VarSizeQuant - 1) and -VarSizeQuant;
     MaxVarHeaderAndPayload = (MaxFixedHeaderAndPayload + (1 shl VarSizeClassesCount - 1) shl FirstVarRangeP2) and -VarSizeQuant; {$if MaxVarHeaderAndPayload <> MaxFixedHeaderAndPayload + 1047552} {$error does not match the explanation above :D} {$endif}
 
-    class function VarSizeToBinIndex(size: SizeUint; roundUp: boolean): SizeUint; static;
-  {$ifdef DEBUG_HEAP_INC}
-    class function BinIndexToVarSize(binIndex: SizeUint): SizeUint; static;
-  {$endif DEBUG_HEAP_INC}
+    class function VarSizeToBinIndex(size: SizeUint; roundUp: boolean): SizeUint; static; inline; { roundUp is constant. }
+    class function BinIndexToVarSize(binIndex: SizeUint): SizeUint; static; inline;
 
   type
     { Common header of any memory chunk, residing immediately to the left of the ~payload~ (block).
@@ -254,8 +266,8 @@ type
       Variable chunk header, assuming SizeIndexBits = 4:
       h[0] = used flag (h and UsedFlag <> 0)
       h[1] = last flag (h and LastFlag <> 0)
-      h[2] = fixed arena flag (h and FixedArenaFlag <> 0)
-      h[3] = unused
+      h[2] = previous is free flag (h and PrevIsFreeFlag <> 0)
+      h[3] = fixed arena flag (h and FixedArenaFlag <> 0)
       h[4] = 0 (h and FixedFlag = 0)
       h[5:31] = size, rounded up to 32 (VarSizeQuant), shr 5; in other words, size = h and VarSizeMask.
 
@@ -323,14 +335,20 @@ type
 
     pVarOSChunk = ^VarOSChunk;
     VarOSChunk = object(OSChunk)
+    {$ifdef FPC_HAS_FEATURE_THREADING}
+      threadState: pThreadState; { Protected with gs.lock. Nil if orphaned. }
+    {$endif}
     end;
 
     pVarHeader = ^VarHeader;
     VarHeader = record
-    {$ifdef FPC_HAS_FEATURE_THREADING}
-      threadState: pThreadState; { Protected with gs.lock. Nil if orphaned. }
-    {$endif}
-      prevSize: uint32; { Always 0 for the first chunk. }
+      { Negative offset from the end of this VarHeader to owning VarOSChunk, friendlier to x86 LEA instruction than the more obvious positive variant.
+        Truly required only under FPC_HAS_FEATURE_THREADING and could be removed otherwise, bringing the variable header size to the same 4 bytes as fixed headers,
+        but this would require some redesign (reintroducing FirstFlag removed in https://gitlab.com/freepascal.org/fpc/source/-/merge_requests/1027
+        or some other way to detect the first chunk) and does not matter enough to bother.
+        Moreover, accessing VarOSChunk could have been useful beyond multithreading, it just so happens it isn’t. }
+      ofsToOs: int32;
+
       { Assumed to indeed match chunk’s CommonHeader, i.e. that there is no padding after this field.
         Otherwise must be accessed as pCommonHeader(pointer(varHdr) + (VarHeaderSize - CommonHeaderSize))^ :D. }
       ch: CommonHeader;
@@ -343,11 +361,16 @@ type
       binIndex: uint32;
     end;
 
+    { Placed at the end of the free variable chunks that have occupied chunks to the right, thus immediately to the left of such an occupied chunk. }
+    pFreeVarTail = ^FreeVarTail;
+    FreeVarTail = record
+      size: uint32;
+    end;
+
     pHugeChunk = ^HugeChunk;
     HugeChunk = object(OSChunkBase)
     end;
 
-    NonZeroDWord = 1 .. High(uint32); { MAYBE IT WILL WORK ONE DAY (https://gitlab.com/freepascal.org/fpc/source/-/issues/41179). }
   {$ifdef HEAP_INC_USE_SETS}
     Set32 = set of 0 .. 31;
   {$endif HEAP_INC_USE_SETS}
@@ -359,9 +382,12 @@ type
       L1: uint32;
       L0: array[0 .. (VarSizesCount + L0BinSize - 1) div L0BinSize - 1] of uint32;
       bins: array[0 .. VarSizesCount - 1] of pFreeVarChunk;
+      { As an optimization, Add.binIndex can also be a size (will be rounded down), assuming VarSizesCount <= MinSearchableVarHeaderAndPayload. }
+    {$if VarSizesCount > MinSearchableVarHeaderAndPayload} {$error assumption above does not hold} {$endif}
       procedure Add(c: pFreeVarChunk; binIndex: SizeUint);
       procedure Remove(c: pFreeVarChunk);
       function Find(binIndex: SizeUint): pFreeVarChunk;
+      function FindSmaller(binIndex: SizeUint): pFreeVarChunk;
     end;
 
     ThreadState = object
@@ -386,17 +412,25 @@ type
 
       { Only to calculate preferable new fixed arena sizes...
         (Updated infrequently, as opposed to possible “usedPerArena”. When a new arena is required, all existing arenas of its size are full.) }
-      allocatedByFullArenas: array[0 .. FixedSizesCount - 1] of SizeUint;
+      allocatedByFullArenas: array[0 .. FixedSizesCount - 1] of uint32; { SizeUint is not obligatory, overflow is tolerable. }
 
       varFree: VarFreeMap;
+
+    {$if defined(SUPPORT_INIT_HEAP_PROCESS_WIDE) and defined(HAS_SYSOSFREE)}
+      prev, next: pThreadState; { For gs.threads. }
+    {$endif SUPPORT_INIT_HEAP_PROCESS_WIDE and HAS_SYSOSFREE}
 
     {$ifdef DEBUG_HEAP_INC}
       procedure Dump(var f: text);
     {$endif}
 
       function ChooseFixedArenaSize(sizeIndex: SizeUint): SizeUint;
-      function AllocFixed(size: SizeUint): pointer; inline;
-      function FreeFixed(p: pointer): SizeUint; inline;
+      function AllocFixed(size: SizeUint): pointer; {$ifndef DEBUG_HEAP_INC} inline; {$endif}
+      function FreeFixed(p: pointer): SizeUint; {$ifndef DEBUG_HEAP_INC} inline; {$endif}
+      procedure FreeEmptyArenas;
+    {$ifdef HAS_SYSOSFREE}
+      procedure ReplaceFreeOS1(&with: pFreeOSChunk); inline;
+    {$endif HAS_SYSOSFREE}
 
       function GetOSChunk(minSize, maxSize: SizeUint): pOSChunk; {$if defined(HAS_SYSOSFREE) or not defined(FPC_HAS_FEATURE_THREADING)} inline; {$endif}
       function AllocateOSChunk(minSize, maxSize: SizeUint): pOSChunk;
@@ -405,6 +439,7 @@ type
       function FreeVar(p: pointer): SizeUint;
       function TryResizeVar(p: pointer; size: SizeUint): pointer;
 
+      class function AddToHugeUsed(delta: SizeInt): SizeUint; static;
       function AllocHuge(size: SizeUint): pointer;
       function FreeHuge(p: pointer): SizeUint;
       function TryResizeHuge(p: pointer; size: SizeUint): pointer;
@@ -413,6 +448,7 @@ type
     {$ifdef FPC_HAS_FEATURE_THREADING}
       procedure PushToFree(p: pFreeChunk);
       procedure FlushToFree;
+      class procedure FreeToFreeList(tf: pFreeChunk); static;
 
       procedure Orphan;
       procedure AdoptArena(arena: pFixedArena);
@@ -424,21 +460,29 @@ type
     {$endif FPC_HAS_FEATURE_THREADING}
     end;
 
-    GlobalState = record
+    GlobalState = object
+    const
+      LockInitializedProcessWide = -1; { Special lockUse value to support DLL_PROCESS_ATTACH / DLL_PROCESS_DETACH-like mechanism. }
+    var
       hugeUsed: SizeUint; { Same as non-existing “hugeAllocated” as huge chunks don’t have free space.
-                            Protected by gs.lock, but can be read unprotected if unreliability is tolerable.
+                            Atomic, but can be read unprotected if unreliability is tolerable.
                             Huge chunks don’t have thread affinity, so are tracked here. Presently, this value is added to all memory statistics.
                             Not a good idea and makes multithreaded statistics a strange and unreliable mix, but alternatives are even worse. }
 
     {$ifdef FPC_HAS_FEATURE_THREADING}
       lock: TRTLCriticalSection;
       lockUse: int32;
+    {$ifdef SUPPORT_INIT_HEAP_PROCESS_WIDE}
+      askedForProcessWideLockInitialization: boolean;
+    {$endif SUPPORT_INIT_HEAP_PROCESS_WIDE}
 
       { Like ThreadState.varFree but over orphaned OS chunks. Protected by gs.lock. }
       varFree: VarFreeMap;
-    {$ifndef HAS_SYSOSFREE}
+    {$if not defined(HAS_SYSOSFREE)}
       freeOS: FreeOSChunkList;
-    {$endif not HAS_SYSOSFREE}
+    {$elseif defined(SUPPORT_INIT_HEAP_PROCESS_WIDE)}
+      threads: pThreadState;
+    {$endif not HAS_SYSOSFREE | SUPPORT_INIT_HEAP_PROCESS_WIDE}
     {$endif FPC_HAS_FEATURE_THREADING}
     end;
 
@@ -456,8 +500,10 @@ type
   {$if MinFixedHeaderAndPayload < CommonHeaderSize + sizeof(FreeChunk)} {$error MinFixedHeaderAndPayload does not fit CommonHeader + FreeChunk.} {$endif}
     FixedArenaDataOffset = (sizeof(FixedArena) + CommonHeaderSize + Alignment - 1) and -Alignment - CommonHeaderSize;
     VarHeaderSize = sizeof(VarHeader);
+    FreeVarTailSize = sizeof(FreeVarTail);
     VarOSChunkDataOffset = (sizeof(VarOSChunk) + VarHeaderSize + Alignment - 1) and -Alignment - VarHeaderSize;
     HugeChunkDataOffset = (sizeof(HugeChunk) + CommonHeaderSize + Alignment - 1) and -Alignment - CommonHeaderSize;
+    MinAnyVarHeaderAndPayload = (sizeof(VarHeader) + sizeof(FreeVarChunk) + sizeof(FreeVarTail) + VarSizeQuant - 1) and -VarSizeQuant;
   end;
 
   class function HeapInc.SizeMinus1ToIndex(sizeMinus1: SizeUint): SizeUint;
@@ -472,34 +518,21 @@ type
 
   class function HeapInc.VarSizeToBinIndex(size: SizeUint; roundUp: boolean): SizeUint;
   var
-    maxv, binClassIndex: SizeUint;
+    binClassIndex: SizeUint;
   begin
-    if size >= MaxVarHeaderAndPayload then { Large sizes go to the last bin, assuming searches never search for more than MaxVarHeaderAndPayload. }
-      exit(VarSizeClassesCount * VarSizesPerClass - 1);
-    dec(size, MaxFixedHeaderAndPayload);
-    binClassIndex := SizeUint(BsrDWord(NonZeroDWord(size)) - FirstVarRangeP2);
-    if SizeInt(binClassIndex) < 0 then binClassIndex := 0;
-    maxv := (SizeUint(2) shl binClassIndex - 1) shl FirstVarRangeP2;
-    if size <= maxv then
-    begin
-      maxv := maxv shr 1; { Turn into “minv” to be subtracted from size. If size > maxv, “minv” is maxv. :) }
-      maxv := maxv and SizeUint(-SizeInt(1 shl FirstVarRangeP2));
-      dec(SizeInt(binClassIndex)); { Compensate inc(binClassIndex) below, so in the end, it is increased if size > maxv. All of this prevents having an “else” branch with its extra jump. }
-    end;
-    dec(size, maxv);
-    inc(SizeInt(binClassIndex));
-    result := binClassIndex * VarSizesPerClass + SizeUint(size - 1) shr (FirstVarStepP2 + binClassIndex);
-    if not roundUp and (size and SizeUint(SizeUint(1) shl (FirstVarStepP2 + binClassIndex) - 1) <> 0) then
-      dec(result);
+    { Honestly can’t explain the code, it’s made from and equivalent to https://gitlab.com/freepascal.org/fpc/source/-/blob/6ed0a74f54327e07f33e66ddcc4fb5eb8d808dd8/rtl/inc/heap.inc#L503.
+      Basic idea is that size class breakpoints of the form %11..1100_0000_0000 are converted to %11..11 for simple BSR by adding %11_1111_1111 = 1 shl FirstVarRangeP2 - 1,
+      but the rest, in particular applying roundUp, is magic that is somehow equivalent to the original but uses 1/3 of its instructions. }
+    inc(size, 1 shl FirstVarRangeP2 - MaxFixedHeaderAndPayload - ord(roundUp));
+    binClassIndex := BsrDWord(uint32(size) or 1); { Off by +FirstVarRangeP2. “or 1” is not required logically, just triggers node_not_zero optimization. }
+    result := binClassIndex * VarSizesPerClass + size shr (binClassIndex - (FirstVarRangeP2 - FirstVarStepP2)) - (FirstVarRangeP2 * VarSizesPerClass + 1 shl (FirstVarRangeP2 - FirstVarStepP2) + ord(not roundUp));
   end;
 
-{$ifdef DEBUG_HEAP_INC}
   class function HeapInc.BinIndexToVarSize(binIndex: SizeUint): SizeUint;
   begin
-    result := binIndex div VarSizesPerClass;
-    result := MaxFixedHeaderAndPayload + (SizeUint(1) shl result - 1) shl FirstVarRangeP2 + (1 + binIndex mod VarSizesPerClass) shl (FirstVarStepP2 + result);
+    { Same. }
+    result := (1 shl (FirstVarRangeP2 - FirstVarStepP2) + 1 + binIndex mod VarSizesPerClass) shl (binIndex div VarSizesPerClass + FirstVarStepP2) - (1 shl FirstVarRangeP2 - MaxFixedHeaderAndPayload);
   end;
-{$endif DEBUG_HEAP_INC}
 
 {$ifndef HAS_SYSOSFREE}
   function HeapInc.FreeOSChunkList.Get(minSize, maxSize: SizeUint): pOSChunk;
@@ -531,6 +564,12 @@ type
     iL0: SizeUint;
     vL0 {$ifdef HEAP_INC_USE_SETS}, vL1 {$endif}: uint32;
   begin
+    if binIndex >= VarSizesCount then
+      if binIndex >= MaxVarHeaderAndPayload then { Large sizes go to the last bin, assuming searches never search for more than MaxVarHeaderAndPayload. }
+        binIndex := VarSizesCount - 1
+      else
+        binIndex := VarSizeToBinIndex(binIndex, false);
+
     next := bins[binIndex];
     c^.prev := nil;
     c^.next := next;
@@ -607,12 +646,28 @@ type
       exit;
     mask := L0[binIndex div L0BinSize] shr (binIndex mod L0BinSize); { Logically should be “1 + binIndex mod L0BinSize” but the bit that represents the binIndex-th bin is 0 anyway. }
     if mask <> 0 then
-      exit(bins[binIndex + BsfDWord(NonZeroDWord(mask))]);
+      exit(bins[binIndex + BsfDWord(mask or 1 shl (L0BinSize - 1))]); { In these two BsfDWords, ensuring the highest bit to be set is just an optimization, as long as the supposed alternative from https://gitlab.com/freepascal.org/fpc/source/-/issues/41179 does not work. }
     mask := L1 and (SizeUint(-2) shl (binIndex div L0BinSize));
     if mask <> 0 then
     begin
-      binIndex := BsfDWord(NonZeroDWord(mask)); { Index at L0. }
-      result := bins[binIndex * L0BinSize + BsfDWord(NonZeroDWord(L0[binIndex]))];
+      binIndex := BsfDWord(mask or 1 shl (L0BinSize - 1)); { Index at L0. }
+      result := bins[binIndex * L0BinSize + BsfDWord(L0[binIndex] or 1 shl (L0BinSize - 1))]; { Careful, this time “or 1 shl (L0BinSize - 1)” is NOT an optimization: unsynchronized gs.varFree.Find can read zero from L0[binIndex]. }
+    end;
+  end;
+
+  function HeapInc.VarFreeMap.FindSmaller(binIndex: SizeUint): pFreeVarChunk;
+  var
+    mask: uint32;
+  begin
+    mask := L0[binIndex div L0BinSize] and (uint32(1) shl (binIndex mod L0BinSize) - 1);
+    if mask <> 0 then
+      exit(bins[binIndex and SizeUint(-L0BinSize) + BsrDWord(mask or 1)]);
+    result := nil;
+    mask := L1 and (uint32(1) shl (binIndex div L0BinSize) - 1);
+    if mask <> 0 then
+    begin
+      binIndex := BsrDWord(mask or 1);
+      result := bins[binIndex * L0BinSize + BsrDWord(L0[binIndex] or 1)];
     end;
   end;
 
@@ -637,7 +692,7 @@ type
       needLE := false;
     end;
 
-    procedure DumpVarFree(const varFree: VarFreeMap; const name: string);
+    procedure DumpVarFree(const varFree: VarFreeMap; const name: shortstring);
     var
       i: SizeInt;
     begin
@@ -672,7 +727,7 @@ type
           vf := varFree.bins[i];
           repeat
             if Assigned(vf^.prev) then write(f, ' ');
-            write(f, pVarHeader(vf)[-1].ch.h and VarSizeMask);
+            write(f, HexStr(PtrUint(vf), 1 + BsrQWord(PtrUint(vf)) div 4), ':', pVarHeader(vf)[-1].ch.h and VarSizeMask);
             vf := vf^.next;
           until not Assigned(vf);
           write(f, ')');
@@ -721,20 +776,35 @@ type
       writeln(f, 'Var OS chunk, size ', vOs^.size);
       p := pointer(vOs) + (VarOSChunkDataOffset + VarHeaderSize);
       repeat
-        write(f, HexStr(p), ': ',
-          'prevSize = ', pVarHeader(p - VarHeaderSize)^.prevSize, ', size = ', pVarHeader(p - VarHeaderSize)^.ch.h and VarSizeMask);
+        write(f, HexStr(p), ': size = ', pVarHeader(p - VarHeaderSize)^.ch.h and VarSizeMask, ', ofsToOs = ', pVarHeader(p - VarHeaderSize)^.ofsToOs);
         if pVarHeader(p - VarHeaderSize)^.ch.h and UsedFlag <> 0 then
           write(f, ', used')
         else
+        begin
           write(f, ', f r e e');
+          if pVarHeader(p - VarHeaderSize)^.ch.h and LastFlag = 0 then
+            write(f, ' (tail ', pFreeVarTail(p + pVarHeader(p - VarHeaderSize)^.ch.h - VarHeaderSize - FreeVarTailSize)^.size, ')');
+        end;
         if pVarHeader(p - VarHeaderSize)^.ch.h and LastFlag <> 0 then
           write(f, ', last');
+        if pVarHeader(p - VarHeaderSize)^.ch.h and PrevIsFreeFlag <> 0 then
+          write(f, ', prev. is free');
         if pVarHeader(p - VarHeaderSize)^.ch.h and FixedArenaFlag <> 0 then
           write(f, ', fixed arena');
         writeln(f);
         if pVarHeader(p - VarHeaderSize)^.ch.h and LastFlag <> 0 then
           break;
+        if pVarHeader(p - VarHeaderSize)^.ch.h and VarSizeMask = 0 then
+        begin
+          writeln(f,'ERROR: block size is zero, cannot find the next block!');
+          break;
+        end;
         p := p + pVarHeader(p - VarHeaderSize)^.ch.h and VarSizeMask;
+        if p > ((pointer(vOs) + (VarOSChunkDataOffset + VarHeaderSize)) + vOs^.size) then
+        begin
+          writeln(f,'ERROR: previous tail points to ',HexStr(p),' which is outside of this OS chunk!');
+          break;
+        end;
       until false;
       needLE := true;
       vOs := vOs^.next;
@@ -777,7 +847,7 @@ type
       result := MinFixedArenaSize;
     if result > MaxFixedArenaSize then
       result := MaxFixedArenaSize;
-    dec(result, VarHeaderSize + VarSizeQuant); { Prettier fit into OS chunks. }
+    dec(result, result shr (FirstVarRangeP2 - FirstVarStepP2)); { Prettier fit into OS chunks. }
   end;
 
   function HeapInc.ThreadState.AllocFixed(size: SizeUint): pointer;
@@ -813,7 +883,7 @@ type
           { Size index of the first chunk in the arena is used to determine if it can be reused. Set a purposely mismatching value for freshly allocated arena. }
           pCommonHeader(pointer(arena) + FixedArenaDataOffset)^.h := uint32(not sizeIndex);
         end;
-        if pCommonHeader(pointer(arena) + FixedArenaDataOffset)^.h and SizeIndexMask = sizeIndex then
+        if pCommonHeader(pointer(arena) + FixedArenaDataOffset)^.h and SizeIndexMask = uint32(sizeIndex) then
           { Lucky! Just don’t reset the chunk and use its old freelist. }
         else
         begin
@@ -822,44 +892,47 @@ type
           arena^.almostFullThreshold := pVarHeader(arena)[-1].ch.h and VarSizeMask - 2 * IndexToSize(sizeIndex) - (VarHeaderSize + FixedArenaDataOffset); { available space - 2 * chunk size. }
         end;
 
-        { Add arena to partialArenas[sizeIndex]. }
-        nextArena := partialArenas[sizeIndex];
+        { Add arena to partialArenas[sizeIndex], which is nil. Careful: AllocVar above should not call FlushToFree, or this assumption might be violated. }
         arena^.prev := nil;
-        arena^.next := nextArena;
-        if Assigned(nextArena) then
-          nextArena^.prev := arena;
+        arena^.next := nil;
         partialArenas[sizeIndex] := arena;
       end;
     end;
 
     sizeUp := IndexToSize(sizeIndex); { Not reusing the “size” variable saved a register at the time of writing this comment. }
-    statv := used + sizeUp;
-    used := statv;
-    inc(statv, gs.hugeUsed);
-    if statv > maxUsed then
-      maxUsed := statv;
+    inc(used, sizeUp);
 
     { arena from partialArenas has either free chunk or free unformatted space for a new chunk. }
     usedSizeMinus1 := int32(arena^.usedSizeMinus1);
+    arena^.usedSizeMinus1 := uint32(usedSizeMinus1 + int32(sizeUp));
     result := arena^.firstFreeChunk;
-    if not Assigned(result) then
+    if Assigned(result) then
+    begin
+      { This branch is much more likely (when compiling FPC: 9×), so comes first. }
+      arena^.firstFreeChunk := pFreeChunk(result)^.next;
+      if usedSizeMinus1 < int32(arena^.almostFullThreshold) then { Arena is still not full? Uses usedSizeMinus1 value before adding sizeUp, as assumed by almostFullThreshold. }
+        exit;
+    end else
     begin
       { Freelist is empty, so “formattedSize” = usedSizeMinus1 + 1. This “+ 1” is folded into constants. }
       result := pointer(arena) + (FixedArenaDataOffset + CommonHeaderSize + 1) + usedSizeMinus1;
       pCommonHeader(result - CommonHeadersize)^.h := uint32(int32(sizeIndex) + int32(usedSizeMinus1 shl FixedArenaOffsetShift) +
         (FixedFlag + (FixedArenaDataOffset + CommonHeaderSize + 1) shl FixedArenaOffsetShift) { ← const });
-    end else
-      arena^.firstFreeChunk := pFreeChunk(result)^.next;
-    arena^.usedSizeMinus1 := uint32(usedSizeMinus1 + int32(sizeUp));
-    if usedSizeMinus1 >= int32(arena^.almostFullThreshold) then { Uses usedSizeMinus1 value before adding sizeUp, as assumed by almostFullThreshold. }
-    begin
-      inc(allocatedByFullArenas[sizeIndex], pVarHeader(arena)[-1].ch.h); { Without masking with VarSizeMask, ch.h has parasite bits, but they don’t matter as long as they are unchanged, so the same value will be subtracted. }
-      { Remove arena from partialArenas[sizeIndex]. (It was first.) }
-      nextArena := arena^.next;
-      partialArenas[sizeIndex] := nextArena;
-      if Assigned(nextArena) then
-        nextArena^.prev := nil;
+      if usedSizeMinus1 < int32(arena^.almostFullThreshold) then { Arena is still not full? }
+        exit;
     end;
+
+    { Arena became full. This is unlikely, so instead of the “if”, the check is duplicated in both branches above. (Saves a jump from the “then” branch above.) }
+    inc(allocatedByFullArenas[sizeIndex], pVarHeader(arena)[-1].ch.h and VarSizeMask);
+    { Remove arena from partialArenas[sizeIndex]. (It was first.) }
+    nextArena := arena^.next;
+    partialArenas[sizeIndex] := nextArena;
+    if Assigned(nextArena) then
+      nextArena^.prev := nil;
+    { And since this is unlikely, it won’t hurt to update maxUsed (unlike doing it in the common path). }
+    statv := used + gs.hugeUsed;
+    if statv > maxUsed then
+      maxUsed := statv;
   end;
 
   function HeapInc.ThreadState.FreeFixed(p: pointer): SizeUint;
@@ -867,20 +940,24 @@ type
     sizeIndex: SizeUint;
     usedSizeMinus1: int32;
     arena, prevArena, nextArena: pFixedArena;
+  {$ifdef FPC_HAS_FEATURE_THREADING}
+    ts: pThreadState;
+  {$endif FPC_HAS_FEATURE_THREADING}
   begin
     arena := p - pCommonHeader(p - CommonHeaderSize)^.h shr FixedArenaOffsetShift;
 
   {$ifdef FPC_HAS_FEATURE_THREADING}
     { This can be checked without blocking; <arena>.threadState can only change from one value not equal to @self to another value not equal to @self. }
-    if pVarHeader(arena)[-1].threadState <> @self then
+    if pVarOSChunk(pointer(arena) + pVarHeader(arena)[-1].ofsToOs)^.threadState <> @self then
     begin
       EnterCriticalSection(gs.lock);
-      if Assigned(pVarHeader(arena)[-1].threadState) then
+      ts := pVarOSChunk(pointer(arena) + pVarHeader(arena)[-1].ofsToOs)^.threadState;
+      if Assigned(ts) then
       begin
         { Despite atomic Push lock must be held as otherwise target thread might end and destroy its threadState.
           However, target thread won’t block to free p, so PushToFree instantly invalidates p. }
         result := IndexToSize(pCommonHeader(p - CommonHeaderSize)^.h and SizeIndexMask) - CommonHeaderSize;
-        pVarHeader(arena)[-1].threadState^.PushToFree(p);
+        ts^.PushToFree(p);
         LeaveCriticalSection(gs.lock);
         exit;
       end;
@@ -903,9 +980,10 @@ type
     if uint32(usedSizeMinus1) >= arena^.almostFullThreshold then
       if usedSizeMinus1 <> -1 then
       begin
-        dec(allocatedByFullArenas[sizeIndex], pVarHeader(arena)[-1].ch.h);
+        dec(allocatedByFullArenas[sizeIndex], pVarHeader(arena)[-1].ch.h and VarSizeMask);
         { Add arena to partialArenas[sizeIndex]. }
         nextArena := partialArenas[sizeIndex];
+        arena^.prev := nil;
         arena^.next := nextArena;
         if Assigned(nextArena) then
           nextArena^.prev := arena;
@@ -931,6 +1009,31 @@ type
           FreeVar(arena);
       end;
   end;
+
+  procedure HeapInc.ThreadState.FreeEmptyArenas;
+  var
+    arena: pFixedArena;
+  begin
+    while nEmptyArenas > 0 do
+    begin
+      arena := emptyArenas;
+      emptyArenas := arena^.next;
+      dec(nEmptyArenas);
+      FreeVar(arena);
+    end;
+  end;
+
+{$ifdef HAS_SYSOSFREE}
+  procedure HeapInc.ThreadState.ReplaceFreeOS1(&with: pFreeOSChunk);
+  begin
+    if Assigned(freeOS1) then
+    begin
+      dec(allocated, freeOS1^.size);
+      SysOSFree(freeOS1, freeOS1^.size);
+    end;
+    freeOS1 := &with;
+  end;
+{$endif HAS_SYSOSFREE}
 
   function HeapInc.ThreadState.GetOSChunk(minSize, maxSize: SizeUint): pOSChunk;
 {$if defined(FPC_HAS_FEATURE_THREADING) and not defined(HAS_SYSOSFREE)}
@@ -994,57 +1097,71 @@ type
 
   function HeapInc.ThreadState.AllocVar(size: SizeUint; isArena: boolean): pointer;
   var
-    fv: pFreeVarChunk;
+    fv: pFreeVarChunk absolute result;
+    tailFv: pFreeVarChunk;
     osChunk, osNext: pVarOSChunk;
     binIndex, vSizeFlags, statv: SizeUint;
   begin
-    size := (size + (VarHeaderSize + VarSizeQuant - 1)) and SizeUint(-VarSizeQuant);
-
-  {$if (MaxFixedHeaderAndPayload - CommonHeaderSize + 1 + VarHeaderSize + VarSizeQuant - 1) div VarSizeQuant * VarSizeQuant < MinEmptyVarHeaderAndPayload}
-    { Chunk will get freed one day. As a result, it might turn into a free chunk of the same size.
-      Consequently, it must not be smaller than MinEmptyVarHeaderAndPayload.
-      This can be a dead case depending on the constants, which is checked by the enclosing compile-time check. :)
-      Also applies to TryResizeVar. }
-    if size < MinEmptyVarHeaderAndPayload then
-      size := MinEmptyVarHeaderAndPayload;
-  {$endif}
-
-  {$ifdef FPC_HAS_FEATURE_THREADING}
-    if Assigned(toFree) then
-      FlushToFree;
-  {$endif}
-
     { Search varFree for (roughly) smallest chunk ≥ size. }
-    binIndex := VarSizeToBinIndex(size, true);
-    fv := varFree.Find(binIndex);
-    if not Assigned(fv) then
-    begin
-      { Find either other fv or other osChunk that can fit the requested size. }
-      osChunk := pVarOSChunk(GetOSChunk(VarOSChunkDataOffset + size, GrowHeapSize2));
-      if not Assigned(osChunk) then
+    binIndex := VarSizeToBinIndex(size + VarHeaderSize, true);
+    { Round the size up to the bin size.
+      Can do without that, but not doing that will often mean the inability to reuse the hole for the same size because varFree rounds up for searches and down for additions. }
+    size := BinIndexToVarSize(binIndex);
+    repeat { break = found fv or osChunk. }
+      fv := varFree.Find(binIndex);
+      if Assigned(fv) then
+        break;
+
+      { If allocating arena, try to allocate less than requested, within arena size limitations. }
+      if isArena and (binIndex > MinArenaBinIndex) then
       begin
-      {$ifdef FPC_HAS_FEATURE_THREADING}
-        { Preliminary search without blocking, assuming varFree.Find doesn’t do anything that can go wrong. }
-        fv := gs.varFree.Find(binIndex);
-        if Assigned(fv) then
+        fv := varFree.FindSmaller(binIndex);
+        if Assigned(fv) and (fv^.binIndex >= MinArenaBinIndex) then
         begin
-          EnterCriticalSection(gs.lock);
-          fv := gs.varFree.Find(binIndex); { True search. }
-          if Assigned(fv) then
-            AdoptVarOwner(fv); { Moves fv to own varFree. }
-          LeaveCriticalSection(gs.lock);
+          size := pVarHeader(fv)[-1].ch.h and VarSizeMask; { Use the entire chunk. }
+          break;
         end;
-        if not Assigned(fv) then
-      {$endif FPC_HAS_FEATURE_THREADING}
-        begin
-          osChunk := pVarOSChunk(AllocateOSChunk(VarOSChunkDataOffset + size, GrowHeapSize2));
-          if not Assigned(osChunk) then
-            exit(nil);
-        end;
+        fv := nil;
       end;
-    end;
+
+      { Try reusing empty OS chunk. }
+      osChunk := pVarOSChunk(GetOSChunk(VarOSChunkDataOffset + size, GrowHeapSize2));
+      if Assigned(osChunk) then
+        break;
+
+      { If there are empty arenas, free them and retry. }
+      if nEmptyArenas > 0 then
+      begin
+        FreeEmptyArenas;
+        continue;
+      end;
+
+    {$ifdef FPC_HAS_FEATURE_THREADING}
+      { Try reusing an orphaned chunk. }
+      fv := gs.varFree.Find(binIndex); { Preliminary search without blocking, assuming varFree.Find doesn’t do anything that can go wrong. }
+      if Assigned(fv) then
+      begin
+        EnterCriticalSection(gs.lock);
+        fv := gs.varFree.Find(binIndex); { True search. }
+        if Assigned(fv) then
+          AdoptVarOwner(fv); { Moves fv to own varFree. }
+        LeaveCriticalSection(gs.lock);
+        if Assigned(fv) then
+          break;
+      end;
+    {$endif FPC_HAS_FEATURE_THREADING}
+
+      osChunk := pVarOSChunk(AllocateOSChunk(VarOSChunkDataOffset + size, GrowHeapSize2));
+      if Assigned(osChunk) then
+        break;
+      exit; { (nil) as fv is nil and mapped to result. }
+    until false;
     if not Assigned(fv) then
     begin
+    {$ifdef FPC_HAS_FEATURE_THREADING}
+      osChunk^.threadState := @self;
+    {$endif}
+
       { Add osChunk to varOS. }
       osNext := varOS;
       osChunk^.prev := nil;
@@ -1053,73 +1170,76 @@ type
         osNext^.prev := osChunk;
       varOS := osChunk;
 
-      { Format new free var chunk spanning the entire osChunk. }
+      { Format new free var chunk spanning the entire osChunk. FreeVarTail is not required. }
       fv := pointer(osChunk) + (VarOSChunkDataOffset + VarHeaderSize);
-      pVarHeader(pointer(fv) - VarHeaderSize)^.prevSize := 0;
-    {$ifdef FPC_HAS_FEATURE_THREADING}
-      pVarHeader(pointer(fv) - VarHeaderSize)^.threadState := @self;
-    {$endif}
-      pVarHeader(pointer(fv) - VarHeaderSize)^.ch.h := (uint32(osChunk^.size) - VarOSChunkDataOffset) and VarSizeMask + LastFlag;
+      pVarHeader(result - VarHeaderSize)^.ofsToOs := -(VarOSChunkDataOffset + VarHeaderSize);
+      pVarHeader(result - VarHeaderSize)^.ch.h := (uint32(osChunk^.size) - VarOSChunkDataOffset) and VarSizeMask + LastFlag;
     end else
       varFree.Remove(fv);
 
     { Result will be allocated at the beginning of fv; maybe format the remainder and add it back to varFree. }
-    result := fv;
     vSizeFlags := pVarHeader(fv)[-1].ch.h - size; { Inherits LastFlag. }
-    if vSizeFlags >= MinEmptyVarHeaderAndPayload then { Logically “vSizeFlags and VarSizeMask” but here it’s okay to not mask. }
+    if
+      { Allow over-allocating arenas by up to MaxArenaOverallocation.
+        Harmless check if not an arena, assuming (MaxArenaOverallocation and -VarSizeQuant + VarSizeQuant) >= MinSearchableVarHeaderAndPayload. }
+      (vSizeFlags >= MaxArenaOverallocation and -VarSizeQuant + VarSizeQuant) or
+      { Allow leaving a non-searchable tail if non-last.
+        “vSizeFlags >= MinAnyVarHeaderAndPayload” if non-last, “vSizeFlags >= MinSearchableVarHeaderAndPayload” if last. }
+      not isArena and (vSizeFlags >= MinAnyVarHeaderAndPayload + (MinSearchableVarHeaderAndPayload - MinAnyVarHeaderAndPayload) div LastFlag * (vSizeFlags and LastFlag)) then
     begin
-      inc(pointer(fv), size); { result = allocated block, fv = remainder. }
-      pVarHeader(pointer(fv) - VarHeaderSize)^.prevSize := size;
-    {$ifdef FPC_HAS_FEATURE_THREADING}
-      pVarHeader(pointer(fv) - VarHeaderSize)^.threadState := @self;
-    {$endif}
-      pVarHeader(pointer(fv) - VarHeaderSize)^.ch.h := vSizeFlags;
-      if vSizeFlags and LastFlag = 0 then
-        pVarHeader(pointer(fv) + vSizeFlags - VarHeaderSize)^.prevSize := vSizeFlags; { All flags are 0. }
-
-      varFree.Add(fv, VarSizeToBinIndex(vSizeFlags and VarSizeMask, false));
-
       pVarHeader(result - VarHeaderSize)^.ch.h := uint32(size) + UsedFlag;
+      tailFv := result + size; { fv (result) = allocated block, tailFv = remainder. }
+      pVarHeader(pointer(tailFv) - VarHeaderSize)^.ofsToOs := pVarHeader(result - VarHeaderSize)^.ofsToOs - int32(size);
+      pVarHeader(pointer(tailFv) - VarHeaderSize)^.ch.h := vSizeFlags;
+      { Chunk to the right retains its PrevFreeFlag. }
+      if vSizeFlags and LastFlag = 0 then
+        pFreeVarTail(pointer(tailFv) + vSizeFlags - (VarHeaderSize + FreeVarTailSize))^.size := vSizeFlags;
+      if vSizeFlags >= MinSearchableVarHeaderAndPayload then
+        varFree.Add(tailFv, vSizeFlags); { Rounding down, so not masking is ok. }
     end else
     begin
       { Use the entire chunk. }
       inc(vSizeFlags, size);
       pVarHeader(result - VarHeaderSize)^.ch.h := uint32(vSizeFlags) + UsedFlag;
+      if vSizeFlags and LastFlag = 0 then
+        dec(pVarHeader(result + vSizeFlags - VarHeaderSize)^.ch.h, PrevIsFreeFlag);
       size := vSizeFlags and VarSizeMask;
     end;
 
     if isArena then
       inc(pVarHeader(result)[-1].ch.h, FixedArenaFlag) { Arenas aren’t counted in “used” directly. }
     else
-    begin
-      statv := used + size;
-      used := statv;
-      inc(statv, gs.hugeUsed);
-      if statv > maxUsed then
-        maxUsed := statv;
-    end;
+      inc(used, size);
+
+    { Update maxUsed regardless. }
+    statv := used + gs.hugeUsed;
+    if statv > maxUsed then
+      maxUsed := statv;
   end;
 
   function HeapInc.ThreadState.FreeVar(p: pointer): SizeUint;
   var
-    p2: pointer;
-    fSizeFlags, prevSize, hPrev, hNext: SizeUint;
+    fSizeFlags, hNext, prevSize: SizeUint;
     osChunk, osPrev, osNext: pVarOSChunk;
+  {$ifdef FPC_HAS_FEATURE_THREADING}
+    pts: ^pThreadState;
+  {$endif FPC_HAS_FEATURE_THREADING}
   {$ifndef HAS_SYSOSFREE}
     freeOsNext: pFreeOSChunk;
     fOs: ^FreeOSChunkList;
   {$endif not HAS_SYSOSFREE}
   begin
   {$ifdef FPC_HAS_FEATURE_THREADING}
-    if pVarHeader(p - VarHeaderSize)^.threadState <> @self then
+    pts := @pVarOSChunk(p + pVarHeader(p - VarHeaderSize)^.ofsToOs)^.threadState;
+    if pts^ <> @self then
     begin
       EnterCriticalSection(gs.lock);
-      if Assigned(pVarHeader(p - VarHeaderSize)^.threadState) then
+      if Assigned(pts^) then
       begin
         { Despite atomic Push lock must be held as otherwise target thread might end and destroy its threadState.
           However, target thread won’t block to free p, so PushToFree instantly invalidates p. }
         result := pVarHeader(p - VarHeaderSize)^.ch.h and VarSizeMask - VarHeaderSize;
-        pVarHeader(p - VarHeaderSize)^.threadState^.PushToFree(p);
+        pts^^.PushToFree(p);
         LeaveCriticalSection(gs.lock);
         exit;
       end;
@@ -1135,43 +1255,40 @@ type
     else
       dec(fSizeFlags, FixedArenaFlag);
 
-    { If next/prev are free, remove them from varFree and merge with f — (f)uture (f)ree chunk that starts at p, has fSizeFlags,
-      and conveniently always inherits prevSize of its final location. }
+    { If next/prev are free, remove them from varFree and merge with f — (f)uture (f)ree chunk that starts at p and has fSizeFlags. }
     if fSizeFlags and LastFlag = 0 then
     begin
-      p2 := p + result;
-      hNext := pVarHeader(p2 - VarHeaderSize)^.ch.h;
+      hNext := pVarHeader(p + result - VarHeaderSize)^.ch.h;
       if uint32(hNext) and UsedFlag = 0 then
       begin
         inc(fSizeFlags, hNext); { Inherit LastFlag, other p2 flags must be 0. }
-        varFree.Remove(p2);
+        if hNext >= MinSearchableVarHeaderAndPayload then { Logically “hNext and VarSizeMask”. }
+          varFree.Remove(p + result);
+        { Chunk to the right retains its PrevFreeFlag. }
       end;
     end;
 
-    prevSize := pVarHeader(p - VarHeaderSize)^.prevSize;
-    if prevSize <> 0 then
+    if fSizeFlags and PrevIsFreeFlag <> 0 then
     begin
-      p2 := p - prevSize;
-      hPrev := pVarHeader(p2 - VarHeaderSize)^.ch.h;
-      if uint32(hPrev) and UsedFlag = 0 then
-      begin
-        p := p2;
-        inc(fSizeFlags, hPrev); { All p2 flags must be 0. }
-        varFree.Remove(p2);
-      end;
+      prevSize := pFreeVarTail(p - (VarHeaderSize + FreeVarTailSize))^.size;
+      dec(p, prevSize);
+      fSizeFlags := fSizeFlags - PrevIsFreeFlag + prevSize;
+      if uint32(prevSize) >= MinSearchableVarHeaderAndPayload then
+        varFree.Remove(p);
     end;
 
     { Turn p into a free chunk and add it back to varFree...
       unless it spans the entire OS chunk, in which case instead move the chunk from varOS to freeOS1 / freeOS. }
-    if (fSizeFlags and LastFlag = 0) or (pVarHeader(p - VarHeaderSize)^.prevSize <> 0) then
+    if (fSizeFlags and LastFlag = 0) or (pVarHeader(p - VarHeaderSize)^.ofsToOs <> -(VarOSChunkDataOffset + VarHeaderSize)) then
     begin
       dec(fSizeFlags, UsedFlag);
-      if fSizeFlags and LastFlag = 0 then
-        pVarHeader(p + fSizeFlags - VarHeaderSize)^.prevSize := fSizeFlags; { All fSizeFlags flags are 0. }
-
       pVarHeader(p - VarHeaderSize)^.ch.h := fSizeFlags;
-
-      varFree.Add(p, VarSizeToBinIndex(fSizeFlags and VarSizeMask, false));
+      varFree.Add(p, fSizeFlags);
+      if fSizeFlags and LastFlag = 0 then
+      begin
+        pVarHeader(p + fSizeFlags - VarHeaderSize)^.ch.h := pVarHeader(p + fSizeFlags - VarHeaderSize)^.ch.h or PrevIsFreeFlag; { Could have it already. }
+        pFreeVarTail(p + fSizeFlags - (VarHeaderSize + FreeVarTailSize))^.size := fSizeFlags;
+      end;
     end else
     begin
       osChunk := p - (VarOSChunkDataOffset + VarHeaderSize);
@@ -1187,21 +1304,7 @@ type
         osNext^.prev := osPrev;
 
     {$ifdef HAS_SYSOSFREE}
-      { Instantly free if huge. }
-      if osChunk^.size > GrowHeapSize2 then
-      begin
-        dec(allocated, osChunk^.size);
-        SysOSFree(osChunk, osChunk^.size);
-      end else
-      begin
-        { Move to freeOS1, discarding old freeOS1. }
-        if Assigned(freeOS1) then
-        begin
-          dec(allocated, freeOS1^.size);
-          SysOSFree(freeOS1, freeOS1^.size);
-        end;
-        freeOS1 := pFreeOSChunk(osChunk);
-      end;
+      ReplaceFreeOS1(pFreeOSChunk(osChunk)); { Move to freeOS1, discarding old freeOS1. }
     {$else HAS_SYSOSFREE}
       fOs := @freeOS;
       { Share if huge. }
@@ -1235,112 +1338,191 @@ type
 
   function HeapInc.ThreadState.TryResizeVar(p: pointer; size: SizeUint): pointer;
   var
-    fp, p2: pointer;
-    oldpsize, fSizeFlags, growby, statv: SizeUint;
+    ar: pointer absolute result;
+    fv, fp: pointer;
+    arSizeFlags, prevSize2, maxFv, minFragment, fSizeFlags, hNext, hNext2, oldph: uint32;
+    prevSize, binIndex, oldpsize, statv, moveSize: SizeUint;
+  {$ifdef FPC_HAS_FEATURE_THREADING}
+    pts: ^pThreadState;
+  {$endif FPC_HAS_FEATURE_THREADING}
   begin
-    if (size <= MaxFixedHeaderAndPayload - CommonHeaderSize)
-      or (size > GrowHeapSize2) { Not strictly necessary but rejects clearly wrong values early so adding headers to the size doesn’t overflow. }
-    {$ifdef FPC_HAS_FEATURE_THREADING}
-      or (pVarHeader(p - VarHeaderSize)^.threadState <> @self)
-    {$endif}
+    result := nil;
+    if (size > GrowHeapSize2) { Assuming GrowHeapSize2 is never larger than 3.999 Gb, this prevents overflow on adding headers and allows uint32(size) to tune for x64. }
+      or (uint32(size) <= MaxFixedHeaderAndPayload - CommonHeaderSize)
     then
-      exit(nil);
-    size := (size + (VarHeaderSize + VarSizeQuant - 1)) and SizeUint(-VarSizeQuant);
-  {$if (MaxFixedHeaderAndPayload - CommonHeaderSize + 1 + VarHeaderSize + VarSizeQuant - 1) div VarSizeQuant * VarSizeQuant < MinEmptyVarHeaderAndPayload}
-    if size < MinEmptyVarHeaderAndPayload then
-      size := MinEmptyVarHeaderAndPayload;
-  {$endif}
-    result := p; { From now on use result instead of p (saves a register). }
+      exit;
 
-    oldpsize := pVarHeader(result - VarHeaderSize)^.ch.h and VarSizeMask;
-    p2 := result + oldpsize;
-    { (f)uture (f)ree chunk starting at p + size and having fSizeFlags will be created at the end, must exit before that if not required. }
-    if size <= oldpsize then
+  {$ifdef FPC_HAS_FEATURE_THREADING}
+    pts := @pVarOSChunk(p + pVarHeader(p - VarHeaderSize)^.ofsToOs)^.threadState;
+    if pts^ <> @self then
     begin
-      { Shrink. Maybe. }
-      fSizeFlags := oldpsize - size;
-
-      if (pVarHeader(result - VarHeaderSize)^.ch.h and LastFlag <> 0) or (pVarHeader(p2 - VarHeaderSize)^.ch.h and UsedFlag <> 0) then
+      if Assigned(pts^) then { Pretest to avoid acquiring the lock. }
+        exit;
+      EnterCriticalSection(gs.lock);
+      if Assigned(pts^) then
       begin
-        { No empty chunk to the right: create free chunk if ≥ MinEmptyVarHeaderAndPayload, otherwise report success but change nothing. }
-        if fSizeFlags < MinEmptyVarHeaderAndPayload then
-          exit;
-        dec(used, fSizeFlags);
-        inc(fSizeFlags, pVarHeader(result - VarHeaderSize)^.ch.h and LastFlag);
-      end else
-      begin
-        if fSizeFlags = 0 then { Exit early if going to be a no-op. Branch above does the same with a broader check. }
-          exit;
-        dec(used, fSizeFlags);
-        { Has empty chunk to the right: extend with freed space. }
-        inc(fSizeFlags, pVarHeader(p2 - VarHeaderSize)^.ch.h); { Adds size and last flag, other bits are 0. }
-        varFree.Remove(p2);
-      end;
-
-      { Update p size. }
-      pVarHeader(result - VarHeaderSize)^.ch.h := uint32(size) + UsedFlag;
-    end
-    { Grow if there is free space. Note this can result in a chunk larger than e.g. SysGetMem allows (GrowHeapSize div 2 or so). That’s okay as it saves a Move. }
-    else if (pVarHeader(result - VarHeaderSize)^.ch.h and LastFlag = 0) and (pVarHeader(p2 - VarHeaderSize)^.ch.h and UsedFlag = 0) and
-      (pVarHeader(p2)[-1].ch.h >= SizeUint(size - oldpsize)) { Can check without “and VarSizeMask”, will remain ≥ anyway. }
-    then
-    begin
-      fSizeFlags := pVarHeader(p2)[-1].ch.h - (size - oldpsize); { Inherits LastFlag, other flags are 0. }
-      if fSizeFlags < MinEmptyVarHeaderAndPayload then
-        fSizeFlags := fSizeFlags and LastFlag;
-
-      growby := pVarHeader(p2)[-1].ch.h - fSizeFlags;
-      size := oldpsize + growby;
-      statv := used + growby;
-      used := statv;
-      inc(statv, gs.hugeUsed);
-      if statv > maxUsed then
-        maxUsed := statv;
-
-      varFree.Remove(p2);
-      { Update p size. }
-      pVarHeader(result - VarHeaderSize)^.ch.h := uint32(size) + UsedFlag;
-      { No empty chunk? }
-      if fSizeFlags <= LastFlag then
-      begin
-        inc(pVarHeader(result - VarHeaderSize)^.ch.h, fSizeFlags); { Either += LastFlag or a no-op. }
-        if fSizeFlags = 0 then { logically “and LastFlag = 0” }
-          pVarHeader(result + size - VarHeaderSize)^.prevSize := size;
+        LeaveCriticalSection(gs.lock);
         exit;
       end;
+      AdoptVarOwner(p); { ...And continue! }
+      LeaveCriticalSection(gs.lock);
+    end;
+  {$endif FPC_HAS_FEATURE_THREADING}
+
+    { Round the size up, but only if supported by VarSizeToBinIndex: chunks can be reallocated to the sizes larger than MaxVarHeaderAndPayload. }
+    if uint32(size) <= MaxVarHeaderAndPayload - VarHeaderSize then
+    begin
+      binIndex := VarSizeToBinIndex(size + VarHeaderSize, true);
+      size := BinIndexToVarSize(binIndex);
     end else
-      { Possible another case to handle: on growth, if there is no space to the right but there is space to the LEFT, move the data there, avoiding the GetMem + FreeMem.
-        Probably not common enough, but I didn’t even investigate. }
+      size := uint32(uint32(size) + (VarHeaderSize + VarSizeQuant - 1)) and uint32(-VarSizeQuant); { Just do the strictly necessary quantization... }
+
+    { ar + arSizeFlags (from “around”) is the chunk made from p and its adjacent free chunks. }
+    ar := p;
+    arSizeFlags := pVarHeader(ar - VarHeaderSize)^.ch.h;
+
+    if arSizeFlags and LastFlag = 0 then
+    begin
+      hNext := pVarHeader(ar + arSizeFlags and VarSizeMask - VarHeaderSize)^.ch.h;
+      if hNext and UsedFlag = 0 then
+        inc(arSizeFlags, hNext); { Inherit LastFlag, other flags must be 0. }
+    end;
+
+    if arSizeFlags and PrevIsFreeFlag <> 0 then
+    begin
+      prevSize := pFreeVarTail(ar - (VarHeaderSize + FreeVarTailSize))^.size;
+      dec(ar, prevSize);
+      inc(arSizeFlags, prevSize);
+    end;
+
+    if uint32(size) > arSizeFlags then { “ar” has no way to fit the new chunk. }
       exit(nil);
 
-    { Format new free var chunk. }
-    fp := result + size;
-    pVarHeader(fp - VarHeaderSize)^.prevSize := size;
-  {$ifdef FPC_HAS_FEATURE_THREADING}
-    pVarHeader(fp - VarHeaderSize)^.threadState := @self;
-  {$endif}
-    pVarHeader(fp - VarHeaderSize)^.ch.h := fSizeFlags;
-    if fSizeFlags and LastFlag = 0 then
-      pVarHeader(fp + fSizeFlags - VarHeaderSize)^.prevSize := fSizeFlags; { All flags are 0. }
-    varFree.Add(fp, VarSizeToBinIndex(fSizeFlags and VarSizeMask, false));
+    { Check if there is a better place... }
+    maxFv := arSizeFlags div 4 * 3;
+    if (uint32(size) <= MaxVarHeaderAndPayload) and (uint32(size) < maxFv) then { Pretest the condition on a “CONSIDERABLY” better fv below, maybe it’s not going to happen no matter what. }
+    begin
+      fv := varFree.Find(binIndex);
+      if Assigned(fv)
+        { fv may be one of the chunks around; in this case, ignore it. Checked as unsigned(fv - ar) < arSize. }
+        and (PtrUint(PtrInt(PtrUint(fv)) - PtrInt(PtrUint(ar))) >= arSizeFlags) { Logically “arSizeFlags and VarSizeMask”. }
+        { To justify moving FAR, better place should be CONSIDERABLY better: say, <75% of the ar. }
+        and (pVarHeader(fv)[-1].ch.h < maxFv) { Ignore masking, this is a rough check anyway. }
+      then
+        exit(nil);
+    end;
+
+    { So p will be placed inside “ar” after all. It is either moved to the beginning of “ar” or stays in place.
+
+      There might be no choice but to move: reallocating A in
+      [free 1,000][A 1,000][free 1,000]
+      to 2,500 bytes has to move, resulting in
+      [A 2,500][free 500].
+
+      But if there is a choice, moving might be or not be worth it. If we have
+      [free 5,000][A 1,000][free 5,000]
+      then moving will give
+      [A 1,000][free 10,000]
+      and that’s the point — [free 10,000] is better than 2 × [free 5,000]. But if we have
+      [free 64][A 1,000][free 9,936]
+      then moving for the sake of defragmenting these 64 bytes is definitely a waste of time.
+
+      So if there is a choice, moving is performed if fragments on BOTH sides are larger than 1/8 (12.5%) of the (new) size. }
+
+    oldph := pVarHeader(p)[-1].ch.h;
+    if arSizeFlags and PrevIsFreeFlag <> 0 then
+    begin
+      prevSize2 := pFreeVarTail(p - (VarHeaderSize + FreeVarTailSize))^.size;
+      { Consider (not) moving... }
+      dec(arSizeFlags, prevSize2); { Temporarily (or not) remove prevSize from arSizeFlags. This corresponds to the size available without moving. }
+      minFragment := uint32(size) div 8;
+      if (arSizeFlags < uint32(size)) { Size does not fit without moving? }
+        or (prevSize2 >= minFragment) and (uint32(arSizeFlags - uint32(size)) >= minFragment) { There are large enough fragments on both sides? }
+      then
+      begin
+        if prevSize2 >= MinSearchableVarHeaderAndPayload then
+          varFree.Remove(ar);
+        inc(arSizeFlags, prevSize2 - PrevIsFreeFlag); { Add prevSize back, and remove PrevIsFreeFlag. }
+        moveSize := oldph and VarSizeMask;
+        if uint32(size) < uint32(moveSize) then
+          moveSize := uint32(size);
+        { Might overwrite old p header, so must use oldph from now on.
+          Otherwise is safe: won’t overwrite the header of the free chunk after p, won’t be performed in the no-op case. }
+        Move(p^, ar^, moveSize - VarHeaderSize);
+      end else
+        { Not moving; finish the removal of the previous chunk from “ar”. arSizeFlags is already decreased by prevSize, and keeps PrevIsFreeFlag. }
+        ar := p; { Same as inc(ar, prevSize2). }
+    end;
+
+    oldpsize := oldph and VarSizeMask;
+    if (uint32(size) = uint32(oldpsize)) and (ar = p) then
+      { TryResizeVar was a no-op, and with some explicit efforts we managed to write nothing by this point,
+        so we use our last chance to get out. }
+      exit;
+
+    { Remove the free chunk after p. }
+    if oldph and LastFlag = 0 then
+    begin
+      hNext2 := pVarHeader(p + oldpsize - VarHeaderSize)^.ch.h;
+      if (hNext2 and UsedFlag = 0) and (hNext2 >= MinSearchableVarHeaderAndPayload) then
+        varFree.Remove(p + oldpsize);
+    end;
+    dec(used, oldpsize);
+
+    { Format the free chunk after ar, or its absence. }
+    fSizeFlags := uint32(arSizeFlags - uint32(size)) and (VarSizeMask or LastFlag);
+    if fSizeFlags >= uint32(MinAnyVarHeaderAndPayload + (MinSearchableVarHeaderAndPayload - MinAnyVarHeaderAndPayload) div LastFlag * (fSizeFlags and LastFlag)) then
+    begin
+      dec(arSizeFlags, fSizeFlags);
+      fp := ar + size;
+      pVarHeader(fp)[-1].ofsToOs := pVarHeader(ar)[-1].ofsToOs - int32(size);
+      pVarHeader(fp)[-1].ch.h := fSizeFlags;
+      if fSizeFlags and LastFlag = 0 then
+      begin
+        pFreeVarTail(fp + fSizeFlags - (VarHeaderSize + FreeVarTailSize))^.size := fSizeFlags;
+        pVarHeader(fp + fSizeFlags)[-1].ch.h := pVarHeader(fp + fSizeFlags)[-1].ch.h or PrevIsFreeFlag; { May have had it already. }
+      end;
+      if fSizeFlags >= MinSearchableVarHeaderAndPayload then
+        varFree.Add(fp, fSizeFlags);
+    end
+    else if arSizeFlags and LastFlag = 0 then
+      pVarHeader(ar + arSizeFlags and VarSizeMask)[-1].ch.h := pVarHeader(ar + arSizeFlags and VarSizeMask)[-1].ch.h and uint32(not PrevIsFreeFlag); { May not have had it already. }
+
+    pVarHeader(ar)[-1].ch.h := arSizeFlags;
+
+    statv := used + arSizeFlags and VarSizeMask;
+    used := statv;
+    inc(statv, gs.hugeUsed);
+    if statv > maxUsed then
+      maxUsed := statv;
   end;
 
   { If SysOSFree is available, huge chunks aren’t cached by any means.
     If SysOSFree is not available, there’s no choice but to cache them.
     Caching is done directly into gs.freeOS if FPC_HAS_FEATURE_THREADING, otherwise ThreadState.freeOS. }
 
+  class function HeapInc.ThreadState.AddToHugeUsed(delta: SizeInt): SizeUint;
+  begin
+  {$if not defined(FPC_HAS_FEATURE_THREADING)}
+    result := SizeUint(SizeInt(gs.hugeUsed) + delta);
+    gs.hugeUsed := result;
+  {$elseif not defined(VER3_2)}
+    result := AtomicIncrement(gs.hugeUsed, SizeUint(delta));
+  {$elseif sizeof(SizeInt) = sizeof(int64)}
+    result := SizeUint(delta + InterlockedExchangeAdd64(SizeInt(gs.hugeUsed), delta));
+  {$else}
+    result := SizeUint(delta + InterlockedExchangeAdd(SizeInt(gs.hugeUsed), delta));
+  {$endif}
+  end;
+
   function HeapInc.ThreadState.AllocHuge(size: SizeUint): pointer;
   var
-    userSize, hugeUsed: SizeUint;
+    userSize: SizeUint;
   begin
     userSize := size;
     size := (size + (HugeChunkDataOffset + CommonHeaderSize + OSChunkVarSizeQuant - 1)) and SizeUint(-OSChunkVarSizeQuant);
     if size < userSize then { Overflow. }
       exit(AllocFailed);
-  {$ifdef FPC_HAS_FEATURE_THREADING}
-    if Assigned(toFree) then
-      FlushToFree;
-  {$endif}
   {$ifdef HAS_SYSOSFREE}
     result := SysOSAlloc(size);
     if not Assigned(result) then
@@ -1359,11 +1541,7 @@ type
   {$endif HAS_SYSOSFREE}
     pCommonHeader(result + HugeChunkDataOffset)^.h := HugeHeader;
     inc(result, HugeChunkDataOffset + CommonHeaderSize);
-  {$ifdef FPC_HAS_FEATURE_THREADING} EnterCriticalSection(gs.lock); {$endif}
-    hugeUsed := gs.hugeUsed + size;
-    gs.hugeUsed := hugeUsed;
-  {$ifdef FPC_HAS_FEATURE_THREADING} LeaveCriticalSection(gs.lock); {$endif}
-    UpdateMaxStats(hugeUsed);
+    UpdateMaxStats(AddToHugeUsed(size));
   end;
 
   function HeapInc.ThreadState.FreeHuge(p: pointer): SizeUint;
@@ -1375,11 +1553,11 @@ type
   begin
     dec(p, HugeChunkDataOffset + CommonHeaderSize);
     result := pHugeChunk(p)^.size;
-  {$ifdef FPC_HAS_FEATURE_THREADING} EnterCriticalSection(gs.lock); {$endif}
-    dec(gs.hugeUsed, result);
+    AddToHugeUsed(-SizeInt(result));
   {$ifndef HAS_SYSOSFREE} { But you’d better have SysOSFree... }
   {$ifdef FPC_HAS_FEATURE_THREADING}
     fOs := @gs.freeOS; { gs.freeOS aren’t counted anywhere (for now). }
+    EnterCriticalSection(gs.lock);
   {$else FPC_HAS_FEATURE_THREADING}
     fOs := @freeOS;
     inc(allocated, result); { ThreadState.freeOS are counted in ThreadState.allocated. But since “size” (= result) is just moved from “hugeUsed” to “allocated”, it won’t affect maximums. }
@@ -1394,8 +1572,8 @@ type
     else
       fOs^.first := p;
     fOs^.last := p;
-  {$endif ndef HAS_SYSOSFREE}
   {$ifdef FPC_HAS_FEATURE_THREADING} LeaveCriticalSection(gs.lock); {$endif}
+  {$endif ndef HAS_SYSOSFREE}
   {$ifdef HAS_SYSOSFREE} SysOSFree(p, result); {$endif}
     dec(result, HugeChunkDataOffset + CommonHeaderSize);
   end;
@@ -1417,11 +1595,7 @@ type
     result := SysOSRealloc(p - (HugeChunkDataOffset + CommonHeaderSize), oldSize, size);
     if Assigned(result) then
     begin
-    {$ifdef FPC_HAS_FEATURE_THREADING} EnterCriticalSection(gs.lock); {$endif}
-      gs.hugeUsed := gs.hugeUsed - oldSize + size;
-    {$ifdef FPC_HAS_FEATURE_THREADING} LeaveCriticalSection(gs.lock); {$endif}
-      if size > oldSize then
-        UpdateMaxStats(gs.hugeUsed);
+      UpdateMaxStats(AddToHugeUsed(SizeInt(size) - SizeInt(oldSize)));
       pHugeChunk(result)^.size := size;
       inc(result, HugeChunkDataOffset + CommonHeaderSize);
     end;
@@ -1445,23 +1619,27 @@ type
 {$ifdef FPC_HAS_FEATURE_THREADING}
   procedure HeapInc.ThreadState.PushToFree(p: pFreeChunk);
   var
-    next: pFreeChunk;
+    nx: pFreeChunk;
   begin
     repeat
-      next := toFree;
-      p^.next := next;
+      nx := toFree;
+      p^.next := nx;
       WriteBarrier; { Write p after p^.next. }
-    until InterlockedCompareExchange(toFree, p, next) = next;
+    until {$ifdef VER3_2} InterlockedCompareExchange {$else} AtomicCmpExchange {$endif} (toFree, p, nx) = nx;
   end;
 
   procedure HeapInc.ThreadState.FlushToFree;
-  var
-    tf, nx: pFreeChunk;
   begin
-    tf := InterlockedExchange(toFree, nil);
+    FreeToFreeList({$ifdef VER3_2} InterlockedExchange {$else} AtomicExchange {$endif} (toFree, nil));
+  end;
+
+  class procedure HeapInc.ThreadState.FreeToFreeList(tf: pFreeChunk);
+  var
+    nx: pFreeChunk;
+  begin
     while Assigned(tf) do
     begin
-      ReadDependencyBarrier; { Read toFree^.next after toFree. }
+      ReadDependencyBarrier; { Read tf^.next after tf. }
       nx := tf^.next;
       SysFreeMem(tf);
       tf := nx;
@@ -1470,7 +1648,6 @@ type
 
   procedure HeapInc.ThreadState.Orphan;
   var
-    arena: pFixedArena;
     vOs: pVarOSChunk;
     p: pointer;
     h: uint32;
@@ -1478,20 +1655,13 @@ type
     lastFree, nextFree: pFreeOSChunk;
   {$endif not HAS_SYSOSFREE}
   begin
-    if gs.lockUse > 0 then
+    if gs.lockUse <> 0 then
       EnterCriticalSection(HeapInc.gs.lock);
-    FlushToFree; { Performing it under gs.lock guarantees there will be no new toFree requests. }
+    if assigned(toFree) then
+      FlushToFree; { Performing it under gs.lock guarantees there will be no new toFree requests. }
+    FreeEmptyArenas; { Has to free all empty arenas, otherwise the chunk that contains only empty arenas can leak. }
 
-    { Has to free all empty arenas, otherwise the chunk that contains only empty arenas will leak (no one will ever adopt it, as it has nothing to free). }
-    while nEmptyArenas > 0 do
-    begin
-      arena := emptyArenas;
-      emptyArenas := arena^.next;
-      dec(nEmptyArenas);
-      FreeVar(arena);
-    end;
-
-{$ifndef HAS_SYSOSFREE}
+{$if not defined(HAS_SYSOSFREE)}
     { Prepend freeOS to gs.freeOS. }
     lastFree := freeOS.last;
     if Assigned(lastFree) then
@@ -1503,32 +1673,47 @@ type
       else
         gs.freeOS.last := lastFree;
       gs.freeOS.first := freeOS.first;
+      freeOS.first := nil;
+      freeOS.last := nil;
     end;
-{$endif not HAS_SYSOSFREE}
+{$elseif defined(SUPPORT_INIT_HEAP_PROCESS_WIDE)}
+    { Remove from gs.threads, if present. }
+    if Assigned(prev) then
+      prev^.next := next
+    else if @self = gs.threads then { if prev = nil, then this ThreadState is either absent from gs.threads or is its first item. }
+      gs.threads := next;
+    if Assigned(next) then
+      next^.prev := prev;
+    prev := nil;
+    next := nil;
+{$endif not HAS_SYSOSFREE | defined(SUPPORT_INIT_HEAP_PROCESS_WIDE)}
     vOs := varOS;
     while Assigned(vOs) do
     begin
+      vOs^.threadState := nil;
       p := pointer(vOs) + (VarOSChunkDataOffset + VarHeaderSize);
       repeat
-        pVarHeader(p - VarHeaderSize)^.threadState := nil;
         h := pVarHeader(p - VarHeaderSize)^.ch.h;
-        if h and UsedFlag = 0 then
+        { bail out if the next pointer points outside of the allocated OS chunk,
+          or if the size is zero, so the next block would point to ourselves }
+        if (h and VarSizeMask = 0) or
+          ((p + (h and VarSizeMask)) > (pointer(vOs) + (VarOSChunkDataOffset + VarHeaderSize)) + vOs^.size) then
+        begin
+          RunError(203);
+        end;
+        if (h and UsedFlag = 0) and (h >= MinSearchableVarHeaderAndPayload) then
           gs.varFree.Add(p, pFreeVarChunk(p)^.binIndex);
         inc(p, h and VarSizeMask);
       until h and LastFlag <> 0;
       vOs := vOs^.next;
     end;
-    if gs.lockUse > 0 then
+    varOS := nil;
+    if gs.lockUse <> 0 then
       LeaveCriticalSection(gs.lock);
 
 {$ifdef HAS_SYSOSFREE}
-    if Assigned(freeOS1) then
-      SysOSFree(freeOS1, freeOS1^.size); { Does not require gs.lock. }
+    ReplaceFreeOS1(nil); { Does not require gs.lock. }
 {$endif HAS_SYSOSFREE}
-
-    { Zeroing is probably required, because Orphan is called from FinalizeHeap which is called from DoneThread which can be called twice, according to this comment from syswin.inc: }
-    // DoneThread; { Assume everything is idempotent there }
-    FillChar(self, sizeof(self), 0);
   end;
 
   procedure HeapInc.ThreadState.AdoptArena(arena: pFixedArena);
@@ -1550,22 +1735,19 @@ type
         nextArena^.prev := arena;
       partialArenas[sizeIndex] := arena;
     end else
-      inc(allocatedByFullArenas[sizeIndex], pVarHeader(arena)[-1].ch.h);
+      inc(allocatedByFullArenas[sizeIndex], pVarHeader(arena)[-1].ch.h and VarSizeMask);
   end;
 
   procedure HeapInc.ThreadState.AdoptVarOwner(p: pointer);
   var
-    prevSize, statv: SizeUint;
+    statv: SizeUint;
     h: uint32;
     vOs, osNext: pVarOSChunk;
   begin
-    repeat
-      prevSize := pVarHeader(p - VarHeaderSize)^.prevSize;
-      dec(p, prevSize);
-    until prevSize = 0;
+    vOs := p + pVarHeader(p)[-1].ofsToOs;
+    vOs^.threadState := @self;
 
     { Add OS chunk to varOS. }
-    vOs := p - (VarOSChunkDataOffset + VarHeaderSize);
     vOs^.prev := nil;
     osNext := varOS;
     vOs^.next := osNext;
@@ -1579,16 +1761,19 @@ type
     if statv > maxAllocated then
       maxAllocated := statv;
 
+    p := pointer(vOs) + VarOSChunkDataOffset + VarHeaderSize;
     repeat
-      pVarHeader(p - VarHeaderSize)^.threadState := @self;
       h := pVarHeader(p - VarHeaderSize)^.ch.h;
       if h and UsedFlag = 0 then
       begin
-        gs.varFree.Remove(p);
-        varFree.Add(p, pFreeVarChunk(p)^.binIndex);
+        if h >= MinSearchableVarHeaderAndPayload then
+        begin
+          gs.varFree.Remove(p);
+          varFree.Add(p, pFreeVarChunk(p)^.binIndex);
+        end;
       end
       else if h and FixedArenaFlag <> 0 then
-         AdoptArena(p)
+        AdoptArena(p)
       else
         inc(used, h and VarSizeMask); { maxUsed is updated after the loop. }
       inc(p, h and VarSizeMask);
@@ -1603,20 +1788,22 @@ type
   procedure HeapInc.ThreadState.FixupSelfPtr;
   var
     vOs: pVarOSChunk;
-    p: pointer;
-    h: uint32;
   begin
     vOs := varOS;
     while Assigned(vOs) do
     begin
-      p := pointer(vOs) + (VarOSChunkDataOffset + VarHeaderSize);
-      repeat
-        pVarHeader(p - VarHeaderSize)^.threadState := @self;
-        h := pVarHeader(p - VarHeaderSize)^.ch.h;
-        inc(p, h and VarSizeMask);
-      until h and LastFlag <> 0;
+      vOs^.threadState := @self;
       vOs := vOs^.next;
     end;
+  {$if defined(SUPPORT_INIT_HEAP_PROCESS_WIDE) and defined(HAS_SYSOSFREE)}
+    { Not sure if required... }
+    if Assigned(prev) then
+      prev^.next := @self
+    else
+      gs.threads := @self;
+    if Assigned(next) then
+      next^.prev := @self;
+  {$endif SUPPORT_INIT_HEAP_PROCESS_WIDE and HAS_SYSOSFREE}
   end;
 {$endif ndef FPC_SECTION_THREADVARS}
 {$endif FPC_HAS_FEATURE_THREADING}
@@ -1660,9 +1847,13 @@ var
 begin
   ts := @HeapInc.thisTs;
   if size <= HeapInc.MaxFixedHeaderAndPayload - HeapInc.CommonHeaderSize then
-    result := ts^.AllocFixed(size)
-  else if (size < GrowHeapSize2 div 2) { Approximate idea on the max size of the variable chunk. Approximate because size does not include headers but GrowHeapSize2 does. }
-    and (size < HeapInc.MaxVarHeaderAndPayload - HeapInc.VarHeaderSize) then
+    exit(ts^.AllocFixed(size));
+{$ifdef FPC_HAS_FEATURE_THREADING}
+  if Assigned(ts^.toFree) then
+    ts^.FlushToFree;
+{$endif}
+  if (size < GrowHeapSize2 div 2) { Approximate idea on the max size of the variable chunk. Approximate because size does not include headers but GrowHeapSize2 does. }
+    and (size <= HeapInc.MaxVarHeaderAndPayload - HeapInc.VarHeaderSize) then
     result := ts^.AllocVar(size, false)
   else
     result := ts^.AllocHuge(size);
@@ -1686,32 +1877,6 @@ begin
     result := 0;
 end;
 
-function SysTryResizeMem(var p: pointer; size: ptruint): boolean;
-var
-  ts: HeapInc.pThreadState;
-  h: uint32;
-  newp: pointer;
-begin
-  h := HeapInc.pCommonHeader(p - HeapInc.CommonHeaderSize)^.h;
-  if h and HeapInc.FixedFlag <> 0 then
-    result := (size <= HeapInc.MaxFixedHeaderAndPayload - HeapInc.CommonHeaderSize) and (h and HeapInc.SizeIndexMask = HeapInc.SizeMinus1ToIndex(size + (HeapInc.CommonHeaderSize - 1)))
-  else
-  begin
-    ts := @HeapInc.thisTs;
-  {$ifdef FPC_HAS_FEATURE_THREADING}
-    if Assigned(ts^.toFree) then
-      ts^.FlushToFree;
-  {$endif FPC_HAS_FEATURE_THREADING}
-    if h <> HeapInc.HugeHeader then
-      newp := ts^.TryResizeVar(p, size)
-    else
-      newp := ts^.TryResizeHuge(p, size);
-    result := Assigned(newp);
-    if result then
-      p := newp;
-  end;
-end;
-
 function SysMemSize(p: pointer): ptruint;
 var
   h: uint32;
@@ -1729,40 +1894,63 @@ end;
 
 function SysReAllocMem(var p: pointer; size: ptruint):pointer;
 var
-  oldsize, newsize, tocopy: SizeUint;
+  ts: HeapInc.pThreadState;
+  h: uint32;
+  oldOrCopySize: SizeUint;
+  newp: pointer;
 begin
-  if size = 0 then
+  result := p; { Use as old p value until freed etc. }
+  if (size = 0) or not Assigned(result) then { Special cases; check at once. }
+  begin
+    if size = 0 then
     begin
-      SysFreeMem(p);
+      SysFreeMem(result);
       result := nil;
-      p := nil;
-    end
-  else if not Assigned(p) then
-    begin
+    end else
       result := SysGetMem(size);
-      p := result;
-    end
-  else if SysTryResizeMem(p, size) then
-    result := p
-  else
+    p := result;
+    exit;
+  end;
+  h := HeapInc.pCommonHeader(result - HeapInc.CommonHeaderSize)^.h;
+  if h and HeapInc.FixedFlag <> 0 then
+  begin
+    if (size <= HeapInc.MaxFixedHeaderAndPayload - HeapInc.CommonHeaderSize)
+      and (h and HeapInc.SizeIndexMask = HeapInc.SizeMinus1ToIndex(size + (HeapInc.CommonHeaderSize - 1))) then
+      exit;
+  end else
+  begin
+    ts := @HeapInc.thisTs;
+  {$ifdef FPC_HAS_FEATURE_THREADING}
+    if Assigned(ts^.toFree) then
+      ts^.FlushToFree;
+  {$endif FPC_HAS_FEATURE_THREADING}
+    if h <> HeapInc.HugeHeader then
+      newp := ts^.TryResizeVar(result, size)
+    else
+      newp := ts^.TryResizeHuge(result, size);
+    if Assigned(newp) then
     begin
-      oldsize := SysMemSize(p);
-      newsize := size;
-      result := SysGetMem(newsize);
-      if not Assigned(result) then
-        begin
-          if size <= oldsize then
-            { Don’t fail if shrinking. }
-            result := p;
-          exit; { If growing failed, return nil, but keep the old p. }
-        end;
-      tocopy := oldsize;
-      if tocopy > newsize then
-        tocopy := newsize;
-      Move(p^, result^, tocopy);
-      SysFreeMem(p);
-      p := result;
+      p := newp;
+      exit(newp);
     end;
+  end;
+
+  { Generic fallback: GetMem + Move + FreeMem. }
+  oldOrCopySize := SysMemSize(result);
+  newp := SysGetMem(size);
+  if not Assigned(newp) then
+  begin
+    { Don’t fail if shrinking. If growing failed, return nil, but keep the old p. }
+    if size > oldOrCopySize then
+      result := nil;
+    exit;
+  end;
+  p := newp;
+  if oldOrCopySize > size then
+    oldOrCopySize := size;
+  Move(result^, newp^, oldOrCopySize);
+  SysFreeMem(result);
+  result := newp;
 end;
 
 Function SysFreeMemSize(p: pointer; size: ptruint):ptruint;
@@ -1782,15 +1970,92 @@ end;
                                  InitHeap
 *****************************************************************************}
 
+{$ifdef FPC_HAS_FEATURE_THREADING}
+{$ifdef SUPPORT_INIT_HEAP_PROCESS_WIDE}
+{ DeferInitHeapProcessWide / DoneHeapProcessWide are meant to support DLL_PROCESS_ATTACH / DLL_PROCESS_DETACH.
+  Otherwise InitHeapThread + FinalizeHeap called per thread do their best with refcounting... }
+procedure DeferInitHeapProcessWide;
+begin
+  HeapInc.gs.askedForProcessWideLockInitialization := true; { Called before InitSystemThreads, cannot initialize the lock... }
+end;
+
+procedure DoneHeapProcessWide;
+{$ifdef HAS_SYSOSFREE}
+var
+  thisTs, nextTs, ts: HeapInc.pThreadState;
+  stolenTf: HeapInc.pFreeChunk;
+{$endif HAS_SYSOSFREE}
+begin
+  if HeapInc.gs.lockUse <> HeapInc.gs.LockInitializedProcessWide then
+    exit;
+{$ifdef HAS_SYSOSFREE}
+  { We need to free all lingering data of all threads: to-free lists, empty arenas, “freeOS1”s.
+
+    For each particular thread ts, this is what ts^.Orphan does, but ts^.Orphan can’t be (easily) called from another thread:
+    it calls ts^.FlushToFree which calls SysFreeMem which is hardcoded to work with HeapInc.thisTs.
+    It’s not worth redesigning, or the common case of SysFreeMem that must indeed work with HeapInc.thisTs will be slower.
+
+    So we steal and zero ts^.toFree (ts^.FlushToFree is the only thing that prevents ts^.Orphan from working from threads other than ts), call ts^.Orphan,
+    then manually complete toFree requests on our behalf.
+
+    This entire thing is just to handle the case of unloading a DLL before terminating the thread that used this DLL
+    (https://gitlab.com/freepascal.org/fpc/source/-/merge_requests/1173). }
+
+  thisTs := @HeapInc.thisTs;
+  nextTs := HeapInc.gs.threads;
+  while Assigned(nextTs) do
+  begin
+    ts := nextTs;
+    nextTs := ts^.next;
+    if ts = thisTs then { Used for executing toFrees and is orphaned the last. }
+      continue;
+    stolenTf := ts^.toFree;
+    ts^.toFree := nil;
+    ts^.Orphan;
+    HeapInc.ThreadState.FreeToFreeList(stolenTf);
+  end;
+  thisTs^.Orphan;
+{$endif HAS_SYSOSFREE}
+  HeapInc.gs.lockUse := 0;
+  DoneCriticalSection(HeapInc.gs.lock);
+end;
+{$endif SUPPORT_INIT_HEAP_PROCESS_WIDE}
+
 { This function will initialize the Heap manager and need to be called from
   the initialization of the system unit }
-{$ifdef FPC_HAS_FEATURE_THREADING}
 procedure InitHeapThread;
+{$if defined(SUPPORT_INIT_HEAP_PROCESS_WIDE) and defined(HAS_SYSOSFREE)}
+var
+  ts, next: HeapInc.pThreadState;
+{$endif SUPPORT_INIT_HEAP_PROCESS_WIDE and HAS_SYSOSFREE}
 begin
-  if HeapInc.gs.lockUse>0 then
-    InterlockedIncrement(HeapInc.gs.lockUse);
+{$ifdef SUPPORT_INIT_HEAP_PROCESS_WIDE}
+  if (HeapInc.gs.lockUse = 0) and HeapInc.gs.askedForProcessWideLockInitialization then
+  begin
+    HeapInc.gs.lockUse := HeapInc.gs.LockInitializedProcessWide;
+    InitCriticalSection(HeapInc.gs.lock);
+  end else
+{$endif SUPPORT_INIT_HEAP_PROCESS_WIDE}
+  if (HeapInc.gs.lockUse >= 0) and ({$ifdef VER3_2} InterlockedIncrement {$else} AtomicIncrement {$endif} (HeapInc.gs.lockUse) = 1) then
+    InitCriticalSection(HeapInc.gs.lock);
+
+{$if defined(SUPPORT_INIT_HEAP_PROCESS_WIDE) and defined(HAS_SYSOSFREE)}
+  { Add to gs.threads. }
+  ts := @HeapInc.thisTs;
+  EnterCriticalSection(HeapInc.gs.lock);
+  next := HeapInc.gs.threads;
+  { Check if already in gs.threads; this function can in principle be called twice on the same thread (or at least I did call redundant InitThread for some time...). }
+  if not Assigned(ts^.prev) and (ts <> next) then
+  begin
+    ts^.next := next;
+    if Assigned(next) then
+      next^.prev := ts;
+    HeapInc.gs.threads := ts;
+  end;
+  LeaveCriticalSection(HeapInc.gs.lock);
+{$endif SUPPORT_INIT_HEAP_PROCESS_WIDE and HAS_SYSOSFREE}
 end;
-{$endif}
+{$endif FPC_HAS_FEATURE_THREADING}
 
 procedure InitHeap; public name '_FPC_InitHeap';
 begin
@@ -1801,10 +2066,9 @@ end;
 procedure RelocateHeap;
 begin
 {$ifdef FPC_HAS_FEATURE_THREADING}
-  if HeapInc.gs.lockUse > 0 then
+  if HeapInc.gs.lockUse <> 0 then
     exit;
-  HeapInc.gs.lockUse := 1;
-  InitCriticalSection(HeapInc.gs.lock);
+  InitHeapThread; { Initializes the lock and sets lockUse = 1 (or maybe LockInitializedProcessWide). }
 {$ifndef FPC_SECTION_THREADVARS}
   { threadState pointers still point to main thread's thisTs, but they
     have a reference to the global main thisTs, fix them to point
@@ -1825,15 +2089,10 @@ begin
     exit;
 {$if defined(FPC_HAS_FEATURE_THREADING)}
   HeapInc.thisTs.Orphan;
-  if (HeapInc.gs.lockUse > 0) and (InterlockedDecrement(HeapInc.gs.lockUse) = 0) then
+  if (HeapInc.gs.lockUse > 0) and ({$ifdef VER3_2} InterlockedDecrement {$else} AtomicDecrement {$endif} (HeapInc.gs.lockUse) = 0) then
     DoneCriticalSection(HeapInc.gs.lock);
 {$elseif defined(HAS_SYSOSFREE)}
-  if Assigned(HeapInc.thisTs.freeOS1) then
-  begin
-    dec(HeapInc.thisTs.allocated, HeapInc.thisTs.freeOS1^.size); { Just in case... }
-    SysOSFree(HeapInc.thisTs.freeOS1, HeapInc.thisTs.freeOS1^.size);
-    HeapInc.thisTs.freeOS1 := nil; { Just in case... }
-  end;
+  HeapInc.thisTs.ReplaceFreeOS1(nil);
 {$endif FPC_HAS_FEATURE_THREADING | defined(HAS_SYSOSFREE)}
 end;
 

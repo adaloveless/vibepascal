@@ -11,7 +11,7 @@
 
  **********************************************************************}
 {$IFNDEF FPC_DOTTEDUNITS}
-unit wformat;
+unit WFormat;
 {$ENDIF FPC_DOTTEDUNITS}
 
 {$ifdef fpc}
@@ -40,7 +40,7 @@ Type
     Procedure Dump(Const AText : String);
     Procedure DumpLn(Const AText : String);
     // Formatted write. Calls escapetext.
-    Procedure Write(Const AText : String);
+    Procedure Write(Const AText : String); virtual;
     Procedure WriteFmt(Const Fmt : String; Args : Array of const);
     // Document Structure
     Procedure DocumentStart(Const Title : String); Virtual;

@@ -186,7 +186,7 @@ var
 begin
   Assign(f, OutFilename);
   Rewrite(f);
-  
+
   if HeaderCharSet<>'' then begin
     // Write file header  with
     WriteLn(f, 'msgid ""');
@@ -246,7 +246,7 @@ begin
 end;
 
 // This routine stores rst file in rc format. Can be written as MESSAGETABLE
-// as STRINGTABLE. Beware! OS/2 RC doesn't support lines longer whan 255 chars.
+// as STRINGTABLE. Beware! OS/2 RC doesn't support lines longer than 255 chars.
 procedure ConvertToRC;
 var
   i, j: Integer;

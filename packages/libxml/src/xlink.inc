@@ -57,7 +57,7 @@
  * xlinkNodeDetectFunc:
  * @ctx:  user data pointer
  * @node:  the node to check
- * 
+ *
  * This is the prototype for the link detection routine.
  * It calls the default link detection callbacks upon link detection.
  *)
@@ -133,7 +133,7 @@
 {$IFDEF FUNCTION}
 (*
  * The default detection routine, can be overridden, they call the default
- * detection callbacks. 
+ * detection callbacks.
  *)
 function xlinkGetDefaultDetect: xlinkNodeDetectFunc; EXTDECL; external xml2lib;
 procedure xlinkSetDefaultDetect(func: xlinkNodeDetectFunc); EXTDECL; external xml2lib;
@@ -148,6 +148,26 @@ procedure xlinkSetDefaultHandler(handler: xlinkHandlerPtr); EXTDECL; external xm
  * Link detection module itself.
  *)
 function xlinkIsLink(doc: xmlDocPtr; node: xmlNodePtr): xlinkType; EXTDECL; external xml2lib;
+{$ENDIF}
+
+{$IFDEF FUNCTIONVAR}
+(*
+ * The default detection routine, can be overridden, they call the default
+ * detection callbacks.
+ *)
+  xlinkGetDefaultDetect: function: xlinkNodeDetectFunc; EXTDECL;
+  xlinkSetDefaultDetect: procedure(func: xlinkNodeDetectFunc); EXTDECL;
+
+(*
+ * Routines to set/get the default handlers.
+ *)
+  xlinkGetDefaultHandler: function: xlinkHandlerPtr; EXTDECL;
+  xlinkSetDefaultHandler: procedure(handler: xlinkHandlerPtr); EXTDECL;
+
+(*
+ * Link detection module itself.
+ *)
+  xlinkIsLink: function(doc: xmlDocPtr; node: xmlNodePtr): xlinkType; EXTDECL;
 {$ENDIF}
 
 {$ENDIF} (* LIBXML_XPTR_ENABLED *)

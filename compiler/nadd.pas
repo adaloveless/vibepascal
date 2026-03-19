@@ -94,7 +94,7 @@ interface
           function use_mul_helper: boolean; virtual;
 {$endif cpuneedsmulhelper}
 
-          { shall be overriden if the target cpu supports
+          { shall be overridden if the target cpu supports
             an fma instruction
           }
           function use_fma : boolean; virtual;
@@ -370,7 +370,7 @@ const
         v           : tconstexprint;
       begin
         result:=false;
-        { check for comparision with known result because the ranges of the operands don't overlap }
+        { check for comparison with known result because the ranges of the operands don't overlap }
         if (is_constintnode(right) and (left.resultdef.typ=orddef) and
             { don't ignore type checks }
             is_subequal(right.resultdef,left.resultdef)) or
@@ -792,6 +792,59 @@ const
         end;
 
 
+      function TryVariableShiftPair(lin, rin: tnode; bitsize: asizeint): boolean;
+        begin
+          Result:=(rin.nodetype=subn) and
+            is_constintnode(taddnode(rin).left) and
+            (tordconstnode(taddnode(rin).left).value=bitsize) and
+            not might_have_sideeffects(lin) and
+            taddnode(rin).right.isequal(lin);
+        end;
+
+
+      function CheckRotateOptimization(standard_op, reverse_op: TInlineNumber): tnode;
+        var
+          bitsize: asizeint;
+        begin
+          Result:=nil;
+          if is_integer(tshlshrnode(left).left.resultdef) and
+            { Avoid using custom integers due to the risk of unusual sizes and
+              undesired effects in, say, bitpacked records. [Kit] }
+            (torddef(tshlshrnode(left).left.resultdef).ordtype<>customint) and
+            not might_have_sideeffects(tshlshrnode(left).left) and
+            tshlshrnode(left).left.isequal(tshlshrnode(right).left) then
+            begin
+              bitsize:=tshlshrnode(left).left.resultdef.size*8;
+
+              { Check for constants first }
+              if (
+                  is_constintnode(tshlshrnode(left).right) and
+                  (tordconstnode(tshlshrnode(left).right).value>0) and
+                  is_constintnode(tshlshrnode(right).right) and
+                  (tordconstnode(tshlshrnode(right).right).value>0) and
+                  (tordconstnode(tshlshrnode(right).right).value=bitsize-tordconstnode(tshlshrnode(left).right).value)
+                ) or
+                  { Try (X op1 Y) or (X op2 (S-Y)) for variable rotation}
+                  TryVariableShiftPair(tshlshrnode(left).right, tshlshrnode(right).right, bitsize) then
+                begin
+                  result:=cinlinenode.create(standard_op,false,
+                    ccallparanode.create(tshlshrnode(left).PruneKeepRight(),
+                    ccallparanode.create(tshlshrnode(left).PruneKeepLeft(),nil)));
+                  Exit;
+                end;
+
+              { Try (X op1 (S-Y)) or (X op2 Y) for variable rotation }
+              if TryVariableShiftPair(tshlshrnode(right).right, tshlshrnode(left).right, bitsize) then
+                begin
+                  result:=cinlinenode.create(reverse_op,false,
+                    ccallparanode.create(tshlshrnode(right).PruneKeepRight(),
+                    ccallparanode.create(tshlshrnode(right).PruneKeepLeft(),nil)));
+                  Exit;
+                end;
+            end;
+        end;
+
+
       var
         hp: taddnode;
         t,vl,lefttarget,righttarget: tnode;
@@ -912,7 +965,9 @@ const
                      { pointer-pointer results in an integer }
                      if (rt=pointerconstn) then
                        begin
-                         if not(anf_has_pointerdiv in addnodeflags) then
+                         if (cs_typed_addresses in current_settings.localswitches) and
+                            (tpointerdef(rd).pointeddef.size>1) and
+                            not(anf_has_pointerdiv in addnodeflags) then
                            internalerror(2008030101);
                          t:=cpointerconstnode.create(qword(v),resultdef)
                        end
@@ -986,7 +1041,7 @@ const
               have a side effect }
             if (is_constintnode(left) and might_have_sideeffects(right)) or
               (is_constintnode(right) and might_have_sideeffects(left)) then
-              t.free
+              t.free // no nil needed
             else
               result:=t;
             exit;
@@ -1031,7 +1086,7 @@ const
             }
             else if (left.nodetype=nodetype) and
               { there might be a mul operation e.g. longint*longint => int64 in this case
-                we cannot do this optimziation, see e.g. tests/webtbs/tw36587.pp on arm }
+                we cannot do this optimization, see e.g. tests/webtbs/tw36587.pp on arm }
               (compare_defs(resultdef,ld,nothingn)=te_exact) then
               begin
                 if is_constintnode(taddnode(left).left) then
@@ -1090,6 +1145,10 @@ const
                 if (tordconstnode(left).value = 0) then
                   result := ctypeconvnode.create_internal(cunaryminusnode.create(right.getcopy),right.resultdef);
               end
+
+            { change "nil - val" to "-val" }
+            else if (left.nodetype=niln) and is_pointer(right.resultdef) then
+              result := ctypeconvnode.create_internal(cunaryminusnode.create(ctypeconvnode.create_internal(right.getcopy,resultdef)),resultdef)
 
             { convert n - n mod const into n div const*const }
             else if (right.nodetype=modn) and is_constintnode(tmoddivnode(right).right) and
@@ -1386,7 +1445,7 @@ const
              exit;
           end;
 
-        { concating strings ? }
+        { concatenating strings ? }
         concatstrings:=false;
 
         if (lt=ordconstn) and (rt=ordconstn) and
@@ -1568,6 +1627,19 @@ const
               end;
           end;
 
+        { optimize @<proc>=/<>@<proc>,
+          such code might appear in generic specializations }
+        if (nodetype in [equaln,unequaln]) and
+          (left.nodetype=typeconvn) and (is_voidpointer(left.resultdef)) and (ttypeconvnode(left).left.nodetype=typeconvn) and
+          (ttypeconvnode(ttypeconvnode(left).left).convtype=tc_proc_2_procvar) and
+          (ttypeconvnode(ttypeconvnode(left).left).left.nodetype=loadn) and
+          (ttypeconvnode(ttypeconvnode(left).left).left.resultdef.typ=procdef) and
+          left.isequal(right) then
+          begin
+            result:=cordconstnode.create(ord(nodetype=equaln),resultdef,false);
+            exit;
+          end;
+
         { check if
            typeinfo(<type1>)=/<>typeinfo(<type2>)
           can be evaluated at compile time
@@ -1581,9 +1653,9 @@ const
           begin
             case nodetype of
               equaln:
-                result:=cordconstnode.create(ord(tinlinenode(lefttarget).left.resultdef=tinlinenode(righttarget).left.resultdef),bool8type,false);
+                result:=cordconstnode.create(ord(tinlinenode(lefttarget).left.resultdef=tinlinenode(righttarget).left.resultdef),resultdef,false);
               unequaln:
-                result:=cordconstnode.create(ord(tinlinenode(lefttarget).left.resultdef<>tinlinenode(righttarget).left.resultdef),bool8type,false);
+                result:=cordconstnode.create(ord(tinlinenode(lefttarget).left.resultdef<>tinlinenode(righttarget).left.resultdef),resultdef,false);
               else
                 Internalerror(2020092901);
             end;
@@ -1664,7 +1736,7 @@ const
                     { SwapRightWithLeftLeft moves the nodes around in way that we need to insert a minus
                       on left.right: a-b-c becomes b-c-a so we
                       need
-                      1) insert a minus bevor b
+                      1) insert a minus before b
                       2) make the current node an add node, see below
                     }
                     if nodetype=subn then
@@ -1844,7 +1916,7 @@ const
                         ;
                     end;
                   end
-                { short to full boolean evalution possible and useful? }
+                { short to full boolean evaluation possible and useful? }
                 else if not(might_have_sideeffects(right,[mhs_exceptions])) and doshortbooleval(self) then
                   begin
                     case nodetype of
@@ -1977,12 +2049,12 @@ const
               end;
 {$ifdef cpurox}
             { optimize (i shl x) or (i shr (bitsizeof(i)-x)) into rol(x,i) (and different flavours with shl/shr swapped etc.) }
-            if (nodetype=orn)
+            if (nodetype in [addn,orn]) { add also works here }
 {$ifdef m68k}
                and (CPUM68K_HAS_ROLROR in cpu_capabilities[current_settings.cputype])
 {$endif m68k}
 {$ifdef riscv}
-               and ([CPURV_HAS_ZBB,CPURV_HAS_ZBKB]*cpu_capabilities[init_settings.cputype]<>[])
+               and ([CPURV_HAS_ZBB,CPURV_HAS_ZBKB]*cpu_capabilities[current_settings.cputype]<>[])
 {$endif riscv}
 {$ifndef cpu64bitalu}
                and (ld.typ=orddef) and
@@ -1990,58 +2062,18 @@ const
 {$endif cpu64bitalu}
               then
               begin
-                if (left.nodetype=shrn) and (right.nodetype=shln) and
-                   is_constintnode(tshlshrnode(left).right) and
-                   is_constintnode(tshlshrnode(right).right) and
-                   (tordconstnode(tshlshrnode(right).right).value>0) and
-                   (tordconstnode(tshlshrnode(left).right).value>0) and
-                   tshlshrnode(left).left.isequal(tshlshrnode(right).left) and
-                   not(might_have_sideeffects(tshlshrnode(left).left)) then
-                   begin
-                     if (tordconstnode(tshlshrnode(left).right).value=
-                       tshlshrnode(left).left.resultdef.size*8-tordconstnode(tshlshrnode(right).right).value) then
-                       begin
-                         result:=cinlinenode.create(in_ror_x_y,false,
-                           ccallparanode.create(tshlshrnode(left).PruneKeepRight(),
-                           ccallparanode.create(tshlshrnode(left).PruneKeepLeft(),nil)));
-                         exit;
-                       end
-                     else if (tordconstnode(tshlshrnode(right).right).value=
-                       tshlshrnode(left).left.resultdef.size*8-tordconstnode(tshlshrnode(left).right).value) then
-                       begin
-                         result:=cinlinenode.create(in_rol_x_y,false,
-                           ccallparanode.create(tshlshrnode(right).PruneKeepRight(),
-                           ccallparanode.create(tshlshrnode(left).PruneKeepLeft(),nil)));
-                         exit;
-                       end;
-                   end;
-                if (left.nodetype=shln) and (right.nodetype=shrn) and
-                   is_constintnode(tshlshrnode(left).right) and
-                   is_constintnode(tshlshrnode(right).right) and
-                   (tordconstnode(tshlshrnode(right).right).value>0) and
-                   (tordconstnode(tshlshrnode(left).right).value>0) and
-                   tshlshrnode(left).left.isequal(tshlshrnode(right).left) and
-                   not(might_have_sideeffects(tshlshrnode(left).left)) then
-                   begin
-                     if (tordconstnode(tshlshrnode(left).right).value=
-                       tshlshrnode(left).left.resultdef.size*8-tordconstnode(tshlshrnode(right).right).value)
-                        then
-                       begin
-                         result:=cinlinenode.create(in_rol_x_y,false,
-                           ccallparanode.create(tshlshrnode(left).PruneKeepRight(),
-                           ccallparanode.create(tshlshrnode(left).PruneKeepLeft(),nil)));
-                         exit;
-                       end
-                     else if (tordconstnode(tshlshrnode(right).right).value=
-                       tshlshrnode(left).left.resultdef.size*8-tordconstnode(tshlshrnode(left).right).value)
-                        then
-                       begin
-                         result:=cinlinenode.create(in_ror_x_y,false,
-                           ccallparanode.create(tshlshrnode(right).PruneKeepRight(),
-                           ccallparanode.create(tshlshrnode(left).PruneKeepLeft(),nil)));
-                         exit;
-                       end;
-                   end;
+                if (left.nodetype=shln) and (right.nodetype=shrn) then
+                  begin
+                    result:=CheckRotateOptimization(in_rol_x_y,in_ror_x_y);
+                    if Assigned(result) then
+                      Exit;
+                  end
+                else if (left.nodetype=shrn) and (right.nodetype=shln) then
+                  begin
+                    result:=CheckRotateOptimization(in_ror_x_y,in_rol_x_y);
+                    if Assigned(result) then
+                      Exit;
+                  end
               end;
 {$endif cpurox}
             { optimize
@@ -2944,7 +2976,7 @@ const
                   end;
               end;
           end
-         { pointer comparision and subtraction }
+         { pointer comparison and subtraction }
          else if (
                   (rd.typ=pointerdef) and (ld.typ=pointerdef)
                  ) or
@@ -2979,42 +3011,9 @@ const
                       inserttypeconv(left,right.resultdef)
                     else if not(equal_defs(ld,rd)) then
                       IncompatibleTypes(ld,rd);
-                    { now that the type checking is done, convert both to charpointer, }
-                    { because methodpointers are 8 bytes even though only the first 4  }
-                    { bytes must be compared. This can happen here if we are in        }
-                    { TP/Delphi mode, because there @methodpointer = voidpointer (but  }
-                    { a voidpointer of 8 bytes). A conversion to voidpointer would be  }
-                    { optimized away, since the result already was a voidpointer, so   }
-                    { use a charpointer instead (JM)                                   }
 {$if defined(jvm)}
                     inserttypeconv_internal(left,java_jlobject);
                     inserttypeconv_internal(right,java_jlobject);
-{$elseif defined(i8086)}
-                    if is_hugepointer(left.resultdef) then
-                      inserttypeconv_internal(left,charhugepointertype)
-                    else if is_farpointer(left.resultdef) then
-                      inserttypeconv_internal(left,charfarpointertype)
-                    else
-                      inserttypeconv_internal(left,charnearpointertype);
-                    if is_hugepointer(right.resultdef) then
-                      inserttypeconv_internal(right,charhugepointertype)
-                    else if is_farpointer(right.resultdef) then
-                      inserttypeconv_internal(right,charfarpointertype)
-                    else
-                      inserttypeconv_internal(right,charnearpointertype);
-{$elseif defined(wasm)}
-                    if is_wasm_reference_type(left.resultdef) then
-                      inserttypeconv(right,left.resultdef)
-                    else if is_wasm_reference_type(right.resultdef) then
-                      inserttypeconv(left,right.resultdef)
-                    else
-                      begin
-                        inserttypeconv_internal(left,charpointertype);
-                        inserttypeconv_internal(right,charpointertype);
-                      end;
-{$else}
-                    inserttypeconv_internal(left,charpointertype);
-                    inserttypeconv_internal(right,charpointertype);
 {$endif jvm}
                  end;
                ltn,lten,gtn,gten:
@@ -3026,7 +3025,22 @@ const
                         inserttypeconv(right,left.resultdef)
                        else if is_voidpointer(left.resultdef) then
                         inserttypeconv(left,right.resultdef)
-                       else if not(equal_defs(ld,rd)) then
+                       else if not (
+                           { in Delphi two different pointer types can be compared
+                             if either $POINTERMATH is currently enabled or if
+                             both pointer defs were declared with $POINTERMATH
+                             enabled }
+                           (m_delphi in current_settings.modeswitches) and
+                           (ld.typ=pointerdef) and
+                           (rd.typ=pointerdef) and
+                           (
+                             (cs_pointermath in current_settings.localswitches) or
+                             (
+                               tpointerdef(ld).has_pointer_math and
+                               tpointerdef(rd).has_pointer_math
+                             )
+                           )
+                         ) and not(equal_defs(ld,rd)) then
                         IncompatibleTypes(ld,rd);
                      end
                     else
@@ -3135,11 +3149,9 @@ const
                   st_unicodestring :
                     begin
                       if not(is_unicodestring(rd)) then
-                        if not ((ld.size=0) and (nodetype in [equaln,unequaln])) then
-                          inserttypeconv(right,cunicodestringtype);
+                        inserttypeconv(right,cunicodestringtype);
                       if not(is_unicodestring(ld)) then
-                        if not ((rd.size=0) and (nodetype in [equaln,unequaln])) then
-                          inserttypeconv(left,cunicodestringtype);
+                        inserttypeconv(left,cunicodestringtype);
                     end;
                   st_ansistring :
                     begin
@@ -4749,7 +4761,7 @@ const
          { if both are orddefs then check sub types }
          else if (ld.typ=orddef) and (rd.typ=orddef) then
            begin
-             { optimize multiplacation by a power of 2 }
+             { optimize multiplication by a power of 2 }
              if not(cs_check_overflow in current_settings.localswitches) and
                 (nodetype = muln) and
                 (((left.nodetype = ordconstn) and
@@ -4834,6 +4846,17 @@ const
                    expectloc:=LOC_REGISTER
                  else
                    expectloc:=LOC_JUMP;
+              end
+{$elseif defined(wasm)}
+            { WebAssembly does not support overflow checking for 64-bit multiplication }
+            else if (torddef(ld).ordtype in [s64bit,u64bit,scurrency]) and
+                    (cs_check_overflow in current_settings.localswitches) and
+                    (nodetype = muln) then
+              begin
+                result := first_add64bitint;
+                if assigned(result) then
+                  exit;
+                expectloc:=LOC_REGISTER
               end
 {$endif not(cpu64bitalu) and not(cpuhighleveltarget)}
              { generic 32bit conversion }
@@ -4993,7 +5016,7 @@ const
                 exit;
             end
 
-         { pointer comperation and subtraction }
+         { pointer comparison and subtraction }
          else if (ld.typ=pointerdef) then
             begin
               if nodetype in [addn,subn,muln,andn,orn,xorn] then

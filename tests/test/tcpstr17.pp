@@ -1,6 +1,6 @@
 // to have correct test result with delphi set codepage option to 65001
 program tcpstr17;
-{$ifdef go32v2}
+{$if defined(go32v2) or defined(wasi)}
   {$define USE_INTERNAL_UNICODE}
 {$endif}
 
@@ -33,7 +33,7 @@ uses
   cpall,
  {$endif}
  { The unit strings is not really used here,
-   but simpifies the conditional construction
+   but simplifies the conditional construction
    for fpwidestring and unicodeducet use }
   strings;
 {$endif def USE_INTERNAL_UNICODE}

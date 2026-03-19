@@ -26,7 +26,7 @@ unit tgcpu;
   interface
 
     uses
-       globtype,
+       sysutils, globtype,
        aasmdata,
        cgutils, cpubase,
        symtype,tgobj;
@@ -86,7 +86,7 @@ unit tgcpu;
          procedure ungettemp(list: TAsmList; const ref : treference); override;
          procedure allocframepointer(list: TAsmList; out ref: treference);
          procedure allocbasepointer(list: TAsmList; out ref: treference);
-         procedure getlocal(list: TAsmList; size: asizeint; alignment: shortint; def: tdef; sym : tsym; var ref : treference); override;
+         procedure getlocal(list: TAsmList; size: asizeint; alignment, explicitalignment: shortint; def: tdef; sym : tsym; var ref : treference); override;
        end;
 
     function defToWasmBasic(def: tdef; var wbt: TWasmBasicType): Boolean;
@@ -198,7 +198,7 @@ unit tgcpu;
               begin
                 n:=t;
                 t:=t.nextseq;
-                n.Free;
+                n.free; // no nil needed
               end;
             inherited Destroy;
           end;
@@ -220,7 +220,7 @@ unit tgcpu;
 
     destructor ttgwasm.destroy;
       begin
-        localvars.Free;
+        FreeAndNil(localvars);
         inherited destroy;
       end;
 
@@ -300,7 +300,7 @@ unit tgcpu;
         updateFirstTemp;
       end;
 
-    procedure ttgwasm.getlocal(list: TAsmList; size: asizeint; alignment: shortint; def: tdef; sym : tsym; var ref : treference);
+    procedure ttgwasm.getlocal(list: TAsmList; size: asizeint; alignment, explicitalignment: shortint; def: tdef; sym : tsym; var ref : treference);
       var
         wbt: TWasmBasicType;
       begin

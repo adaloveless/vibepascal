@@ -32,7 +32,7 @@ unit aasmdata;
 interface
 
     uses
-       cutils,cclasses,
+       sysutils,cutils,cclasses,
        globtype,systems,
        cgbase,
        symtype,
@@ -111,7 +111,7 @@ interface
          sp_guids,
          sp_paraloc
       );
-      
+
     const
       AsmListTypeStr : array[TAsmListType] of string[24] =(
         'al_begin',
@@ -155,13 +155,13 @@ interface
          procedure insertListBefore(Item:TLinkedListItem;p : TLinkedList); override;
          { inserts another List after the provided item and make this List empty }
          procedure insertListAfter(Item:TLinkedListItem;p : TLinkedList); override;
-         { concats another List at the end and make this List empty }
+         { concatenate another List at the end and make this List empty }
          procedure concatList(p : TLinkedList); override;
-         { concats another List at the start and makes a copy
+         { concatenate another List at the start and makes a copy
            the list is ordered in reverse.
          }
          procedure insertListcopy(p : TLinkedList); override;
-         { concats another List at the end and makes a copy }
+         { concatenate another List at the end and makes a copy }
          procedure concatListcopy(p : TLinkedList); override;
          { removes all items from the list, the items are not freed }
          procedure RemoveAll; override;
@@ -556,7 +556,9 @@ implementation
         memasmsymbols.start;
 {$endif}
         FAltSymbolList.free;
+        FAltSymbolList := nil;
         FAsmSymbolDict.free;
+        FAsmSymbolDict := nil;
 {$ifdef MEMDEBUG}
         memasmsymbols.stop;
 {$endif}
@@ -565,6 +567,7 @@ implementation
         memasmcfi.start;
 {$endif}
         FAsmCFI.free;
+        FAsmCFI := nil;
 {$ifdef MEMDEBUG}
         memasmcfi.stop;
 {$endif}
@@ -573,15 +576,18 @@ implementation
          memasmlists.start;
 {$endif}
         ResStrInits.free;
+        ResStrInits := nil;
         WideInits.free;
+        WideInits := nil;
          for hal:=low(TAsmListType) to high(TAsmListType) do
-           AsmLists[hal].free;
+           FreeAndNil(AsmLists[hal]);
          CurrAsmList.free;
+         CurrAsmList := nil;
 {$ifdef MEMDEBUG}
          memasmlists.stop;
 {$endif}
          for hp := low(TConstPoolType) to high(TConstPoolType) do
-           FConstPools[hp].Free;
+           FreeAndNil(FConstPools[hp]);
       end;
 
     function TAsmData.DefineAsmSymbolByClass(symclass: TAsmSymbolClass; const s: TSymStr; _bind: TAsmSymBind; _typ: Tasmsymtype; def: tdef): TAsmSymbol;
@@ -763,8 +769,11 @@ initialization
 finalization
 {$ifdef MEMDEBUG}
   memasmsymbols.free;
+  memasmsymbols := nil;
   memasmcfi.free;
+  memasmcfi := nil;
   memasmlists.free;
+  memasmlists := nil;
 {$endif MEMDEBUG}
 
 end.

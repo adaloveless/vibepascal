@@ -47,7 +47,7 @@ uses
   fksysutl,
 {$ENDIF}
   verbose,comphook,systems,
-  cutils,cfileutl,cclasses,globals,options,fmodule,parser,symtable,
+  cutils,cfileutl,cclasses,globals,options,switches,fmodule,parser,symtable,
   assemble,link,dbgbase,import,export,tokens,wpo
   { cpu parameter handling }
   ,cpupara
@@ -220,7 +220,7 @@ begin
   { verbose depends on exe_path and must be after globals }
   InitVerbose;
   inittokens;
-  IniTSymtable; {Must come before read_arguments, to enable macrosymstack}
+  InitSymtable; {Must come before read_arguments, to enable macrosymstack}
   do_initSymbolInfo;
   CompilerInited:=true;
 { this is needed here for the IDE
@@ -282,6 +282,10 @@ begin
        { Initialize the compiler }
        InitCompiler(cmd);
 
+       { apply global messages/verbosity }
+       flushpendingswitchesstate;
+       FreeLocalVerbosity(current_settings.pmessage);
+
        { show some info }
        Message1(general_t_compilername,FixFileName(system.paramstr(0)));
        Message1(general_d_sourceos,source_info.name);
@@ -306,7 +310,6 @@ begin
          { We need to add the initial module manually to the list of units }
          addloadedunit(m);
          main_module:=m;
-         m.state:=ms_compile;
          task_handler.addmodule(m);
          task_handler.processqueue;
          end;

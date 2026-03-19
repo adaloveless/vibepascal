@@ -182,7 +182,7 @@ implementation
         arrstringdata.arraybase:=basenode.getcopy;
         old_parsingordarray:=parsingordarray;
         parsingordarray:=true;
-        if (token=_LKLAMMER) or
+        if (current_scanner.token=_LKLAMMER) or
            not is_char(def.elementdef) then
           inherited
         else
@@ -199,7 +199,7 @@ implementation
                   if n.nodetype<>stringconstn then
                     internalerror(2010033010);
                   ca:=pbyte(tstringconstnode(n).asconstpchar);
-                { For tp7 the maximum lentgh can be 255 }
+                { For tp7 the maximum length can be 255 }
                 if (m_tp7 in current_settings.modeswitches) and
                    (len>255) then
                  len:=255;

@@ -1,5 +1,5 @@
 {$IFNDEF FPC_DOTTEDUNITS}
-unit singleinstance;
+unit SingleInstance;
 {$ENDIF FPC_DOTTEDUNITS}
 
 {
@@ -43,12 +43,12 @@ type
     FTimeOutMessages: Integer;
     FTimeOutWaitForInstances: Integer;
     FOnServerReceivedParams: TSingleInstanceParamsEvent;
-  Protected  
+  Protected
     function GetIsClient: Boolean; virtual; abstract;
     function GetIsServer: Boolean; virtual; abstract;
     function GetStartResult: TSingleInstanceStart; virtual;
     procedure DoServerReceivedParams(const aParamsDelimitedText: AnsiString);
-    Procedure SetStartResult(AValue : TSingleInstanceStart); 
+    Procedure SetStartResult(AValue : TSingleInstanceStart);
   public
     constructor Create(aOwner: TComponent); override;
     destructor Destroy; override;
@@ -123,7 +123,7 @@ Procedure TBaseSingleInstance.SetStartResult(AValue : TSingleInstanceStart);
 
 begin
   FStartResult:=AValue;
-end;   
+end;
 
 end.
 

@@ -8,7 +8,7 @@ interface
 
 {$IFDEF FPC_DOTTEDUNITS}
 uses
-  System.Classes, System.SysUtils, System.Net.Sockets, System.Net.Ssockets, System.Net.Sslsockets, 
+  System.Classes, System.SysUtils, System.Net.Sockets, System.Net.Ssockets, System.Net.Sslsockets,
   System.DateUtils, System.CTypes, System.Net.Sslbase, Api.GnuTls;
 {$ELSE FPC_DOTTEDUNITS}
 uses
@@ -285,7 +285,7 @@ begin
      exit;
   if (Socket is TInetSocket) then
     begin
-    FCurrentHostName:=(Socket as TInetSocket).Host;
+    FCurrentHostName:=(Socket as TInetSocket).NetworkAddress.Address;
     if SendHostAsSNI then
       begin
       Result:=CheckOK(gnutls_server_name_set(FSession, GNUTLS_NAME_DNS,PAnsiChar(FCurrentHostName), length(FCurrentHostName)));

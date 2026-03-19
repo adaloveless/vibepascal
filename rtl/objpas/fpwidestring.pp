@@ -161,7 +161,7 @@ begin
     end;
   //Test for the "CharLen" conforms UTF-8 string
   //This means the 10xxxxxx pattern.
-  if SizeUInt(CharLen-1)>MaxLookAead then //Insuficient chars in string to decode UTF-8 array
+  if SizeUInt(CharLen-1)>MaxLookAead then //Insufficient chars in string to decode UTF-8 array
     exit(-1);
   for LookAhead := 1 to CharLen-1 do
     begin
@@ -305,7 +305,7 @@ begin
         begin
           destLen:=destLen + 3*(1+len-i);
           SetLength(dest,destLen);
-          destBuffer:=@dest[1];
+          destBuffer:=@dest[1+actualLen];
           blockLen:=getascii(tunicodechar(locSource^),locMap,destBuffer,(destLen-actualLen));
         end;
       Inc(destBuffer,blockLen);
@@ -861,10 +861,9 @@ begin
   SetUnicodeStringManager(locWideStringManager);
 
   DefaultUnicodeCodePage:=CP_UTF16;
-{$ifdef MSWINDOWS}
+{$if defined(MSWINDOWS)}
   DefaultSystemCodePage:=GetACP();
-{$ELSE MSWINDOWS}
- {$ifdef UNIX}
+{$elseif defined(UNIX)}
   DefaultSystemCodePage:=GetSystemCodepage;
   if (DefaultSystemCodePage = CP_NONE) then
     DefaultSystemCodePage:=CP_UTF8;
@@ -874,15 +873,14 @@ begin
   DefaultFileSystemCodePage:=DefaultSystemCodepage;
   {$endif}
   DefaultRTLFileSystemCodePage:=DefaultFileSystemCodePage;
- {$ELSE UNIX}
+{$else}
   if Assigned (WideStringManager.GetStandardCodePageProc) then
    DefaultSystemCodePage := WideStringManager.GetStandardCodePageProc (scpAnsi)
   else
    DefaultSystemCodePage := CP_NONE;
   DefaultFileSystemCodePage := DefaultSystemCodePage;
   DefaultRTLFileSystemCodePage := DefaultSystemCodePage;
- {$endif UNIX}
-{$endif MSWINDOWS}
+{$endif}
 end;
 
 

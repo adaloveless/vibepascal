@@ -318,7 +318,8 @@ implementation
           '_STACK',
           '_HEAP',
           '.gcc_except_table',
-          '.ARM.attributes'
+          '.ARM.attributes',
+          '.note'
         );
       begin
         if atype=sec_user then
@@ -1229,6 +1230,7 @@ implementation
                 end;
             end;
         instance.Free;
+        instance := nil;
       end;
 
 

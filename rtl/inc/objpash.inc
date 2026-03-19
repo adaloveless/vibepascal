@@ -45,6 +45,7 @@
         class function Create(const aData: array of Byte; aStartIndex: Cardinal; aBigEndian: Boolean = False): TGUID; overload; static;
         class function Create(const aData : PByte; aBigEndian: Boolean = False): TGUID; overload; static;
         function IsEmpty: Boolean;
+        function AsString : ShortString;
       Public
          case integer of
             1 : (
@@ -233,15 +234,15 @@
        RTLString = shortstring;
 
        {$endif FPC_HAS_FEATURE_ANSISTRINGS}
-       
+
        // Dispatch needs a DWord as the first 4 bytes in its untyped parameter.
        // Note that this is different from Delphi, which uses only a word.
        TDispatchMessage = record
          MsgID: DWord;
-       end;  
+       end;
 
        TObject = class
-       {$IFDEF SYSTEM_HAS_FEATURE_MONITOR}
+       {$IFDEF FPC_HAS_FEATURE_MONITOR}
        strict private
           _MonitorData : Pointer;
        private
@@ -251,6 +252,17 @@
        protected
           function GetDisposed : Boolean; inline;
           Property Disposed : Boolean Read GetDisposed;
+      {$IFDEF ENABLE_OBJECTHOOK}
+       public
+          Type
+             TObjectHook = procedure(aObject : TObject);
+          class var
+             AllocateObjectHook : TObjectHook;
+             DestroyObjectHook : TObjectHook;
+       {$ENDIF}
+       public
+          const SystemHasExtendedRTTI = {$IFDEF ENABLE_DELPHI_RTTI}True{$ELSE}False{$ENDIF};
+
        public
           { please don't change the order of virtual methods, because
             their vmt offsets are used by some assembler code which uses
@@ -270,7 +282,13 @@
           class function ClassType : tclass;{$ifdef SYSTEMINLINE}inline;{$endif}
           class function ClassInfo : pointer;
           class function ClassName : shortstring;
-          class function ClassNameIs(const name : RTLString) : boolean;
+          {$IF SIZEOF(CHAR)=2}
+          class function ClassNameIs(const name : AnsiString) : boolean; overload; {$ifdef SYSTEMINLINE}inline;{$endif}
+          {$ENDIF}
+          {$ifdef FPC_HAS_FEATURE_ANSISTRINGS}
+	  class function ClassNameIs(const name : RTLString) : boolean; overload;  {$ifdef SYSTEMINLINE}inline;{$endif}
+          {$endif FPC_HAS_FEATURE_ANSISTRINGS}
+          class function ClassNameIs(const name : ShortString) : boolean;
           class function ClassParent : tclass;{$ifdef SYSTEMINLINE}inline;{$endif}
           class function InstanceSize : SizeInt;// {$ifdef SYSTEMINLINE}inline;{$endif}
           class function InheritsFrom(aclass : tclass) : boolean;
@@ -278,6 +296,8 @@
 
           class function MethodAddress(const name : shortstring) : codepointer;
           class function MethodName(address : codepointer) : shortstring;
+          class procedure GetLastCastErrorInfo(out aFrom,aTo : shortstring); static;
+
           function FieldAddress(const name : shortstring) : pointer;
 
           { new since Delphi 4 }
@@ -305,7 +325,7 @@
           class function QualifiedClassName: RTLString;
           Procedure DisposeOf; inline;
           Procedure CheckDisposed; inline;
-          
+
           function Equals(Obj: TObject) : boolean;virtual;
           function GetHashCode: PtrInt;virtual;
           function ToString: RTLString; virtual;
@@ -393,7 +413,7 @@
            function _Release : longint;{$IFNDEF WINDOWS}cdecl{$ELSE}stdcall{$ENDIF};
        end;
 
-       
+
        TInterfaceThunk = Class(TInterfacedObject)
        Public
          Type
@@ -405,15 +425,18 @@
            end;
            PArgData = ^TargData;
          TThunkCallBack = Procedure(aInstance: Pointer; aMethod,aCount : Longint; aData : PArgData) of object;
-       Private  
+         TQueryInterfaceCallback = procedure(iid : tguid;out Result : longint;out aIntf) of object;
+       Private
+         FOnQueryInterface : TQueryInterfaceCallback;
          FCallback : TThunkCallback;
-       Protected  
+       Protected
          function QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} iid : tguid;out obj) : longint;{$IFNDEF WINDOWS}cdecl{$ELSE}stdcall{$ENDIF};
          Procedure Thunk(aMethod: Longint; aCount : Longint; aData : PArgData); virtual;
-       Public  
+       Public
          constructor create(aCallBack : TThunkCallback);
          function InterfaceVMTOffset : word; virtual;
-       end;  
+         property OnQueryInterface : TQueryInterfaceCallback read FOnQueryInterface Write FOnQueryInterface;
+       end;
        TInterfaceThunkClass = class of TInterfaceThunk;
 
        { some pointer definitions }
@@ -589,7 +612,7 @@
   {*****************************************************************************
                                 TMonitor support
    *****************************************************************************}
-  {$IFDEF SYSTEM_HAS_FEATURE_MONITOR}
+  {$IFDEF FPC_HAS_FEATURE_MONITOR}
   Type
 
   PPMonitor = ^PMonitor;
@@ -654,7 +677,7 @@
   // Will set Do(S|G)etMonitorObjectData fields on aNew, and returns the old manager
   function SetMonitorManager (var aNew : TMonitorManager) : TMonitorManager;
   function GetMonitorManager : TMonitorManager;
-  {$ENDIF}
+  {$ENDIF FPC_HAS_FEATURE_MONITOR}
 
 {$endif FPC_HAS_FEATURE_CLASSES}
 
@@ -762,15 +785,15 @@ Type
   end;
   TPtrWrapperArray = Array of TPtrWrapper;
 
-  { Generic array type. 
-    Slightly Less useful in FPC, since dyn array compatibility is at the element level. 
+  { Generic array type.
+    Slightly Less useful in FPC, since dyn array compatibility is at the element level.
     But still useful for generic methods and of course Delphi compatibility}
   generic TArray<T> = array of T;
 
 
   TMarshal = class sealed
   public
-    Type 
+    Type
       TUnicodeCharArray = Array of UnicodeChar;
       Tint8Array = Array of int8;
       Tint16Array = Array of int16;
@@ -780,7 +803,7 @@ Type
       TUint16Array = Array of Uint16;
       TUint32Array = Array of Uint32;
       TUint64Array = Array of Uint64;
-      
+
   Public
     constructor Create;
 

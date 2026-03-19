@@ -1,4 +1,4 @@
-  JAAppletContext = interface external 'java.applet' name 'AppletContext' 
+  JAAppletContext = interface external 'java.applet' name 'AppletContext'
     function getAudioClip(para1: JNURL): JAAudioClip; overload;
     function getImage(para1: JNURL): JAImage; overload;
     function getApplet(para1: JLString): JAApplet; overload;
@@ -11,7 +11,7 @@
     function getStreamKeys(): JUIterator; overload;
   end;
 
-  JAAppletStub = interface external 'java.applet' name 'AppletStub' 
+  JAAppletStub = interface external 'java.applet' name 'AppletStub'
     function isActive(): jboolean; overload;
     function getDocumentBase(): JNURL; overload;
     function getCodeBase(): JNURL; overload;
@@ -20,17 +20,17 @@
     procedure appletResize(para1: jint; para2: jint); overload;
   end;
 
-  JAAudioClip = interface external 'java.applet' name 'AudioClip' 
+  JAAudioClip = interface external 'java.applet' name 'AudioClip'
     procedure play(); overload;
     procedure loop(); overload;
     procedure stop(); overload;
   end;
 
-  JAActiveEvent = interface external 'java.awt' name 'ActiveEvent' 
+  JAActiveEvent = interface external 'java.awt' name 'ActiveEvent'
     procedure dispatch(); overload;
   end;
 
-  JAAdjustable = interface external 'java.awt' name 'Adjustable' 
+  JAAdjustable = interface external 'java.awt' name 'Adjustable'
     const
       HORIZONTAL = 0;
       VERTICAL = 1;
@@ -61,16 +61,16 @@
     function toString(): JLString; overload; virtual;
   end;
 
-  JAComposite = interface external 'java.awt' name 'Composite' 
+  JAComposite = interface external 'java.awt' name 'Composite'
     function createContext(para1: JAIColorModel; para2: JAIColorModel; para3: JARenderingHints): JACompositeContext; overload;
   end;
 
-  JACompositeContext = interface external 'java.awt' name 'CompositeContext' 
+  JACompositeContext = interface external 'java.awt' name 'CompositeContext'
     procedure dispose(); overload;
     procedure compose(para1: JAIRaster; para2: JAIRaster; para3: JAIWritableRaster); overload;
   end;
 
-  JAConditional = interface external 'java.awt' name 'Conditional' 
+  JAConditional = interface external 'java.awt' name 'Conditional'
     function evaluate(): jboolean; overload;
   end;
 
@@ -193,7 +193,7 @@
       Arr1InnerDefaultBufferCapabilities = array of InnerDefaultBufferCapabilities;
       Arr2InnerDefaultBufferCapabilities = array of Arr1InnerDefaultBufferCapabilities;
       Arr3InnerDefaultBufferCapabilities = array of Arr2InnerDefaultBufferCapabilities;
-      InnerDefaultBufferCapabilities = class external 'java.awt' name 'DefaultBufferCapabilities' 
+      InnerDefaultBufferCapabilities = class external 'java.awt' name 'DefaultBufferCapabilities'
       end;
 
   strict protected
@@ -287,21 +287,21 @@
     function getAccelerationPriority(): jfloat; overload; virtual;
   end;
 
-  JAItemSelectable = interface external 'java.awt' name 'ItemSelectable' 
+  JAItemSelectable = interface external 'java.awt' name 'ItemSelectable'
     function getSelectedObjects(): Arr1JLObject; overload;
     procedure addItemListener(para1: JAEItemListener); overload;
     procedure removeItemListener(para1: JAEItemListener); overload;
   end;
 
-  JAKeyEventDispatcher = interface external 'java.awt' name 'KeyEventDispatcher' 
+  JAKeyEventDispatcher = interface external 'java.awt' name 'KeyEventDispatcher'
     function dispatchKeyEvent(para1: JAEKeyEvent): jboolean; overload;
   end;
 
-  JAKeyEventPostProcessor = interface external 'java.awt' name 'KeyEventPostProcessor' 
+  JAKeyEventPostProcessor = interface external 'java.awt' name 'KeyEventPostProcessor'
     function postProcessKeyEvent(para1: JAEKeyEvent): jboolean; overload;
   end;
 
-  JALayoutManager = interface external 'java.awt' name 'LayoutManager' 
+  JALayoutManager = interface external 'java.awt' name 'LayoutManager'
     procedure addLayoutComponent(para1: JLString; para2: JAComponent); overload;
     procedure removeLayoutComponent(para1: JAComponent); overload;
     function preferredLayoutSize(para1: JAContainer): JADimension; overload;
@@ -312,7 +312,7 @@
   JAMediaEntry = class abstract external 'java.awt' name 'MediaEntry' (JLObject)
   end;
 
-  JAMenuContainer = interface external 'java.awt' name 'MenuContainer' 
+  JAMenuContainer = interface external 'java.awt' name 'MenuContainer'
     function getFont(): JAFont; overload;
     procedure remove(para1: JAMenuComponent); overload;
     function postEvent(para1: JAEvent): jboolean; overload;
@@ -327,7 +327,7 @@
   JAMutableBoolean = class external 'java.awt' name 'MutableBoolean' (JLObject)
   end;
 
-  JAPaintContext = interface external 'java.awt' name 'PaintContext' 
+  JAPaintContext = interface external 'java.awt' name 'PaintContext'
     procedure dispose(); overload;
     function getColorModel(): JAIColorModel; overload;
     function getRaster(para1: jint; para2: jint; para3: jint; para4: jint): JAIRaster; overload;
@@ -339,7 +339,7 @@
     function getLocation(): JAPoint; overload; virtual;
   end;
 
-  JAPrintGraphics = interface external 'java.awt' name 'PrintGraphics' 
+  JAPrintGraphics = interface external 'java.awt' name 'PrintGraphics'
     function getPrintJob(): JAPrintJob; overload;
   end;
 
@@ -364,7 +364,7 @@
       Arr1InnerRobotDisposer = array of InnerRobotDisposer;
       Arr2InnerRobotDisposer = array of Arr1InnerRobotDisposer;
       Arr3InnerRobotDisposer = array of Arr2InnerRobotDisposer;
-      InnerRobotDisposer = class external 'java.awt' name 'RobotDisposer' 
+      InnerRobotDisposer = class external 'java.awt' name 'RobotDisposer'
       end;
 
   public
@@ -387,7 +387,7 @@
     function toString(): JLString; overload; virtual;
   end;
 
-  JAShape = interface external 'java.awt' name 'Shape' 
+  JAShape = interface external 'java.awt' name 'Shape'
     function getBounds(): JARectangle; overload;
     function getBounds2D(): JAGRectangle2D; overload;
     function contains(para1: jdouble; para2: jdouble): jboolean; overload;
@@ -413,7 +413,7 @@
     function isVisible(): jboolean; overload; virtual;
   end;
 
-  JAStroke = interface external 'java.awt' name 'Stroke' 
+  JAStroke = interface external 'java.awt' name 'Stroke'
     function createStrokedShape(para1: JAShape): JAShape; overload;
   end;
 
@@ -430,7 +430,7 @@
     function getPropertyChangeListeners(para1: JLString): Arr1JBPropertyChangeListener; overload; virtual;
   end;
 
-  JATransparency = interface external 'java.awt' name 'Transparency' 
+  JATransparency = interface external 'java.awt' name 'Transparency'
     const
       OPAQUE = 1;
       BITMASK = 2;
@@ -464,24 +464,24 @@
     function getFlavorListeners(): Arr1JADFlavorListener; overload; virtual;
   end;
 
-  JADClipboardOwner = interface external 'java.awt.datatransfer' name 'ClipboardOwner' 
+  JADClipboardOwner = interface external 'java.awt.datatransfer' name 'ClipboardOwner'
     procedure lostOwnership(para1: JADClipboard; para2: JADTransferable); overload;
   end;
 
-  JADFlavorMap = interface external 'java.awt.datatransfer' name 'FlavorMap' 
+  JADFlavorMap = interface external 'java.awt.datatransfer' name 'FlavorMap'
     function getNativesForFlavors(para1: Arr1JADDataFlavor): JUMap; overload;
     function getNativesForFlavors(var para1: array of JADDataFlavor): JUMap; overload;
     function getFlavorsForNatives(para1: Arr1JLString): JUMap; overload;
     function getFlavorsForNatives(var para1: array of JLString): JUMap; overload;
   end;
 
-  JADTransferable = interface external 'java.awt.datatransfer' name 'Transferable' 
+  JADTransferable = interface external 'java.awt.datatransfer' name 'Transferable'
     function getTransferDataFlavors(): Arr1JADDataFlavor; overload;
     function isDataFlavorSupported(para1: JADDataFlavor): jboolean; overload;
     function getTransferData(para1: JADDataFlavor): JLObject; overload;  // throws java.awt.datatransfer.UnsupportedFlavorException, java.io.IOException
   end;
 
-  JADAutoscroll = interface external 'java.awt.dnd' name 'Autoscroll' 
+  JADAutoscroll = interface external 'java.awt.dnd' name 'Autoscroll'
     function getAutoscrollInsets(): JAInsets; overload;
     procedure autoscroll(para1: JAPoint); overload;
   end;
@@ -500,14 +500,14 @@
   JADSerializationTester = class sealed external 'java.awt.dnd' name 'SerializationTester' (JLObject)
   end;
 
-  JADPDragSourceContextPeer = interface external 'java.awt.dnd.peer' name 'DragSourceContextPeer' 
+  JADPDragSourceContextPeer = interface external 'java.awt.dnd.peer' name 'DragSourceContextPeer'
     procedure startDrag(para1: JADDragSourceContext; para2: JACursor; para3: JAImage; para4: JAPoint); overload;  // throws java.awt.dnd.InvalidDnDOperationException
     function getCursor(): JACursor; overload;
     procedure setCursor(para1: JACursor); overload;  // throws java.awt.dnd.InvalidDnDOperationException
     procedure transferablesFlavorsChanged(); overload;
   end;
 
-  JADPDropTargetContextPeer = interface external 'java.awt.dnd.peer' name 'DropTargetContextPeer' 
+  JADPDropTargetContextPeer = interface external 'java.awt.dnd.peer' name 'DropTargetContextPeer'
     procedure setTargetActions(para1: jint); overload;
     function getTargetActions(): jint; overload;
     function getDropTarget(): JADDropTarget; overload;
@@ -521,7 +521,7 @@
     procedure dropComplete(para1: jboolean); overload;
   end;
 
-  JADPDropTargetPeer = interface external 'java.awt.dnd.peer' name 'DropTargetPeer' 
+  JADPDropTargetPeer = interface external 'java.awt.dnd.peer' name 'DropTargetPeer'
     procedure addDropTarget(para1: JADDropTarget); overload;
     procedure removeDropTarget(para1: JADDropTarget); overload;
   end;
@@ -652,7 +652,7 @@
     function getUnderlineThickness(): jfloat; overload; virtual; abstract;
   end;
 
-  JAFMultipleMaster = interface external 'java.awt.font' name 'MultipleMaster' 
+  JAFMultipleMaster = interface external 'java.awt.font' name 'MultipleMaster'
     function getNumDesignAxes(): jint; overload;
     function getDesignAxisRanges(): Arr1jfloat; overload;
     function getDesignAxisDefaults(): Arr1jfloat; overload;
@@ -663,7 +663,7 @@
     function deriveMMFont(var para1: array of jfloat; para2: jfloat; para3: jfloat; para4: jfloat; para5: jfloat): JAFont; overload;
   end;
 
-  JAFOpenType = interface external 'java.awt.font' name 'OpenType' 
+  JAFOpenType = interface external 'java.awt.font' name 'OpenType'
     const
       TAG_CMAP = 1668112752;
       TAG_HEAD = 1751474532;
@@ -774,10 +774,10 @@
       Arr1InnerTextLineMetrics = array of InnerTextLineMetrics;
       Arr2InnerTextLineMetrics = array of Arr1InnerTextLineMetrics;
       Arr3InnerTextLineMetrics = array of Arr2InnerTextLineMetrics;
-      InnerFunction = class abstract external 'java.awt.font' name 'Function' 
+      InnerFunction = class abstract external 'java.awt.font' name 'Function'
       end;
 
-      InnerTextLineMetrics = class sealed external 'java.awt.font' name 'TextLineMetrics' 
+      InnerTextLineMetrics = class sealed external 'java.awt.font' name 'TextLineMetrics'
       end;
 
   public
@@ -827,7 +827,7 @@
     class function getAdvanceBetween(var para1: array of SFTextLineComponent; para2: jint; para3: jint): jfloat; static; overload;
   end;
 
-  JAGPathIterator = interface external 'java.awt.geom' name 'PathIterator' 
+  JAGPathIterator = interface external 'java.awt.geom' name 'PathIterator'
     const
       WIND_EVEN_ODD = 0;
       WIND_NON_ZERO = 1;
@@ -866,7 +866,7 @@
     function getStyle(): JUMap; overload; virtual;
   end;
 
-  JAISInputMethodDescriptor = interface external 'java.awt.im.spi' name 'InputMethodDescriptor' 
+  JAISInputMethodDescriptor = interface external 'java.awt.im.spi' name 'InputMethodDescriptor'
     function getAvailableLocales(): Arr1JULocale; overload;  // throws java.awt.AWTException
     function hasDynamicLocaleList(): jboolean; overload;
     function getInputMethodDisplayName(para1: JULocale; para2: JULocale): JLString; overload;
@@ -885,7 +885,7 @@
     procedure dispose(); overload; virtual;
   end;
 
-  JAIBufferedImageOp = interface external 'java.awt.image' name 'BufferedImageOp' 
+  JAIBufferedImageOp = interface external 'java.awt.image' name 'BufferedImageOp'
     function filter(para1: JAIBufferedImage; para2: JAIBufferedImage): JAIBufferedImage; overload;
     function getBounds2D(para1: JAIBufferedImage): JAGRectangle2D; overload;
     function createCompatibleDestImage(para1: JAIBufferedImage; para2: JAIColorModel): JAIBufferedImage; overload;
@@ -938,7 +938,7 @@
     procedure setElemDouble(para1: jint; para2: jint; para3: jdouble); overload; virtual;
   end;
 
-  JAIImageConsumer = interface external 'java.awt.image' name 'ImageConsumer' 
+  JAIImageConsumer = interface external 'java.awt.image' name 'ImageConsumer'
     const
       RANDOMPIXELORDER = 1;
       TOPDOWNLEFTRIGHT = 2;
@@ -960,7 +960,7 @@
     procedure imageComplete(para1: jint); overload;
   end;
 
-  JAIImageObserver = interface external 'java.awt.image' name 'ImageObserver' 
+  JAIImageObserver = interface external 'java.awt.image' name 'ImageObserver'
     const
       WIDTH = 1;
       HEIGHT = 2;
@@ -973,7 +973,7 @@
     function imageUpdate(para1: JAImage; para2: jint; para3: jint; para4: jint; para5: jint; para6: jint): jboolean; overload;
   end;
 
-  JAIImageProducer = interface external 'java.awt.image' name 'ImageProducer' 
+  JAIImageProducer = interface external 'java.awt.image' name 'ImageProducer'
     procedure addConsumer(para1: JAIImageConsumer); overload;
     function isConsumer(para1: JAIImageConsumer): jboolean; overload;
     procedure removeConsumer(para1: JAIImageConsumer); overload;
@@ -1075,7 +1075,7 @@
     function getSamples(para1: jint; para2: jint; para3: jint; para4: jint; para5: jint; var para6: array of jdouble): Arr1jdouble; overload; virtual;
   end;
 
-  JAIRasterOp = interface external 'java.awt.image' name 'RasterOp' 
+  JAIRasterOp = interface external 'java.awt.image' name 'RasterOp'
     function filter(para1: JAIRaster; para2: JAIWritableRaster): JAIWritableRaster; overload;
     function getBounds2D(para1: JAIRaster): JAGRectangle2D; overload;
     function createCompatibleDestRaster(para1: JAIRaster): JAIWritableRaster; overload;
@@ -1083,7 +1083,7 @@
     function getRenderingHints(): JARenderingHints; overload;
   end;
 
-  JAIRenderedImage = interface external 'java.awt.image' name 'RenderedImage' 
+  JAIRenderedImage = interface external 'java.awt.image' name 'RenderedImage'
     function getSources(): JUVector; overload;
     function getProperty(para1: JLString): JLObject; overload;
     function getPropertyNames(): Arr1JLString; overload;
@@ -1176,11 +1176,11 @@
     function getSampleSize(para1: jint): jint; overload; virtual; abstract;
   end;
 
-  JAITileObserver = interface external 'java.awt.image' name 'TileObserver' 
+  JAITileObserver = interface external 'java.awt.image' name 'TileObserver'
     procedure tileUpdate(para1: JAIWritableRenderedImage; para2: jint; para3: jint; para4: jboolean); overload;
   end;
 
-  JAIRRenderableImage = interface external 'java.awt.image.renderable' name 'RenderableImage' 
+  JAIRRenderableImage = interface external 'java.awt.image.renderable' name 'RenderableImage'
     const
       HINTS_OBSERVED = 'HINTS_OBSERVED';
     function getSources(): JUVector; overload;
@@ -1196,14 +1196,14 @@
     function createRendering(para1: JAIRRenderContext): JAIRenderedImage; overload;
   end;
 
-  JAIRRenderedImageFactory = interface external 'java.awt.image.renderable' name 'RenderedImageFactory' 
+  JAIRRenderedImageFactory = interface external 'java.awt.image.renderable' name 'RenderedImageFactory'
     function create_(para1: JAIRParameterBlock; para2: JARenderingHints): JAIRenderedImage; external name 'create'; overload;
   end;
 
-  JAPFontPeer = interface external 'java.awt.peer' name 'FontPeer' 
+  JAPFontPeer = interface external 'java.awt.peer' name 'FontPeer'
   end;
 
-  JAPKeyboardFocusManagerPeer = interface external 'java.awt.peer' name 'KeyboardFocusManagerPeer' 
+  JAPKeyboardFocusManagerPeer = interface external 'java.awt.peer' name 'KeyboardFocusManagerPeer'
     procedure setCurrentFocusedWindow(para1: JAWindow); overload;
     function getCurrentFocusedWindow(): JAWindow; overload;
     procedure setCurrentFocusOwner(para1: JAComponent); overload;
@@ -1211,17 +1211,17 @@
     procedure clearGlobalFocusOwner(para1: JAWindow); overload;
   end;
 
-  JAPMenuComponentPeer = interface external 'java.awt.peer' name 'MenuComponentPeer' 
+  JAPMenuComponentPeer = interface external 'java.awt.peer' name 'MenuComponentPeer'
     procedure dispose(); overload;
     procedure setFont(para1: JAFont); overload;
   end;
 
-  JAPMouseInfoPeer = interface external 'java.awt.peer' name 'MouseInfoPeer' 
+  JAPMouseInfoPeer = interface external 'java.awt.peer' name 'MouseInfoPeer'
     function fillPointWithCoords(para1: JAPoint): jint; overload;
     function isWindowUnderMouse(para1: JAWindow): jboolean; overload;
   end;
 
-  JAPRobotPeer = interface external 'java.awt.peer' name 'RobotPeer' 
+  JAPRobotPeer = interface external 'java.awt.peer' name 'RobotPeer'
     procedure mouseMove(para1: jint; para2: jint); overload;
     procedure mousePress(para1: jint); overload;
     procedure mouseRelease(para1: jint); overload;
@@ -1233,11 +1233,11 @@
     procedure dispose(); overload;
   end;
 
-  JAPSystemTrayPeer = interface external 'java.awt.peer' name 'SystemTrayPeer' 
+  JAPSystemTrayPeer = interface external 'java.awt.peer' name 'SystemTrayPeer'
     function getTrayIconSize(): JADimension; overload;
   end;
 
-  JAPTrayIconPeer = interface external 'java.awt.peer' name 'TrayIconPeer' 
+  JAPTrayIconPeer = interface external 'java.awt.peer' name 'TrayIconPeer'
     procedure dispose(); overload;
     procedure setToolTip(para1: JLString); overload;
     procedure updateImage(); overload;
@@ -1245,7 +1245,7 @@
     procedure showPopupMenu(para1: jint; para2: jint); overload;
   end;
 
-  JAPPageable = interface external 'java.awt.print' name 'Pageable' 
+  JAPPageable = interface external 'java.awt.print' name 'Pageable'
     const
       UNKNOWN_NUMBER_OF_PAGES = -1;
     function getNumberOfPages(): jint; overload;
@@ -1253,14 +1253,14 @@
     function getPrintable(para1: jint): JAPPrintable; overload;  // throws java.lang.IndexOutOfBoundsException
   end;
 
-  JAPPrintable = interface external 'java.awt.print' name 'Printable' 
+  JAPPrintable = interface external 'java.awt.print' name 'Printable'
     const
       PAGE_EXISTS = 0;
       NO_SUCH_PAGE = 1;
     function print(para1: JAGraphics; para2: JAPPageFormat; para3: jint): jint; overload;  // throws java.awt.print.PrinterException
   end;
 
-  JAPPrinterGraphics = interface external 'java.awt.print' name 'PrinterGraphics' 
+  JAPPrinterGraphics = interface external 'java.awt.print' name 'PrinterGraphics'
     function getPrinterJob(): JAPPrinterJob; overload;
   end;
 
@@ -1294,12 +1294,12 @@
     function isCancelled(): jboolean; overload; virtual; abstract;
   end;
 
-  JBAppletInitializer = interface external 'java.beans' name 'AppletInitializer' 
+  JBAppletInitializer = interface external 'java.beans' name 'AppletInitializer'
     procedure initialize(para1: JAApplet; para2: JBBBeanContext); overload;
     procedure activate(para1: JAApplet); overload;
   end;
 
-  JBBeanInfo = interface external 'java.beans' name 'BeanInfo' 
+  JBBeanInfo = interface external 'java.beans' name 'BeanInfo'
     const
       ICON_COLOR_16x16 = 1;
       ICON_COLOR_32x32 = 2;
@@ -1329,13 +1329,13 @@
     class procedure setGuiAvailable(para1: jboolean); static; overload;  // throws java.lang.SecurityException
   end;
 
-  JBCustomizer = interface external 'java.beans' name 'Customizer' 
+  JBCustomizer = interface external 'java.beans' name 'Customizer'
     procedure setObject(para1: JLObject); overload;
     procedure addPropertyChangeListener(para1: JBPropertyChangeListener); overload;
     procedure removePropertyChangeListener(para1: JBPropertyChangeListener); overload;
   end;
 
-  JBDesignMode = interface external 'java.beans' name 'DesignMode' 
+  JBDesignMode = interface external 'java.beans' name 'DesignMode'
     const
       PROPERTYNAME = 'designTime';
     procedure setDesignTime(para1: jboolean); overload;
@@ -1358,7 +1358,7 @@
     procedure writeExpression(para1: JBExpression); overload; virtual;
   end;
 
-  JBExceptionListener = interface external 'java.beans' name 'ExceptionListener' 
+  JBExceptionListener = interface external 'java.beans' name 'ExceptionListener'
     procedure exceptionThrown(para1: JLException); overload;
   end;
 
@@ -1426,7 +1426,7 @@
     procedure initialize(para1: JLClass; para2: JLObject; para3: JLObject; para4: JBEncoder); overload; virtual;
   end;
 
-  JBPropertyEditor = interface external 'java.beans' name 'PropertyEditor' 
+  JBPropertyEditor = interface external 'java.beans' name 'PropertyEditor'
     procedure setValue(para1: JLObject); overload;
     function getValue(): JLObject; overload;
     function isPaintable(): jboolean; overload;
@@ -1458,7 +1458,7 @@
       Arr1InnerSignature = array of InnerSignature;
       Arr2InnerSignature = array of Arr1InnerSignature;
       Arr3InnerSignature = array of Arr2InnerSignature;
-      InnerSignature = class external 'java.beans' name 'Signature' 
+      InnerSignature = class external 'java.beans' name 'Signature'
       end;
 
   public
@@ -1488,7 +1488,7 @@
     function toString(): JLString; overload; virtual;
   end;
 
-  JBVisibility = interface external 'java.beans' name 'Visibility' 
+  JBVisibility = interface external 'java.beans' name 'Visibility'
     function needsGui(): jboolean; overload;
     procedure dontUseGui(); overload;
     procedure okToUseGui(); overload;
@@ -1509,7 +1509,7 @@
     function getOwner(): JLObject; overload; virtual;
   end;
 
-  JBBBeanContextChild = interface external 'java.beans.beancontext' name 'BeanContextChild' 
+  JBBBeanContextChild = interface external 'java.beans.beancontext' name 'BeanContextChild'
     procedure setBeanContext(para1: JBBBeanContext); overload;  // throws java.beans.PropertyVetoException
     function getBeanContext(): JBBBeanContext; overload;
     procedure addPropertyChangeListener(para1: JLString; para2: JBPropertyChangeListener); overload;
@@ -1518,19 +1518,19 @@
     procedure removeVetoableChangeListener(para1: JLString; para2: JBVetoableChangeListener); overload;
   end;
 
-  JBBBeanContextChildComponentProxy = interface external 'java.beans.beancontext' name 'BeanContextChildComponentProxy' 
+  JBBBeanContextChildComponentProxy = interface external 'java.beans.beancontext' name 'BeanContextChildComponentProxy'
     function getComponent(): JAComponent; overload;
   end;
 
-  JBBBeanContextContainerProxy = interface external 'java.beans.beancontext' name 'BeanContextContainerProxy' 
+  JBBBeanContextContainerProxy = interface external 'java.beans.beancontext' name 'BeanContextContainerProxy'
     function getContainer(): JAContainer; overload;
   end;
 
-  JBBBeanContextProxy = interface external 'java.beans.beancontext' name 'BeanContextProxy' 
+  JBBBeanContextProxy = interface external 'java.beans.beancontext' name 'BeanContextProxy'
     function getBeanContextProxy(): JBBBeanContextChild; overload;
   end;
 
-  JBBBeanContextServiceProvider = interface external 'java.beans.beancontext' name 'BeanContextServiceProvider' 
+  JBBBeanContextServiceProvider = interface external 'java.beans.beancontext' name 'BeanContextServiceProvider'
     function getService(para1: JBBBeanContextServices; para2: JLObject; para3: JLClass; para4: JLObject): JLObject; overload;
     procedure releaseService(para1: JBBBeanContextServices; para2: JLObject; para3: JLObject); overload;
     function getCurrentServiceSelectors(para1: JBBBeanContextServices; para2: JLClass): JUIterator; overload;
@@ -1539,11 +1539,11 @@
   JIBits = class external 'java.io' name 'Bits' (JLObject)
   end;
 
-  JICloseable = interface external 'java.io' name 'Closeable' 
+  JICloseable = interface external 'java.io' name 'Closeable'
     procedure close(); overload;  // throws java.io.IOException
   end;
 
-  JIDataInput = interface external 'java.io' name 'DataInput' 
+  JIDataInput = interface external 'java.io' name 'DataInput'
     procedure readFully(para1: Arr1jbyte); overload;  // throws java.io.IOException
     procedure readFully(var para1: array of jbyte); overload;  // throws java.io.IOException
     procedure readFully(para1: Arr1jbyte; para2: jint; para3: jint); overload;  // throws java.io.IOException
@@ -1563,7 +1563,7 @@
     function readUTF(): JLString; overload;  // throws java.io.IOException
   end;
 
-  JIDataOutput = interface external 'java.io' name 'DataOutput' 
+  JIDataOutput = interface external 'java.io' name 'DataOutput'
     procedure write(para1: jint); overload;  // throws java.io.IOException
     procedure write(para1: Arr1jbyte); overload;  // throws java.io.IOException
     procedure write(var para1: array of jbyte); overload;  // throws java.io.IOException
@@ -1592,7 +1592,7 @@
       Arr1InnerEntry = array of InnerEntry;
       Arr2InnerEntry = array of Arr1InnerEntry;
       Arr3InnerEntry = array of Arr2InnerEntry;
-      InnerEntry = class external 'java.io' name 'Entry' 
+      InnerEntry = class external 'java.io' name 'Entry'
       end;
 
   end;
@@ -1609,7 +1609,7 @@
     procedure sync(); overload; virtual;  // throws java.io.SyncFailedException
   end;
 
-  JIFileFilter = interface external 'java.io' name 'FileFilter' 
+  JIFileFilter = interface external 'java.io' name 'FileFilter'
     function accept(para1: JIFile): jboolean; overload;
   end;
 
@@ -1656,19 +1656,19 @@
     function hashCode(para1: JIFile): jint; overload; virtual; abstract;
   end;
 
-  JIFilenameFilter = interface external 'java.io' name 'FilenameFilter' 
+  JIFilenameFilter = interface external 'java.io' name 'FilenameFilter'
     function accept(para1: JIFile; para2: JLString): jboolean; overload;
   end;
 
-  JIFlushable = interface external 'java.io' name 'Flushable' 
+  JIFlushable = interface external 'java.io' name 'Flushable'
     procedure flush(); overload;  // throws java.io.IOException
   end;
 
-  JIObjectInputValidation = interface external 'java.io' name 'ObjectInputValidation' 
+  JIObjectInputValidation = interface external 'java.io' name 'ObjectInputValidation'
     procedure validateObject(); overload;  // throws java.io.InvalidObjectException
   end;
 
-  JIObjectStreamConstants = interface external 'java.io' name 'ObjectStreamConstants' 
+  JIObjectStreamConstants = interface external 'java.io' name 'ObjectStreamConstants'
     const
       STREAM_MAGIC = -21267;
       STREAM_VERSION = 5;
@@ -1780,7 +1780,7 @@
       Arr1InnerNativeLibrary = array of InnerNativeLibrary;
       Arr2InnerNativeLibrary = array of Arr1InnerNativeLibrary;
       Arr3InnerNativeLibrary = array of Arr2InnerNativeLibrary;
-      InnerNativeLibrary = class external 'java.lang' name 'NativeLibrary' 
+      InnerNativeLibrary = class external 'java.lang' name 'NativeLibrary'
       end;
 
   strict protected
@@ -1844,7 +1844,7 @@
       Arr1InnerEntry = array of InnerEntry;
       Arr2InnerEntry = array of Arr1InnerEntry;
       Arr3InnerEntry = array of Arr2InnerEntry;
-      InnerEntry = class external 'java.lang' name 'Entry' 
+      InnerEntry = class external 'java.lang' name 'Entry'
       end;
 
   end;
@@ -1912,28 +1912,28 @@
       Arr1InnerVariable = array of InnerVariable;
       Arr2InnerVariable = array of Arr1InnerVariable;
       Arr3InnerVariable = array of Arr2InnerVariable;
-      InnerExternalData = class abstract external 'java.lang' name 'ExternalData' 
+      InnerExternalData = class abstract external 'java.lang' name 'ExternalData'
       end;
 
-      InnerStringEntry = class external 'java.lang' name 'StringEntry' 
+      InnerStringEntry = class external 'java.lang' name 'StringEntry'
       end;
 
-      InnerStringEntrySet = class external 'java.lang' name 'StringEntrySet' 
+      InnerStringEntrySet = class external 'java.lang' name 'StringEntrySet'
       end;
 
-      InnerStringKeySet = class external 'java.lang' name 'StringKeySet' 
+      InnerStringKeySet = class external 'java.lang' name 'StringKeySet'
       end;
 
-      InnerStringEnvironment = class external 'java.lang' name 'StringEnvironment' 
+      InnerStringEnvironment = class external 'java.lang' name 'StringEnvironment'
       end;
 
-      InnerStringValues = class external 'java.lang' name 'StringValues' 
+      InnerStringValues = class external 'java.lang' name 'StringValues'
       end;
 
-      InnerValue = class external 'java.lang' name 'Value' 
+      InnerValue = class external 'java.lang' name 'Value'
       end;
 
-      InnerVariable = class external 'java.lang' name 'Variable' 
+      InnerVariable = class external 'java.lang' name 'Variable'
       end;
 
   end;
@@ -1941,7 +1941,7 @@
   JLProcessImpl = class sealed external 'java.lang' name 'ProcessImpl' (JLObject)
   end;
 
-  JLRunnable = interface external 'java.lang' name 'Runnable' 
+  JLRunnable = interface external 'java.lang' name 'Runnable'
     procedure run(); overload;
   end;
 
@@ -2003,7 +2003,7 @@
       Arr1InnerLock = array of InnerLock;
       Arr2InnerLock = array of Arr1InnerLock;
       Arr3InnerLock = array of Arr2InnerLock;
-      InnerLock = class external 'java.lang' name 'Lock' 
+      InnerLock = class external 'java.lang' name 'Lock'
       end;
 
   end;
@@ -2081,10 +2081,10 @@
       Arr1InnerStringEncoder = array of InnerStringEncoder;
       Arr2InnerStringEncoder = array of Arr1InnerStringEncoder;
       Arr3InnerStringEncoder = array of Arr2InnerStringEncoder;
-      InnerStringDecoder = class external 'java.lang' name 'StringDecoder' 
+      InnerStringDecoder = class external 'java.lang' name 'StringDecoder'
       end;
 
-      InnerStringEncoder = class external 'java.lang' name 'StringEncoder' 
+      InnerStringEncoder = class external 'java.lang' name 'StringEncoder'
       end;
 
   end;
@@ -2101,7 +2101,7 @@
       fTYPE: JLClass; external name 'TYPE';
   end;
 
-  JLAAnnotation = interface external 'java.lang.annotation' name 'Annotation' 
+  JLAAnnotation = interface external 'java.lang.annotation' name 'Annotation'
     function equals(para1: JLObject): jboolean; overload;
     function hashCode(): jint; overload;
     function toString(): JLString; overload;
@@ -2116,12 +2116,12 @@
     function getDefinitionClassFile(): Arr1jbyte; overload; virtual;
   end;
 
-  JLIClassFileTransformer = interface external 'java.lang.instrument' name 'ClassFileTransformer' 
+  JLIClassFileTransformer = interface external 'java.lang.instrument' name 'ClassFileTransformer'
     function transform(para1: JLClassLoader; para2: JLString; para3: JLClass; para4: JSProtectionDomain; para5: Arr1jbyte): Arr1jbyte; overload;  // throws java.lang.instrument.IllegalClassFormatException
     function transform(para1: JLClassLoader; para2: JLString; para3: JLClass; para4: JSProtectionDomain; var para5: array of jbyte): Arr1jbyte; overload;  // throws java.lang.instrument.IllegalClassFormatException
   end;
 
-  JLIInstrumentation = interface external 'java.lang.instrument' name 'Instrumentation' 
+  JLIInstrumentation = interface external 'java.lang.instrument' name 'Instrumentation'
     procedure addTransformer(para1: JLIClassFileTransformer; para2: jboolean); overload;
     procedure addTransformer(para1: JLIClassFileTransformer); overload;
     function removeTransformer(para1: JLIClassFileTransformer): jboolean; overload;
@@ -2141,7 +2141,7 @@
     procedure setNativeMethodPrefix(para1: JLIClassFileTransformer; para2: JLString); overload;
   end;
 
-  JLMClassLoadingMXBean = interface external 'java.lang.management' name 'ClassLoadingMXBean' 
+  JLMClassLoadingMXBean = interface external 'java.lang.management' name 'ClassLoadingMXBean'
     function getTotalLoadedClassCount(): jlong; overload;
     function getLoadedClassCount(): jint; overload;
     function getUnloadedClassCount(): jlong; overload;
@@ -2149,7 +2149,7 @@
     procedure setVerbose(para1: jboolean); overload;
   end;
 
-  JLMCompilationMXBean = interface external 'java.lang.management' name 'CompilationMXBean' 
+  JLMCompilationMXBean = interface external 'java.lang.management' name 'CompilationMXBean'
     function getName(): JLString; overload;
     function isCompilationTimeMonitoringSupported(): jboolean; overload;
     function getTotalCompilationTime(): jlong; overload;
@@ -2189,7 +2189,7 @@
     class function newPlatformMXBeanProxy(para1: JMMBeanServerConnection; para2: JLString; para3: JLClass): JLObject; static; overload;  // throws java.io.IOException
   end;
 
-  JLMMemoryMXBean = interface external 'java.lang.management' name 'MemoryMXBean' 
+  JLMMemoryMXBean = interface external 'java.lang.management' name 'MemoryMXBean'
     function getObjectPendingFinalizationCount(): jint; overload;
     function getHeapMemoryUsage(): JLMMemoryUsage; overload;
     function getNonHeapMemoryUsage(): JLMMemoryUsage; overload;
@@ -2198,7 +2198,7 @@
     procedure gc(); overload;
   end;
 
-  JLMMemoryManagerMXBean = interface external 'java.lang.management' name 'MemoryManagerMXBean' 
+  JLMMemoryManagerMXBean = interface external 'java.lang.management' name 'MemoryManagerMXBean'
     function getName(): JLString; overload;
     function isValid(): jboolean; overload;
     function getMemoryPoolNames(): Arr1JLString; overload;
@@ -2217,7 +2217,7 @@
     class function from(para1: JMOCompositeData): JLMMemoryNotificationInfo; static; overload;
   end;
 
-  JLMMemoryPoolMXBean = interface external 'java.lang.management' name 'MemoryPoolMXBean' 
+  JLMMemoryPoolMXBean = interface external 'java.lang.management' name 'MemoryPoolMXBean'
     function getName(): JLString; overload;
     function getType(): JLMMemoryType; overload;
     function getUsage(): JLMMemoryUsage; overload;
@@ -2249,7 +2249,7 @@
     class function from(para1: JMOCompositeData): JLMMemoryUsage; static; overload;
   end;
 
-  JLMOperatingSystemMXBean = interface external 'java.lang.management' name 'OperatingSystemMXBean' 
+  JLMOperatingSystemMXBean = interface external 'java.lang.management' name 'OperatingSystemMXBean'
     function getName(): JLString; overload;
     function getArch(): JLString; overload;
     function getVersion(): JLString; overload;
@@ -2257,7 +2257,7 @@
     function getSystemLoadAverage(): jdouble; overload;
   end;
 
-  JLMRuntimeMXBean = interface external 'java.lang.management' name 'RuntimeMXBean' 
+  JLMRuntimeMXBean = interface external 'java.lang.management' name 'RuntimeMXBean'
     function getName(): JLString; overload;
     function getVmName(): JLString; overload;
     function getVmVendor(): JLString; overload;
@@ -2276,7 +2276,7 @@
     function getSystemProperties(): JUMap; overload;
   end;
 
-  JLMThreadMXBean = interface external 'java.lang.management' name 'ThreadMXBean' 
+  JLMThreadMXBean = interface external 'java.lang.management' name 'ThreadMXBean'
     function getThreadCount(): jint; overload;
     function getPeakThreadCount(): jint; overload;
     function getTotalStartedThreadCount(): jlong; overload;
@@ -2320,10 +2320,10 @@
       Arr1InnerReferenceHandler = array of InnerReferenceHandler;
       Arr2InnerReferenceHandler = array of Arr1InnerReferenceHandler;
       Arr3InnerReferenceHandler = array of Arr2InnerReferenceHandler;
-      InnerLock = class external 'java.lang.ref' name 'Lock' 
+      InnerLock = class external 'java.lang.ref' name 'Lock'
       end;
 
-      InnerReferenceHandler = class external 'java.lang.ref' name 'ReferenceHandler' 
+      InnerReferenceHandler = class external 'java.lang.ref' name 'ReferenceHandler'
       end;
 
   public
@@ -2344,10 +2344,10 @@
       Arr1InnerNull = array of InnerNull;
       Arr2InnerNull = array of Arr1InnerNull;
       Arr3InnerNull = array of Arr2InnerNull;
-      InnerLock = class external 'java.lang.ref' name 'Lock' 
+      InnerLock = class external 'java.lang.ref' name 'Lock'
       end;
 
-      InnerNull = class external 'java.lang.ref' name 'Null' 
+      InnerNull = class external 'java.lang.ref' name 'Null'
       end;
 
   public
@@ -2357,7 +2357,7 @@
     function remove(): JLRReference; overload; virtual;  // throws java.lang.InterruptedException
   end;
 
-  JLRInvocationHandler = interface external 'java.lang.reflect' name 'InvocationHandler' 
+  JLRInvocationHandler = interface external 'java.lang.reflect' name 'InvocationHandler'
     function invoke(para1: JLObject; para2: JLRMethod; para3: Arr1JLObject): JLObject; overload;  // throws java.lang.Throwable
     function invoke(para1: JLObject; para2: JLRMethod; var para3: array of JLObject): JLObject; overload;  // throws java.lang.Throwable
   end;
@@ -2424,7 +2424,7 @@
     function getContent(para1: JNURLConnection; var para2: array of JLClass): JLObject; overload; virtual;  // throws java.io.IOException
   end;
 
-  JNContentHandlerFactory = interface external 'java.net' name 'ContentHandlerFactory' 
+  JNContentHandlerFactory = interface external 'java.net' name 'ContentHandlerFactory'
     function createContentHandler(para1: JLString): JNContentHandler; overload;
   end;
 
@@ -2437,7 +2437,7 @@
     procedure put(para1: JNURI; para2: JUMap); overload; virtual; abstract;  // throws java.io.IOException
   end;
 
-  JNCookiePolicy = interface external 'java.net' name 'CookiePolicy' 
+  JNCookiePolicy = interface external 'java.net' name 'CookiePolicy'
     final class var
       fACCEPT_ALL: JNCookiePolicy; external name 'ACCEPT_ALL';
       fACCEPT_NONE: JNCookiePolicy; external name 'ACCEPT_NONE';
@@ -2445,7 +2445,7 @@
     function shouldAccept(para1: JNURI; para2: JNHttpCookie): jboolean; overload;
   end;
 
-  JNCookieStore = interface external 'java.net' name 'CookieStore' 
+  JNCookieStore = interface external 'java.net' name 'CookieStore'
     procedure add(para1: JNURI; para2: JNHttpCookie); overload;
     function get(para1: JNURI): JUList; overload;
     function getCookies(): JUList; overload;
@@ -2525,11 +2525,11 @@
     class procedure setDatagramSocketImplFactory(para1: JNDatagramSocketImplFactory); static; overload;  // throws java.io.IOException
   end;
 
-  JNDatagramSocketImplFactory = interface external 'java.net' name 'DatagramSocketImplFactory' 
+  JNDatagramSocketImplFactory = interface external 'java.net' name 'DatagramSocketImplFactory'
     function createDatagramSocketImpl(): JNDatagramSocketImpl; overload;
   end;
 
-  JNFileNameMap = interface external 'java.net' name 'FileNameMap' 
+  JNFileNameMap = interface external 'java.net' name 'FileNameMap'
     function getContentTypeFor(para1: JLString): JLString; overload;
   end;
 
@@ -2548,7 +2548,7 @@
   JNInetAddressContainer = class external 'java.net' name 'InetAddressContainer' (JLObject)
   end;
 
-  JNInetAddressImpl = interface external 'java.net' name 'InetAddressImpl' 
+  JNInetAddressImpl = interface external 'java.net' name 'InetAddressImpl'
     function getLocalHostName(): JLString; overload;  // throws java.net.UnknownHostException
     function lookupAllHostAddr(para1: JLString): Arr1JNInetAddress; overload;  // throws java.net.UnknownHostException
     function getHostByAddr(para1: Arr1jbyte): JLString; overload;  // throws java.net.UnknownHostException
@@ -2710,11 +2710,11 @@
     procedure setPerformancePreferences(para1: jint; para2: jint; para3: jint); overload; virtual;
   end;
 
-  JNSocketImplFactory = interface external 'java.net' name 'SocketImplFactory' 
+  JNSocketImplFactory = interface external 'java.net' name 'SocketImplFactory'
     function createSocketImpl(): JNSocketImpl; overload;
   end;
 
-  JNSocketOptions = interface external 'java.net' name 'SocketOptions' 
+  JNSocketOptions = interface external 'java.net' name 'SocketOptions'
     const
       TCP_NODELAY = 1;
       SO_BINDADDR = 15;
@@ -2734,7 +2734,7 @@
     function getOption(para1: jint): JLObject; overload;  // throws java.net.SocketException
   end;
 
-  JNSocksConsts = interface external 'java.net' name 'SocksConsts' 
+  JNSocksConsts = interface external 'java.net' name 'SocksConsts'
     const
       PROTO_VERS4 = 4;
       PROTO_VERS = 5;
@@ -2857,7 +2857,7 @@
     procedure setURL(para1: JNURL; para2: JLString; para3: JLString; para4: jint; para5: JLString; para6: JLString); overload; virtual;
   end;
 
-  JNURLStreamHandlerFactory = interface external 'java.net' name 'URLStreamHandlerFactory' 
+  JNURLStreamHandlerFactory = interface external 'java.net' name 'URLStreamHandlerFactory'
     function createURLStreamHandler(para1: JLString): JNURLStreamHandler; overload;
   end;
 
@@ -2885,10 +2885,10 @@
       Arr1InnerWritableByteChannelImpl = array of InnerWritableByteChannelImpl;
       Arr2InnerWritableByteChannelImpl = array of Arr1InnerWritableByteChannelImpl;
       Arr3InnerWritableByteChannelImpl = array of Arr2InnerWritableByteChannelImpl;
-      InnerReadableByteChannelImpl = class external 'java.nio.channels' name 'ReadableByteChannelImpl' 
+      InnerReadableByteChannelImpl = class external 'java.nio.channels' name 'ReadableByteChannelImpl'
       end;
 
-      InnerWritableByteChannelImpl = class external 'java.nio.channels' name 'WritableByteChannelImpl' 
+      InnerWritableByteChannelImpl = class external 'java.nio.channels' name 'WritableByteChannelImpl'
       end;
 
   public
@@ -2977,7 +2977,7 @@
       Arr1InnerParsedNamingURL = array of InnerParsedNamingURL;
       Arr2InnerParsedNamingURL = array of Arr1InnerParsedNamingURL;
       Arr3InnerParsedNamingURL = array of Arr2InnerParsedNamingURL;
-      InnerParsedNamingURL = class external 'java.rmi' name 'ParsedNamingURL' 
+      InnerParsedNamingURL = class external 'java.rmi' name 'ParsedNamingURL'
       end;
 
   public
@@ -2988,7 +2988,7 @@
     class function list(para1: JLString): Arr1JLString; static; overload;  // throws java.rmi.RemoteException, java.net.MalformedURLException
   end;
 
-  JRRemote = interface external 'java.rmi' name 'Remote' 
+  JRRemote = interface external 'java.rmi' name 'Remote'
   end;
 
   JRRLocateRegistry = class sealed external 'java.rmi.registry' name 'LocateRegistry' (JLObject)
@@ -3002,12 +3002,12 @@
     class function createRegistry(para1: jint; para2: JRSRMIClientSocketFactory; para3: JRSRMIServerSocketFactory): JRRRegistry; static; overload;  // throws java.rmi.RemoteException
   end;
 
-  JRRRegistryHandler = interface external 'java.rmi.registry' name 'RegistryHandler' 
+  JRRRegistryHandler = interface external 'java.rmi.registry' name 'RegistryHandler'
     function registryStub(para1: JLString; para2: jint): JRRRegistry; overload;  // throws java.rmi.RemoteException, java.rmi.UnknownHostException
     function registryImpl(para1: jint): JRRRegistry; overload;  // throws java.rmi.RemoteException
   end;
 
-  JRSLoaderHandler = interface external 'java.rmi.server' name 'LoaderHandler' 
+  JRSLoaderHandler = interface external 'java.rmi.server' name 'LoaderHandler'
     const
       packagePrefix = 'sun.rmi.server';
     function loadClass(para1: JLString): JLClass; overload;  // throws java.net.MalformedURLException, java.lang.ClassNotFoundException
@@ -3046,19 +3046,19 @@
     function getClassAnnotation(para1: JLClass): JLString; overload; virtual; abstract;
   end;
 
-  JRSRMIClientSocketFactory = interface external 'java.rmi.server' name 'RMIClientSocketFactory' 
+  JRSRMIClientSocketFactory = interface external 'java.rmi.server' name 'RMIClientSocketFactory'
     function createSocket(para1: JLString; para2: jint): JNSocket; overload;  // throws java.io.IOException
   end;
 
-  JRSRMIFailureHandler = interface external 'java.rmi.server' name 'RMIFailureHandler' 
+  JRSRMIFailureHandler = interface external 'java.rmi.server' name 'RMIFailureHandler'
     function failure(para1: JLException): jboolean; overload;
   end;
 
-  JRSRMIServerSocketFactory = interface external 'java.rmi.server' name 'RMIServerSocketFactory' 
+  JRSRMIServerSocketFactory = interface external 'java.rmi.server' name 'RMIServerSocketFactory'
     function createServerSocket(para1: jint): JNServerSocket; overload;  // throws java.io.IOException
   end;
 
-  JRSRemoteCall = interface external 'java.rmi.server' name 'RemoteCall' 
+  JRSRemoteCall = interface external 'java.rmi.server' name 'RemoteCall'
     function getOutputStream(): JIObjectOutput; overload;  // throws java.io.IOException
     procedure releaseOutputStream(); overload;  // throws java.io.IOException
     function getInputStream(): JIObjectInput; overload;  // throws java.io.IOException
@@ -3068,12 +3068,12 @@
     procedure done(); overload;  // throws java.io.IOException
   end;
 
-  JRSSkeleton = interface external 'java.rmi.server' name 'Skeleton' 
+  JRSSkeleton = interface external 'java.rmi.server' name 'Skeleton'
     procedure dispatch(para1: JRRemote; para2: JRSRemoteCall; para3: jint; para4: jlong); overload;  // throws java.lang.Exception
     function getOperations(): Arr1JRSOperation; overload;
   end;
 
-  JRSUnreferenced = interface external 'java.rmi.server' name 'Unreferenced' 
+  JRSUnreferenced = interface external 'java.rmi.server' name 'Unreferenced'
     procedure unreferenced(); overload;
   end;
 
@@ -3160,7 +3160,7 @@
     function engineToString(): JLString; overload; virtual; abstract;
   end;
 
-  JSCertificate = interface external 'java.security' name 'Certificate' 
+  JSCertificate = interface external 'java.security' name 'Certificate'
     function getGuarantor(): JSPrincipal; overload;
     function getPrincipal(): JSPrincipal; overload;
     function getPublicKey(): JSPublicKey; overload;
@@ -3170,12 +3170,12 @@
     function toString(para1: jboolean): JLString; overload;
   end;
 
-  JSDomainCombiner = interface external 'java.security' name 'DomainCombiner' 
+  JSDomainCombiner = interface external 'java.security' name 'DomainCombiner'
     function combine(para1: Arr1JSProtectionDomain; para2: Arr1JSProtectionDomain): Arr1JSProtectionDomain; overload;
     function combine(var para1: array of JSProtectionDomain; var para2: array of JSProtectionDomain): Arr1JSProtectionDomain; overload;
   end;
 
-  JSGuard = interface external 'java.security' name 'Guard' 
+  JSGuard = interface external 'java.security' name 'Guard'
     procedure checkGuard(para1: JLObject); overload;  // throws java.lang.SecurityException
   end;
 
@@ -3240,10 +3240,10 @@
       Arr1InnerUnsupportedEmptyCollection = array of InnerUnsupportedEmptyCollection;
       Arr2InnerUnsupportedEmptyCollection = array of Arr1InnerUnsupportedEmptyCollection;
       Arr3InnerUnsupportedEmptyCollection = array of Arr2InnerUnsupportedEmptyCollection;
-      InnerPolicyDelegate = class external 'java.security' name 'PolicyDelegate' 
+      InnerPolicyDelegate = class external 'java.security' name 'PolicyDelegate'
       end;
 
-      InnerUnsupportedEmptyCollection = class external 'java.security' name 'UnsupportedEmptyCollection' 
+      InnerUnsupportedEmptyCollection = class external 'java.security' name 'UnsupportedEmptyCollection'
       end;
 
   public
@@ -3252,7 +3252,7 @@
       Arr1InnerParameters = array of InnerParameters;
       Arr2InnerParameters = array of Arr1InnerParameters;
       Arr3InnerParameters = array of Arr2InnerParameters;
-      InnerParameters = interface external 'java.security' name 'Parameters' 
+      InnerParameters = interface external 'java.security' name 'Parameters'
       end;
 
   public
@@ -3284,18 +3284,18 @@
     function engineGetPermissions(para1: JSProtectionDomain): JSPermissionCollection; overload; virtual;
   end;
 
-  JSPrincipal = interface external 'java.security' name 'Principal' 
+  JSPrincipal = interface external 'java.security' name 'Principal'
     function equals(para1: JLObject): jboolean; overload;
     function toString(): JLString; overload;
     function hashCode(): jint; overload;
     function getName(): JLString; overload;
   end;
 
-  JSPrivilegedAction = interface external 'java.security' name 'PrivilegedAction' 
+  JSPrivilegedAction = interface external 'java.security' name 'PrivilegedAction'
     function run(): JLObject; overload;
   end;
 
-  JSPrivilegedExceptionAction = interface external 'java.security' name 'PrivilegedExceptionAction' 
+  JSPrivilegedExceptionAction = interface external 'java.security' name 'PrivilegedExceptionAction'
     function run(): JLObject; overload;  // throws java.lang.Exception
   end;
 
@@ -3306,7 +3306,7 @@
       Arr1InnerKey = array of InnerKey;
       Arr2InnerKey = array of Arr1InnerKey;
       Arr3InnerKey = array of Arr2InnerKey;
-      InnerKey = class sealed external 'java.security' name 'Key' 
+      InnerKey = class sealed external 'java.security' name 'Key'
       end;
 
   public
@@ -3328,7 +3328,7 @@
       Arr1InnerProviderProperty = array of InnerProviderProperty;
       Arr2InnerProviderProperty = array of Arr1InnerProviderProperty;
       Arr3InnerProviderProperty = array of Arr2InnerProviderProperty;
-      InnerProviderProperty = class external 'java.security' name 'ProviderProperty' 
+      InnerProviderProperty = class external 'java.security' name 'ProviderProperty'
       end;
 
   public
@@ -3374,13 +3374,13 @@
     function clone(): JLObject; overload; virtual;  // throws java.lang.CloneNotSupportedException
   end;
 
-  JSAOwner = interface external 'java.security.acl' name 'Owner' 
+  JSAOwner = interface external 'java.security.acl' name 'Owner'
     function addOwner(para1: JSPrincipal; para2: JSPrincipal): jboolean; overload;  // throws java.security.acl.NotOwnerException
     function deleteOwner(para1: JSPrincipal; para2: JSPrincipal): jboolean; overload;  // throws java.security.acl.NotOwnerException, java.security.acl.LastOwnerException
     function isOwner(para1: JSPrincipal): jboolean; overload;
   end;
 
-  JSAPermission = interface external 'java.security.acl' name 'Permission' 
+  JSAPermission = interface external 'java.security.acl' name 'Permission'
     function equals(para1: JLObject): jboolean; overload;
     function toString(): JLString; overload;
   end;
@@ -3486,7 +3486,7 @@
     function engineGenerateCRLs(para1: JIInputStream): JUCollection; overload; virtual; abstract;  // throws java.security.cert.CRLException
   end;
 
-  JSCPolicyNode = interface external 'java.security.cert' name 'PolicyNode' 
+  JSCPolicyNode = interface external 'java.security.cert' name 'PolicyNode'
     function getParent(): JSCPolicyNode; overload;
     function getChildren(): JUIterator; overload;
     function getDepth(): jint; overload;
@@ -3522,40 +3522,40 @@
     function toString(): JLString; overload; virtual;
   end;
 
-  JSCX509Extension = interface external 'java.security.cert' name 'X509Extension' 
+  JSCX509Extension = interface external 'java.security.cert' name 'X509Extension'
     function hasUnsupportedCriticalExtension(): jboolean; overload;
     function getCriticalExtensionOIDs(): JUSet; overload;
     function getNonCriticalExtensionOIDs(): JUSet; overload;
     function getExtensionValue(para1: JLString): Arr1jbyte; overload;
   end;
 
-  JSIDSAKey = interface external 'java.security.interfaces' name 'DSAKey' 
+  JSIDSAKey = interface external 'java.security.interfaces' name 'DSAKey'
     function getParams(): JSIDSAParams; overload;
   end;
 
-  JSIDSAKeyPairGenerator = interface external 'java.security.interfaces' name 'DSAKeyPairGenerator' 
+  JSIDSAKeyPairGenerator = interface external 'java.security.interfaces' name 'DSAKeyPairGenerator'
     procedure initialize(para1: JSIDSAParams; para2: JSSecureRandom); overload;  // throws java.security.InvalidParameterException
     procedure initialize(para1: jint; para2: jboolean; para3: JSSecureRandom); overload;  // throws java.security.InvalidParameterException
   end;
 
-  JSIDSAParams = interface external 'java.security.interfaces' name 'DSAParams' 
+  JSIDSAParams = interface external 'java.security.interfaces' name 'DSAParams'
     function getP(): JMBigInteger; overload;
     function getQ(): JMBigInteger; overload;
     function getG(): JMBigInteger; overload;
   end;
 
-  JSIECKey = interface external 'java.security.interfaces' name 'ECKey' 
+  JSIECKey = interface external 'java.security.interfaces' name 'ECKey'
     function getParams(): JSSECParameterSpec; overload;
   end;
 
-  JSIRSAKey = interface external 'java.security.interfaces' name 'RSAKey' 
+  JSIRSAKey = interface external 'java.security.interfaces' name 'RSAKey'
     function getModulus(): JMBigInteger; overload;
   end;
 
-  JSSAlgorithmParameterSpec = interface external 'java.security.spec' name 'AlgorithmParameterSpec' 
+  JSSAlgorithmParameterSpec = interface external 'java.security.spec' name 'AlgorithmParameterSpec'
   end;
 
-  JSSECField = interface external 'java.security.spec' name 'ECField' 
+  JSSECField = interface external 'java.security.spec' name 'ECField'
     function getFieldSize(): jint; overload;
   end;
 
@@ -3584,7 +3584,7 @@
     function hashCode(): jint; overload; virtual;
   end;
 
-  JSSKeySpec = interface external 'java.security.spec' name 'KeySpec' 
+  JSSKeySpec = interface external 'java.security.spec' name 'KeySpec'
   end;
 
   JSSRSAOtherPrimeInfo = class external 'java.security.spec' name 'RSAOtherPrimeInfo' (JLObject)
@@ -3595,7 +3595,7 @@
     function getCrtCoefficient(): JMBigInteger; overload; virtual; final;
   end;
 
-  JSArray = interface external 'java.sql' name 'Array' 
+  JSArray = interface external 'java.sql' name 'Array'
     function getBaseTypeName(): JLString; overload;  // throws java.sql.SQLException
     function getBaseType(): jint; overload;  // throws java.sql.SQLException
     function getArray(): JLObject; overload;  // throws java.sql.SQLException
@@ -3609,7 +3609,7 @@
     procedure free(); overload;  // throws java.sql.SQLException
   end;
 
-  JSBlob = interface external 'java.sql' name 'Blob' 
+  JSBlob = interface external 'java.sql' name 'Blob'
     function length(): jlong; overload;  // throws java.sql.SQLException
     function getBytes(para1: jlong; para2: jint): Arr1jbyte; overload;  // throws java.sql.SQLException
     function getBinaryStream(): JIInputStream; overload;  // throws java.sql.SQLException
@@ -3626,7 +3626,7 @@
     function getBinaryStream(para1: jlong; para2: jlong): JIInputStream; overload;  // throws java.sql.SQLException
   end;
 
-  JSClob = interface external 'java.sql' name 'Clob' 
+  JSClob = interface external 'java.sql' name 'Clob'
     function length(): jlong; overload;  // throws java.sql.SQLException
     function getSubString(para1: jlong; para2: jint): JLString; overload;  // throws java.sql.SQLException
     function getCharacterStream(): JIReader; overload;  // throws java.sql.SQLException
@@ -3642,7 +3642,7 @@
     function getCharacterStream(para1: jlong; para2: jlong): JIReader; overload;  // throws java.sql.SQLException
   end;
 
-  JSDriver = interface external 'java.sql' name 'Driver' 
+  JSDriver = interface external 'java.sql' name 'Driver'
     function connect(para1: JLString; para2: JUProperties): JSConnection; overload;  // throws java.sql.SQLException
     function acceptsURL(para1: JLString): jboolean; overload;  // throws java.sql.SQLException
     function getPropertyInfo(para1: JLString; para2: JUProperties): Arr1JSDriverPropertyInfo; overload;  // throws java.sql.SQLException
@@ -3686,27 +3686,27 @@
     constructor create(para1: JLString; para2: JLString); overload;
   end;
 
-  JSRef = interface external 'java.sql' name 'Ref' 
+  JSRef = interface external 'java.sql' name 'Ref'
     function getBaseTypeName(): JLString; overload;  // throws java.sql.SQLException
     function getObject(para1: JUMap): JLObject; overload;  // throws java.sql.SQLException
     function getObject(): JLObject; overload;  // throws java.sql.SQLException
     procedure setObject(para1: JLObject); overload;  // throws java.sql.SQLException
   end;
 
-  JSRowId = interface external 'java.sql' name 'RowId' 
+  JSRowId = interface external 'java.sql' name 'RowId'
     function equals(para1: JLObject): jboolean; overload;
     function getBytes(): Arr1jbyte; overload;
     function toString(): JLString; overload;
     function hashCode(): jint; overload;
   end;
 
-  JSSQLData = interface external 'java.sql' name 'SQLData' 
+  JSSQLData = interface external 'java.sql' name 'SQLData'
     function getSQLTypeName(): JLString; overload;  // throws java.sql.SQLException
     procedure readSQL(para1: JSSQLInput; para2: JLString); overload;  // throws java.sql.SQLException
     procedure writeSQL(para1: JSSQLOutput); overload;  // throws java.sql.SQLException
   end;
 
-  JSSQLInput = interface external 'java.sql' name 'SQLInput' 
+  JSSQLInput = interface external 'java.sql' name 'SQLInput'
     function readString(): JLString; overload;  // throws java.sql.SQLException
     function readBoolean(): jboolean; overload;  // throws java.sql.SQLException
     function readByte(): jbyte; overload;  // throws java.sql.SQLException
@@ -3736,7 +3736,7 @@
     function readRowId(): JSRowId; overload;  // throws java.sql.SQLException
   end;
 
-  JSSQLOutput = interface external 'java.sql' name 'SQLOutput' 
+  JSSQLOutput = interface external 'java.sql' name 'SQLOutput'
     procedure writeString(para1: JLString); overload;  // throws java.sql.SQLException
     procedure writeBoolean(para1: jboolean); overload;  // throws java.sql.SQLException
     procedure writeByte(para1: jbyte); overload;  // throws java.sql.SQLException
@@ -3767,7 +3767,7 @@
     procedure writeSQLXML(para1: JSSQLXML); overload;  // throws java.sql.SQLException
   end;
 
-  JSSQLXML = interface external 'java.sql' name 'SQLXML' 
+  JSSQLXML = interface external 'java.sql' name 'SQLXML'
     procedure free(); overload;  // throws java.sql.SQLException
     function getBinaryStream(): JIInputStream; overload;  // throws java.sql.SQLException
     function setBinaryStream(): JIOutputStream; overload;  // throws java.sql.SQLException
@@ -3779,12 +3779,12 @@
     function setResult(para1: JLClass): JXTResult; overload;  // throws java.sql.SQLException
   end;
 
-  JSSavepoint = interface external 'java.sql' name 'Savepoint' 
+  JSSavepoint = interface external 'java.sql' name 'Savepoint'
     function getSavepointId(): jint; overload;  // throws java.sql.SQLException
     function getSavepointName(): JLString; overload;  // throws java.sql.SQLException
   end;
 
-  JSStruct = interface external 'java.sql' name 'Struct' 
+  JSStruct = interface external 'java.sql' name 'Struct'
     function getSQLTypeName(): JLString; overload;  // throws java.sql.SQLException
     function getAttributes(): Arr1JLObject; overload;  // throws java.sql.SQLException
     function getAttributes(para1: JUMap): Arr1JLObject; overload;  // throws java.sql.SQLException
@@ -3831,7 +3831,7 @@
       SQLXML = 2009;
   end;
 
-  JSWrapper = interface external 'java.sql' name 'Wrapper' 
+  JSWrapper = interface external 'java.sql' name 'Wrapper'
     function unwrap(para1: JLClass): JLObject; overload;  // throws java.sql.SQLException
     function isWrapperFor(para1: JLClass): jboolean; overload;  // throws java.sql.SQLException
   end;
@@ -3945,7 +3945,7 @@
       Arr1InnerParser = array of InnerParser;
       Arr2InnerParser = array of Arr1InnerParser;
       Arr3InnerParser = array of Arr2InnerParser;
-      InnerParser = class external 'java.text' name 'Parser' 
+      InnerParser = class external 'java.text' name 'Parser'
       end;
 
   public
@@ -3963,7 +3963,7 @@
       Arr1InnerBuildAPI = array of InnerBuildAPI;
       Arr2InnerBuildAPI = array of Arr1InnerBuildAPI;
       Arr3InnerBuildAPI = array of Arr2InnerBuildAPI;
-      InnerBuildAPI = class sealed external 'java.text' name 'BuildAPI' 
+      InnerBuildAPI = class sealed external 'java.text' name 'BuildAPI'
       end;
 
   public
@@ -4108,139 +4108,139 @@
       Arr1InnerSelfComparable = array of InnerSelfComparable;
       Arr2InnerSelfComparable = array of Arr1InnerSelfComparable;
       Arr3InnerSelfComparable = array of Arr2InnerSelfComparable;
-      InnerAsLIFOQueue = class external 'java.util' name 'AsLIFOQueue' 
+      InnerAsLIFOQueue = class external 'java.util' name 'AsLIFOQueue'
       end;
 
-      InnerCheckedCollection = class external 'java.util' name 'CheckedCollection' 
+      InnerCheckedCollection = class external 'java.util' name 'CheckedCollection'
       end;
 
-      InnerSynchronizedCollection = class external 'java.util' name 'SynchronizedCollection' 
+      InnerSynchronizedCollection = class external 'java.util' name 'SynchronizedCollection'
       end;
 
-      InnerUnmodifiableCollection = class external 'java.util' name 'UnmodifiableCollection' 
+      InnerUnmodifiableCollection = class external 'java.util' name 'UnmodifiableCollection'
       end;
 
-      InnerCheckedList = class external 'java.util' name 'CheckedList' 
+      InnerCheckedList = class external 'java.util' name 'CheckedList'
       end;
 
-      InnerSynchronizedList = class external 'java.util' name 'SynchronizedList' 
+      InnerSynchronizedList = class external 'java.util' name 'SynchronizedList'
       end;
 
-      InnerUnmodifiableList = class external 'java.util' name 'UnmodifiableList' 
+      InnerUnmodifiableList = class external 'java.util' name 'UnmodifiableList'
       end;
 
-      InnerCheckedMap = class external 'java.util' name 'CheckedMap' 
+      InnerCheckedMap = class external 'java.util' name 'CheckedMap'
       public
         type
           InnerCheckedEntrySet = class;
           Arr1InnerCheckedEntrySet = array of InnerCheckedEntrySet;
           Arr2InnerCheckedEntrySet = array of Arr1InnerCheckedEntrySet;
           Arr3InnerCheckedEntrySet = array of Arr2InnerCheckedEntrySet;
-          InnerCheckedEntrySet = class external 'java.util' name 'CheckedEntrySet' 
+          InnerCheckedEntrySet = class external 'java.util' name 'CheckedEntrySet'
           public
             type
               InnerCheckedEntry = class;
               Arr1InnerCheckedEntry = array of InnerCheckedEntry;
               Arr2InnerCheckedEntry = array of Arr1InnerCheckedEntry;
               Arr3InnerCheckedEntry = array of Arr2InnerCheckedEntry;
-              InnerCheckedEntry = class external 'java.util' name 'CheckedEntry' 
+              InnerCheckedEntry = class external 'java.util' name 'CheckedEntry'
               end;
 
           end;
 
       end;
 
-      InnerSynchronizedMap = class external 'java.util' name 'SynchronizedMap' 
+      InnerSynchronizedMap = class external 'java.util' name 'SynchronizedMap'
       end;
 
-      InnerUnmodifiableMap = class external 'java.util' name 'UnmodifiableMap' 
+      InnerUnmodifiableMap = class external 'java.util' name 'UnmodifiableMap'
       public
         type
           InnerUnmodifiableEntrySet = class;
           Arr1InnerUnmodifiableEntrySet = array of InnerUnmodifiableEntrySet;
           Arr2InnerUnmodifiableEntrySet = array of Arr1InnerUnmodifiableEntrySet;
           Arr3InnerUnmodifiableEntrySet = array of Arr2InnerUnmodifiableEntrySet;
-          InnerUnmodifiableEntrySet = class external 'java.util' name 'UnmodifiableEntrySet' 
+          InnerUnmodifiableEntrySet = class external 'java.util' name 'UnmodifiableEntrySet'
           public
             type
               InnerUnmodifiableEntry = class;
               Arr1InnerUnmodifiableEntry = array of InnerUnmodifiableEntry;
               Arr2InnerUnmodifiableEntry = array of Arr1InnerUnmodifiableEntry;
               Arr3InnerUnmodifiableEntry = array of Arr2InnerUnmodifiableEntry;
-              InnerUnmodifiableEntry = class external 'java.util' name 'UnmodifiableEntry' 
+              InnerUnmodifiableEntry = class external 'java.util' name 'UnmodifiableEntry'
               end;
 
           end;
 
       end;
 
-      InnerCheckedRandomAccessList = class external 'java.util' name 'CheckedRandomAccessList' 
+      InnerCheckedRandomAccessList = class external 'java.util' name 'CheckedRandomAccessList'
       end;
 
-      InnerSynchronizedRandomAccessList = class external 'java.util' name 'SynchronizedRandomAccessList' 
+      InnerSynchronizedRandomAccessList = class external 'java.util' name 'SynchronizedRandomAccessList'
       end;
 
-      InnerUnmodifiableRandomAccessList = class external 'java.util' name 'UnmodifiableRandomAccessList' 
+      InnerUnmodifiableRandomAccessList = class external 'java.util' name 'UnmodifiableRandomAccessList'
       end;
 
-      InnerCheckedSet = class external 'java.util' name 'CheckedSet' 
+      InnerCheckedSet = class external 'java.util' name 'CheckedSet'
       end;
 
-      InnerSynchronizedSet = class external 'java.util' name 'SynchronizedSet' 
+      InnerSynchronizedSet = class external 'java.util' name 'SynchronizedSet'
       end;
 
-      InnerUnmodifiableSet = class external 'java.util' name 'UnmodifiableSet' 
+      InnerUnmodifiableSet = class external 'java.util' name 'UnmodifiableSet'
       end;
 
-      InnerCheckedSortedMap = class external 'java.util' name 'CheckedSortedMap' 
+      InnerCheckedSortedMap = class external 'java.util' name 'CheckedSortedMap'
       end;
 
-      InnerSynchronizedSortedMap = class external 'java.util' name 'SynchronizedSortedMap' 
+      InnerSynchronizedSortedMap = class external 'java.util' name 'SynchronizedSortedMap'
       end;
 
-      InnerUnmodifiableSortedMap = class external 'java.util' name 'UnmodifiableSortedMap' 
+      InnerUnmodifiableSortedMap = class external 'java.util' name 'UnmodifiableSortedMap'
       end;
 
-      InnerCheckedSortedSet = class external 'java.util' name 'CheckedSortedSet' 
+      InnerCheckedSortedSet = class external 'java.util' name 'CheckedSortedSet'
       end;
 
-      InnerSynchronizedSortedSet = class external 'java.util' name 'SynchronizedSortedSet' 
+      InnerSynchronizedSortedSet = class external 'java.util' name 'SynchronizedSortedSet'
       end;
 
-      InnerUnmodifiableSortedSet = class external 'java.util' name 'UnmodifiableSortedSet' 
+      InnerUnmodifiableSortedSet = class external 'java.util' name 'UnmodifiableSortedSet'
       end;
 
-      InnerCopiesList = class external 'java.util' name 'CopiesList' 
+      InnerCopiesList = class external 'java.util' name 'CopiesList'
       end;
 
-      InnerEmptyList = class external 'java.util' name 'EmptyList' 
+      InnerEmptyList = class external 'java.util' name 'EmptyList'
       end;
 
-      InnerSingletonList = class external 'java.util' name 'SingletonList' 
+      InnerSingletonList = class external 'java.util' name 'SingletonList'
       end;
 
-      InnerEmptyMap = class external 'java.util' name 'EmptyMap' 
+      InnerEmptyMap = class external 'java.util' name 'EmptyMap'
       end;
 
-      InnerSingletonMap = class external 'java.util' name 'SingletonMap' 
+      InnerSingletonMap = class external 'java.util' name 'SingletonMap'
       end;
 
-      InnerEmptySet = class external 'java.util' name 'EmptySet' 
+      InnerEmptySet = class external 'java.util' name 'EmptySet'
       end;
 
-      InnerSetFromMap = class external 'java.util' name 'SetFromMap' 
+      InnerSetFromMap = class external 'java.util' name 'SetFromMap'
       end;
 
-      InnerSingletonSet = class external 'java.util' name 'SingletonSet' 
+      InnerSingletonSet = class external 'java.util' name 'SingletonSet'
       end;
 
-      InnerReverseComparator = class external 'java.util' name 'ReverseComparator' 
+      InnerReverseComparator = class external 'java.util' name 'ReverseComparator'
       end;
 
-      InnerReverseComparator2 = class external 'java.util' name 'ReverseComparator2' 
+      InnerReverseComparator2 = class external 'java.util' name 'ReverseComparator2'
       end;
 
-      InnerSelfComparable = interface external 'java.util' name 'SelfComparable' 
+      InnerSelfComparable = interface external 'java.util' name 'SelfComparable'
       end;
 
   public
@@ -4319,15 +4319,15 @@
     function remove(para1: JLObject): JLObject; overload; virtual; abstract;
   end;
 
-  JUEnumeration = interface external 'java.util' name 'Enumeration' 
+  JUEnumeration = interface external 'java.util' name 'Enumeration'
     function hasMoreElements(): jboolean; overload;
     function nextElement(): JLObject; overload;
   end;
 
-  JUEventListener = interface external 'java.util' name 'EventListener' 
+  JUEventListener = interface external 'java.util' name 'EventListener'
   end;
 
-  JUFormattable = interface external 'java.util' name 'Formattable' 
+  JUFormattable = interface external 'java.util' name 'Formattable'
     procedure formatTo(para1: JUFormatter; para2: jint; para3: jint; para4: jint); overload;
   end;
 
@@ -4358,11 +4358,11 @@
     function countObservers(): jint; overload; virtual;
   end;
 
-  JUObserver = interface external 'java.util' name 'Observer' 
+  JUObserver = interface external 'java.util' name 'Observer'
     procedure update(para1: JUObservable; para2: JLObject); overload;
   end;
 
-  JURandomAccess = interface external 'java.util' name 'RandomAccess' 
+  JURandomAccess = interface external 'java.util' name 'RandomAccess'
   end;
 
   JUResourceBundle = class abstract external 'java.util' name 'ResourceBundle' (JLObject)
@@ -4396,25 +4396,25 @@
       Arr1InnerRBClassLoader = array of InnerRBClassLoader;
       Arr2InnerRBClassLoader = array of Arr1InnerRBClassLoader;
       Arr3InnerRBClassLoader = array of Arr2InnerRBClassLoader;
-      InnerBundleReference = class sealed external 'java.util' name 'BundleReference' 
+      InnerBundleReference = class sealed external 'java.util' name 'BundleReference'
       end;
 
-      InnerNoFallbackControl = class sealed external 'java.util' name 'NoFallbackControl' 
+      InnerNoFallbackControl = class sealed external 'java.util' name 'NoFallbackControl'
       end;
 
-      InnerSingleFormatControl = class external 'java.util' name 'SingleFormatControl' 
+      InnerSingleFormatControl = class external 'java.util' name 'SingleFormatControl'
       end;
 
-      InnerCacheKeyReference = interface external 'java.util' name 'CacheKeyReference' 
+      InnerCacheKeyReference = interface external 'java.util' name 'CacheKeyReference'
       end;
 
-      InnerCacheKey = class sealed external 'java.util' name 'CacheKey' 
+      InnerCacheKey = class sealed external 'java.util' name 'CacheKey'
       end;
 
-      InnerLoaderReference = class sealed external 'java.util' name 'LoaderReference' 
+      InnerLoaderReference = class sealed external 'java.util' name 'LoaderReference'
       end;
 
-      InnerRBClassLoader = class external 'java.util' name 'RBClassLoader' 
+      InnerRBClassLoader = class external 'java.util' name 'RBClassLoader'
       end;
 
   public
@@ -4508,19 +4508,19 @@
       Arr1InnerResolver = array of InnerResolver;
       Arr2InnerResolver = array of Arr1InnerResolver;
       Arr3InnerResolver = array of Arr2InnerResolver;
-      InnerEH = class external 'java.util' name 'EH' 
+      InnerEH = class external 'java.util' name 'EH'
       end;
 
-      InnerResolver = class external 'java.util' name 'Resolver' 
+      InnerResolver = class external 'java.util' name 'Resolver'
       end;
 
   end;
 
-  JUCCallable = interface external 'java.util.concurrent' name 'Callable' 
+  JUCCallable = interface external 'java.util.concurrent' name 'Callable'
     function call(): JLObject; overload;  // throws java.lang.Exception
   end;
 
-  JUCCompletionService = interface external 'java.util.concurrent' name 'CompletionService' 
+  JUCCompletionService = interface external 'java.util.concurrent' name 'CompletionService'
     function submit(para1: JUCCallable): JUCFuture; overload;
     function submit(para1: JLRunnable; para2: JLObject): JUCFuture; overload;
     function take(): JUCFuture; overload;  // throws java.lang.InterruptedException
@@ -4535,7 +4535,7 @@
       Arr1InnerSync = array of InnerSync;
       Arr2InnerSync = array of Arr1InnerSync;
       Arr3InnerSync = array of Arr2InnerSync;
-      InnerSync = class sealed external 'java.util.concurrent' name 'Sync' 
+      InnerSync = class sealed external 'java.util.concurrent' name 'Sync'
       end;
 
   public
@@ -4554,7 +4554,7 @@
       Arr1InnerGeneration = array of InnerGeneration;
       Arr2InnerGeneration = array of Arr1InnerGeneration;
       Arr3InnerGeneration = array of Arr2InnerGeneration;
-      InnerGeneration = class external 'java.util.concurrent' name 'Generation' 
+      InnerGeneration = class external 'java.util.concurrent' name 'Generation'
       end;
 
   public
@@ -4579,10 +4579,10 @@
       Arr1InnerSlot = array of InnerSlot;
       Arr2InnerSlot = array of Arr1InnerSlot;
       Arr3InnerSlot = array of Arr2InnerSlot;
-      InnerNode = class sealed external 'java.util.concurrent' name 'Node' 
+      InnerNode = class sealed external 'java.util.concurrent' name 'Node'
       end;
 
-      InnerSlot = class sealed external 'java.util.concurrent' name 'Slot' 
+      InnerSlot = class sealed external 'java.util.concurrent' name 'Slot'
       end;
 
   public
@@ -4591,7 +4591,7 @@
     function exchange(para1: JLObject; para2: jlong; para3: JUCTimeUnit): JLObject; overload; virtual;  // throws java.lang.InterruptedException, java.util.concurrent.TimeoutException
   end;
 
-  JUCExecutor = interface external 'java.util.concurrent' name 'Executor' 
+  JUCExecutor = interface external 'java.util.concurrent' name 'Executor'
     procedure execute(para1: JLRunnable); overload;
   end;
 
@@ -4630,28 +4630,28 @@
       Arr1InnerRunnableAdapter = array of InnerRunnableAdapter;
       Arr2InnerRunnableAdapter = array of Arr1InnerRunnableAdapter;
       Arr3InnerRunnableAdapter = array of Arr2InnerRunnableAdapter;
-      InnerDefaultThreadFactory = class external 'java.util.concurrent' name 'DefaultThreadFactory' 
+      InnerDefaultThreadFactory = class external 'java.util.concurrent' name 'DefaultThreadFactory'
       end;
 
-      InnerDelegatedExecutorService = class external 'java.util.concurrent' name 'DelegatedExecutorService' 
+      InnerDelegatedExecutorService = class external 'java.util.concurrent' name 'DelegatedExecutorService'
       end;
 
-      InnerDelegatedScheduledExecutorService = class external 'java.util.concurrent' name 'DelegatedScheduledExecutorService' 
+      InnerDelegatedScheduledExecutorService = class external 'java.util.concurrent' name 'DelegatedScheduledExecutorService'
       end;
 
-      InnerFinalizableDelegatedExecutorService = class external 'java.util.concurrent' name 'FinalizableDelegatedExecutorService' 
+      InnerFinalizableDelegatedExecutorService = class external 'java.util.concurrent' name 'FinalizableDelegatedExecutorService'
       end;
 
-      InnerPrivilegedThreadFactory = class external 'java.util.concurrent' name 'PrivilegedThreadFactory' 
+      InnerPrivilegedThreadFactory = class external 'java.util.concurrent' name 'PrivilegedThreadFactory'
       end;
 
-      InnerPrivilegedCallable = class sealed external 'java.util.concurrent' name 'PrivilegedCallable' 
+      InnerPrivilegedCallable = class sealed external 'java.util.concurrent' name 'PrivilegedCallable'
       end;
 
-      InnerPrivilegedCallableUsingCurrentClassLoader = class sealed external 'java.util.concurrent' name 'PrivilegedCallableUsingCurrentClassLoader' 
+      InnerPrivilegedCallableUsingCurrentClassLoader = class sealed external 'java.util.concurrent' name 'PrivilegedCallableUsingCurrentClassLoader'
       end;
 
-      InnerRunnableAdapter = class sealed external 'java.util.concurrent' name 'RunnableAdapter' 
+      InnerRunnableAdapter = class sealed external 'java.util.concurrent' name 'RunnableAdapter'
       end;
 
   public
@@ -4677,7 +4677,7 @@
     class function privilegedCallableUsingCurrentClassLoader(para1: JUCCallable): JUCCallable; static; overload;
   end;
 
-  JUCFuture = interface external 'java.util.concurrent' name 'Future' 
+  JUCFuture = interface external 'java.util.concurrent' name 'Future'
     function cancel(para1: jboolean): jboolean; overload;
     function isCancelled(): jboolean; overload;
     function isDone(): jboolean; overload;
@@ -4685,11 +4685,11 @@
     function get(para1: jlong; para2: JUCTimeUnit): JLObject; overload;  // throws java.lang.InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException
   end;
 
-  JUCRejectedExecutionHandler = interface external 'java.util.concurrent' name 'RejectedExecutionHandler' 
+  JUCRejectedExecutionHandler = interface external 'java.util.concurrent' name 'RejectedExecutionHandler'
     procedure rejectedExecution(para1: JLRunnable; para2: JUCThreadPoolExecutor); overload;
   end;
 
-  JUCThreadFactory = interface external 'java.util.concurrent' name 'ThreadFactory' 
+  JUCThreadFactory = interface external 'java.util.concurrent' name 'ThreadFactory'
     function newThread(para1: JLRunnable): JLThread; overload;
   end;
 
@@ -4700,7 +4700,7 @@
       Arr1InnerAtomicIntegerFieldUpdaterImpl = array of InnerAtomicIntegerFieldUpdaterImpl;
       Arr2InnerAtomicIntegerFieldUpdaterImpl = array of Arr1InnerAtomicIntegerFieldUpdaterImpl;
       Arr3InnerAtomicIntegerFieldUpdaterImpl = array of Arr2InnerAtomicIntegerFieldUpdaterImpl;
-      InnerAtomicIntegerFieldUpdaterImpl = class external 'java.util.concurrent.atomic' name 'AtomicIntegerFieldUpdaterImpl' 
+      InnerAtomicIntegerFieldUpdaterImpl = class external 'java.util.concurrent.atomic' name 'AtomicIntegerFieldUpdaterImpl'
       end;
 
   public
@@ -4733,10 +4733,10 @@
       Arr1InnerLockedUpdater = array of InnerLockedUpdater;
       Arr2InnerLockedUpdater = array of Arr1InnerLockedUpdater;
       Arr3InnerLockedUpdater = array of Arr2InnerLockedUpdater;
-      InnerCASUpdater = class external 'java.util.concurrent.atomic' name 'CASUpdater' 
+      InnerCASUpdater = class external 'java.util.concurrent.atomic' name 'CASUpdater'
       end;
 
-      InnerLockedUpdater = class external 'java.util.concurrent.atomic' name 'LockedUpdater' 
+      InnerLockedUpdater = class external 'java.util.concurrent.atomic' name 'LockedUpdater'
       end;
 
   public
@@ -4765,7 +4765,7 @@
       Arr1InnerReferenceBooleanPair = array of InnerReferenceBooleanPair;
       Arr2InnerReferenceBooleanPair = array of Arr1InnerReferenceBooleanPair;
       Arr3InnerReferenceBooleanPair = array of Arr2InnerReferenceBooleanPair;
-      InnerReferenceBooleanPair = class external 'java.util.concurrent.atomic' name 'ReferenceBooleanPair' 
+      InnerReferenceBooleanPair = class external 'java.util.concurrent.atomic' name 'ReferenceBooleanPair'
       end;
 
   public
@@ -4787,7 +4787,7 @@
       Arr1InnerAtomicReferenceFieldUpdaterImpl = array of InnerAtomicReferenceFieldUpdaterImpl;
       Arr2InnerAtomicReferenceFieldUpdaterImpl = array of Arr1InnerAtomicReferenceFieldUpdaterImpl;
       Arr3InnerAtomicReferenceFieldUpdaterImpl = array of Arr2InnerAtomicReferenceFieldUpdaterImpl;
-      InnerAtomicReferenceFieldUpdaterImpl = class sealed external 'java.util.concurrent.atomic' name 'AtomicReferenceFieldUpdaterImpl' 
+      InnerAtomicReferenceFieldUpdaterImpl = class sealed external 'java.util.concurrent.atomic' name 'AtomicReferenceFieldUpdaterImpl'
       end;
 
   public
@@ -4810,7 +4810,7 @@
       Arr1InnerReferenceIntegerPair = array of InnerReferenceIntegerPair;
       Arr2InnerReferenceIntegerPair = array of Arr1InnerReferenceIntegerPair;
       Arr3InnerReferenceIntegerPair = array of Arr2InnerReferenceIntegerPair;
-      InnerReferenceIntegerPair = class external 'java.util.concurrent.atomic' name 'ReferenceIntegerPair' 
+      InnerReferenceIntegerPair = class external 'java.util.concurrent.atomic' name 'ReferenceIntegerPair'
       end;
 
   public
@@ -4825,7 +4825,7 @@
     function attemptStamp(para1: JLObject; para2: jint): jboolean; overload; virtual;
   end;
 
-  JUCLCondition = interface external 'java.util.concurrent.locks' name 'Condition' 
+  JUCLCondition = interface external 'java.util.concurrent.locks' name 'Condition'
     procedure await(); overload;  // throws java.lang.InterruptedException
     procedure awaitUninterruptibly(); overload;
     function awaitNanos(para1: jlong): jlong; overload;  // throws java.lang.InterruptedException
@@ -4835,7 +4835,7 @@
     procedure signalAll(); overload;
   end;
 
-  JUCLLock = interface external 'java.util.concurrent.locks' name 'Lock' 
+  JUCLLock = interface external 'java.util.concurrent.locks' name 'Lock'
     procedure lock(); overload;
     procedure lockInterruptibly(); overload;  // throws java.lang.InterruptedException
     function tryLock(): jboolean; overload;
@@ -4856,7 +4856,7 @@
     class procedure parkUntil(para1: jlong); static; overload;
   end;
 
-  JUCLReadWriteLock = interface external 'java.util.concurrent.locks' name 'ReadWriteLock' 
+  JUCLReadWriteLock = interface external 'java.util.concurrent.locks' name 'ReadWriteLock'
     function readLock(): JUCLLock; overload;
     function writeLock(): JUCLLock; overload;
   end;
@@ -4872,10 +4872,10 @@
       Arr1InnerVerifierStream = array of InnerVerifierStream;
       Arr2InnerVerifierStream = array of Arr1InnerVerifierStream;
       Arr3InnerVerifierStream = array of Arr2InnerVerifierStream;
-      InnerVerifierCodeSource = class external 'java.util.jar' name 'VerifierCodeSource' 
+      InnerVerifierCodeSource = class external 'java.util.jar' name 'VerifierCodeSource'
       end;
 
-      InnerVerifierStream = class external 'java.util.jar' name 'VerifierStream' 
+      InnerVerifierStream = class external 'java.util.jar' name 'VerifierStream'
       end;
 
   public
@@ -4910,7 +4910,7 @@
       Arr1InnerUnpacker = array of InnerUnpacker;
       Arr2InnerUnpacker = array of Arr1InnerUnpacker;
       Arr3InnerUnpacker = array of Arr2InnerUnpacker;
-      InnerPacker = interface external 'java.util.jar' name 'Packer' 
+      InnerPacker = interface external 'java.util.jar' name 'Packer'
         const
           SEGMENT_LIMIT = 'pack.segment.limit';
           KEEP_FILE_ORDER = 'pack.keep.file.order';
@@ -4938,7 +4938,7 @@
         procedure removePropertyChangeListener(para1: JBPropertyChangeListener); overload;
       end;
 
-      InnerUnpacker = interface external 'java.util.jar' name 'Unpacker' 
+      InnerUnpacker = interface external 'java.util.jar' name 'Unpacker'
         const
           KEEP = 'keep';
           &TRUE = 'true';
@@ -4971,7 +4971,7 @@
     procedure error(para1: JLString; para2: JLException; para3: jint); overload; virtual;
   end;
 
-  JULFilter = interface external 'java.util.logging' name 'Filter' 
+  JULFilter = interface external 'java.util.logging' name 'Filter'
     function isLoggable(para1: JULLogRecord): jboolean; overload;
   end;
 
@@ -5027,16 +5027,16 @@
       Arr1InnerRootLogger = array of InnerRootLogger;
       Arr2InnerRootLogger = array of Arr1InnerRootLogger;
       Arr3InnerRootLogger = array of Arr2InnerRootLogger;
-      InnerCleaner = class external 'java.util.logging' name 'Cleaner' 
+      InnerCleaner = class external 'java.util.logging' name 'Cleaner'
       end;
 
-      InnerLogNode = class external 'java.util.logging' name 'LogNode' 
+      InnerLogNode = class external 'java.util.logging' name 'LogNode'
       end;
 
-      InnerLoggerWeakRef = class sealed external 'java.util.logging' name 'LoggerWeakRef' 
+      InnerLoggerWeakRef = class sealed external 'java.util.logging' name 'LoggerWeakRef'
       end;
 
-      InnerRootLogger = class external 'java.util.logging' name 'RootLogger' 
+      InnerRootLogger = class external 'java.util.logging' name 'RootLogger'
       end;
 
   public
@@ -5120,7 +5120,7 @@
     procedure setParent(para1: JULLogger); overload; virtual;
   end;
 
-  JULLoggingMXBean = interface external 'java.util.logging' name 'LoggingMXBean' 
+  JULLoggingMXBean = interface external 'java.util.logging' name 'LoggingMXBean'
     function getLoggerNames(): JUList; overload;
     function getLoggerLevel(para1: JLString): JLString; overload;
     procedure setLoggerLevel(para1: JLString; para2: JLString); overload;
@@ -5186,7 +5186,7 @@
     class procedure importPreferences(para1: JIInputStream); static; overload;  // throws java.io.IOException, java.util.prefs.InvalidPreferencesFormatException
   end;
 
-  JUPPreferencesFactory = interface external 'java.util.prefs' name 'PreferencesFactory' 
+  JUPPreferencesFactory = interface external 'java.util.prefs' name 'PreferencesFactory'
     function systemRoot(): JUPPreferences; overload;
     function userRoot(): JUPPreferences; overload;
   end;
@@ -5202,10 +5202,10 @@
       Arr1InnerResolver = array of InnerResolver;
       Arr2InnerResolver = array of Arr1InnerResolver;
       Arr3InnerResolver = array of Arr2InnerResolver;
-      InnerEH = class external 'java.util.prefs' name 'EH' 
+      InnerEH = class external 'java.util.prefs' name 'EH'
       end;
 
-      InnerResolver = class external 'java.util.prefs' name 'Resolver' 
+      InnerResolver = class external 'java.util.prefs' name 'Resolver'
       end;
 
   end;
@@ -5213,7 +5213,7 @@
   JURASCII = class sealed external 'java.util.regex' name 'ASCII' (JLObject)
   end;
 
-  JURMatchResult = interface external 'java.util.regex' name 'MatchResult' 
+  JURMatchResult = interface external 'java.util.regex' name 'MatchResult'
     function start(): jint; overload;
     function start(para1: jint): jint; overload;
     function &end(): jint; overload;
@@ -5230,7 +5230,7 @@
     function getAvailableLocales(): Arr1JULocale; overload; virtual; abstract;
   end;
 
-  JUZChecksum = interface external 'java.util.zip' name 'Checksum' 
+  JUZChecksum = interface external 'java.util.zip' name 'Checksum'
     procedure update(para1: jint); overload;
     procedure update(para1: Arr1jbyte; para2: jint; para3: jint); overload;
     procedure update(var para1: array of jbyte; para2: jint; para3: jint); overload;
@@ -5315,7 +5315,7 @@
   JUZZStreamRef = class external 'java.util.zip' name 'ZStreamRef' (JLObject)
   end;
 
-  JUZZipConstants = interface external 'java.util.zip' name 'ZipConstants' 
+  JUZZipConstants = interface external 'java.util.zip' name 'ZipConstants'
     const
       LOCSIG = jlong(67324752);
       EXTSIG = jlong(134695760);
@@ -5359,11 +5359,11 @@
       ENDCOM = 20;
   end;
 
-  JAAccessible = interface external 'javax.accessibility' name 'Accessible' 
+  JAAccessible = interface external 'javax.accessibility' name 'Accessible'
     function getAccessibleContext(): JAAccessibleContext; overload;
   end;
 
-  JAAccessibleAction = interface external 'javax.accessibility' name 'AccessibleAction' 
+  JAAccessibleAction = interface external 'javax.accessibility' name 'AccessibleAction'
     final class var
       fTOGGLE_EXPAND: JLString; external name 'TOGGLE_EXPAND';
       fINCREMENT: JLString; external name 'INCREMENT';
@@ -5399,7 +5399,7 @@
     function toString(): JLString; overload; virtual;
   end;
 
-  JAAccessibleComponent = interface external 'javax.accessibility' name 'AccessibleComponent' 
+  JAAccessibleComponent = interface external 'javax.accessibility' name 'AccessibleComponent'
     function getBackground(): JAColor; overload;
     procedure setBackground(para1: JAColor); overload;
     function getForeground(): JAColor; overload;
@@ -5487,7 +5487,7 @@
     procedure firePropertyChange(para1: JLString; para2: JLObject; para3: JLObject); overload; virtual;
   end;
 
-  JAAccessibleExtendedText = interface external 'javax.accessibility' name 'AccessibleExtendedText' 
+  JAAccessibleExtendedText = interface external 'javax.accessibility' name 'AccessibleExtendedText'
     const
       LINE = 4;
       ATTRIBUTE_RUN = 5;
@@ -5498,14 +5498,14 @@
     function getTextBounds(para1: jint; para2: jint): JARectangle; overload;
   end;
 
-  JAAccessibleIcon = interface external 'javax.accessibility' name 'AccessibleIcon' 
+  JAAccessibleIcon = interface external 'javax.accessibility' name 'AccessibleIcon'
     function getAccessibleIconDescription(): JLString; overload;
     procedure setAccessibleIconDescription(para1: JLString); overload;
     function getAccessibleIconWidth(): jint; overload;
     function getAccessibleIconHeight(): jint; overload;
   end;
 
-  JAAccessibleKeyBinding = interface external 'javax.accessibility' name 'AccessibleKeyBinding' 
+  JAAccessibleKeyBinding = interface external 'javax.accessibility' name 'AccessibleKeyBinding'
     function getAccessibleKeyBindingCount(): jint; overload;
     function getAccessibleKeyBinding(para1: jint): JLObject; overload;
   end;
@@ -5530,7 +5530,7 @@
     function toString(): JLString; overload; virtual;
   end;
 
-  JAAccessibleSelection = interface external 'javax.accessibility' name 'AccessibleSelection' 
+  JAAccessibleSelection = interface external 'javax.accessibility' name 'AccessibleSelection'
     function getAccessibleSelectionCount(): jint; overload;
     function getAccessibleSelection(para1: jint): JAAccessible; overload;
     function isAccessibleChildSelected(para1: jint): jboolean; overload;
@@ -5558,12 +5558,12 @@
     function toString(): JLString; overload; virtual;
   end;
 
-  JAAccessibleStreamable = interface external 'javax.accessibility' name 'AccessibleStreamable' 
+  JAAccessibleStreamable = interface external 'javax.accessibility' name 'AccessibleStreamable'
     function getMimeTypes(): Arr1JADDataFlavor; overload;
     function getStream(para1: JADDataFlavor): JIInputStream; overload;
   end;
 
-  JAAccessibleTable = interface external 'javax.accessibility' name 'AccessibleTable' 
+  JAAccessibleTable = interface external 'javax.accessibility' name 'AccessibleTable'
     function getAccessibleCaption(): JAAccessible; overload;
     procedure setAccessibleCaption(para1: JAAccessible); overload;
     function getAccessibleSummary(): JAAccessible; overload;
@@ -5588,7 +5588,7 @@
     function getSelectedAccessibleColumns(): Arr1jint; overload;
   end;
 
-  JAAccessibleTableModelChange = interface external 'javax.accessibility' name 'AccessibleTableModelChange' 
+  JAAccessibleTableModelChange = interface external 'javax.accessibility' name 'AccessibleTableModelChange'
     const
       INSERT = 1;
       UPDATE = 0;
@@ -5600,7 +5600,7 @@
     function getLastColumn(): jint; overload;
   end;
 
-  JAAccessibleText = interface external 'javax.accessibility' name 'AccessibleText' 
+  JAAccessibleText = interface external 'javax.accessibility' name 'AccessibleText'
     const
       CHARACTER = 1;
       WORD = 2;
@@ -5628,7 +5628,7 @@
     constructor create(para1: jint; para2: jint; para3: JLString); overload;
   end;
 
-  JAAccessibleValue = interface external 'javax.accessibility' name 'AccessibleValue' 
+  JAAccessibleValue = interface external 'javax.accessibility' name 'AccessibleValue'
     function getCurrentAccessibleValue(): JLNumber; overload;
     function setCurrentAccessibleValue(para1: JLNumber): jboolean; overload;
     function getMinimumAccessibleValue(): JLNumber; overload;
@@ -5659,22 +5659,22 @@
     function getMimeTypes(): Arr1JLString; overload; virtual;
   end;
 
-  JACommandObject = interface external 'javax.activation' name 'CommandObject' 
+  JACommandObject = interface external 'javax.activation' name 'CommandObject'
     procedure setCommandContext(para1: JLString; para2: JADataHandler); overload;  // throws java.io.IOException
   end;
 
-  JADataContentHandler = interface external 'javax.activation' name 'DataContentHandler' 
+  JADataContentHandler = interface external 'javax.activation' name 'DataContentHandler'
     function getTransferDataFlavors(): Arr1JADDataFlavor; overload;
     function getTransferData(para1: JADDataFlavor; para2: JADataSource): JLObject; overload;  // throws java.awt.datatransfer.UnsupportedFlavorException, java.io.IOException
     function getContent(para1: JADataSource): JLObject; overload;  // throws java.io.IOException
     procedure writeTo(para1: JLObject; para2: JLString; para3: JIOutputStream); overload;  // throws java.io.IOException
   end;
 
-  JADataContentHandlerFactory = interface external 'javax.activation' name 'DataContentHandlerFactory' 
+  JADataContentHandlerFactory = interface external 'javax.activation' name 'DataContentHandlerFactory'
     function createDataContentHandler(para1: JLString): JADataContentHandler; overload;
   end;
 
-  JADataSource = interface external 'javax.activation' name 'DataSource' 
+  JADataSource = interface external 'javax.activation' name 'DataSource'
     function getInputStream(): JIInputStream; overload;  // throws java.io.IOException
     function getOutputStream(): JIOutputStream; overload;  // throws java.io.IOException
     function getContentType(): JLString; overload;
@@ -5715,7 +5715,7 @@
     class function openStream(para1: JNURL): JIInputStream; static; overload;  // throws java.io.IOException
   end;
 
-  JAPCompletion = interface external 'javax.annotation.processing' name 'Completion' 
+  JAPCompletion = interface external 'javax.annotation.processing' name 'Completion'
     function getValue(): JLString; overload;
     function getMessage(): JLString; overload;
   end;
@@ -5727,7 +5727,7 @@
       Arr1InnerSimpleCompletion = array of InnerSimpleCompletion;
       Arr2InnerSimpleCompletion = array of Arr1InnerSimpleCompletion;
       Arr3InnerSimpleCompletion = array of Arr2InnerSimpleCompletion;
-      InnerSimpleCompletion = class external 'javax.annotation.processing' name 'SimpleCompletion' 
+      InnerSimpleCompletion = class external 'javax.annotation.processing' name 'SimpleCompletion'
       end;
 
   public
@@ -5735,7 +5735,7 @@
     class function &of(para1: JLString): JAPCompletion; static; overload;
   end;
 
-  JAPProcessingEnvironment = interface external 'javax.annotation.processing' name 'ProcessingEnvironment' 
+  JAPProcessingEnvironment = interface external 'javax.annotation.processing' name 'ProcessingEnvironment'
     function getOptions(): JUMap; overload;
     function getMessager(): JAPMessager; overload;
     function getFiler(): JAPFiler; overload;
@@ -5745,7 +5745,7 @@
     function getLocale(): JULocale; overload;
   end;
 
-  JAPProcessor = interface external 'javax.annotation.processing' name 'Processor' 
+  JAPProcessor = interface external 'javax.annotation.processing' name 'Processor'
     function getSupportedOptions(): JUSet; overload;
     function getSupportedAnnotationTypes(): JUSet; overload;
     function getSupportedSourceVersion(): JLMSourceVersion; overload;
@@ -5754,7 +5754,7 @@
     function getCompletions(para1: JLMEElement; para2: JLMEAnnotationMirror; para3: JLMEExecutableElement; para4: JLString): JLIterable; overload;
   end;
 
-  JAPRoundEnvironment = interface external 'javax.annotation.processing' name 'RoundEnvironment' 
+  JAPRoundEnvironment = interface external 'javax.annotation.processing' name 'RoundEnvironment'
     function processingOver(): jboolean; overload;
     function errorRaised(): jboolean; overload;
     function getRootElements(): JUSet; overload;
@@ -5769,7 +5769,7 @@
       Arr1Innerr = array of Innerr;
       Arr2Innerr = array of Arr1Innerr;
       Arr3Innerr = array of Arr2Innerr;
-      Innerr = class external 'javax.crypto' name 'r' 
+      Innerr = class external 'javax.crypto' name 'r'
       end;
 
   public
@@ -6022,7 +6022,7 @@
       Arr1Inners = array of Inners;
       Arr2Inners = array of Arr1Inners;
       Arr3Inners = array of Arr2Inners;
-      Inners = class external 'javax.crypto' name 's' 
+      Inners = class external 'javax.crypto' name 's'
       end;
 
   end;
@@ -6042,18 +6042,18 @@
       Arr1Innero = array of Innero;
       Arr2Innero = array of Arr1Innero;
       Arr3Innero = array of Arr2Innero;
-      Innerp = class sealed external 'javax.crypto' name 'p' 
+      Innerp = class sealed external 'javax.crypto' name 'p'
       end;
 
-      Innerq = class external 'javax.crypto' name 'q' 
+      Innerq = class external 'javax.crypto' name 'q'
       end;
 
-      Innero = class external 'javax.crypto' name 'o' 
+      Innero = class external 'javax.crypto' name 'o'
       end;
 
   end;
 
-  JCIDHKey = interface external 'javax.crypto.interfaces' name 'DHKey' 
+  JCIDHKey = interface external 'javax.crypto.interfaces' name 'DHKey'
     function getParams(): JCSDHParameterSpec; overload;
   end;
 
@@ -6140,7 +6140,7 @@
     function activateController(): jboolean; overload; virtual;
   end;
 
-  JIIIOParamController = interface external 'javax.imageio' name 'IIOParamController' 
+  JIIIOParamController = interface external 'javax.imageio' name 'IIOParamController'
     function activate(para1: JIIIOParam): jboolean; overload;
   end;
 
@@ -6183,31 +6183,31 @@
       Arr1InnerSpiInfo = array of InnerSpiInfo;
       Arr2InnerSpiInfo = array of Arr1InnerSpiInfo;
       Arr3InnerSpiInfo = array of Arr2InnerSpiInfo;
-      InnerCacheInfo = class external 'javax.imageio' name 'CacheInfo' 
+      InnerCacheInfo = class external 'javax.imageio' name 'CacheInfo'
       end;
 
-      InnerCanDecodeInputFilter = class external 'javax.imageio' name 'CanDecodeInputFilter' 
+      InnerCanDecodeInputFilter = class external 'javax.imageio' name 'CanDecodeInputFilter'
       end;
 
-      InnerCanEncodeImageAndFormatFilter = class external 'javax.imageio' name 'CanEncodeImageAndFormatFilter' 
+      InnerCanEncodeImageAndFormatFilter = class external 'javax.imageio' name 'CanEncodeImageAndFormatFilter'
       end;
 
-      InnerContainsFilter = class external 'javax.imageio' name 'ContainsFilter' 
+      InnerContainsFilter = class external 'javax.imageio' name 'ContainsFilter'
       end;
 
-      InnerTranscoderFilter = class external 'javax.imageio' name 'TranscoderFilter' 
+      InnerTranscoderFilter = class external 'javax.imageio' name 'TranscoderFilter'
       end;
 
-      InnerImageReaderIterator = class external 'javax.imageio' name 'ImageReaderIterator' 
+      InnerImageReaderIterator = class external 'javax.imageio' name 'ImageReaderIterator'
       end;
 
-      InnerImageTranscoderIterator = class external 'javax.imageio' name 'ImageTranscoderIterator' 
+      InnerImageTranscoderIterator = class external 'javax.imageio' name 'ImageTranscoderIterator'
       end;
 
-      InnerImageWriterIterator = class external 'javax.imageio' name 'ImageWriterIterator' 
+      InnerImageWriterIterator = class external 'javax.imageio' name 'ImageWriterIterator'
       end;
 
-      InnerSpiInfo = class abstract external 'javax.imageio' name 'SpiInfo' 
+      InnerSpiInfo = class abstract external 'javax.imageio' name 'SpiInfo'
       end;
 
   public
@@ -6351,7 +6351,7 @@
     class function getDestination(para1: JIImageReadParam; para2: JUIterator; para3: jint; para4: jint): JAIBufferedImage; static; overload;  // throws javax.imageio.IIOException
   end;
 
-  JIImageTranscoder = interface external 'javax.imageio' name 'ImageTranscoder' 
+  JIImageTranscoder = interface external 'javax.imageio' name 'ImageTranscoder'
     function convertStreamMetadata(para1: JIMIIOMetadata; para2: JIImageWriteParam): JIMIIOMetadata; overload;
     function convertImageMetadata(para1: JIMIIOMetadata; para2: JIImageTypeSpecifier; para3: JIImageWriteParam): JIMIIOMetadata; overload;
   end;
@@ -6379,19 +6379,19 @@
       Arr1InnerPacked = array of InnerPacked;
       Arr2InnerPacked = array of Arr1InnerPacked;
       Arr3InnerPacked = array of Arr2InnerPacked;
-      InnerBanded = class external 'javax.imageio' name 'Banded' 
+      InnerBanded = class external 'javax.imageio' name 'Banded'
       end;
 
-      InnerGrayscale = class external 'javax.imageio' name 'Grayscale' 
+      InnerGrayscale = class external 'javax.imageio' name 'Grayscale'
       end;
 
-      InnerIndexed = class external 'javax.imageio' name 'Indexed' 
+      InnerIndexed = class external 'javax.imageio' name 'Indexed'
       end;
 
-      InnerInterleaved = class external 'javax.imageio' name 'Interleaved' 
+      InnerInterleaved = class external 'javax.imageio' name 'Interleaved'
       end;
 
-      InnerPacked = class external 'javax.imageio' name 'Packed' 
+      InnerPacked = class external 'javax.imageio' name 'Packed'
       end;
 
   strict protected
@@ -6467,11 +6467,11 @@
     function activateController(): jboolean; overload; virtual;
   end;
 
-  JIMIIOMetadataController = interface external 'javax.imageio.metadata' name 'IIOMetadataController' 
+  JIMIIOMetadataController = interface external 'javax.imageio.metadata' name 'IIOMetadataController'
     function activate(para1: JIMIIOMetadata): jboolean; overload;
   end;
 
-  JIMIIOMetadataFormat = interface external 'javax.imageio.metadata' name 'IIOMetadataFormat' 
+  JIMIIOMetadataFormat = interface external 'javax.imageio.metadata' name 'IIOMetadataFormat'
     const
       CHILD_POLICY_EMPTY = 0;
       CHILD_POLICY_ALL = 1;
@@ -6553,7 +6553,7 @@
     function toString(): JLString; overload; virtual;
   end;
 
-  JISRegisterableService = interface external 'javax.imageio.spi' name 'RegisterableService' 
+  JISRegisterableService = interface external 'javax.imageio.spi' name 'RegisterableService'
     procedure onRegistration(para1: JISServiceRegistry; para2: JLClass); overload;
     procedure onDeregistration(para1: JISServiceRegistry; para2: JLClass); overload;
   end;
@@ -6565,7 +6565,7 @@
       Arr1InnerFilter = array of InnerFilter;
       Arr2InnerFilter = array of Arr1InnerFilter;
       Arr3InnerFilter = array of Arr2InnerFilter;
-      InnerFilter = interface external 'javax.imageio.spi' name 'Filter' 
+      InnerFilter = interface external 'javax.imageio.spi' name 'Filter'
         function filter(para1: JLObject): jboolean; overload;
       end;
 
@@ -6632,18 +6632,18 @@
     procedure reset(); overload; virtual;
   end;
 
-  JLMEAnnotationMirror = interface external 'javax.lang.model.element' name 'AnnotationMirror' 
+  JLMEAnnotationMirror = interface external 'javax.lang.model.element' name 'AnnotationMirror'
     function getAnnotationType(): JLMTDeclaredType; overload;
     function getElementValues(): JUMap; overload;
   end;
 
-  JLMEAnnotationValue = interface external 'javax.lang.model.element' name 'AnnotationValue' 
+  JLMEAnnotationValue = interface external 'javax.lang.model.element' name 'AnnotationValue'
     function getValue(): JLObject; overload;
     function toString(): JLString; overload;
     function accept(para1: JLMEAnnotationValueVisitor; para2: JLObject): JLObject; overload;
   end;
 
-  JLMEAnnotationValueVisitor = interface external 'javax.lang.model.element' name 'AnnotationValueVisitor' 
+  JLMEAnnotationValueVisitor = interface external 'javax.lang.model.element' name 'AnnotationValueVisitor'
     function visit(para1: JLMEAnnotationValue; para2: JLObject): JLObject; overload;
     function visit(para1: JLMEAnnotationValue): JLObject; overload;
     function visitBoolean(para1: jboolean; para2: JLObject): JLObject; overload;
@@ -6662,7 +6662,7 @@
     function visitUnknown(para1: JLMEAnnotationValue; para2: JLObject): JLObject; overload;
   end;
 
-  JLMEElement = interface external 'javax.lang.model.element' name 'Element' 
+  JLMEElement = interface external 'javax.lang.model.element' name 'Element'
     function asType(): JLMTTypeMirror; overload;
     function getKind(): JLMEElementKind; overload;
     function getAnnotationMirrors(): JUList; overload;
@@ -6676,7 +6676,7 @@
     function accept(para1: JLMEElementVisitor; para2: JLObject): JLObject; overload;
   end;
 
-  JLMEElementVisitor = interface external 'javax.lang.model.element' name 'ElementVisitor' 
+  JLMEElementVisitor = interface external 'javax.lang.model.element' name 'ElementVisitor'
     function visit(para1: JLMEElement; para2: JLObject): JLObject; overload;
     function visit(para1: JLMEElement): JLObject; overload;
     function visitPackage(para1: JLMEPackageElement; para2: JLObject): JLObject; overload;
@@ -6687,7 +6687,7 @@
     function visitUnknown(para1: JLMEElement; para2: JLObject): JLObject; overload;
   end;
 
-  JLMTTypeMirror = interface external 'javax.lang.model.type' name 'TypeMirror' 
+  JLMTTypeMirror = interface external 'javax.lang.model.type' name 'TypeMirror'
     function getKind(): JLMTTypeKind; overload;
     function equals(para1: JLObject): jboolean; overload;
     function hashCode(): jint; overload;
@@ -6695,7 +6695,7 @@
     function accept(para1: JLMTTypeVisitor; para2: JLObject): JLObject; overload;
   end;
 
-  JLMTTypeVisitor = interface external 'javax.lang.model.type' name 'TypeVisitor' 
+  JLMTTypeVisitor = interface external 'javax.lang.model.type' name 'TypeVisitor'
     function visit(para1: JLMTTypeMirror; para2: JLObject): JLObject; overload;
     function visit(para1: JLMTTypeMirror): JLObject; overload;
     function visitPrimitive(para1: JLMTPrimitiveType; para2: JLObject): JLObject; overload;
@@ -6724,7 +6724,7 @@
     class function packagesIn(para1: JUSet): JUSet; static; overload;
   end;
 
-  JLMUElements = interface external 'javax.lang.model.util' name 'Elements' 
+  JLMUElements = interface external 'javax.lang.model.util' name 'Elements'
     function getPackageElement(para1: JLCharSequence): JLMEPackageElement; overload;
     function getTypeElement(para1: JLCharSequence): JLMETypeElement; overload;
     function getElementValuesWithDefaults(para1: JLMEAnnotationMirror): JUMap; overload;
@@ -6742,7 +6742,7 @@
     function getName(para1: JLCharSequence): JLMEName; overload;
   end;
 
-  JLMUTypes = interface external 'javax.lang.model.util' name 'Types' 
+  JLMUTypes = interface external 'javax.lang.model.util' name 'Types'
     function asElement(para1: JLMTTypeMirror): JLMEElement; overload;
     function isSameType(para1: JLMTTypeMirror; para2: JLMTTypeMirror): jboolean; overload;
     function isSubtype(para1: JLMTTypeMirror; para2: JLMTTypeMirror): jboolean; overload;
@@ -6773,11 +6773,11 @@
     class function loadClassWithout(para1: JLClassLoader; para2: JLString): JLClass; static; overload;  // throws java.lang.ClassNotFoundException
   end;
 
-  JMDescriptorRead = interface external 'javax.management' name 'DescriptorRead' 
+  JMDescriptorRead = interface external 'javax.management' name 'DescriptorRead'
     function getDescriptor(): JMDescriptor; overload;
   end;
 
-  JMDynamicMBean = interface external 'javax.management' name 'DynamicMBean' 
+  JMDynamicMBean = interface external 'javax.management' name 'DynamicMBean'
     function getAttribute(para1: JLString): JLObject; overload;  // throws javax.management.AttributeNotFoundException, javax.management.MBeanException, javax.management.ReflectionException
     procedure setAttribute(para1: JMAttribute); overload;  // throws javax.management.AttributeNotFoundException, javax.management.InvalidAttributeValueException, javax.management.MBeanException, javax.management.ReflectionException
     function getAttributes(para1: Arr1JLString): JMAttributeList; overload;
@@ -6808,7 +6808,7 @@
     class function isMXBeanInterface(para1: JLClass): jboolean; static; overload;
   end;
 
-  JMMBeanRegistration = interface external 'javax.management' name 'MBeanRegistration' 
+  JMMBeanRegistration = interface external 'javax.management' name 'MBeanRegistration'
     function preRegister(para1: JMMBeanServer; para2: JMObjectName): JMObjectName; overload;  // throws java.lang.Exception
     procedure postRegister(para1: JLBoolean); overload;
     procedure preDeregister(); overload;  // throws java.lang.Exception
@@ -6822,7 +6822,7 @@
     function newMBeanServer(para1: JLString; para2: JMMBeanServer; para3: JMMBeanServerDelegate): JMMBeanServer; overload; virtual;
   end;
 
-  JMMBeanServerConnection = interface external 'javax.management' name 'MBeanServerConnection' 
+  JMMBeanServerConnection = interface external 'javax.management' name 'MBeanServerConnection'
     function createMBean(para1: JLString; para2: JMObjectName): JMObjectInstance; overload;  // throws javax.management.ReflectionException, javax.management.InstanceAlreadyExistsException, javax.management.MBeanRegistrationException, javax.management.MBeanException, javax.management.NotCompliantMBeanException, java.io.IOException
     function createMBean(para1: JLString; para2: JMObjectName; para3: JMObjectName): JMObjectInstance; overload;  // throws javax.management.ReflectionException, javax.management.InstanceAlreadyExistsException, javax.management.MBeanRegistrationException, javax.management.MBeanException, javax.management.NotCompliantMBeanException, javax.management.InstanceNotFoundException, java.io.IOException
     function createMBean(para1: JLString; para2: JMObjectName; para3: Arr1JLObject; para4: Arr1JLString): JMObjectInstance; overload;  // throws javax.management.ReflectionException, javax.management.InstanceAlreadyExistsException, javax.management.MBeanRegistrationException, javax.management.MBeanException, javax.management.NotCompliantMBeanException, java.io.IOException
@@ -6854,7 +6854,7 @@
     function isInstanceOf(para1: JMObjectName; para2: JLString): jboolean; overload;  // throws javax.management.InstanceNotFoundException, java.io.IOException
   end;
 
-  JMMBeanServerDelegateMBean = interface external 'javax.management' name 'MBeanServerDelegateMBean' 
+  JMMBeanServerDelegateMBean = interface external 'javax.management' name 'MBeanServerDelegateMBean'
     function getMBeanServerId(): JLString; overload;
     function getSpecificationName(): JLString; overload;
     function getSpecificationVersion(): JLString; overload;
@@ -6875,13 +6875,13 @@
     class function getClassLoaderRepository(para1: JMMBeanServer): JMLClassLoaderRepository; static; overload;
   end;
 
-  JMNotificationBroadcaster = interface external 'javax.management' name 'NotificationBroadcaster' 
+  JMNotificationBroadcaster = interface external 'javax.management' name 'NotificationBroadcaster'
     procedure addNotificationListener(para1: JMNotificationListener; para2: JMNotificationFilter; para3: JLObject); overload;  // throws java.lang.IllegalArgumentException
     procedure removeNotificationListener(para1: JMNotificationListener); overload;  // throws javax.management.ListenerNotFoundException
     function getNotificationInfo(): Arr1JMMBeanNotificationInfo; overload;
   end;
 
-  JMPersistentMBean = interface external 'javax.management' name 'PersistentMBean' 
+  JMPersistentMBean = interface external 'javax.management' name 'PersistentMBean'
     procedure load(); overload;  // throws javax.management.MBeanException, javax.management.RuntimeOperationsException, javax.management.InstanceNotFoundException
     procedure store(); overload;  // throws javax.management.MBeanException, javax.management.RuntimeOperationsException, javax.management.InstanceNotFoundException
   end;
@@ -6932,7 +6932,7 @@
     class function isInstanceOf(para1: JMStringValueExp): JMQueryExp; static; overload;
   end;
 
-  JMLClassLoaderRepository = interface external 'javax.management.loading' name 'ClassLoaderRepository' 
+  JMLClassLoaderRepository = interface external 'javax.management.loading' name 'ClassLoaderRepository'
     function loadClass(para1: JLString): JLClass; overload;  // throws java.lang.ClassNotFoundException
     function loadClassWithout(para1: JLClassLoader; para2: JLString): JLClass; overload;  // throws java.lang.ClassNotFoundException
     function loadClassBefore(para1: JLClassLoader; para2: JLString): JLClass; overload;  // throws java.lang.ClassNotFoundException
@@ -6960,7 +6960,7 @@
     function getParameterValues(): JUList; overload; virtual;
   end;
 
-  JMLMLetMBean = interface external 'javax.management.loading' name 'MLetMBean' 
+  JMLMLetMBean = interface external 'javax.management.loading' name 'MLetMBean'
     function getMBeansFromURL(para1: JLString): JUSet; overload;  // throws javax.management.ServiceNotFoundException
     function getMBeansFromURL(para1: JNURL): JUSet; overload;  // throws javax.management.ServiceNotFoundException
     procedure addURL(para1: JNURL); overload;
@@ -6983,10 +6983,10 @@
     function parseURL(para1: JLString): JUList; overload; virtual;  // throws java.io.IOException
   end;
 
-  JMLPrivateClassLoader = interface external 'javax.management.loading' name 'PrivateClassLoader' 
+  JMLPrivateClassLoader = interface external 'javax.management.loading' name 'PrivateClassLoader'
   end;
 
-  JMMModelMBeanInfo = interface external 'javax.management.modelmbean' name 'ModelMBeanInfo' 
+  JMMModelMBeanInfo = interface external 'javax.management.modelmbean' name 'ModelMBeanInfo'
     function getDescriptors(para1: JLString): Arr1JMDescriptor; overload;  // throws javax.management.MBeanException, javax.management.RuntimeOperationsException
     procedure setDescriptors(para1: Arr1JMDescriptor); overload;  // throws javax.management.MBeanException, javax.management.RuntimeOperationsException
     procedure setDescriptors(var para1: array of JMDescriptor); overload;  // throws javax.management.MBeanException, javax.management.RuntimeOperationsException
@@ -7006,7 +7006,7 @@
     function getOperations(): Arr1JMMBeanOperationInfo; overload;
   end;
 
-  JMMMonitorMBean = interface external 'javax.management.monitor' name 'MonitorMBean' 
+  JMMMonitorMBean = interface external 'javax.management.monitor' name 'MonitorMBean'
     procedure start(); overload;
     procedure stop(); overload;
     procedure addObservedObject(para1: JMObjectName); overload;  // throws java.lang.IllegalArgumentException
@@ -7022,7 +7022,7 @@
     function isActive(): jboolean; overload;
   end;
 
-  JMOCompositeData = interface external 'javax.management.openmbean' name 'CompositeData' 
+  JMOCompositeData = interface external 'javax.management.openmbean' name 'CompositeData'
     function getCompositeType(): JMOCompositeType; overload;
     function get(para1: JLString): JLObject; overload;
     function getAll(para1: Arr1JLString): Arr1JLObject; overload;
@@ -7035,11 +7035,11 @@
     function toString(): JLString; overload;
   end;
 
-  JMOCompositeDataView = interface external 'javax.management.openmbean' name 'CompositeDataView' 
+  JMOCompositeDataView = interface external 'javax.management.openmbean' name 'CompositeDataView'
     function toCompositeData(para1: JMOCompositeType): JMOCompositeData; overload;
   end;
 
-  JMOOpenMBeanConstructorInfo = interface external 'javax.management.openmbean' name 'OpenMBeanConstructorInfo' 
+  JMOOpenMBeanConstructorInfo = interface external 'javax.management.openmbean' name 'OpenMBeanConstructorInfo'
     function getDescription(): JLString; overload;
     function getName(): JLString; overload;
     function getSignature(): Arr1JMMBeanParameterInfo; overload;
@@ -7048,7 +7048,7 @@
     function toString(): JLString; overload;
   end;
 
-  JMOOpenMBeanInfo = interface external 'javax.management.openmbean' name 'OpenMBeanInfo' 
+  JMOOpenMBeanInfo = interface external 'javax.management.openmbean' name 'OpenMBeanInfo'
     function getClassName(): JLString; overload;
     function getDescription(): JLString; overload;
     function getAttributes(): Arr1JMMBeanAttributeInfo; overload;
@@ -7060,7 +7060,7 @@
     function toString(): JLString; overload;
   end;
 
-  JMOOpenMBeanOperationInfo = interface external 'javax.management.openmbean' name 'OpenMBeanOperationInfo' 
+  JMOOpenMBeanOperationInfo = interface external 'javax.management.openmbean' name 'OpenMBeanOperationInfo'
     function getDescription(): JLString; overload;
     function getName(): JLString; overload;
     function getSignature(): Arr1JMMBeanParameterInfo; overload;
@@ -7072,7 +7072,7 @@
     function toString(): JLString; overload;
   end;
 
-  JMOOpenMBeanParameterInfo = interface external 'javax.management.openmbean' name 'OpenMBeanParameterInfo' 
+  JMOOpenMBeanParameterInfo = interface external 'javax.management.openmbean' name 'OpenMBeanParameterInfo'
     function getDescription(): JLString; overload;
     function getName(): JLString; overload;
     function getOpenType(): JMOOpenType; overload;
@@ -7090,7 +7090,7 @@
     function toString(): JLString; overload;
   end;
 
-  JMOTabularData = interface external 'javax.management.openmbean' name 'TabularData' 
+  JMOTabularData = interface external 'javax.management.openmbean' name 'TabularData'
     function getTabularType(): JMOTabularType; overload;
     function calculateIndex(para1: JMOCompositeData): Arr1JLObject; overload;
     function size(): jint; overload;
@@ -7113,7 +7113,7 @@
     function toString(): JLString; overload;
   end;
 
-  JMRRelation = interface external 'javax.management.relation' name 'Relation' 
+  JMRRelation = interface external 'javax.management.relation' name 'Relation'
     function getRole(para1: JLString): JUList; overload;  // throws java.lang.IllegalArgumentException, javax.management.relation.RoleNotFoundException, javax.management.relation.RelationServiceNotRegisteredException
     function getRoles(para1: Arr1JLString): JMRRoleResult; overload;  // throws java.lang.IllegalArgumentException, javax.management.relation.RelationServiceNotRegisteredException
     function getRoles(var para1: array of JLString): JMRRoleResult; overload;  // throws java.lang.IllegalArgumentException, javax.management.relation.RelationServiceNotRegisteredException
@@ -7129,7 +7129,7 @@
     function getRelationId(): JLString; overload;
   end;
 
-  JMRRelationServiceMBean = interface external 'javax.management.relation' name 'RelationServiceMBean' 
+  JMRRelationServiceMBean = interface external 'javax.management.relation' name 'RelationServiceMBean'
     procedure isActive(); overload;  // throws javax.management.relation.RelationServiceNotRegisteredException
     function getPurgeFlag(): jboolean; overload;
     procedure setPurgeFlag(para1: jboolean); overload;
@@ -7183,11 +7183,11 @@
     class function isRoleStatus(para1: jint): jboolean; static; overload;
   end;
 
-  JMRJMXAddressable = interface external 'javax.management.remote' name 'JMXAddressable' 
+  JMRJMXAddressable = interface external 'javax.management.remote' name 'JMXAddressable'
     function getAddress(): JMRJMXServiceURL; overload;
   end;
 
-  JMRJMXAuthenticator = interface external 'javax.management.remote' name 'JMXAuthenticator' 
+  JMRJMXAuthenticator = interface external 'javax.management.remote' name 'JMXAuthenticator'
     function authenticate(para1: JLObject): JSASubject; overload;
   end;
 
@@ -7203,7 +7203,7 @@
     class function newJMXConnector(para1: JMRJMXServiceURL; para2: JUMap): JMRJMXConnector; static; overload;  // throws java.io.IOException
   end;
 
-  JMRJMXConnectorProvider = interface external 'javax.management.remote' name 'JMXConnectorProvider' 
+  JMRJMXConnectorProvider = interface external 'javax.management.remote' name 'JMXConnectorProvider'
     function newJMXConnector(para1: JMRJMXServiceURL; para2: JUMap): JMRJMXConnector; overload;  // throws java.io.IOException
   end;
 
@@ -7218,7 +7218,7 @@
     class function newJMXConnectorServer(para1: JMRJMXServiceURL; para2: JUMap; para3: JMMBeanServer): JMRJMXConnectorServer; static; overload;  // throws java.io.IOException
   end;
 
-  JMRJMXConnectorServerMBean = interface external 'javax.management.remote' name 'JMXConnectorServerMBean' 
+  JMRJMXConnectorServerMBean = interface external 'javax.management.remote' name 'JMXConnectorServerMBean'
     procedure start(); overload;  // throws java.io.IOException
     procedure stop(); overload;  // throws java.io.IOException
     function isActive(): jboolean; overload;
@@ -7229,11 +7229,11 @@
     function toJMXConnector(para1: JUMap): JMRJMXConnector; overload;  // throws java.io.IOException
   end;
 
-  JMRJMXConnectorServerProvider = interface external 'javax.management.remote' name 'JMXConnectorServerProvider' 
+  JMRJMXConnectorServerProvider = interface external 'javax.management.remote' name 'JMXConnectorServerProvider'
     function newJMXConnectorServer(para1: JMRJMXServiceURL; para2: JUMap; para3: JMMBeanServer): JMRJMXConnectorServer; overload;  // throws java.io.IOException
   end;
 
-  JMTTimerMBean = interface external 'javax.management.timer' name 'TimerMBean' 
+  JMTTimerMBean = interface external 'javax.management.timer' name 'TimerMBean'
     procedure start(); overload;
     procedure stop(); overload;
     function addNotification(para1: JLString; para2: JLString; para3: JLObject; para4: JUDate; para5: jlong; para6: jlong; para7: jboolean): JLInteger; overload;  // throws java.lang.IllegalArgumentException
@@ -7259,7 +7259,7 @@
     function isEmpty(): jboolean; overload;
   end;
 
-  JNContext = interface external 'javax.naming' name 'Context' 
+  JNContext = interface external 'javax.naming' name 'Context'
     const
       INITIAL_CONTEXT_FACTORY = 'java.naming.factory.initial';
       OBJECT_FACTORIES = 'java.naming.factory.object';
@@ -7328,11 +7328,11 @@
     function hashCode(): jint; overload; virtual;
   end;
 
-  JNNameParser = interface external 'javax.naming' name 'NameParser' 
+  JNNameParser = interface external 'javax.naming' name 'NameParser'
     function parse(para1: JLString): JNName; overload;  // throws javax.naming.NamingException
   end;
 
-  JNReferenceable = interface external 'javax.naming' name 'Referenceable' 
+  JNReferenceable = interface external 'javax.naming' name 'Referenceable'
     function getReference(): JNReference; overload;  // throws javax.naming.NamingException
   end;
 
@@ -7344,7 +7344,7 @@
     class function getControlInstance(para1: JNLControl; para2: JNContext; para3: JUHashtable): JNLControl; static; overload;  // throws javax.naming.NamingException
   end;
 
-  JNLHasControls = interface external 'javax.naming.ldap' name 'HasControls' 
+  JNLHasControls = interface external 'javax.naming.ldap' name 'HasControls'
     function getControls(): Arr1JNLControl; overload;  // throws javax.naming.NamingException
   end;
 
@@ -7366,11 +7366,11 @@
   JNSDirContextStringPair = class external 'javax.naming.spi' name 'DirContextStringPair' (JLObject)
   end;
 
-  JNSInitialContextFactory = interface external 'javax.naming.spi' name 'InitialContextFactory' 
+  JNSInitialContextFactory = interface external 'javax.naming.spi' name 'InitialContextFactory'
     function getInitialContext(para1: JUHashtable): JNContext; overload;  // throws javax.naming.NamingException
   end;
 
-  JNSInitialContextFactoryBuilder = interface external 'javax.naming.spi' name 'InitialContextFactoryBuilder' 
+  JNSInitialContextFactoryBuilder = interface external 'javax.naming.spi' name 'InitialContextFactoryBuilder'
     function createInitialContextFactory(para1: JUHashtable): JNSInitialContextFactory; overload;  // throws javax.naming.NamingException
   end;
 
@@ -7389,20 +7389,20 @@
     class function getStateToBind(para1: JLObject; para2: JNName; para3: JNContext; para4: JUHashtable): JLObject; static; overload;  // throws javax.naming.NamingException
   end;
 
-  JNSObjectFactory = interface external 'javax.naming.spi' name 'ObjectFactory' 
+  JNSObjectFactory = interface external 'javax.naming.spi' name 'ObjectFactory'
     function getObjectInstance(para1: JLObject; para2: JNName; para3: JNContext; para4: JUHashtable): JLObject; overload;  // throws java.lang.Exception
   end;
 
-  JNSObjectFactoryBuilder = interface external 'javax.naming.spi' name 'ObjectFactoryBuilder' 
+  JNSObjectFactoryBuilder = interface external 'javax.naming.spi' name 'ObjectFactoryBuilder'
     function createObjectFactory(para1: JLObject; para2: JUHashtable): JNSObjectFactory; overload;  // throws javax.naming.NamingException
   end;
 
-  JNSResolver = interface external 'javax.naming.spi' name 'Resolver' 
+  JNSResolver = interface external 'javax.naming.spi' name 'Resolver'
     function resolveToClass(para1: JNName; para2: JLClass): JNSResolveResult; overload;  // throws javax.naming.NamingException
     function resolveToClass(para1: JLString; para2: JLClass): JNSResolveResult; overload;  // throws javax.naming.NamingException
   end;
 
-  JNSStateFactory = interface external 'javax.naming.spi' name 'StateFactory' 
+  JNSStateFactory = interface external 'javax.naming.spi' name 'StateFactory'
     function getStateToBind(para1: JLObject; para2: JNName; para3: JNContext; para4: JUHashtable): JLObject; overload;  // throws javax.naming.NamingException
   end;
 
@@ -7429,11 +7429,11 @@
     function createSocket(para1: JNInetAddress; para2: jint; para3: JNInetAddress; para4: jint): JNSocket; overload; virtual; abstract;  // throws java.io.IOException
   end;
 
-  JNSHostnameVerifier = interface external 'javax.net.ssl' name 'HostnameVerifier' 
+  JNSHostnameVerifier = interface external 'javax.net.ssl' name 'HostnameVerifier'
     function verify(para1: JLString; para2: JNSSSLSession): jboolean; overload;
   end;
 
-  JNSKeyManager = interface external 'javax.net.ssl' name 'KeyManager' 
+  JNSKeyManager = interface external 'javax.net.ssl' name 'KeyManager'
   end;
 
   JNSKeyManagerFactory = class external 'javax.net.ssl' name 'KeyManagerFactory' (JLObject)
@@ -7463,7 +7463,7 @@
     function engineGetKeyManagers(): Arr1JNSKeyManager; overload; virtual; abstract;
   end;
 
-  JNSManagerFactoryParameters = interface external 'javax.net.ssl' name 'ManagerFactoryParameters' 
+  JNSManagerFactoryParameters = interface external 'javax.net.ssl' name 'ManagerFactoryParameters'
   end;
 
   JNSSSLContext = class external 'javax.net.ssl' name 'SSLContext' (JLObject)
@@ -7524,7 +7524,7 @@
     procedure setNeedClientAuth(para1: jboolean); overload; virtual;
   end;
 
-  JNSSSLSession = interface external 'javax.net.ssl' name 'SSLSession' 
+  JNSSSLSession = interface external 'javax.net.ssl' name 'SSLSession'
     function getId(): Arr1jbyte; overload;
     function getSessionContext(): JNSSSLSessionContext; overload;
     function getCreationTime(): jlong; overload;
@@ -7548,7 +7548,7 @@
     function getApplicationBufferSize(): jint; overload;
   end;
 
-  JNSSSLSessionContext = interface external 'javax.net.ssl' name 'SSLSessionContext' 
+  JNSSSLSessionContext = interface external 'javax.net.ssl' name 'SSLSessionContext'
     function getSession(para1: Arr1jbyte): JNSSSLSession; overload;
     function getSession(var para1: array of jbyte): JNSSSLSession; overload;
     function getIds(): JUEnumeration; overload;
@@ -7558,7 +7558,7 @@
     function getSessionCacheSize(): jint; overload;
   end;
 
-  JNSTrustManager = interface external 'javax.net.ssl' name 'TrustManager' 
+  JNSTrustManager = interface external 'javax.net.ssl' name 'TrustManager'
   end;
 
   JNSTrustManagerFactory = class external 'javax.net.ssl' name 'TrustManagerFactory' (JLObject)
@@ -7586,12 +7586,12 @@
     function engineGetTrustManagers(): Arr1JNSTrustManager; overload; virtual; abstract;
   end;
 
-  JPAttributeException = interface external 'javax.print' name 'AttributeException' 
+  JPAttributeException = interface external 'javax.print' name 'AttributeException'
     function getUnsupportedAttributes(): Arr1JLClass; overload;
     function getUnsupportedValues(): Arr1JPAAttribute; overload;
   end;
 
-  JPDoc = interface external 'javax.print' name 'Doc' 
+  JPDoc = interface external 'javax.print' name 'Doc'
     function getDocFlavor(): JPDocFlavor; overload;
     function getPrintData(): JLObject; overload;  // throws java.io.IOException
     function getAttributes(): JPADocAttributeSet; overload;
@@ -7599,7 +7599,7 @@
     function getStreamForBytes(): JIInputStream; overload;  // throws java.io.IOException
   end;
 
-  JPDocPrintJob = interface external 'javax.print' name 'DocPrintJob' 
+  JPDocPrintJob = interface external 'javax.print' name 'DocPrintJob'
     function getPrintService(): JPPrintService; overload;
     function getAttributes(): JPAPrintJobAttributeSet; overload;
     procedure addPrintJobListener(para1: JPEPrintJobListener); overload;
@@ -7609,16 +7609,16 @@
     procedure print(para1: JPDoc; para2: JPAPrintRequestAttributeSet); overload;  // throws javax.print.PrintException
   end;
 
-  JPFlavorException = interface external 'javax.print' name 'FlavorException' 
+  JPFlavorException = interface external 'javax.print' name 'FlavorException'
     function getUnsupportedFlavors(): Arr1JPDocFlavor; overload;
   end;
 
-  JPMultiDoc = interface external 'javax.print' name 'MultiDoc' 
+  JPMultiDoc = interface external 'javax.print' name 'MultiDoc'
     function getDoc(): JPDoc; overload;  // throws java.io.IOException
     function next(): JPMultiDoc; overload;  // throws java.io.IOException
   end;
 
-  JPPrintService = interface external 'javax.print' name 'PrintService' 
+  JPPrintService = interface external 'javax.print' name 'PrintService'
     function getName(): JLString; overload;
     function createPrintJob(): JPDocPrintJob; overload;
     procedure addPrintServiceAttributeListener(para1: JPEPrintServiceAttributeListener); overload;
@@ -7645,7 +7645,7 @@
       Arr1InnerServices = array of InnerServices;
       Arr2InnerServices = array of Arr1InnerServices;
       Arr3InnerServices = array of Arr2InnerServices;
-      InnerServices = class external 'javax.print' name 'Services' 
+      InnerServices = class external 'javax.print' name 'Services'
       end;
 
   public
@@ -7694,7 +7694,7 @@
       Arr1InnerServices = array of InnerServices;
       Arr2InnerServices = array of Arr1InnerServices;
       Arr3InnerServices = array of Arr2InnerServices;
-      InnerServices = class external 'javax.print' name 'Services' 
+      InnerServices = class external 'javax.print' name 'Services'
       end;
 
   public
@@ -7705,7 +7705,7 @@
     function getPrintService(para1: JIOutputStream): JPStreamPrintService; overload; virtual; abstract;
   end;
 
-  JPURIException = interface external 'javax.print' name 'URIException' 
+  JPURIException = interface external 'javax.print' name 'URIException'
     const
       URIInaccessible = 1;
       URISchemeNotSupported = 2;
@@ -7714,7 +7714,7 @@
     function getReason(): jint; overload;
   end;
 
-  JPAAttributeSet = interface external 'javax.print.attribute' name 'AttributeSet' 
+  JPAAttributeSet = interface external 'javax.print.attribute' name 'AttributeSet'
     function get(para1: JLClass): JPAAttribute; overload;
     function add(para1: JPAAttribute): jboolean; overload;
     function remove(para1: JLClass): jboolean; overload;
@@ -7773,34 +7773,34 @@
       Arr1InnerUnmodifiablePrintServiceAttributeSet = array of InnerUnmodifiablePrintServiceAttributeSet;
       Arr2InnerUnmodifiablePrintServiceAttributeSet = array of Arr1InnerUnmodifiablePrintServiceAttributeSet;
       Arr3InnerUnmodifiablePrintServiceAttributeSet = array of Arr2InnerUnmodifiablePrintServiceAttributeSet;
-      InnerSynchronizedAttributeSet = class external 'javax.print.attribute' name 'SynchronizedAttributeSet' 
+      InnerSynchronizedAttributeSet = class external 'javax.print.attribute' name 'SynchronizedAttributeSet'
       end;
 
-      InnerUnmodifiableAttributeSet = class external 'javax.print.attribute' name 'UnmodifiableAttributeSet' 
+      InnerUnmodifiableAttributeSet = class external 'javax.print.attribute' name 'UnmodifiableAttributeSet'
       end;
 
-      InnerSynchronizedDocAttributeSet = class external 'javax.print.attribute' name 'SynchronizedDocAttributeSet' 
+      InnerSynchronizedDocAttributeSet = class external 'javax.print.attribute' name 'SynchronizedDocAttributeSet'
       end;
 
-      InnerUnmodifiableDocAttributeSet = class external 'javax.print.attribute' name 'UnmodifiableDocAttributeSet' 
+      InnerUnmodifiableDocAttributeSet = class external 'javax.print.attribute' name 'UnmodifiableDocAttributeSet'
       end;
 
-      InnerSynchronizedPrintJobAttributeSet = class external 'javax.print.attribute' name 'SynchronizedPrintJobAttributeSet' 
+      InnerSynchronizedPrintJobAttributeSet = class external 'javax.print.attribute' name 'SynchronizedPrintJobAttributeSet'
       end;
 
-      InnerUnmodifiablePrintJobAttributeSet = class external 'javax.print.attribute' name 'UnmodifiablePrintJobAttributeSet' 
+      InnerUnmodifiablePrintJobAttributeSet = class external 'javax.print.attribute' name 'UnmodifiablePrintJobAttributeSet'
       end;
 
-      InnerSynchronizedPrintRequestAttributeSet = class external 'javax.print.attribute' name 'SynchronizedPrintRequestAttributeSet' 
+      InnerSynchronizedPrintRequestAttributeSet = class external 'javax.print.attribute' name 'SynchronizedPrintRequestAttributeSet'
       end;
 
-      InnerUnmodifiablePrintRequestAttributeSet = class external 'javax.print.attribute' name 'UnmodifiablePrintRequestAttributeSet' 
+      InnerUnmodifiablePrintRequestAttributeSet = class external 'javax.print.attribute' name 'UnmodifiablePrintRequestAttributeSet'
       end;
 
-      InnerSynchronizedPrintServiceAttributeSet = class external 'javax.print.attribute' name 'SynchronizedPrintServiceAttributeSet' 
+      InnerSynchronizedPrintServiceAttributeSet = class external 'javax.print.attribute' name 'SynchronizedPrintServiceAttributeSet'
       end;
 
-      InnerUnmodifiablePrintServiceAttributeSet = class external 'javax.print.attribute' name 'UnmodifiablePrintServiceAttributeSet' 
+      InnerUnmodifiablePrintServiceAttributeSet = class external 'javax.print.attribute' name 'UnmodifiablePrintServiceAttributeSet'
       end;
 
   public
@@ -7819,11 +7819,11 @@
     class procedure verifyCategoryForValue(para1: JLClass; para2: JPAAttribute); static; overload;
   end;
 
-  JPEPrintJobAttributeListener = interface external 'javax.print.event' name 'PrintJobAttributeListener' 
+  JPEPrintJobAttributeListener = interface external 'javax.print.event' name 'PrintJobAttributeListener'
     procedure attributeUpdate(para1: JPEPrintJobAttributeEvent); overload;
   end;
 
-  JPEPrintJobListener = interface external 'javax.print.event' name 'PrintJobListener' 
+  JPEPrintJobListener = interface external 'javax.print.event' name 'PrintJobListener'
     procedure printDataTransferCompleted(para1: JPEPrintJobEvent); overload;
     procedure printJobCompleted(para1: JPEPrintJobEvent); overload;
     procedure printJobFailed(para1: JPEPrintJobEvent); overload;
@@ -7832,11 +7832,11 @@
     procedure printJobRequiresAttention(para1: JPEPrintJobEvent); overload;
   end;
 
-  JPEPrintServiceAttributeListener = interface external 'javax.print.event' name 'PrintServiceAttributeListener' 
+  JPEPrintServiceAttributeListener = interface external 'javax.print.event' name 'PrintServiceAttributeListener'
     procedure attributeUpdate(para1: JPEPrintServiceAttributeEvent); overload;
   end;
 
-  JRCPortableRemoteObjectDelegate = interface external 'javax.rmi.CORBA' name 'PortableRemoteObjectDelegate' 
+  JRCPortableRemoteObjectDelegate = interface external 'javax.rmi.CORBA' name 'PortableRemoteObjectDelegate'
     procedure exportObject(para1: JRRemote); overload;  // throws java.rmi.RemoteException
     function toStub(para1: JRRemote): JRRemote; overload;  // throws java.rmi.NoSuchObjectException
     procedure unexportObject(para1: JRRemote); overload;  // throws java.rmi.NoSuchObjectException
@@ -7844,7 +7844,7 @@
     procedure connect(para1: JRRemote; para2: JRRemote); overload;  // throws java.rmi.RemoteException
   end;
 
-  JRCStubDelegate = interface external 'javax.rmi.CORBA' name 'StubDelegate' 
+  JRCStubDelegate = interface external 'javax.rmi.CORBA' name 'StubDelegate'
     function hashCode(para1: JRCStub): jint; overload;
     function equals(para1: JRCStub; para2: JLObject): jboolean; overload;
     function toString(para1: JRCStub): JLString; overload;
@@ -7873,7 +7873,7 @@
     class function copyObject(para1: JLObject; para2: OOCORB): JLObject; static; overload;  // throws java.rmi.RemoteException
   end;
 
-  JRCUtilDelegate = interface external 'javax.rmi.CORBA' name 'UtilDelegate' 
+  JRCUtilDelegate = interface external 'javax.rmi.CORBA' name 'UtilDelegate'
     function mapSystemException(para1: OOCSystemException): JRRemoteException; overload;
     procedure writeAny(para1: OOCPOutputStream; para2: JLObject); overload;
     function readAny(para1: OOCPInputStream): JLObject; overload;
@@ -7892,7 +7892,7 @@
     function copyObjects(var para1: array of JLObject; para2: OOCORB): Arr1JLObject; overload;  // throws java.rmi.RemoteException
   end;
 
-  JRCValueHandler = interface external 'javax.rmi.CORBA' name 'ValueHandler' 
+  JRCValueHandler = interface external 'javax.rmi.CORBA' name 'ValueHandler'
     procedure writeValue(para1: OOCPOutputStream; para2: JISerializable); overload;
     function readValue(para1: OOCPInputStream; para2: jint; para3: JLClass; para4: JLString; para5: OOSRunTime): JISerializable; overload;
     function getRMIRepositoryID(para1: JLClass): JLString; overload;
@@ -7912,7 +7912,7 @@
     class procedure connect(para1: JRRemote; para2: JRRemote); static; overload;  // throws java.rmi.RemoteException
   end;
 
-  JSCompilable = interface external 'javax.script' name 'Compilable' 
+  JSCompilable = interface external 'javax.script' name 'Compilable'
     function compile(para1: JLString): JSCompiledScript; overload;  // throws javax.script.ScriptException
     function compile(para1: JIReader): JSCompiledScript; overload;  // throws javax.script.ScriptException
   end;
@@ -7926,7 +7926,7 @@
     function getEngine(): JSScriptEngine; overload; virtual; abstract;
   end;
 
-  JSInvocable = interface external 'javax.script' name 'Invocable' 
+  JSInvocable = interface external 'javax.script' name 'Invocable'
     function invokeMethod(para1: JLObject; para2: JLString; para3: Arr1JLObject): JLObject; overload;  // throws javax.script.ScriptException, java.lang.NoSuchMethodException
     function invokeMethod(para1: JLObject; para2: JLString; const para3: array of JLObject): JLObject; overload;  // throws javax.script.ScriptException, java.lang.NoSuchMethodException
     function invokeFunction(para1: JLString; para2: Arr1JLObject): JLObject; overload;  // throws javax.script.ScriptException, java.lang.NoSuchMethodException
@@ -7935,7 +7935,7 @@
     function getInterface(para1: JLObject; para2: JLClass): JLObject; overload;
   end;
 
-  JSScriptContext = interface external 'javax.script' name 'ScriptContext' 
+  JSScriptContext = interface external 'javax.script' name 'ScriptContext'
     const
       ENGINE_SCOPE = 100;
       GLOBAL_SCOPE = 200;
@@ -7955,7 +7955,7 @@
     function getScopes(): JUList; overload;
   end;
 
-  JSScriptEngine = interface external 'javax.script' name 'ScriptEngine' 
+  JSScriptEngine = interface external 'javax.script' name 'ScriptEngine'
     const
       ARGV = 'javax.script.argv';
       FILENAME = 'javax.script.filename';
@@ -7980,7 +7980,7 @@
     function getFactory(): JSScriptEngineFactory; overload;
   end;
 
-  JSScriptEngineFactory = interface external 'javax.script' name 'ScriptEngineFactory' 
+  JSScriptEngineFactory = interface external 'javax.script' name 'ScriptEngineFactory'
     function getEngineName(): JLString; overload;
     function getEngineVersion(): JLString; overload;
     function getExtensions(): JUList; overload;
@@ -8014,7 +8014,7 @@
     procedure registerEngineExtension(para1: JLString; para2: JSScriptEngineFactory); overload; virtual;
   end;
 
-  JSADestroyable = interface external 'javax.security.auth' name 'Destroyable' 
+  JSADestroyable = interface external 'javax.security.auth' name 'Destroyable'
     procedure destroy(); overload;  // throws javax.security.auth.DestroyFailedException
     function isDestroyed(): jboolean; overload;
   end;
@@ -8029,15 +8029,15 @@
     procedure refresh(); overload; virtual; abstract;
   end;
 
-  JSARefreshable = interface external 'javax.security.auth' name 'Refreshable' 
+  JSARefreshable = interface external 'javax.security.auth' name 'Refreshable'
     function isCurrent(): jboolean; overload;
     procedure refresh(); overload;  // throws javax.security.auth.RefreshFailedException
   end;
 
-  JSACCallback = interface external 'javax.security.auth.callback' name 'Callback' 
+  JSACCallback = interface external 'javax.security.auth.callback' name 'Callback'
   end;
 
-  JSACCallbackHandler = interface external 'javax.security.auth.callback' name 'CallbackHandler' 
+  JSACCallbackHandler = interface external 'javax.security.auth.callback' name 'CallbackHandler'
     procedure handle(para1: Arr1JSACCallback); overload;  // throws java.io.IOException, javax.security.auth.callback.UnsupportedCallbackException
     procedure handle(var para1: array of JSACCallback); overload;  // throws java.io.IOException, javax.security.auth.callback.UnsupportedCallbackException
   end;
@@ -8074,7 +8074,7 @@
       Arr1InnerConfigDelegate = array of InnerConfigDelegate;
       Arr2InnerConfigDelegate = array of Arr1InnerConfigDelegate;
       Arr3InnerConfigDelegate = array of Arr2InnerConfigDelegate;
-      InnerConfigDelegate = class external 'javax.security.auth.login' name 'ConfigDelegate' 
+      InnerConfigDelegate = class external 'javax.security.auth.login' name 'ConfigDelegate'
       end;
 
   public
@@ -8083,7 +8083,7 @@
       Arr1InnerParameters = array of InnerParameters;
       Arr2InnerParameters = array of Arr1InnerParameters;
       Arr3InnerParameters = array of Arr2InnerParameters;
-      InnerParameters = interface external 'javax.security.auth.login' name 'Parameters' 
+      InnerParameters = interface external 'javax.security.auth.login' name 'Parameters'
       end;
 
   strict protected
@@ -8120,10 +8120,10 @@
       Arr1InnerSecureCallbackHandler = array of InnerSecureCallbackHandler;
       Arr2InnerSecureCallbackHandler = array of Arr1InnerSecureCallbackHandler;
       Arr3InnerSecureCallbackHandler = array of Arr2InnerSecureCallbackHandler;
-      InnerModuleInfo = class external 'javax.security.auth.login' name 'ModuleInfo' 
+      InnerModuleInfo = class external 'javax.security.auth.login' name 'ModuleInfo'
       end;
 
-      InnerSecureCallbackHandler = class external 'javax.security.auth.login' name 'SecureCallbackHandler' 
+      InnerSecureCallbackHandler = class external 'javax.security.auth.login' name 'SecureCallbackHandler'
       end;
 
   public
@@ -8137,7 +8137,7 @@
     function getSubject(): JSASubject; overload; virtual;
   end;
 
-  JSASLoginModule = interface external 'javax.security.auth.spi' name 'LoginModule' 
+  JSASLoginModule = interface external 'javax.security.auth.spi' name 'LoginModule'
     procedure initialize(para1: JSASubject; para2: JSACCallbackHandler; para3: JUMap; para4: JUMap); overload;
     function login(): jboolean; overload;  // throws javax.security.auth.login.LoginException
     function commit(): jboolean; overload;  // throws javax.security.auth.login.LoginException
@@ -8181,7 +8181,7 @@
     class function getSaslServerFactories(): JUEnumeration; static; overload;
   end;
 
-  JSSSaslClient = interface external 'javax.security.sasl' name 'SaslClient' 
+  JSSSaslClient = interface external 'javax.security.sasl' name 'SaslClient'
     function getMechanismName(): JLString; overload;
     function hasInitialResponse(): jboolean; overload;
     function evaluateChallenge(para1: Arr1jbyte): Arr1jbyte; overload;  // throws javax.security.sasl.SaslException
@@ -8195,13 +8195,13 @@
     procedure dispose(); overload;  // throws javax.security.sasl.SaslException
   end;
 
-  JSSSaslClientFactory = interface external 'javax.security.sasl' name 'SaslClientFactory' 
+  JSSSaslClientFactory = interface external 'javax.security.sasl' name 'SaslClientFactory'
     function createSaslClient(para1: Arr1JLString; para2: JLString; para3: JLString; para4: JLString; para5: JUMap; para6: JSACCallbackHandler): JSSSaslClient; overload;  // throws javax.security.sasl.SaslException
     function createSaslClient(var para1: array of JLString; para2: JLString; para3: JLString; para4: JLString; para5: JUMap; para6: JSACCallbackHandler): JSSSaslClient; overload;  // throws javax.security.sasl.SaslException
     function getMechanismNames(para1: JUMap): Arr1JLString; overload;
   end;
 
-  JSSSaslServer = interface external 'javax.security.sasl' name 'SaslServer' 
+  JSSSaslServer = interface external 'javax.security.sasl' name 'SaslServer'
     function getMechanismName(): JLString; overload;
     function evaluateResponse(para1: Arr1jbyte): Arr1jbyte; overload;  // throws javax.security.sasl.SaslException
     function evaluateResponse(var para1: array of jbyte): Arr1jbyte; overload;  // throws javax.security.sasl.SaslException
@@ -8215,7 +8215,7 @@
     procedure dispose(); overload;  // throws javax.security.sasl.SaslException
   end;
 
-  JSSSaslServerFactory = interface external 'javax.security.sasl' name 'SaslServerFactory' 
+  JSSSaslServerFactory = interface external 'javax.security.sasl' name 'SaslServerFactory'
     function createSaslServer(para1: JLString; para2: JLString; para3: JLString; para4: JUMap; para5: JSACCallbackHandler): JSSSaslServer; overload;  // throws javax.security.sasl.SaslException
     function getMechanismNames(para1: JUMap): Arr1JLString; overload;
   end;
@@ -8272,13 +8272,13 @@
       Arr1InnerNoneProvider = array of InnerNoneProvider;
       Arr2InnerNoneProvider = array of Arr1InnerNoneProvider;
       Arr3InnerNoneProvider = array of Arr2InnerNoneProvider;
-      InnerNoneCardTerminals = class sealed external 'javax.smartcardio' name 'NoneCardTerminals' 
+      InnerNoneCardTerminals = class sealed external 'javax.smartcardio' name 'NoneCardTerminals'
       end;
 
-      InnerNoneFactorySpi = class sealed external 'javax.smartcardio' name 'NoneFactorySpi' 
+      InnerNoneFactorySpi = class sealed external 'javax.smartcardio' name 'NoneFactorySpi'
       end;
 
-      InnerNoneProvider = class sealed external 'javax.smartcardio' name 'NoneProvider' 
+      InnerNoneProvider = class sealed external 'javax.smartcardio' name 'NoneProvider'
       end;
 
   public
@@ -8299,7 +8299,7 @@
     function engineTerminals(): JSCardTerminals; overload; virtual; abstract;
   end;
 
-  JSMMidiChannel = interface external 'javax.sound.midi' name 'MidiChannel' 
+  JSMMidiChannel = interface external 'javax.sound.midi' name 'MidiChannel'
     procedure noteOn(para1: jint; para2: jint); overload;
     procedure noteOff(para1: jint; para2: jint); overload;
     procedure noteOff(para1: jint); overload;
@@ -8328,7 +8328,7 @@
     function getSolo(): jboolean; overload;
   end;
 
-  JSMMidiDevice = interface external 'javax.sound.midi' name 'MidiDevice' 
+  JSMMidiDevice = interface external 'javax.sound.midi' name 'MidiDevice'
     type
       InnerInfo = class;
       Arr1InnerInfo = array of InnerInfo;
@@ -8398,7 +8398,7 @@
     function getProgram(): jint; overload; virtual;
   end;
 
-  JSMReceiver = interface external 'javax.sound.midi' name 'Receiver' 
+  JSMReceiver = interface external 'javax.sound.midi' name 'Receiver'
     procedure send(para1: JSMMidiMessage; para2: jlong); overload;
     procedure close(); overload;
   end;
@@ -8429,7 +8429,7 @@
     function getPatchList(): Arr1JSMPatch; overload; virtual;
   end;
 
-  JSMSoundbank = interface external 'javax.sound.midi' name 'Soundbank' 
+  JSMSoundbank = interface external 'javax.sound.midi' name 'Soundbank'
     function getName(): JLString; overload;
     function getVersion(): JLString; overload;
     function getVendor(): JLString; overload;
@@ -8456,7 +8456,7 @@
       Arr1InnerImmutableEndOfTrack = array of InnerImmutableEndOfTrack;
       Arr2InnerImmutableEndOfTrack = array of Arr1InnerImmutableEndOfTrack;
       Arr3InnerImmutableEndOfTrack = array of Arr2InnerImmutableEndOfTrack;
-      InnerImmutableEndOfTrack = class external 'javax.sound.midi' name 'ImmutableEndOfTrack' 
+      InnerImmutableEndOfTrack = class external 'javax.sound.midi' name 'ImmutableEndOfTrack'
       end;
 
   public
@@ -8467,7 +8467,7 @@
     function ticks(): jlong; overload; virtual;
   end;
 
-  JSMTransmitter = interface external 'javax.sound.midi' name 'Transmitter' 
+  JSMTransmitter = interface external 'javax.sound.midi' name 'Transmitter'
     procedure setReceiver(para1: JSMReceiver); overload;
     function getReceiver(): JSMReceiver; overload;
     procedure close(); overload;
@@ -8649,14 +8649,14 @@
     function getAudioInputStream(para1: JIFile): JSSAudioInputStream; overload; virtual; abstract;  // throws javax.sound.sampled.UnsupportedAudioFileException, java.io.IOException
   end;
 
-  JSCommonDataSource = interface external 'javax.sql' name 'CommonDataSource' 
+  JSCommonDataSource = interface external 'javax.sql' name 'CommonDataSource'
     function getLogWriter(): JIPrintWriter; overload;  // throws java.sql.SQLException
     procedure setLogWriter(para1: JIPrintWriter); overload;  // throws java.sql.SQLException
     procedure setLoginTimeout(para1: jint); overload;  // throws java.sql.SQLException
     function getLoginTimeout(): jint; overload;  // throws java.sql.SQLException
   end;
 
-  JSPooledConnection = interface external 'javax.sql' name 'PooledConnection' 
+  JSPooledConnection = interface external 'javax.sql' name 'PooledConnection'
     function getConnection(): JSConnection; overload;  // throws java.sql.SQLException
     procedure close(); overload;  // throws java.sql.SQLException
     procedure addConnectionEventListener(para1: JSConnectionEventListener); overload;
@@ -8665,7 +8665,7 @@
     procedure removeStatementEventListener(para1: JSStatementEventListener); overload;
   end;
 
-  JSRowSetInternal = interface external 'javax.sql' name 'RowSetInternal' 
+  JSRowSetInternal = interface external 'javax.sql' name 'RowSetInternal'
     function getParams(): Arr1JLObject; overload;  // throws java.sql.SQLException
     function getConnection(): JSConnection; overload;  // throws java.sql.SQLException
     procedure setMetaData(para1: JSRowSetMetaData); overload;  // throws java.sql.SQLException
@@ -8673,15 +8673,15 @@
     function getOriginalRow(): JSResultSet; overload;  // throws java.sql.SQLException
   end;
 
-  JSRowSetReader = interface external 'javax.sql' name 'RowSetReader' 
+  JSRowSetReader = interface external 'javax.sql' name 'RowSetReader'
     procedure readData(para1: JSRowSetInternal); overload;  // throws java.sql.SQLException
   end;
 
-  JSRowSetWriter = interface external 'javax.sql' name 'RowSetWriter' 
+  JSRowSetWriter = interface external 'javax.sql' name 'RowSetWriter'
     function writeData(para1: JSRowSetInternal): jboolean; overload;  // throws java.sql.SQLException
   end;
 
-  JSRJoinable = interface external 'javax.sql.rowset' name 'Joinable' 
+  JSRJoinable = interface external 'javax.sql.rowset' name 'Joinable'
     procedure setMatchColumn(para1: jint); overload;  // throws java.sql.SQLException
     procedure setMatchColumn(para1: Arr1jint); overload;  // throws java.sql.SQLException
     procedure setMatchColumn(var para1: array of jint); overload;  // throws java.sql.SQLException
@@ -8698,7 +8698,7 @@
     procedure unsetMatchColumn(var para1: array of JLString); overload;  // throws java.sql.SQLException
   end;
 
-  JSRPredicate = interface external 'javax.sql.rowset' name 'Predicate' 
+  JSRPredicate = interface external 'javax.sql.rowset' name 'Predicate'
     function evaluate(para1: JSRowSet): jboolean; overload;
     function evaluate(para1: JLObject; para2: jint): jboolean; overload;  // throws java.sql.SQLException
     function evaluate(para1: JLObject; para2: JLString): jboolean; overload;  // throws java.sql.SQLException
@@ -8776,7 +8776,7 @@
     class function createMatteBorder(para1: jint; para2: jint; para3: jint; para4: jint; para5: JSIcon): JSBMatteBorder; static; overload;
   end;
 
-  JSBoundedRangeModel = interface external 'javax.swing' name 'BoundedRangeModel' 
+  JSBoundedRangeModel = interface external 'javax.swing' name 'BoundedRangeModel'
     function getMinimum(): jint; overload;
     procedure setMinimum(para1: jint); overload;
     function getMaximum(): jint; overload;
@@ -8792,7 +8792,7 @@
     procedure removeChangeListener(para1: JSEChangeListener); overload;
   end;
 
-  JSCellEditor = interface external 'javax.swing' name 'CellEditor' 
+  JSCellEditor = interface external 'javax.swing' name 'CellEditor'
     function getCellEditorValue(): JLObject; overload;
     function isCellEditable(para1: JUEventObject): jboolean; overload;
     function shouldSelectCell(para1: JUEventObject): jboolean; overload;
@@ -8802,7 +8802,7 @@
     procedure removeCellEditorListener(para1: JSECellEditorListener); overload;
   end;
 
-  JSComboBoxEditor = interface external 'javax.swing' name 'ComboBoxEditor' 
+  JSComboBoxEditor = interface external 'javax.swing' name 'ComboBoxEditor'
     function getEditorComponent(): JAComponent; overload;
     procedure setItem(para1: JLObject); overload;
     function getItem(): JLObject; overload;
@@ -8814,7 +8814,7 @@
   JSDebugGraphicsInfo = class external 'javax.swing' name 'DebugGraphicsInfo' (JLObject)
   end;
 
-  JSDesktopManager = interface external 'javax.swing' name 'DesktopManager' 
+  JSDesktopManager = interface external 'javax.swing' name 'DesktopManager'
     procedure openFrame(para1: JSJInternalFrame); overload;
     procedure closeFrame(para1: JSJInternalFrame); overload;
     procedure maximizeFrame(para1: JSJInternalFrame); overload;
@@ -8832,7 +8832,7 @@
     procedure setBoundsForFrame(para1: JSJComponent; para2: jint; para3: jint; para4: jint; para5: jint); overload;
   end;
 
-  JSGraphicsWrapper = interface external 'javax.swing' name 'GraphicsWrapper' 
+  JSGraphicsWrapper = interface external 'javax.swing' name 'GraphicsWrapper'
     function subGraphics(): JAGraphics; overload;
     function isClipIntersecting(para1: JARectangle): jboolean; overload;
     function getClipX(): jint; overload;
@@ -8841,7 +8841,7 @@
     function getClipHeight(): jint; overload;
   end;
 
-  JSIcon = interface external 'javax.swing' name 'Icon' 
+  JSIcon = interface external 'javax.swing' name 'Icon'
     procedure paintIcon(para1: JAComponent; para2: JAGraphics; para3: jint; para4: jint); overload;
     function getIconWidth(): jint; overload;
     function getIconHeight(): jint; overload;
@@ -8861,7 +8861,7 @@
       Arr1InnerComponentKeyStrokePair = array of InnerComponentKeyStrokePair;
       Arr2InnerComponentKeyStrokePair = array of Arr1InnerComponentKeyStrokePair;
       Arr3InnerComponentKeyStrokePair = array of Arr2InnerComponentKeyStrokePair;
-      InnerComponentKeyStrokePair = class external 'javax.swing' name 'ComponentKeyStrokePair' 
+      InnerComponentKeyStrokePair = class external 'javax.swing' name 'ComponentKeyStrokePair'
       end;
 
   public
@@ -8876,18 +8876,18 @@
     function registerNewTopContainer(para1: JAContainer): JUHashtable; overload; virtual;
   end;
 
-  JSListCellRenderer = interface external 'javax.swing' name 'ListCellRenderer' 
+  JSListCellRenderer = interface external 'javax.swing' name 'ListCellRenderer'
     function getListCellRendererComponent(para1: JSJList; para2: JLObject; para3: jint; para4: jboolean; para5: jboolean): JAComponent; overload;
   end;
 
-  JSListModel = interface external 'javax.swing' name 'ListModel' 
+  JSListModel = interface external 'javax.swing' name 'ListModel'
     function getSize(): jint; overload;
     function getElementAt(para1: jint): JLObject; overload;
     procedure addListDataListener(para1: JSEListDataListener); overload;
     procedure removeListDataListener(para1: JSEListDataListener); overload;
   end;
 
-  JSListSelectionModel = interface external 'javax.swing' name 'ListSelectionModel' 
+  JSListSelectionModel = interface external 'javax.swing' name 'ListSelectionModel'
     const
       SINGLE_SELECTION = 0;
       SINGLE_INTERVAL_SELECTION = 1;
@@ -8914,7 +8914,7 @@
     procedure removeListSelectionListener(para1: JSEListSelectionListener); overload;
   end;
 
-  JSMenuElement = interface external 'javax.swing' name 'MenuElement' 
+  JSMenuElement = interface external 'javax.swing' name 'MenuElement'
     procedure processMouseEvent(para1: JAEMouseEvent; para2: Arr1JSMenuElement; para3: JSMenuSelectionManager); overload;
     procedure processMouseEvent(para1: JAEMouseEvent; var para2: array of JSMenuElement; para3: JSMenuSelectionManager); overload;
     procedure processKeyEvent(para1: JAEKeyEvent; para2: Arr1JSMenuElement; para3: JSMenuSelectionManager); overload;
@@ -8959,10 +8959,10 @@
       Arr1InnerHeavyWeightWindow = array of InnerHeavyWeightWindow;
       Arr2InnerHeavyWeightWindow = array of Arr1InnerHeavyWeightWindow;
       Arr3InnerHeavyWeightWindow = array of Arr2InnerHeavyWeightWindow;
-      InnerDefaultFrame = class external 'javax.swing' name 'DefaultFrame' 
+      InnerDefaultFrame = class external 'javax.swing' name 'DefaultFrame'
       end;
 
-      InnerHeavyWeightWindow = class external 'javax.swing' name 'HeavyWeightWindow' 
+      InnerHeavyWeightWindow = class external 'javax.swing' name 'HeavyWeightWindow'
       end;
 
   strict protected
@@ -8996,26 +8996,26 @@
       Arr1InnerMediumWeightPopup = array of InnerMediumWeightPopup;
       Arr2InnerMediumWeightPopup = array of Arr1InnerMediumWeightPopup;
       Arr3InnerMediumWeightPopup = array of Arr2InnerMediumWeightPopup;
-      InnerContainerPopup = class external 'javax.swing' name 'ContainerPopup' 
+      InnerContainerPopup = class external 'javax.swing' name 'ContainerPopup'
       end;
 
-      InnerHeavyWeightPopup = class external 'javax.swing' name 'HeavyWeightPopup' 
+      InnerHeavyWeightPopup = class external 'javax.swing' name 'HeavyWeightPopup'
       end;
 
-      InnerHeadlessPopup = class external 'javax.swing' name 'HeadlessPopup' 
+      InnerHeadlessPopup = class external 'javax.swing' name 'HeadlessPopup'
       end;
 
-      InnerLightWeightPopup = class external 'javax.swing' name 'LightWeightPopup' 
+      InnerLightWeightPopup = class external 'javax.swing' name 'LightWeightPopup'
       end;
 
-      InnerMediumWeightPopup = class external 'javax.swing' name 'MediumWeightPopup' 
+      InnerMediumWeightPopup = class external 'javax.swing' name 'MediumWeightPopup'
       public
         type
           InnerMediumWeightComponent = class;
           Arr1InnerMediumWeightComponent = array of InnerMediumWeightComponent;
           Arr2InnerMediumWeightComponent = array of Arr1InnerMediumWeightComponent;
           Arr3InnerMediumWeightComponent = array of Arr2InnerMediumWeightComponent;
-          InnerMediumWeightComponent = class external 'javax.swing' name 'MediumWeightComponent' 
+          InnerMediumWeightComponent = class external 'javax.swing' name 'MediumWeightComponent'
           end;
 
       end;
@@ -9027,7 +9027,7 @@
     function getPopup(para1: JAComponent; para2: JAComponent; para3: jint; para4: jint): JSPopup; overload; virtual;  // throws java.lang.IllegalArgumentException
   end;
 
-  JSRenderer = interface external 'javax.swing' name 'Renderer' 
+  JSRenderer = interface external 'javax.swing' name 'Renderer'
     procedure setValue(para1: JLObject; para2: jboolean); overload;
     function getComponent(): JAComponent; overload;
   end;
@@ -9055,19 +9055,19 @@
       Arr1InnerProcessingRunnable = array of InnerProcessingRunnable;
       Arr2InnerProcessingRunnable = array of Arr1InnerProcessingRunnable;
       Arr3InnerProcessingRunnable = array of Arr2InnerProcessingRunnable;
-      InnerDoubleBufferInfo = class external 'javax.swing' name 'DoubleBufferInfo' 
+      InnerDoubleBufferInfo = class external 'javax.swing' name 'DoubleBufferInfo'
       end;
 
-      InnerPaintManager = class external 'javax.swing' name 'PaintManager' 
+      InnerPaintManager = class external 'javax.swing' name 'PaintManager'
       end;
 
-      InnerDisplayChangedHandler = class sealed external 'javax.swing' name 'DisplayChangedHandler' 
+      InnerDisplayChangedHandler = class sealed external 'javax.swing' name 'DisplayChangedHandler'
       end;
 
-      InnerDisplayChangedRunnable = class sealed external 'javax.swing' name 'DisplayChangedRunnable' 
+      InnerDisplayChangedRunnable = class sealed external 'javax.swing' name 'DisplayChangedRunnable'
       end;
 
-      InnerProcessingRunnable = class sealed external 'javax.swing' name 'ProcessingRunnable' 
+      InnerProcessingRunnable = class sealed external 'javax.swing' name 'ProcessingRunnable'
       end;
 
   public
@@ -9095,7 +9095,7 @@
     function isDoubleBufferingEnabled(): jboolean; overload; virtual;
   end;
 
-  JSRootPaneContainer = interface external 'javax.swing' name 'RootPaneContainer' 
+  JSRootPaneContainer = interface external 'javax.swing' name 'RootPaneContainer'
     function getRootPane(): JSJRootPane; overload;
     procedure setContentPane(para1: JAContainer); overload;
     function getContentPane(): JAContainer; overload;
@@ -9145,7 +9145,7 @@
     procedure fireRowSorterChanged(var para1: array of jint); overload; virtual;
   end;
 
-  JSScrollPaneConstants = interface external 'javax.swing' name 'ScrollPaneConstants' 
+  JSScrollPaneConstants = interface external 'javax.swing' name 'ScrollPaneConstants'
     const
       VIEWPORT = 'VIEWPORT';
       VERTICAL_SCROLLBAR = 'VERTICAL_SCROLLBAR';
@@ -9170,7 +9170,7 @@
       HORIZONTAL_SCROLLBAR_ALWAYS = 32;
   end;
 
-  JSScrollable = interface external 'javax.swing' name 'Scrollable' 
+  JSScrollable = interface external 'javax.swing' name 'Scrollable'
     function getPreferredScrollableViewportSize(): JADimension; overload;
     function getScrollableUnitIncrement(para1: JARectangle; para2: jint; para3: jint): jint; overload;
     function getScrollableBlockIncrement(para1: JARectangle; para2: jint; para3: jint): jint; overload;
@@ -9178,7 +9178,7 @@
     function getScrollableTracksViewportHeight(): jboolean; overload;
   end;
 
-  JSSingleSelectionModel = interface external 'javax.swing' name 'SingleSelectionModel' 
+  JSSingleSelectionModel = interface external 'javax.swing' name 'SingleSelectionModel'
     function getSelectedIndex(): jint; overload;
     procedure setSelectedIndex(para1: jint); overload;
     procedure clearSelection(); overload;
@@ -9205,7 +9205,7 @@
     procedure removeEntries(para1: jint; para2: jint); overload; virtual;
   end;
 
-  JSSpinnerModel = interface external 'javax.swing' name 'SpinnerModel' 
+  JSSpinnerModel = interface external 'javax.swing' name 'SpinnerModel'
     function getValue(): JLObject; overload;
     procedure setValue(para1: JLObject); overload;
     function getNextValue(): JLObject; overload;
@@ -9257,34 +9257,34 @@
       Arr1InnerWidthSpring = array of InnerWidthSpring;
       Arr2InnerWidthSpring = array of Arr1InnerWidthSpring;
       Arr3InnerWidthSpring = array of Arr2InnerWidthSpring;
-      InnerAbstractSpring = class abstract external 'javax.swing' name 'AbstractSpring' 
+      InnerAbstractSpring = class abstract external 'javax.swing' name 'AbstractSpring'
       end;
 
-      InnerCompoundSpring = class abstract external 'javax.swing' name 'CompoundSpring' 
+      InnerCompoundSpring = class abstract external 'javax.swing' name 'CompoundSpring'
       end;
 
-      InnerHeightSpring = class external 'javax.swing' name 'HeightSpring' 
+      InnerHeightSpring = class external 'javax.swing' name 'HeightSpring'
       end;
 
-      InnerMaxSpring = class external 'javax.swing' name 'MaxSpring' 
+      InnerMaxSpring = class external 'javax.swing' name 'MaxSpring'
       end;
 
-      InnerNegativeSpring = class external 'javax.swing' name 'NegativeSpring' 
+      InnerNegativeSpring = class external 'javax.swing' name 'NegativeSpring'
       end;
 
-      InnerScaleSpring = class external 'javax.swing' name 'ScaleSpring' 
+      InnerScaleSpring = class external 'javax.swing' name 'ScaleSpring'
       end;
 
-      InnerSpringMap = class abstract external 'javax.swing' name 'SpringMap' 
+      InnerSpringMap = class abstract external 'javax.swing' name 'SpringMap'
       end;
 
-      InnerStaticSpring = class external 'javax.swing' name 'StaticSpring' 
+      InnerStaticSpring = class external 'javax.swing' name 'StaticSpring'
       end;
 
-      InnerSumSpring = class external 'javax.swing' name 'SumSpring' 
+      InnerSumSpring = class external 'javax.swing' name 'SumSpring'
       end;
 
-      InnerWidthSpring = class external 'javax.swing' name 'WidthSpring' 
+      InnerWidthSpring = class external 'javax.swing' name 'WidthSpring'
       end;
 
   public
@@ -9308,7 +9308,7 @@
     class function height(para1: JAComponent): JSSpring; static; overload;
   end;
 
-  JSSwingConstants = interface external 'javax.swing' name 'SwingConstants' 
+  JSSwingConstants = interface external 'javax.swing' name 'SwingConstants'
     const
       CENTER = 0;
       TOP = 1;
@@ -9331,10 +9331,10 @@
       PREVIOUS = 13;
   end;
 
-  JSSwingHeavyWeight = interface external 'javax.swing' name 'SwingHeavyWeight' 
+  JSSwingHeavyWeight = interface external 'javax.swing' name 'SwingHeavyWeight'
   end;
 
-  JSWindowConstants = interface external 'javax.swing' name 'WindowConstants' 
+  JSWindowConstants = interface external 'javax.swing' name 'WindowConstants'
     const
       DO_NOTHING_ON_CLOSE = 0;
       HIDE_ON_CLOSE = 1;
@@ -9342,7 +9342,7 @@
       EXIT_ON_CLOSE = 3;
   end;
 
-  JSBBorder = interface external 'javax.swing.border' name 'Border' 
+  JSBBorder = interface external 'javax.swing.border' name 'Border'
     procedure paintBorder(para1: JAComponent; para2: JAGraphics; para3: jint; para4: jint; para5: jint; para6: jint); overload;
     function getBorderInsets(para1: JAComponent): JAInsets; overload;
     function isBorderOpaque(): jboolean; overload;
@@ -9354,14 +9354,14 @@
     class function getPreviewPanel(): JSJComponent; static; overload;
   end;
 
-  JSCColorSelectionModel = interface external 'javax.swing.colorchooser' name 'ColorSelectionModel' 
+  JSCColorSelectionModel = interface external 'javax.swing.colorchooser' name 'ColorSelectionModel'
     function getSelectedColor(): JAColor; overload;
     procedure setSelectedColor(para1: JAColor); overload;
     procedure addChangeListener(para1: JSEChangeListener); overload;
     procedure removeChangeListener(para1: JSEChangeListener); overload;
   end;
 
-  JSEDocumentEvent = interface external 'javax.swing.event' name 'DocumentEvent' 
+  JSEDocumentEvent = interface external 'javax.swing.event' name 'DocumentEvent'
     type
       InnerElementChange = interface;
       Arr1InnerElementChange = array of InnerElementChange;
@@ -9371,7 +9371,7 @@
       Arr1InnerEventType = array of InnerEventType;
       Arr2InnerEventType = array of Arr1InnerEventType;
       Arr3InnerEventType = array of Arr2InnerEventType;
-      InnerElementChange = interface external 'javax.swing.event' name 'ElementChange' 
+      InnerElementChange = interface external 'javax.swing.event' name 'ElementChange'
         function getElement(): JSTElement; overload;
         function getIndex(): jint; overload;
         function getChildrenRemoved(): Arr1JSTElement; overload;
@@ -9409,7 +9409,7 @@
       Arr1InnerFileSystemRoot = array of InnerFileSystemRoot;
       Arr2InnerFileSystemRoot = array of Arr1InnerFileSystemRoot;
       Arr3InnerFileSystemRoot = array of Arr2InnerFileSystemRoot;
-      InnerFileSystemRoot = class external 'javax.swing.filechooser' name 'FileSystemRoot' 
+      InnerFileSystemRoot = class external 'javax.swing.filechooser' name 'FileSystemRoot'
       end;
 
   public
@@ -9450,7 +9450,7 @@
     function isTraversable(para1: JIFile): JLBoolean; overload; virtual;
   end;
 
-  JSPUIResource = interface external 'javax.swing.plaf' name 'UIResource' 
+  JSPUIResource = interface external 'javax.swing.plaf' name 'UIResource'
   end;
 
   JSPBBasicGraphicsUtils = class external 'javax.swing.plaf.basic' name 'BasicGraphicsUtils' (JLObject)
@@ -9487,16 +9487,16 @@
       Arr1InnerRenderer = array of InnerRenderer;
       Arr2InnerRenderer = array of Arr1InnerRenderer;
       Arr3InnerRenderer = array of Arr2InnerRenderer;
-      InnerBasicDocument = class external 'javax.swing.plaf.basic' name 'BasicDocument' 
+      InnerBasicDocument = class external 'javax.swing.plaf.basic' name 'BasicDocument'
       end;
 
-      InnerBasicEditorKit = class external 'javax.swing.plaf.basic' name 'BasicEditorKit' 
+      InnerBasicEditorKit = class external 'javax.swing.plaf.basic' name 'BasicEditorKit'
       end;
 
-      InnerBasicHTMLViewFactory = class external 'javax.swing.plaf.basic' name 'BasicHTMLViewFactory' 
+      InnerBasicHTMLViewFactory = class external 'javax.swing.plaf.basic' name 'BasicHTMLViewFactory'
       end;
 
-      InnerRenderer = class external 'javax.swing.plaf.basic' name 'Renderer' 
+      InnerRenderer = class external 'javax.swing.plaf.basic' name 'Renderer'
       end;
 
   public
@@ -9511,7 +9511,7 @@
     class procedure updateRenderer(para1: JSJComponent; para2: JLString); static; overload;
   end;
 
-  JSPBComboPopup = interface external 'javax.swing.plaf.basic' name 'ComboPopup' 
+  JSPBComboPopup = interface external 'javax.swing.plaf.basic' name 'ComboPopup'
     procedure show(); overload;
     procedure hide(); overload;
     function isVisible(): jboolean; overload;
@@ -9529,7 +9529,7 @@
       Arr1InnerBeforeDrag = array of InnerBeforeDrag;
       Arr2InnerBeforeDrag = array of Arr1InnerBeforeDrag;
       Arr3InnerBeforeDrag = array of Arr2InnerBeforeDrag;
-      InnerBeforeDrag = interface external 'javax.swing.plaf.basic' name 'BeforeDrag' 
+      InnerBeforeDrag = interface external 'javax.swing.plaf.basic' name 'BeforeDrag'
         procedure dragStarting(para1: JAEMouseEvent); overload;
       end;
 
@@ -9620,13 +9620,13 @@
       Arr1InnerOceanToolBarImageFilter = array of InnerOceanToolBarImageFilter;
       Arr2InnerOceanToolBarImageFilter = array of Arr1InnerOceanToolBarImageFilter;
       Arr3InnerOceanToolBarImageFilter = array of Arr2InnerOceanToolBarImageFilter;
-      InnerGradientPainter = class external 'javax.swing.plaf.metal' name 'GradientPainter' 
+      InnerGradientPainter = class external 'javax.swing.plaf.metal' name 'GradientPainter'
       end;
 
-      InnerOceanDisabledButtonImageFilter = class external 'javax.swing.plaf.metal' name 'OceanDisabledButtonImageFilter' 
+      InnerOceanDisabledButtonImageFilter = class external 'javax.swing.plaf.metal' name 'OceanDisabledButtonImageFilter'
       end;
 
-      InnerOceanToolBarImageFilter = class external 'javax.swing.plaf.metal' name 'OceanToolBarImageFilter' 
+      InnerOceanToolBarImageFilter = class external 'javax.swing.plaf.metal' name 'OceanToolBarImageFilter'
       end;
 
   end;
@@ -9715,7 +9715,7 @@
     function toString(): JLString; overload; virtual;
   end;
 
-  JSPSSynthConstants = interface external 'javax.swing.plaf.synth' name 'SynthConstants' 
+  JSPSSynthConstants = interface external 'javax.swing.plaf.synth' name 'SynthConstants'
     const
       ENABLED = 1;
       MOUSE_OVER = 2;
@@ -9742,7 +9742,7 @@
       Arr1InnerSynthIconWrapper = array of InnerSynthIconWrapper;
       Arr2InnerSynthIconWrapper = array of Arr1InnerSynthIconWrapper;
       Arr3InnerSynthIconWrapper = array of Arr2InnerSynthIconWrapper;
-      InnerSynthIconWrapper = class external 'javax.swing.plaf.synth' name 'SynthIconWrapper' 
+      InnerSynthIconWrapper = class external 'javax.swing.plaf.synth' name 'SynthIconWrapper'
       end;
 
   public
@@ -9931,11 +9931,11 @@
     function getStyle(para1: JSJComponent; para2: JSPSRegion): JSPSSynthStyle; overload; virtual; abstract;
   end;
 
-  JSTTableCellRenderer = interface external 'javax.swing.table' name 'TableCellRenderer' 
+  JSTTableCellRenderer = interface external 'javax.swing.table' name 'TableCellRenderer'
     function getTableCellRendererComponent(para1: JSJTable; para2: JLObject; para3: jboolean; para4: jboolean; para5: jint; para6: jint): JAComponent; overload;
   end;
 
-  JSTTableColumnModel = interface external 'javax.swing.table' name 'TableColumnModel' 
+  JSTTableColumnModel = interface external 'javax.swing.table' name 'TableColumnModel'
     procedure addColumn(para1: JSTTableColumn); overload;
     procedure removeColumn(para1: JSTTableColumn); overload;
     procedure moveColumn(para1: jint; para2: jint); overload;
@@ -9957,7 +9957,7 @@
     procedure removeColumnModelListener(para1: JSETableColumnModelListener); overload;
   end;
 
-  JSTTableModel = interface external 'javax.swing.table' name 'TableModel' 
+  JSTTableModel = interface external 'javax.swing.table' name 'TableModel'
     function getRowCount(): jint; overload;
     function getColumnCount(): jint; overload;
     function getColumnName(para1: jint): JLString; overload;
@@ -10022,7 +10022,7 @@
     procedure output(var para1: array of jchar; para2: jint; para3: jint); overload; virtual;  // throws java.io.IOException
   end;
 
-  JSTAttributeSet = interface external 'javax.swing.text' name 'AttributeSet' 
+  JSTAttributeSet = interface external 'javax.swing.text' name 'AttributeSet'
     type
       InnerCharacterAttribute = interface;
       Arr1InnerCharacterAttribute = array of InnerCharacterAttribute;
@@ -10040,16 +10040,16 @@
       Arr1InnerParagraphAttribute = array of InnerParagraphAttribute;
       Arr2InnerParagraphAttribute = array of Arr1InnerParagraphAttribute;
       Arr3InnerParagraphAttribute = array of Arr2InnerParagraphAttribute;
-      InnerCharacterAttribute = interface external 'javax.swing.text' name 'CharacterAttribute' 
+      InnerCharacterAttribute = interface external 'javax.swing.text' name 'CharacterAttribute'
       end;
 
-      InnerColorAttribute = interface external 'javax.swing.text' name 'ColorAttribute' 
+      InnerColorAttribute = interface external 'javax.swing.text' name 'ColorAttribute'
       end;
 
-      InnerFontAttribute = interface external 'javax.swing.text' name 'FontAttribute' 
+      InnerFontAttribute = interface external 'javax.swing.text' name 'FontAttribute'
       end;
 
-      InnerParagraphAttribute = interface external 'javax.swing.text' name 'ParagraphAttribute' 
+      InnerParagraphAttribute = interface external 'javax.swing.text' name 'ParagraphAttribute'
       end;
 
     final class var
@@ -10066,7 +10066,7 @@
     function getResolveParent(): JSTAttributeSet; overload;
   end;
 
-  JSTCaret = interface external 'javax.swing.text' name 'Caret' 
+  JSTCaret = interface external 'javax.swing.text' name 'Caret'
     procedure install(para1: JSTJTextComponent); overload;
     procedure deinstall(para1: JSTJTextComponent); overload;
     procedure paint(para1: JAGraphics); overload;
@@ -10086,7 +10086,7 @@
     procedure moveDot(para1: jint); overload;
   end;
 
-  JSTDocument = interface external 'javax.swing.text' name 'Document' 
+  JSTDocument = interface external 'javax.swing.text' name 'Document'
     const
       StreamDescriptionProperty = 'stream';
       TitleProperty = 'title';
@@ -10132,7 +10132,7 @@
     procedure replace(para1: JSTDocumentFilter.InnerFilterBypass; para2: jint; para3: jint; para4: JLString; para5: JSTAttributeSet); overload; virtual;  // throws javax.swing.text.BadLocationException
   end;
 
-  JSTElement = interface external 'javax.swing.text' name 'Element' 
+  JSTElement = interface external 'javax.swing.text' name 'Element'
     function getDocument(): JSTDocument; overload;
     function getParentElement(): JSTElement; overload;
     function getName(): JLString; overload;
@@ -10145,7 +10145,7 @@
     function isLeaf(): jboolean; overload;
   end;
 
-  JSTHighlighter = interface external 'javax.swing.text' name 'Highlighter' 
+  JSTHighlighter = interface external 'javax.swing.text' name 'Highlighter'
     type
       InnerHighlightPainter = interface;
       Arr1InnerHighlightPainter = array of InnerHighlightPainter;
@@ -10155,11 +10155,11 @@
       Arr1InnerHighlight = array of InnerHighlight;
       Arr2InnerHighlight = array of Arr1InnerHighlight;
       Arr3InnerHighlight = array of Arr2InnerHighlight;
-      InnerHighlightPainter = interface external 'javax.swing.text' name 'HighlightPainter' 
+      InnerHighlightPainter = interface external 'javax.swing.text' name 'HighlightPainter'
         procedure paint(para1: JAGraphics; para2: jint; para3: jint; para4: JAShape; para5: JSTJTextComponent); overload;
       end;
 
-      InnerHighlight = interface external 'javax.swing.text' name 'Highlight' 
+      InnerHighlight = interface external 'javax.swing.text' name 'Highlight'
         function getStartOffset(): jint; overload;
         function getEndOffset(): jint; overload;
         function getPainter(): JSTHighlighter.InnerHighlightPainter; overload;
@@ -10175,7 +10175,7 @@
     function getHighlights(): JSTHighlighter.Arr1InnerHighlight; overload;
   end;
 
-  JSTKeymap = interface external 'javax.swing.text' name 'Keymap' 
+  JSTKeymap = interface external 'javax.swing.text' name 'Keymap'
     function getName(): JLString; overload;
     function getDefaultAction(): JSAction; overload;
     procedure setDefaultAction(para1: JSAction); overload;
@@ -10198,7 +10198,7 @@
       Arr1InnerLayoutThread = array of InnerLayoutThread;
       Arr2InnerLayoutThread = array of Arr1InnerLayoutThread;
       Arr3InnerLayoutThread = array of Arr2InnerLayoutThread;
-      InnerLayoutThread = class external 'javax.swing.text' name 'LayoutThread' 
+      InnerLayoutThread = class external 'javax.swing.text' name 'LayoutThread'
       end;
 
   public
@@ -10210,7 +10210,7 @@
     function waitForWork(): JLRunnable; overload; virtual;
   end;
 
-  JSTPosition = interface external 'javax.swing.text' name 'Position' 
+  JSTPosition = interface external 'javax.swing.text' name 'Position'
     type
       InnerBias = class;
       Arr1InnerBias = array of InnerBias;
@@ -10235,7 +10235,7 @@
       Arr1InnerCachedSegment = array of InnerCachedSegment;
       Arr2InnerCachedSegment = array of Arr1InnerCachedSegment;
       Arr3InnerCachedSegment = array of Arr2InnerCachedSegment;
-      InnerCachedSegment = class external 'javax.swing.text' name 'CachedSegment' 
+      InnerCachedSegment = class external 'javax.swing.text' name 'CachedSegment'
       end;
 
   public
@@ -10247,11 +10247,11 @@
     procedure releaseSegment(para1: JSTSegment); overload; virtual;
   end;
 
-  JSTTabExpander = interface external 'javax.swing.text' name 'TabExpander' 
+  JSTTabExpander = interface external 'javax.swing.text' name 'TabExpander'
     function nextTabStop(para1: jfloat; para2: jint): jfloat; overload;
   end;
 
-  JSTTabableView = interface external 'javax.swing.text' name 'TabableView' 
+  JSTTabableView = interface external 'javax.swing.text' name 'TabableView'
     function getTabbedSpan(para1: jfloat; para2: JSTTabExpander): jfloat; overload;
     function getPartialSpan(para1: jint; para2: jint): jfloat; overload;
   end;
@@ -10275,7 +10275,7 @@
     class function getParagraphElement(para1: JSTJTextComponent; para2: jint): JSTElement; static; overload; final;
   end;
 
-  JSTViewFactory = interface external 'javax.swing.text' name 'ViewFactory' 
+  JSTViewFactory = interface external 'javax.swing.text' name 'ViewFactory'
     function create_(para1: JSTElement): JSTView; external name 'create'; overload;
   end;
 
@@ -10286,7 +10286,7 @@
       Arr1InnerCSSParserCallback = array of InnerCSSParserCallback;
       Arr2InnerCSSParserCallback = array of Arr1InnerCSSParserCallback;
       Arr3InnerCSSParserCallback = array of Arr2InnerCSSParserCallback;
-      InnerCSSParserCallback = interface external 'javax.swing.text.html' name 'CSSParserCallback' 
+      InnerCSSParserCallback = interface external 'javax.swing.text.html' name 'CSSParserCallback'
       end;
 
   end;
@@ -10300,7 +10300,7 @@
     function advance(para1: JLObject): JSTHPContentModelState; overload; virtual;
   end;
 
-  JSTHPDTDConstants = interface external 'javax.swing.text.html.parser' name 'DTDConstants' 
+  JSTHPDTDConstants = interface external 'javax.swing.text.html.parser' name 'DTDConstants'
     const
       CDATA = 1;
       ENTITY = 2;
@@ -10342,7 +10342,7 @@
   JSTRConstants = class external 'javax.swing.text.rtf' name 'Constants' (JLObject)
   end;
 
-  JSTRRTFAttribute = interface external 'javax.swing.text.rtf' name 'RTFAttribute' 
+  JSTRRTFAttribute = interface external 'javax.swing.text.rtf' name 'RTFAttribute'
     const
       D_CHARACTER = 0;
       D_PARAGRAPH = 1;
@@ -10378,16 +10378,16 @@
       Arr1InnerGenericAttribute = array of InnerGenericAttribute;
       Arr2InnerGenericAttribute = array of Arr1InnerGenericAttribute;
       Arr3InnerGenericAttribute = array of Arr2InnerGenericAttribute;
-      InnerAssertiveAttribute = class external 'javax.swing.text.rtf' name 'AssertiveAttribute' 
+      InnerAssertiveAttribute = class external 'javax.swing.text.rtf' name 'AssertiveAttribute'
       end;
 
-      InnerBooleanAttribute = class external 'javax.swing.text.rtf' name 'BooleanAttribute' 
+      InnerBooleanAttribute = class external 'javax.swing.text.rtf' name 'BooleanAttribute'
       end;
 
-      InnerNumericAttribute = class external 'javax.swing.text.rtf' name 'NumericAttribute' 
+      InnerNumericAttribute = class external 'javax.swing.text.rtf' name 'NumericAttribute'
       end;
 
-      InnerGenericAttribute = class abstract external 'javax.swing.text.rtf' name 'GenericAttribute' 
+      InnerGenericAttribute = class abstract external 'javax.swing.text.rtf' name 'GenericAttribute'
       end;
 
   end;
@@ -10399,7 +10399,7 @@
       Arr1InnerCharacterKeywordPair = array of InnerCharacterKeywordPair;
       Arr2InnerCharacterKeywordPair = array of Arr1InnerCharacterKeywordPair;
       Arr3InnerCharacterKeywordPair = array of Arr2InnerCharacterKeywordPair;
-      InnerCharacterKeywordPair = class external 'javax.swing.text.rtf' name 'CharacterKeywordPair' 
+      InnerCharacterKeywordPair = class external 'javax.swing.text.rtf' name 'CharacterKeywordPair'
       end;
 
   public
@@ -10456,16 +10456,16 @@
       fpath: JSTTreePath; external name 'path';
   end;
 
-  JSTRowMapper = interface external 'javax.swing.tree' name 'RowMapper' 
+  JSTRowMapper = interface external 'javax.swing.tree' name 'RowMapper'
     function getRowsForPaths(para1: Arr1JSTTreePath): Arr1jint; overload;
     function getRowsForPaths(var para1: array of JSTTreePath): Arr1jint; overload;
   end;
 
-  JSTTreeCellRenderer = interface external 'javax.swing.tree' name 'TreeCellRenderer' 
+  JSTTreeCellRenderer = interface external 'javax.swing.tree' name 'TreeCellRenderer'
     function getTreeCellRendererComponent(para1: JSJTree; para2: JLObject; para3: jboolean; para4: jboolean; para5: jboolean; para6: jint; para7: jboolean): JAComponent; overload;
   end;
 
-  JSTTreeModel = interface external 'javax.swing.tree' name 'TreeModel' 
+  JSTTreeModel = interface external 'javax.swing.tree' name 'TreeModel'
     function getRoot(): JLObject; overload;
     function getChild(para1: JLObject; para2: jint): JLObject; overload;
     function getChildCount(para1: JLObject): jint; overload;
@@ -10476,7 +10476,7 @@
     procedure removeTreeModelListener(para1: JSETreeModelListener); overload;
   end;
 
-  JSTTreeNode = interface external 'javax.swing.tree' name 'TreeNode' 
+  JSTTreeNode = interface external 'javax.swing.tree' name 'TreeNode'
     function getChildAt(para1: jint): JSTTreeNode; overload;
     function getChildCount(): jint; overload;
     function getParent(): JSTTreeNode; overload;
@@ -10486,7 +10486,7 @@
     function children(): JUEnumeration; overload;
   end;
 
-  JSTTreeSelectionModel = interface external 'javax.swing.tree' name 'TreeSelectionModel' 
+  JSTTreeSelectionModel = interface external 'javax.swing.tree' name 'TreeSelectionModel'
     const
       SINGLE_TREE_SELECTION = 1;
       CONTIGUOUS_TREE_SELECTION = 2;
@@ -10523,14 +10523,14 @@
     procedure removeTreeSelectionListener(para1: JSETreeSelectionListener); overload;
   end;
 
-  JSUStateEditable = interface external 'javax.swing.undo' name 'StateEditable' 
+  JSUStateEditable = interface external 'javax.swing.undo' name 'StateEditable'
     const
       RCSID = '$Id: StateEditable.java,v 1.2 1997/09/08 19:39:08 marklin Exp $';
     procedure storeState(para1: JUHashtable); overload;
     procedure restoreState(para1: JUHashtable); overload;
   end;
 
-  JSUUndoableEdit = interface external 'javax.swing.undo' name 'UndoableEdit' 
+  JSUUndoableEdit = interface external 'javax.swing.undo' name 'UndoableEdit'
     procedure undo(); overload;  // throws javax.swing.undo.CannotUndoException
     function canUndo(): jboolean; overload;
     procedure redo(); overload;  // throws javax.swing.undo.CannotRedoException
@@ -10570,11 +10570,11 @@
     function toString(): JLString; overload; virtual;
   end;
 
-  JTDiagnosticListener = interface external 'javax.tools' name 'DiagnosticListener' 
+  JTDiagnosticListener = interface external 'javax.tools' name 'DiagnosticListener'
     procedure report(para1: JTDiagnostic); overload;
   end;
 
-  JTFileObject = interface external 'javax.tools' name 'FileObject' 
+  JTFileObject = interface external 'javax.tools' name 'FileObject'
     function toUri(): JNURI; overload;
     function getName(): JLString; overload;
     function openInputStream(): JIInputStream; overload;  // throws java.io.IOException
@@ -10586,11 +10586,11 @@
     function delete(): jboolean; overload;
   end;
 
-  JTOptionChecker = interface external 'javax.tools' name 'OptionChecker' 
+  JTOptionChecker = interface external 'javax.tools' name 'OptionChecker'
     function isSupportedOption(para1: JLString): jint; overload;
   end;
 
-  JTTool = interface external 'javax.tools' name 'Tool' 
+  JTTool = interface external 'javax.tools' name 'Tool'
     function run(para1: JIInputStream; para2: JIOutputStream; para3: JIOutputStream; para4: Arr1JLString): jint; overload;
     function run(para1: JIInputStream; para2: JIOutputStream; para3: JIOutputStream; const para4: array of JLString): jint; overload;
     function getSourceVersions(): JUSet; overload;
@@ -10603,7 +10603,7 @@
       Arr1InnerLazy = array of InnerLazy;
       Arr2InnerLazy = array of Arr1InnerLazy;
       Arr3InnerLazy = array of Arr2InnerLazy;
-      InnerLazy = class external 'javax.tools' name 'Lazy' 
+      InnerLazy = class external 'javax.tools' name 'Lazy'
       end;
 
   public
@@ -10611,7 +10611,7 @@
     class function getSystemToolClassLoader(): JLClassLoader; static; overload;
   end;
 
-  JTXXAResource = interface external 'javax.transaction.xa' name 'XAResource' 
+  JTXXAResource = interface external 'javax.transaction.xa' name 'XAResource'
     const
       TMENDRSCAN = 8388608;
       TMFAIL = 536870912;
@@ -10636,7 +10636,7 @@
     procedure start(para1: JTXXid; para2: jint); overload;  // throws javax.transaction.xa.XAException
   end;
 
-  JTXXid = interface external 'javax.transaction.xa' name 'Xid' 
+  JTXXid = interface external 'javax.transaction.xa' name 'Xid'
     const
       MAXGTRIDSIZE = 64;
       MAXBQUALSIZE = 64;
@@ -10729,7 +10729,7 @@
     class function printAnySimpleType(para1: JLString): JLString; static; overload;
   end;
 
-  JXBDatatypeConverterInterface = interface external 'javax.xml.bind' name 'DatatypeConverterInterface' 
+  JXBDatatypeConverterInterface = interface external 'javax.xml.bind' name 'DatatypeConverterInterface'
     function parseString(para1: JLString): JLString; overload;
     function parseInteger(para1: JLString): JMBigInteger; overload;
     function parseInt(para1: JLString): jint; overload;
@@ -10772,7 +10772,7 @@
     function printAnySimpleType(para1: JLString): JLString; overload;
   end;
 
-  JXBElement = interface external 'javax.xml.bind' name 'Element' 
+  JXBElement = interface external 'javax.xml.bind' name 'Element'
   end;
 
   JXBJAXB = class sealed external 'javax.xml.bind' name 'JAXB' (JLObject)
@@ -10782,7 +10782,7 @@
       Arr1InnerCache = array of InnerCache;
       Arr2InnerCache = array of Arr1InnerCache;
       Arr3InnerCache = array of Arr2InnerCache;
-      InnerCache = class sealed external 'javax.xml.bind' name 'Cache' 
+      InnerCache = class sealed external 'javax.xml.bind' name 'Cache'
       end;
 
   public
@@ -10833,7 +10833,7 @@
     class function getValue(para1: JLObject): JLObject; static; overload;
   end;
 
-  JXBMarshaller = interface external 'javax.xml.bind' name 'Marshaller' 
+  JXBMarshaller = interface external 'javax.xml.bind' name 'Marshaller'
     type
       InnerListener = class;
       Arr1InnerListener = array of InnerListener;
@@ -10885,7 +10885,7 @@
     function createOutput(para1: JLString; para2: JLString): JXTResult; overload; virtual; abstract;  // throws java.io.IOException
   end;
 
-  JXBUnmarshaller = interface external 'javax.xml.bind' name 'Unmarshaller' 
+  JXBUnmarshaller = interface external 'javax.xml.bind' name 'Unmarshaller'
     type
       InnerListener = class;
       Arr1InnerListener = array of InnerListener;
@@ -10929,7 +10929,7 @@
     function getListener(): JXBUnmarshaller.InnerListener; overload;
   end;
 
-  JXBValidationEvent = interface external 'javax.xml.bind' name 'ValidationEvent' 
+  JXBValidationEvent = interface external 'javax.xml.bind' name 'ValidationEvent'
     const
       WARNING = 0;
       ERROR = 1;
@@ -10940,11 +10940,11 @@
     function getLocator(): JXBValidationEventLocator; overload;
   end;
 
-  JXBValidationEventHandler = interface external 'javax.xml.bind' name 'ValidationEventHandler' 
+  JXBValidationEventHandler = interface external 'javax.xml.bind' name 'ValidationEventHandler'
     function handleEvent(para1: JXBValidationEvent): jboolean; overload;
   end;
 
-  JXBValidationEventLocator = interface external 'javax.xml.bind' name 'ValidationEventLocator' 
+  JXBValidationEventLocator = interface external 'javax.xml.bind' name 'ValidationEventLocator'
     function getURL(): JNURL; overload;
     function getOffset(): jint; overload;
     function getLineNumber(): jint; overload;
@@ -10953,7 +10953,7 @@
     function getNode(): OWDNode; overload;
   end;
 
-  JXBValidator = interface external 'javax.xml.bind' name 'Validator' 
+  JXBValidator = interface external 'javax.xml.bind' name 'Validator'
     procedure setEventHandler(para1: JXBValidationEventHandler); overload;  // throws javax.xml.bind.JAXBException
     function getEventHandler(): JXBValidationEventHandler; overload;  // throws javax.xml.bind.JAXBException
     function validate(para1: JLObject): jboolean; overload;  // throws javax.xml.bind.JAXBException
@@ -10975,7 +10975,7 @@
     class function isWhiteSpaceExceptSpace(para1: jchar): jboolean; static; overload; final;
   end;
 
-  JXBADomHandler = interface external 'javax.xml.bind.annotation' name 'DomHandler' 
+  JXBADomHandler = interface external 'javax.xml.bind.annotation' name 'DomHandler'
     function createUnmarshaller(para1: JXBValidationEventHandler): JXTResult; overload;
     function getElement(para1: JXTResult): JLObject; overload;
     function marshal(para1: JLObject; para2: JXBValidationEventHandler): JXTSource; overload;
@@ -11013,12 +11013,12 @@
   JXBUMessages = class external 'javax.xml.bind.util' name 'Messages' (JLObject)
   end;
 
-  JXCAlgorithmMethod = interface external 'javax.xml.crypto' name 'AlgorithmMethod' 
+  JXCAlgorithmMethod = interface external 'javax.xml.crypto' name 'AlgorithmMethod'
     function getAlgorithm(): JLString; overload;
     function getParameterSpec(): JSSAlgorithmParameterSpec; overload;
   end;
 
-  JXCData = interface external 'javax.xml.crypto' name 'Data' 
+  JXCData = interface external 'javax.xml.crypto' name 'Data'
   end;
 
   JXCKeySelector = class abstract external 'javax.xml.crypto' name 'KeySelector' (JLObject)
@@ -11028,7 +11028,7 @@
       Arr1InnerSingletonKeySelector = array of InnerSingletonKeySelector;
       Arr2InnerSingletonKeySelector = array of Arr1InnerSingletonKeySelector;
       Arr3InnerSingletonKeySelector = array of Arr2InnerSingletonKeySelector;
-      InnerSingletonKeySelector = class external 'javax.xml.crypto' name 'SingletonKeySelector' 
+      InnerSingletonKeySelector = class external 'javax.xml.crypto' name 'SingletonKeySelector'
       end;
 
   public
@@ -11055,20 +11055,20 @@
     class function singletonKeySelector(para1: JSKey): JXCKeySelector; static; overload;
   end;
 
-  JXCKeySelectorResult = interface external 'javax.xml.crypto' name 'KeySelectorResult' 
+  JXCKeySelectorResult = interface external 'javax.xml.crypto' name 'KeySelectorResult'
     function getKey(): JSKey; overload;
   end;
 
-  JXCURIDereferencer = interface external 'javax.xml.crypto' name 'URIDereferencer' 
+  JXCURIDereferencer = interface external 'javax.xml.crypto' name 'URIDereferencer'
     function dereference(para1: JXCURIReference; para2: JXCXMLCryptoContext): JXCData; overload;  // throws javax.xml.crypto.URIReferenceException
   end;
 
-  JXCURIReference = interface external 'javax.xml.crypto' name 'URIReference' 
+  JXCURIReference = interface external 'javax.xml.crypto' name 'URIReference'
     function getURI(): JLString; overload;
     function getType(): JLString; overload;
   end;
 
-  JXCXMLCryptoContext = interface external 'javax.xml.crypto' name 'XMLCryptoContext' 
+  JXCXMLCryptoContext = interface external 'javax.xml.crypto' name 'XMLCryptoContext'
     function getBaseURI(): JLString; overload;
     procedure setBaseURI(para1: JLString); overload;
     function getKeySelector(): JXCKeySelector; overload;
@@ -11085,7 +11085,7 @@
     function put(para1: JLObject; para2: JLObject): JLObject; overload;
   end;
 
-  JXCXMLStructure = interface external 'javax.xml.crypto' name 'XMLStructure' 
+  JXCXMLStructure = interface external 'javax.xml.crypto' name 'XMLStructure'
     function isFeatureSupported(para1: JLString): jboolean; overload;
   end;
 
@@ -11279,7 +11279,7 @@
       Arr1InnerConfigurationError = array of InnerConfigurationError;
       Arr2InnerConfigurationError = array of Arr1InnerConfigurationError;
       Arr3InnerConfigurationError = array of Arr2InnerConfigurationError;
-      InnerConfigurationError = class external 'javax.xml.datatype' name 'ConfigurationError' 
+      InnerConfigurationError = class external 'javax.xml.datatype' name 'ConfigurationError'
       end;
 
   end;
@@ -11287,7 +11287,7 @@
   JXDSecuritySupport = class external 'javax.xml.datatype' name 'SecuritySupport' (JLObject)
   end;
 
-  JXNNamespaceContext = interface external 'javax.xml.namespace' name 'NamespaceContext' 
+  JXNNamespaceContext = interface external 'javax.xml.namespace' name 'NamespaceContext'
     function getNamespaceURI(para1: JLString): JLString; overload;
     function getPrefix(para1: JLString): JLString; overload;
     function getPrefixes(para1: JLString): JUIterator; overload;
@@ -11349,7 +11349,7 @@
       Arr1InnerConfigurationError = array of InnerConfigurationError;
       Arr2InnerConfigurationError = array of Arr1InnerConfigurationError;
       Arr3InnerConfigurationError = array of Arr2InnerConfigurationError;
-      InnerConfigurationError = class external 'javax.xml.parsers' name 'ConfigurationError' 
+      InnerConfigurationError = class external 'javax.xml.parsers' name 'ConfigurationError'
       end;
 
   end;
@@ -11461,7 +11461,7 @@
       Arr1InnerMatchingIterator = array of InnerMatchingIterator;
       Arr2InnerMatchingIterator = array of Arr1InnerMatchingIterator;
       Arr3InnerMatchingIterator = array of Arr2InnerMatchingIterator;
-      InnerMatchingIterator = class external 'javax.xml.soap' name 'MatchingIterator' 
+      InnerMatchingIterator = class external 'javax.xml.soap' name 'MatchingIterator'
       end;
 
   public
@@ -11478,7 +11478,7 @@
     function getNonMatchingHeaders(var para1: array of JLString): JUIterator; overload; virtual;
   end;
 
-  JXSName = interface external 'javax.xml.soap' name 'Name' 
+  JXSName = interface external 'javax.xml.soap' name 'Name'
     function getLocalName(): JLString; overload;
     function getQualifiedName(): JLString; overload;
     function getPrefix(): JLString; overload;
@@ -11507,7 +11507,7 @@
     function createConnection(): JXSSOAPConnection; overload; virtual; abstract;  // throws javax.xml.soap.SOAPException
   end;
 
-  JXSSOAPConstants = interface external 'javax.xml.soap' name 'SOAPConstants' 
+  JXSSOAPConstants = interface external 'javax.xml.soap' name 'SOAPConstants'
     const
       DYNAMIC_SOAP_PROTOCOL = 'Dynamic Protocol';
       SOAP_1_1_PROTOCOL = 'SOAP 1.1 Protocol';
@@ -11588,7 +11588,7 @@
     function getProperty(para1: JLString): JLObject; overload; virtual;  // throws javax.xml.soap.SOAPException
   end;
 
-  JXSEventFilter = interface external 'javax.xml.stream' name 'EventFilter' 
+  JXSEventFilter = interface external 'javax.xml.stream' name 'EventFilter'
     function accept(para1: JXSEXMLEvent): jboolean; overload;
   end;
 
@@ -11599,12 +11599,12 @@
       Arr1InnerConfigurationError = array of InnerConfigurationError;
       Arr2InnerConfigurationError = array of Arr1InnerConfigurationError;
       Arr3InnerConfigurationError = array of Arr2InnerConfigurationError;
-      InnerConfigurationError = class external 'javax.xml.stream' name 'ConfigurationError' 
+      InnerConfigurationError = class external 'javax.xml.stream' name 'ConfigurationError'
       end;
 
   end;
 
-  JXSLocation = interface external 'javax.xml.stream' name 'Location' 
+  JXSLocation = interface external 'javax.xml.stream' name 'Location'
     function getLineNumber(): jint; overload;
     function getColumnNumber(): jint; overload;
     function getCharacterOffset(): jint; overload;
@@ -11615,7 +11615,7 @@
   JXSSecuritySupport = class external 'javax.xml.stream' name 'SecuritySupport' (JLObject)
   end;
 
-  JXSStreamFilter = interface external 'javax.xml.stream' name 'StreamFilter' 
+  JXSStreamFilter = interface external 'javax.xml.stream' name 'StreamFilter'
     function accept(para1: JXSXMLStreamReader): jboolean; overload;
   end;
 
@@ -11724,15 +11724,15 @@
     function isPropertySupported(para1: JLString): jboolean; overload; virtual; abstract;
   end;
 
-  JXSXMLReporter = interface external 'javax.xml.stream' name 'XMLReporter' 
+  JXSXMLReporter = interface external 'javax.xml.stream' name 'XMLReporter'
     procedure report(para1: JLString; para2: JLString; para3: JLObject; para4: JXSLocation); overload;  // throws javax.xml.stream.XMLStreamException
   end;
 
-  JXSXMLResolver = interface external 'javax.xml.stream' name 'XMLResolver' 
+  JXSXMLResolver = interface external 'javax.xml.stream' name 'XMLResolver'
     function resolveEntity(para1: JLString; para2: JLString; para3: JLString; para4: JLString): JLObject; overload;  // throws javax.xml.stream.XMLStreamException
   end;
 
-  JXSXMLStreamConstants = interface external 'javax.xml.stream' name 'XMLStreamConstants' 
+  JXSXMLStreamConstants = interface external 'javax.xml.stream' name 'XMLStreamConstants'
     const
       START_ELEMENT = 1;
       END_ELEMENT = 2;
@@ -11751,7 +11751,7 @@
       ENTITY_DECLARATION = 15;
   end;
 
-  JXSXMLStreamWriter = interface external 'javax.xml.stream' name 'XMLStreamWriter' 
+  JXSXMLStreamWriter = interface external 'javax.xml.stream' name 'XMLStreamWriter'
     procedure writeStartElement(para1: JLString); overload;  // throws javax.xml.stream.XMLStreamException
     procedure writeStartElement(para1: JLString; para2: JLString); overload;  // throws javax.xml.stream.XMLStreamException
     procedure writeStartElement(para1: JLString; para2: JLString; para3: JLString); overload;  // throws javax.xml.stream.XMLStreamException
@@ -11787,17 +11787,17 @@
     function getProperty(para1: JLString): JLObject; overload;  // throws java.lang.IllegalArgumentException
   end;
 
-  JXSUXMLEventAllocator = interface external 'javax.xml.stream.util' name 'XMLEventAllocator' 
+  JXSUXMLEventAllocator = interface external 'javax.xml.stream.util' name 'XMLEventAllocator'
     function newInstance(): JXSUXMLEventAllocator; overload;
     function allocate(para1: JXSXMLStreamReader): JXSEXMLEvent; overload;  // throws javax.xml.stream.XMLStreamException
     procedure allocate(para1: JXSXMLStreamReader; para2: JXSUXMLEventConsumer); overload;  // throws javax.xml.stream.XMLStreamException
   end;
 
-  JXSUXMLEventConsumer = interface external 'javax.xml.stream.util' name 'XMLEventConsumer' 
+  JXSUXMLEventConsumer = interface external 'javax.xml.stream.util' name 'XMLEventConsumer'
     procedure add(para1: JXSEXMLEvent); overload;  // throws javax.xml.stream.XMLStreamException
   end;
 
-  JXTErrorListener = interface external 'javax.xml.transform' name 'ErrorListener' 
+  JXTErrorListener = interface external 'javax.xml.transform' name 'ErrorListener'
     procedure warning(para1: JXTTransformerException); overload;  // throws javax.xml.transform.TransformerException
     procedure error(para1: JXTTransformerException); overload;  // throws javax.xml.transform.TransformerException
     procedure fatalError(para1: JXTTransformerException); overload;  // throws javax.xml.transform.TransformerException
@@ -11810,7 +11810,7 @@
       Arr1InnerConfigurationError = array of InnerConfigurationError;
       Arr2InnerConfigurationError = array of Arr1InnerConfigurationError;
       Arr3InnerConfigurationError = array of Arr2InnerConfigurationError;
-      InnerConfigurationError = class external 'javax.xml.transform' name 'ConfigurationError' 
+      InnerConfigurationError = class external 'javax.xml.transform' name 'ConfigurationError'
       end;
 
   end;
@@ -11830,7 +11830,7 @@
       MEDIA_TYPE = 'media-type';
   end;
 
-  JXTResult = interface external 'javax.xml.transform' name 'Result' 
+  JXTResult = interface external 'javax.xml.transform' name 'Result'
     const
       PI_DISABLE_OUTPUT_ESCAPING = 'javax.xml.transform.disable-output-escaping';
       PI_ENABLE_OUTPUT_ESCAPING = 'javax.xml.transform.enable-output-escaping';
@@ -11841,19 +11841,19 @@
   JXTSecuritySupport = class external 'javax.xml.transform' name 'SecuritySupport' (JLObject)
   end;
 
-  JXTSource = interface external 'javax.xml.transform' name 'Source' 
+  JXTSource = interface external 'javax.xml.transform' name 'Source'
     procedure setSystemId(para1: JLString); overload;
     function getSystemId(): JLString; overload;
   end;
 
-  JXTSourceLocator = interface external 'javax.xml.transform' name 'SourceLocator' 
+  JXTSourceLocator = interface external 'javax.xml.transform' name 'SourceLocator'
     function getPublicId(): JLString; overload;
     function getSystemId(): JLString; overload;
     function getLineNumber(): jint; overload;
     function getColumnNumber(): jint; overload;
   end;
 
-  JXTTemplates = interface external 'javax.xml.transform' name 'Templates' 
+  JXTTemplates = interface external 'javax.xml.transform' name 'Templates'
     function newTransformer(): JXTTransformer; overload;  // throws javax.xml.transform.TransformerConfigurationException
     function getOutputProperties(): JUProperties; overload;
   end;
@@ -11897,7 +11897,7 @@
     function getErrorListener(): JXTErrorListener; overload; virtual; abstract;
   end;
 
-  JXTURIResolver = interface external 'javax.xml.transform' name 'URIResolver' 
+  JXTURIResolver = interface external 'javax.xml.transform' name 'URIResolver'
     function resolve(para1: JLString; para2: JLString): JXTSource; overload;  // throws javax.xml.transform.TransformerException
   end;
 
@@ -11939,7 +11939,7 @@
       Arr1InnerSingleIterator = array of InnerSingleIterator;
       Arr2InnerSingleIterator = array of Arr1InnerSingleIterator;
       Arr3InnerSingleIterator = array of Arr2InnerSingleIterator;
-      InnerSingleIterator = class abstract external 'javax.xml.validation' name 'SingleIterator' 
+      InnerSingleIterator = class abstract external 'javax.xml.validation' name 'SingleIterator'
       end;
 
   public
@@ -11984,17 +11984,17 @@
     function getProperty(para1: JLString): JLObject; overload; virtual;  // throws org.xml.sax.SAXNotRecognizedException, org.xml.sax.SAXNotSupportedException
   end;
 
-  JXWAsyncHandler = interface external 'javax.xml.ws' name 'AsyncHandler' 
+  JXWAsyncHandler = interface external 'javax.xml.ws' name 'AsyncHandler'
     procedure handleResponse(para1: JXWResponse); overload;
   end;
 
-  JXWBinding = interface external 'javax.xml.ws' name 'Binding' 
+  JXWBinding = interface external 'javax.xml.ws' name 'Binding'
     function getHandlerChain(): JUList; overload;
     procedure setHandlerChain(para1: JUList); overload;
     function getBindingID(): JLString; overload;
   end;
 
-  JXWBindingProvider = interface external 'javax.xml.ws' name 'BindingProvider' 
+  JXWBindingProvider = interface external 'javax.xml.ws' name 'BindingProvider'
     const
       USERNAME_PROPERTY = 'javax.xml.ws.security.auth.username';
       PASSWORD_PROPERTY = 'javax.xml.ws.security.auth.password';
@@ -12057,18 +12057,18 @@
     constructor create(para1: JLObject); overload;
   end;
 
-  JXWLogicalMessage = interface external 'javax.xml.ws' name 'LogicalMessage' 
+  JXWLogicalMessage = interface external 'javax.xml.ws' name 'LogicalMessage'
     function getPayload(): JXTSource; overload;
     procedure setPayload(para1: JXTSource); overload;
     function getPayload(para1: JXBJAXBContext): JLObject; overload;
     procedure setPayload(para1: JLObject; para2: JXBJAXBContext); overload;
   end;
 
-  JXWProvider = interface external 'javax.xml.ws' name 'Provider' 
+  JXWProvider = interface external 'javax.xml.ws' name 'Provider'
     function invoke(para1: JLObject): JLObject; overload;
   end;
 
-  JXWWebServiceContext = interface external 'javax.xml.ws' name 'WebServiceContext' 
+  JXWWebServiceContext = interface external 'javax.xml.ws' name 'WebServiceContext'
     function getMessageContext(): JXWHMessageContext; overload;
     function getUserPrincipal(): JSPrincipal; overload;
     function isUserInRole(para1: JLString): jboolean; overload;
@@ -12090,17 +12090,17 @@
     function isEnabled(): jboolean; overload; virtual;
   end;
 
-  JXWHHandler = interface external 'javax.xml.ws.handler' name 'Handler' 
+  JXWHHandler = interface external 'javax.xml.ws.handler' name 'Handler'
     function handleMessage(para1: JXWHMessageContext): jboolean; overload;
     function handleFault(para1: JXWHMessageContext): jboolean; overload;
     procedure close(para1: JXWHMessageContext); overload;
   end;
 
-  JXWHHandlerResolver = interface external 'javax.xml.ws.handler' name 'HandlerResolver' 
+  JXWHHandlerResolver = interface external 'javax.xml.ws.handler' name 'HandlerResolver'
     function getHandlerChain(para1: JXWHPortInfo): JUList; overload;
   end;
 
-  JXWHPortInfo = interface external 'javax.xml.ws.handler' name 'PortInfo' 
+  JXWHPortInfo = interface external 'javax.xml.ws.handler' name 'PortInfo'
     function getServiceName(): JXNQName; overload;
     function getPortName(): JXNQName; overload;
     function getBindingID(): JLString; overload;
@@ -12138,13 +12138,13 @@
     function build(): JXWWW3CEndpointReference; overload; virtual;
   end;
 
-  JXWWpackage_info = interface external 'javax.xml.ws.wsaddressing' name 'package-info' 
+  JXWWpackage_info = interface external 'javax.xml.ws.wsaddressing' name 'package-info'
   end;
 
   JXXSecuritySupport = class external 'javax.xml.xpath' name 'SecuritySupport' (JLObject)
   end;
 
-  JXXXPath = interface external 'javax.xml.xpath' name 'XPath' 
+  JXXXPath = interface external 'javax.xml.xpath' name 'XPath'
     procedure reset(); overload;
     procedure setXPathVariableResolver(para1: JXXXPathVariableResolver); overload;
     function getXPathVariableResolver(): JXXXPathVariableResolver; overload;
@@ -12172,7 +12172,7 @@
       DOM_OBJECT_MODEL = 'http://java.sun.com/jaxp/xpath/dom';
   end;
 
-  JXXXPathExpression = interface external 'javax.xml.xpath' name 'XPathExpression' 
+  JXXXPathExpression = interface external 'javax.xml.xpath' name 'XPathExpression'
     function evaluate(para1: JLObject; para2: JXNQName): JLObject; overload;  // throws javax.xml.xpath.XPathExpressionException
     function evaluate(para1: JLObject): JLString; overload;  // throws javax.xml.xpath.XPathExpressionException
     function evaluate(para1: OXSInputSource; para2: JXNQName): JLObject; overload;  // throws javax.xml.xpath.XPathExpressionException
@@ -12205,7 +12205,7 @@
       Arr1InnerSingleIterator = array of InnerSingleIterator;
       Arr2InnerSingleIterator = array of Arr1InnerSingleIterator;
       Arr3InnerSingleIterator = array of Arr2InnerSingleIterator;
-      InnerSingleIterator = class abstract external 'javax.xml.xpath' name 'SingleIterator' 
+      InnerSingleIterator = class abstract external 'javax.xml.xpath' name 'SingleIterator'
       end;
 
   public
@@ -12213,15 +12213,15 @@
     function newFactory(para1: JLString): JXXXPathFactory; overload; virtual;
   end;
 
-  JXXXPathFunction = interface external 'javax.xml.xpath' name 'XPathFunction' 
+  JXXXPathFunction = interface external 'javax.xml.xpath' name 'XPathFunction'
     function evaluate(para1: JUList): JLObject; overload;  // throws javax.xml.xpath.XPathFunctionException
   end;
 
-  JXXXPathFunctionResolver = interface external 'javax.xml.xpath' name 'XPathFunctionResolver' 
+  JXXXPathFunctionResolver = interface external 'javax.xml.xpath' name 'XPathFunctionResolver'
     function resolveFunction(para1: JXNQName; para2: jint): JXXXPathFunction; overload;
   end;
 
-  JXXXPathVariableResolver = interface external 'javax.xml.xpath' name 'XPathVariableResolver' 
+  JXXXPathVariableResolver = interface external 'javax.xml.xpath' name 'XPathVariableResolver'
     function resolveVariable(para1: JXNQName): JLObject; overload;
   end;
 
@@ -12238,7 +12238,7 @@
     function hashCode(): jint; overload; virtual;
   end;
 
-  OIJGSSContext = interface external 'org.ietf.jgss' name 'GSSContext' 
+  OIJGSSContext = interface external 'org.ietf.jgss' name 'GSSContext'
     const
       DEFAULT_LIFETIME = 0;
       INDEFINITE_LIFETIME = 2147483647;
@@ -12315,7 +12315,7 @@
     procedure addProviderAtEnd(para1: JSProvider; para2: OIJOid); overload; virtual; abstract;  // throws org.ietf.jgss.GSSException
   end;
 
-  OIJGSSName = interface external 'org.ietf.jgss' name 'GSSName' 
+  OIJGSSName = interface external 'org.ietf.jgss' name 'GSSName'
     final class var
       fNT_HOSTBASED_SERVICE: OIJOid; external name 'NT_HOSTBASED_SERVICE';
       fNT_USER_NAME: OIJOid; external name 'NT_USER_NAME';
@@ -12372,7 +12372,7 @@
       Arr1InnerNodeSet = array of InnerNodeSet;
       Arr2InnerNodeSet = array of Arr1InnerNodeSet;
       Arr3InnerNodeSet = array of Arr2InnerNodeSet;
-      InnerNodeSet = class external 'org.jcp.xml.dsig.internal.dom' name 'NodeSet' 
+      InnerNodeSet = class external 'org.jcp.xml.dsig.internal.dom' name 'NodeSet'
       end;
 
   public
@@ -12400,17 +12400,17 @@
     class function sameDocumentURI(para1: JLString): jboolean; static; overload;
   end;
 
-  OOCARG_IN = interface external 'org.omg.CORBA' name 'ARG_IN' 
+  OOCARG_IN = interface external 'org.omg.CORBA' name 'ARG_IN'
     const
       value = 1;
   end;
 
-  OOCARG_INOUT = interface external 'org.omg.CORBA' name 'ARG_INOUT' 
+  OOCARG_INOUT = interface external 'org.omg.CORBA' name 'ARG_INOUT'
     const
       value = 3;
   end;
 
-  OOCARG_OUT = interface external 'org.omg.CORBA' name 'ARG_OUT' 
+  OOCARG_OUT = interface external 'org.omg.CORBA' name 'ARG_OUT'
     const
       value = 2;
   end;
@@ -12428,17 +12428,17 @@
     class procedure write(para1: OOCPOutputStream; var para2: array of OOCAny); static; overload;
   end;
 
-  OOCBAD_POLICY = interface external 'org.omg.CORBA' name 'BAD_POLICY' 
+  OOCBAD_POLICY = interface external 'org.omg.CORBA' name 'BAD_POLICY'
     const
       value = 0;
   end;
 
-  OOCBAD_POLICY_TYPE = interface external 'org.omg.CORBA' name 'BAD_POLICY_TYPE' 
+  OOCBAD_POLICY_TYPE = interface external 'org.omg.CORBA' name 'BAD_POLICY_TYPE'
     const
       value = 2;
   end;
 
-  OOCBAD_POLICY_VALUE = interface external 'org.omg.CORBA' name 'BAD_POLICY_VALUE' 
+  OOCBAD_POLICY_VALUE = interface external 'org.omg.CORBA' name 'BAD_POLICY_VALUE'
     const
       value = 3;
   end;
@@ -12456,7 +12456,7 @@
     class procedure write(para1: OOCPOutputStream; var para2: array of jboolean); static; overload;
   end;
 
-  OOCCTX_RESTRICT_SCOPE = interface external 'org.omg.CORBA' name 'CTX_RESTRICT_SCOPE' 
+  OOCCTX_RESTRICT_SCOPE = interface external 'org.omg.CORBA' name 'CTX_RESTRICT_SCOPE'
     const
       value = 15;
   end;
@@ -12518,10 +12518,10 @@
     class function narrow(para1: OOCObject): OOCCurrent; static; overload;
   end;
 
-  OOCCurrentOperations = interface external 'org.omg.CORBA' name 'CurrentOperations' 
+  OOCCurrentOperations = interface external 'org.omg.CORBA' name 'CurrentOperations'
   end;
 
-  OOCCustomMarshal = interface external 'org.omg.CORBA' name 'CustomMarshal' 
+  OOCCustomMarshal = interface external 'org.omg.CORBA' name 'CustomMarshal'
     procedure marshal(para1: OOCDataOutputStream); overload;
     procedure unmarshal(para1: OOCDataInputStream); overload;
   end;
@@ -12537,7 +12537,7 @@
     class procedure write(para1: OOCPOutputStream; para2: OOCDefinitionKind); static; overload;
   end;
 
-  OOCDomainManagerOperations = interface external 'org.omg.CORBA' name 'DomainManagerOperations' 
+  OOCDomainManagerOperations = interface external 'org.omg.CORBA' name 'DomainManagerOperations'
     function get_domain_policy(para1: jint): OOCPolicy; overload;
   end;
 
@@ -12607,7 +12607,7 @@
     class function narrow(para1: OOCObject): OOCIDLType; static; overload;
   end;
 
-  OOCIRObjectOperations = interface external 'org.omg.CORBA' name 'IRObjectOperations' 
+  OOCIRObjectOperations = interface external 'org.omg.CORBA' name 'IRObjectOperations'
     function def_kind(): OOCDefinitionKind; overload;
     procedure destroy(); overload;
   end;
@@ -12679,7 +12679,7 @@
     function flags(): jint; overload; virtual; abstract;
   end;
 
-  OOCOMGVMCID = interface external 'org.omg.CORBA' name 'OMGVMCID' 
+  OOCOMGVMCID = interface external 'org.omg.CORBA' name 'OMGVMCID'
     const
       value = 1330446336;
   end;
@@ -12757,7 +12757,7 @@
     function create_policy(para1: jint; para2: OOCAny): OOCPolicy; overload; virtual;  // throws org.omg.CORBA.PolicyError
   end;
 
-  OOCObject = interface external 'org.omg.CORBA' name 'Object' 
+  OOCObject = interface external 'org.omg.CORBA' name 'Object'
     function _is_a(para1: JLString): jboolean; overload;
     function _is_equivalent(para1: OOCObject): jboolean; overload;
     function _non_existent(): jboolean; overload;
@@ -12798,12 +12798,12 @@
     class procedure write(para1: OOCPOutputStream; var para2: array of jbyte); static; overload;
   end;
 
-  OOCPRIVATE_MEMBER = interface external 'org.omg.CORBA' name 'PRIVATE_MEMBER' 
+  OOCPRIVATE_MEMBER = interface external 'org.omg.CORBA' name 'PRIVATE_MEMBER'
     const
       value = 0;
   end;
 
-  OOCPUBLIC_MEMBER = interface external 'org.omg.CORBA' name 'PUBLIC_MEMBER' 
+  OOCPUBLIC_MEMBER = interface external 'org.omg.CORBA' name 'PUBLIC_MEMBER'
     const
       value = 1;
   end;
@@ -12866,7 +12866,7 @@
     class procedure write(para1: OOCPOutputStream; var para2: array of OOCPolicy); static; overload;
   end;
 
-  OOCPolicyOperations = interface external 'org.omg.CORBA' name 'PolicyOperations' 
+  OOCPolicyOperations = interface external 'org.omg.CORBA' name 'PolicyOperations'
     function policy_type(): jint; overload;
     function copy(): OOCPolicy; overload;
     procedure destroy(); overload;
@@ -13117,12 +13117,12 @@
     class procedure write(para1: OOCPOutputStream; var para2: array of jint); static; overload;
   end;
 
-  OOCUNSUPPORTED_POLICY = interface external 'org.omg.CORBA' name 'UNSUPPORTED_POLICY' 
+  OOCUNSUPPORTED_POLICY = interface external 'org.omg.CORBA' name 'UNSUPPORTED_POLICY'
     const
       value = 1;
   end;
 
-  OOCUNSUPPORTED_POLICY_VALUE = interface external 'org.omg.CORBA' name 'UNSUPPORTED_POLICY_VALUE' 
+  OOCUNSUPPORTED_POLICY_VALUE = interface external 'org.omg.CORBA' name 'UNSUPPORTED_POLICY_VALUE'
     const
       value = 4;
   end;
@@ -13162,22 +13162,22 @@
     class procedure write(para1: OOCPOutputStream; para2: OOCUnknownUserException); static; overload;
   end;
 
-  OOCVM_ABSTRACT = interface external 'org.omg.CORBA' name 'VM_ABSTRACT' 
+  OOCVM_ABSTRACT = interface external 'org.omg.CORBA' name 'VM_ABSTRACT'
     const
       value = 2;
   end;
 
-  OOCVM_CUSTOM = interface external 'org.omg.CORBA' name 'VM_CUSTOM' 
+  OOCVM_CUSTOM = interface external 'org.omg.CORBA' name 'VM_CUSTOM'
     const
       value = 1;
   end;
 
-  OOCVM_NONE = interface external 'org.omg.CORBA' name 'VM_NONE' 
+  OOCVM_NONE = interface external 'org.omg.CORBA' name 'VM_NONE'
     const
       value = 0;
   end;
 
-  OOCVM_TRUNCATABLE = interface external 'org.omg.CORBA' name 'VM_TRUNCATABLE' 
+  OOCVM_TRUNCATABLE = interface external 'org.omg.CORBA' name 'VM_TRUNCATABLE'
     const
       value = 3;
   end;
@@ -13263,7 +13263,7 @@
     class procedure write(para1: OOCPOutputStream; para2: OOCWrongTransaction); static; overload;
   end;
 
-  OOCPBoxedValueHelper = interface external 'org.omg.CORBA.portable' name 'BoxedValueHelper' 
+  OOCPBoxedValueHelper = interface external 'org.omg.CORBA.portable' name 'BoxedValueHelper'
     function read_value(para1: OOCPInputStream): JISerializable; overload;
     procedure write_value(para1: OOCPOutputStream; para2: JISerializable); overload;
     function get_id(): JLString; overload;
@@ -13298,11 +13298,11 @@
     function equals(para1: OOCObject; para2: JLObject): jboolean; overload; virtual;
   end;
 
-  OOCPInvokeHandler = interface external 'org.omg.CORBA.portable' name 'InvokeHandler' 
+  OOCPInvokeHandler = interface external 'org.omg.CORBA.portable' name 'InvokeHandler'
     function _invoke(para1: JLString; para2: OOCPInputStream; para3: OOCPResponseHandler): OOCPOutputStream; overload;  // throws org.omg.CORBA.SystemException
   end;
 
-  OOCPResponseHandler = interface external 'org.omg.CORBA.portable' name 'ResponseHandler' 
+  OOCPResponseHandler = interface external 'org.omg.CORBA.portable' name 'ResponseHandler'
     function createReply(): OOCPOutputStream; overload;
     function createExceptionReply(): OOCPOutputStream; overload;
   end;
@@ -13315,22 +13315,22 @@
     constructor create(); overload;
   end;
 
-  OOCPStreamable = interface external 'org.omg.CORBA.portable' name 'Streamable' 
+  OOCPStreamable = interface external 'org.omg.CORBA.portable' name 'Streamable'
     procedure _read(para1: OOCPInputStream); overload;
     procedure _write(para1: OOCPOutputStream); overload;
     function _type(): OOCTypeCode; overload;
   end;
 
-  OOCPValueFactory = interface external 'org.omg.CORBA.portable' name 'ValueFactory' 
+  OOCPValueFactory = interface external 'org.omg.CORBA.portable' name 'ValueFactory'
     function read_value(para1: OOC_2_3PInputStream): JISerializable; overload;
   end;
 
-  OOCPValueInputStream = interface external 'org.omg.CORBA.portable' name 'ValueInputStream' 
+  OOCPValueInputStream = interface external 'org.omg.CORBA.portable' name 'ValueInputStream'
     procedure start_value(); overload;
     procedure end_value(); overload;
   end;
 
-  OOCPValueOutputStream = interface external 'org.omg.CORBA.portable' name 'ValueOutputStream' 
+  OOCPValueOutputStream = interface external 'org.omg.CORBA.portable' name 'ValueOutputStream'
     procedure start_value(para1: JLString); overload;
     procedure end_value(); overload;
   end;
@@ -13359,7 +13359,7 @@
     class function unchecked_narrow(para1: OOCObject): OOCBindingIterator; static; overload;
   end;
 
-  OOCBindingIteratorOperations = interface external 'org.omg.CosNaming' name 'BindingIteratorOperations' 
+  OOCBindingIteratorOperations = interface external 'org.omg.CosNaming' name 'BindingIteratorOperations'
     function next_one(para1: OOCBindingHolder): jboolean; overload;
     function next_n(para1: jint; para2: OOCBindingListHolder): jboolean; overload;
     procedure destroy(); overload;
@@ -13494,7 +13494,7 @@
     class function unchecked_narrow(para1: OOCObject): OOCNamingContext; static; overload;
   end;
 
-  OOCNamingContextOperations = interface external 'org.omg.CosNaming' name 'NamingContextOperations' 
+  OOCNamingContextOperations = interface external 'org.omg.CosNaming' name 'NamingContextOperations'
     procedure bind(para1: Arr1OOCNameComponent; para2: OOCObject); overload;  // throws org.omg.CosNaming.NamingContextPackage.NotFound, org.omg.CosNaming.NamingContextPackage.CannotProceed, org.omg.CosNaming.NamingContextPackage.InvalidName, org.omg.CosNaming.NamingContextPackage.AlreadyBound
     procedure bind(var para1: array of OOCNameComponent; para2: OOCObject); overload;  // throws org.omg.CosNaming.NamingContextPackage.NotFound, org.omg.CosNaming.NamingContextPackage.CannotProceed, org.omg.CosNaming.NamingContextPackage.InvalidName, org.omg.CosNaming.NamingContextPackage.AlreadyBound
     procedure bind_context(para1: Arr1OOCNameComponent; para2: OOCNamingContext); overload;  // throws org.omg.CosNaming.NamingContextPackage.NotFound, org.omg.CosNaming.NamingContextPackage.CannotProceed, org.omg.CosNaming.NamingContextPackage.InvalidName, org.omg.CosNaming.NamingContextPackage.AlreadyBound
@@ -13606,7 +13606,7 @@
     class function unchecked_narrow(para1: OOCObject): OODDynAnyFactory; static; overload;
   end;
 
-  OODDynAnyFactoryOperations = interface external 'org.omg.DynamicAny' name 'DynAnyFactoryOperations' 
+  OODDynAnyFactoryOperations = interface external 'org.omg.DynamicAny' name 'DynAnyFactoryOperations'
     function create_dyn_any(para1: OOCAny): OODDynAny; overload;  // throws org.omg.DynamicAny.DynAnyFactoryPackage.InconsistentTypeCode
     function create_dyn_any_from_type_code(para1: OOCTypeCode): OODDynAny; overload;  // throws org.omg.DynamicAny.DynAnyFactoryPackage.InconsistentTypeCode
   end;
@@ -13635,7 +13635,7 @@
     class function unchecked_narrow(para1: OOCObject): OODDynAny; static; overload;
   end;
 
-  OODDynAnyOperations = interface external 'org.omg.DynamicAny' name 'DynAnyOperations' 
+  OODDynAnyOperations = interface external 'org.omg.DynamicAny' name 'DynAnyOperations'
     function &type(): OOCTypeCode; overload;
     procedure assign(para1: OODDynAny); overload;  // throws org.omg.DynamicAny.DynAnyPackage.TypeMismatch
     procedure from_any(para1: OOCAny); overload;  // throws org.omg.DynamicAny.DynAnyPackage.TypeMismatch, org.omg.DynamicAny.DynAnyPackage.InvalidValue
@@ -13873,7 +13873,7 @@
     class procedure write(para1: OOCPOutputStream; var para2: array of OODNameValuePair); static; overload;
   end;
 
-  OOICodeSets = interface external 'org.omg.IOP' name 'CodeSets' 
+  OOICodeSets = interface external 'org.omg.IOP' name 'CodeSets'
     const
       value = 1;
   end;
@@ -13891,7 +13891,7 @@
     class function unchecked_narrow(para1: OOCObject): OOICodecFactory; static; overload;
   end;
 
-  OOICodecFactoryOperations = interface external 'org.omg.IOP' name 'CodecFactoryOperations' 
+  OOICodecFactoryOperations = interface external 'org.omg.IOP' name 'CodecFactoryOperations'
     function create_codec(para1: OOIEncoding): OOICodec; overload;  // throws org.omg.IOP.CodecFactoryPackage.UnknownEncoding
   end;
 
@@ -13906,7 +13906,7 @@
     class procedure write(para1: OOCPOutputStream; para2: OOICUnknownEncoding); static; overload;
   end;
 
-  OOICodecOperations = interface external 'org.omg.IOP' name 'CodecOperations' 
+  OOICodecOperations = interface external 'org.omg.IOP' name 'CodecOperations'
     function encode(para1: OOCAny): Arr1jbyte; overload;  // throws org.omg.IOP.CodecPackage.InvalidTypeForEncoding
     function decode(para1: Arr1jbyte): OOCAny; overload;  // throws org.omg.IOP.CodecPackage.FormatMismatch
     function decode(var para1: array of jbyte): OOCAny; overload;  // throws org.omg.IOP.CodecPackage.FormatMismatch
@@ -13959,12 +13959,12 @@
     class procedure write(para1: OOCPOutputStream; para2: jint); static; overload;
   end;
 
-  OOIENCODING_CDR_ENCAPS = interface external 'org.omg.IOP' name 'ENCODING_CDR_ENCAPS' 
+  OOIENCODING_CDR_ENCAPS = interface external 'org.omg.IOP' name 'ENCODING_CDR_ENCAPS'
     const
       value = 0;
   end;
 
-  OOIExceptionDetailMessage = interface external 'org.omg.IOP' name 'ExceptionDetailMessage' 
+  OOIExceptionDetailMessage = interface external 'org.omg.IOP' name 'ExceptionDetailMessage'
     const
       value = 14;
   end;
@@ -14004,7 +14004,7 @@
     class procedure write(para1: OOCPOutputStream; para2: jint); static; overload;
   end;
 
-  OOIRMICustomMaxStreamFormat = interface external 'org.omg.IOP' name 'RMICustomMaxStreamFormat' 
+  OOIRMICustomMaxStreamFormat = interface external 'org.omg.IOP' name 'RMICustomMaxStreamFormat'
     const
       value = 17;
   end;
@@ -14044,42 +14044,42 @@
     class procedure write(para1: OOCPOutputStream; para2: jint); static; overload;
   end;
 
-  OOITAG_ALTERNATE_IIOP_ADDRESS = interface external 'org.omg.IOP' name 'TAG_ALTERNATE_IIOP_ADDRESS' 
+  OOITAG_ALTERNATE_IIOP_ADDRESS = interface external 'org.omg.IOP' name 'TAG_ALTERNATE_IIOP_ADDRESS'
     const
       value = 3;
   end;
 
-  OOITAG_CODE_SETS = interface external 'org.omg.IOP' name 'TAG_CODE_SETS' 
+  OOITAG_CODE_SETS = interface external 'org.omg.IOP' name 'TAG_CODE_SETS'
     const
       value = 1;
   end;
 
-  OOITAG_INTERNET_IOP = interface external 'org.omg.IOP' name 'TAG_INTERNET_IOP' 
+  OOITAG_INTERNET_IOP = interface external 'org.omg.IOP' name 'TAG_INTERNET_IOP'
     const
       value = 0;
   end;
 
-  OOITAG_JAVA_CODEBASE = interface external 'org.omg.IOP' name 'TAG_JAVA_CODEBASE' 
+  OOITAG_JAVA_CODEBASE = interface external 'org.omg.IOP' name 'TAG_JAVA_CODEBASE'
     const
       value = 25;
   end;
 
-  OOITAG_MULTIPLE_COMPONENTS = interface external 'org.omg.IOP' name 'TAG_MULTIPLE_COMPONENTS' 
+  OOITAG_MULTIPLE_COMPONENTS = interface external 'org.omg.IOP' name 'TAG_MULTIPLE_COMPONENTS'
     const
       value = 1;
   end;
 
-  OOITAG_ORB_TYPE = interface external 'org.omg.IOP' name 'TAG_ORB_TYPE' 
+  OOITAG_ORB_TYPE = interface external 'org.omg.IOP' name 'TAG_ORB_TYPE'
     const
       value = 0;
   end;
 
-  OOITAG_POLICIES = interface external 'org.omg.IOP' name 'TAG_POLICIES' 
+  OOITAG_POLICIES = interface external 'org.omg.IOP' name 'TAG_POLICIES'
     const
       value = 2;
   end;
 
-  OOITAG_RMI_CUSTOM_MAX_STREAM_FORMAT = interface external 'org.omg.IOP' name 'TAG_RMI_CUSTOM_MAX_STREAM_FORMAT' 
+  OOITAG_RMI_CUSTOM_MAX_STREAM_FORMAT = interface external 'org.omg.IOP' name 'TAG_RMI_CUSTOM_MAX_STREAM_FORMAT'
     const
       value = 38;
   end;
@@ -14106,12 +14106,12 @@
     class procedure write(para1: OOCPOutputStream; para2: OOITaggedProfile); static; overload;
   end;
 
-  OOITransactionService = interface external 'org.omg.IOP' name 'TransactionService' 
+  OOITransactionService = interface external 'org.omg.IOP' name 'TransactionService'
     const
       value = 0;
   end;
 
-  OOMSYNC_WITH_TRANSPORT = interface external 'org.omg.Messaging' name 'SYNC_WITH_TRANSPORT' 
+  OOMSYNC_WITH_TRANSPORT = interface external 'org.omg.Messaging' name 'SYNC_WITH_TRANSPORT'
     const
       value = 1;
   end;
@@ -14127,7 +14127,7 @@
     class procedure write(para1: OOCPOutputStream; para2: jshort); static; overload;
   end;
 
-  OOPACTIVE = interface external 'org.omg.PortableInterceptor' name 'ACTIVE' 
+  OOPACTIVE = interface external 'org.omg.PortableInterceptor' name 'ACTIVE'
     const
       value = 1;
   end;
@@ -14180,7 +14180,7 @@
     class function unchecked_narrow(para1: OOCObject): OOPInterceptorCurrent; static; overload;
   end;
 
-  OOPDISCARDING = interface external 'org.omg.PortableInterceptor' name 'DISCARDING' 
+  OOPDISCARDING = interface external 'org.omg.PortableInterceptor' name 'DISCARDING'
     const
       value = 2;
   end;
@@ -14196,17 +14196,17 @@
     class procedure write(para1: OOCPOutputStream; para2: OOPInterceptorForwardRequest); static; overload;
   end;
 
-  OOPHOLDING = interface external 'org.omg.PortableInterceptor' name 'HOLDING' 
+  OOPHOLDING = interface external 'org.omg.PortableInterceptor' name 'HOLDING'
     const
       value = 0;
   end;
 
-  OOPINACTIVE = interface external 'org.omg.PortableInterceptor' name 'INACTIVE' 
+  OOPINACTIVE = interface external 'org.omg.PortableInterceptor' name 'INACTIVE'
     const
       value = 3;
   end;
 
-  OOPIORInfoOperations = interface external 'org.omg.PortableInterceptor' name 'IORInfoOperations' 
+  OOPIORInfoOperations = interface external 'org.omg.PortableInterceptor' name 'IORInfoOperations'
     function get_effective_policy(para1: jint): OOCPolicy; overload;
     procedure add_ior_component(para1: OOITaggedComponent); overload;
     procedure add_ior_component_to_profile(para1: OOITaggedComponent; para2: jint); overload;
@@ -14230,7 +14230,7 @@
     class function unchecked_narrow(para1: OOCObject): OOPIORInterceptor_3_0; static; overload;
   end;
 
-  OOPInterceptorOperations = interface external 'org.omg.PortableInterceptor' name 'InterceptorOperations' 
+  OOPInterceptorOperations = interface external 'org.omg.PortableInterceptor' name 'InterceptorOperations'
     function name(): JLString; overload;
     procedure destroy(); overload;
   end;
@@ -14246,12 +14246,12 @@
     class procedure write(para1: OOCPOutputStream; para2: OOPInvalidSlot); static; overload;
   end;
 
-  OOPLOCATION_FORWARD = interface external 'org.omg.PortableInterceptor' name 'LOCATION_FORWARD' 
+  OOPLOCATION_FORWARD = interface external 'org.omg.PortableInterceptor' name 'LOCATION_FORWARD'
     const
       value = 3;
   end;
 
-  OOPNON_EXISTENT = interface external 'org.omg.PortableInterceptor' name 'NON_EXISTENT' 
+  OOPNON_EXISTENT = interface external 'org.omg.PortableInterceptor' name 'NON_EXISTENT'
     const
       value = 4;
   end;
@@ -14267,7 +14267,7 @@
     class procedure write(para1: OOCPOutputStream; para2: JLString); static; overload;
   end;
 
-  OOPORBInitInfoOperations = interface external 'org.omg.PortableInterceptor' name 'ORBInitInfoOperations' 
+  OOPORBInitInfoOperations = interface external 'org.omg.PortableInterceptor' name 'ORBInitInfoOperations'
     function arguments(): Arr1JLString; overload;
     function orb_id(): JLString; overload;
     function codec_factory(): OOICodecFactory; overload;
@@ -14313,7 +14313,7 @@
     class procedure write(para1: OOCPOutputStream; para2: JLString); static; overload;
   end;
 
-  OOPORBInitializerOperations = interface external 'org.omg.PortableInterceptor' name 'ORBInitializerOperations' 
+  OOPORBInitializerOperations = interface external 'org.omg.PortableInterceptor' name 'ORBInitializerOperations'
     procedure pre_init(para1: OOPORBInitInfo); overload;
     procedure post_init(para1: OOPORBInitInfo); overload;
   end;
@@ -14366,11 +14366,11 @@
     class procedure write(para1: OOCPOutputStream; var para2: array of OOPObjectReferenceTemplate); static; overload;
   end;
 
-  OOPPolicyFactoryOperations = interface external 'org.omg.PortableInterceptor' name 'PolicyFactoryOperations' 
+  OOPPolicyFactoryOperations = interface external 'org.omg.PortableInterceptor' name 'PolicyFactoryOperations'
     function create_policy(para1: jint; para2: OOCAny): OOCPolicy; overload;  // throws org.omg.CORBA.PolicyError
   end;
 
-  OOPRequestInfoOperations = interface external 'org.omg.PortableInterceptor' name 'RequestInfoOperations' 
+  OOPRequestInfoOperations = interface external 'org.omg.PortableInterceptor' name 'RequestInfoOperations'
     function request_id(): jint; overload;
     function operation(): JLString; overload;
     function arguments(): Arr1OODParameter; overload;
@@ -14387,12 +14387,12 @@
     function get_reply_service_context(para1: jint): OOIServiceContext; overload;
   end;
 
-  OOPSUCCESSFUL = interface external 'org.omg.PortableInterceptor' name 'SUCCESSFUL' 
+  OOPSUCCESSFUL = interface external 'org.omg.PortableInterceptor' name 'SUCCESSFUL'
     const
       value = 0;
   end;
 
-  OOPSYSTEM_EXCEPTION = interface external 'org.omg.PortableInterceptor' name 'SYSTEM_EXCEPTION' 
+  OOPSYSTEM_EXCEPTION = interface external 'org.omg.PortableInterceptor' name 'SYSTEM_EXCEPTION'
     const
       value = 1;
   end;
@@ -14408,17 +14408,17 @@
     class procedure write(para1: OOCPOutputStream; para2: JLString); static; overload;
   end;
 
-  OOPTRANSPORT_RETRY = interface external 'org.omg.PortableInterceptor' name 'TRANSPORT_RETRY' 
+  OOPTRANSPORT_RETRY = interface external 'org.omg.PortableInterceptor' name 'TRANSPORT_RETRY'
     const
       value = 4;
   end;
 
-  OOPUSER_EXCEPTION = interface external 'org.omg.PortableInterceptor' name 'USER_EXCEPTION' 
+  OOPUSER_EXCEPTION = interface external 'org.omg.PortableInterceptor' name 'USER_EXCEPTION'
     const
       value = 2;
   end;
 
-  OOPAdapterActivatorOperations = interface external 'org.omg.PortableServer' name 'AdapterActivatorOperations' 
+  OOPAdapterActivatorOperations = interface external 'org.omg.PortableServer' name 'AdapterActivatorOperations'
     function unknown_adapter(para1: OOPPOA; para2: JLString): jboolean; overload;
   end;
 
@@ -14456,22 +14456,22 @@
     class procedure write(para1: OOCPOutputStream; para2: OOPServerForwardRequest); static; overload;
   end;
 
-  OOPID_ASSIGNMENT_POLICY_ID = interface external 'org.omg.PortableServer' name 'ID_ASSIGNMENT_POLICY_ID' 
+  OOPID_ASSIGNMENT_POLICY_ID = interface external 'org.omg.PortableServer' name 'ID_ASSIGNMENT_POLICY_ID'
     const
       value = 19;
   end;
 
-  OOPID_UNIQUENESS_POLICY_ID = interface external 'org.omg.PortableServer' name 'ID_UNIQUENESS_POLICY_ID' 
+  OOPID_UNIQUENESS_POLICY_ID = interface external 'org.omg.PortableServer' name 'ID_UNIQUENESS_POLICY_ID'
     const
       value = 18;
   end;
 
-  OOPIMPLICIT_ACTIVATION_POLICY_ID = interface external 'org.omg.PortableServer' name 'IMPLICIT_ACTIVATION_POLICY_ID' 
+  OOPIMPLICIT_ACTIVATION_POLICY_ID = interface external 'org.omg.PortableServer' name 'IMPLICIT_ACTIVATION_POLICY_ID'
     const
       value = 20;
   end;
 
-  OOPLIFESPAN_POLICY_ID = interface external 'org.omg.PortableServer' name 'LIFESPAN_POLICY_ID' 
+  OOPLIFESPAN_POLICY_ID = interface external 'org.omg.PortableServer' name 'LIFESPAN_POLICY_ID'
     const
       value = 17;
   end;
@@ -14488,7 +14488,7 @@
     class function narrow(para1: OOCObject): OOPPOA; static; overload;
   end;
 
-  OOPPOAManagerOperations = interface external 'org.omg.PortableServer' name 'POAManagerOperations' 
+  OOPPOAManagerOperations = interface external 'org.omg.PortableServer' name 'POAManagerOperations'
     procedure activate(); overload;  // throws org.omg.PortableServer.POAManagerPackage.AdapterInactive
     procedure hold_requests(para1: jboolean); overload;  // throws org.omg.PortableServer.POAManagerPackage.AdapterInactive
     procedure discard_requests(para1: jboolean); overload;  // throws org.omg.PortableServer.POAManagerPackage.AdapterInactive
@@ -14507,7 +14507,7 @@
     class procedure write(para1: OOCPOutputStream; para2: OOPPAdapterInactive); static; overload;
   end;
 
-  OOPPOAOperations = interface external 'org.omg.PortableServer' name 'POAOperations' 
+  OOPPOAOperations = interface external 'org.omg.PortableServer' name 'POAOperations'
     function create_POA(para1: JLString; para2: OOPPOAManager; para3: Arr1OOCPolicy): OOPPOA; overload;  // throws org.omg.PortableServer.POAPackage.AdapterAlreadyExists, org.omg.PortableServer.POAPackage.InvalidPolicy
     function create_POA(para1: JLString; para2: OOPPOAManager; var para3: array of OOCPolicy): OOPPOA; overload;  // throws org.omg.PortableServer.POAPackage.AdapterAlreadyExists, org.omg.PortableServer.POAPackage.InvalidPolicy
     function find_POA(para1: JLString; para2: jboolean): OOPPOA; overload;  // throws org.omg.PortableServer.POAPackage.AdapterNonExistent
@@ -14658,12 +14658,12 @@
     class procedure write(para1: OOCPOutputStream; para2: OOPPWrongPolicy); static; overload;
   end;
 
-  OOPREQUEST_PROCESSING_POLICY_ID = interface external 'org.omg.PortableServer' name 'REQUEST_PROCESSING_POLICY_ID' 
+  OOPREQUEST_PROCESSING_POLICY_ID = interface external 'org.omg.PortableServer' name 'REQUEST_PROCESSING_POLICY_ID'
     const
       value = 22;
   end;
 
-  OOPSERVANT_RETENTION_POLICY_ID = interface external 'org.omg.PortableServer' name 'SERVANT_RETENTION_POLICY_ID' 
+  OOPSERVANT_RETENTION_POLICY_ID = interface external 'org.omg.PortableServer' name 'SERVANT_RETENTION_POLICY_ID'
     const
       value = 21;
   end;
@@ -14712,15 +14712,15 @@
     class function unchecked_narrow(para1: OOCObject): OOPServantLocator; static; overload;
   end;
 
-  OOPServantManagerOperations = interface external 'org.omg.PortableServer' name 'ServantManagerOperations' 
+  OOPServantManagerOperations = interface external 'org.omg.PortableServer' name 'ServantManagerOperations'
   end;
 
-  OOPTHREAD_POLICY_ID = interface external 'org.omg.PortableServer' name 'THREAD_POLICY_ID' 
+  OOPTHREAD_POLICY_ID = interface external 'org.omg.PortableServer' name 'THREAD_POLICY_ID'
     const
       value = 16;
   end;
 
-  OOPPDelegate = interface external 'org.omg.PortableServer.portable' name 'Delegate' 
+  OOPPDelegate = interface external 'org.omg.PortableServer.portable' name 'Delegate'
     function orb(para1: OOPServant): OOCORB; overload;
     function this_object(para1: OOPServant): OOCObject; overload;
     function poa(para1: OOPServant): OOPPOA; overload;
@@ -14731,17 +14731,17 @@
     function get_interface_def(para1: OOPServant): OOCObject; overload;
   end;
 
-  OOSRunTimeOperations = interface external 'org.omg.SendingContext' name 'RunTimeOperations' 
+  OOSRunTimeOperations = interface external 'org.omg.SendingContext' name 'RunTimeOperations'
   end;
 
-  OWDDOMConfiguration = interface external 'org.w3c.dom' name 'DOMConfiguration' 
+  OWDDOMConfiguration = interface external 'org.w3c.dom' name 'DOMConfiguration'
     procedure setParameter(para1: JLString; para2: JLObject); overload;  // throws org.w3c.dom.DOMException
     function getParameter(para1: JLString): JLObject; overload;  // throws org.w3c.dom.DOMException
     function canSetParameter(para1: JLString; para2: JLObject): jboolean; overload;
     function getParameterNames(): OWDDOMStringList; overload;
   end;
 
-  OWDDOMError = interface external 'org.w3c.dom' name 'DOMError' 
+  OWDDOMError = interface external 'org.w3c.dom' name 'DOMError'
     const
       SEVERITY_WARNING = 1;
       SEVERITY_ERROR = 2;
@@ -14754,28 +14754,28 @@
     function getLocation(): OWDDOMLocator; overload;
   end;
 
-  OWDDOMErrorHandler = interface external 'org.w3c.dom' name 'DOMErrorHandler' 
+  OWDDOMErrorHandler = interface external 'org.w3c.dom' name 'DOMErrorHandler'
     function handleError(para1: OWDDOMError): jboolean; overload;
   end;
 
-  OWDDOMImplementation = interface external 'org.w3c.dom' name 'DOMImplementation' 
+  OWDDOMImplementation = interface external 'org.w3c.dom' name 'DOMImplementation'
     function hasFeature(para1: JLString; para2: JLString): jboolean; overload;
     function createDocumentType(para1: JLString; para2: JLString; para3: JLString): OWDDocumentType; overload;  // throws org.w3c.dom.DOMException
     function createDocument(para1: JLString; para2: JLString; para3: OWDDocumentType): OWDDocument; overload;  // throws org.w3c.dom.DOMException
     function getFeature(para1: JLString; para2: JLString): JLObject; overload;
   end;
 
-  OWDDOMImplementationList = interface external 'org.w3c.dom' name 'DOMImplementationList' 
+  OWDDOMImplementationList = interface external 'org.w3c.dom' name 'DOMImplementationList'
     function item(para1: jint): OWDDOMImplementation; overload;
     function getLength(): jint; overload;
   end;
 
-  OWDDOMImplementationSource = interface external 'org.w3c.dom' name 'DOMImplementationSource' 
+  OWDDOMImplementationSource = interface external 'org.w3c.dom' name 'DOMImplementationSource'
     function getDOMImplementation(para1: JLString): OWDDOMImplementation; overload;
     function getDOMImplementationList(para1: JLString): OWDDOMImplementationList; overload;
   end;
 
-  OWDDOMLocator = interface external 'org.w3c.dom' name 'DOMLocator' 
+  OWDDOMLocator = interface external 'org.w3c.dom' name 'DOMLocator'
     function getLineNumber(): jint; overload;
     function getColumnNumber(): jint; overload;
     function getByteOffset(): jint; overload;
@@ -14784,13 +14784,13 @@
     function getUri(): JLString; overload;
   end;
 
-  OWDDOMStringList = interface external 'org.w3c.dom' name 'DOMStringList' 
+  OWDDOMStringList = interface external 'org.w3c.dom' name 'DOMStringList'
     function item(para1: jint): JLString; overload;
     function getLength(): jint; overload;
     function contains(para1: JLString): jboolean; overload;
   end;
 
-  OWDNameList = interface external 'org.w3c.dom' name 'NameList' 
+  OWDNameList = interface external 'org.w3c.dom' name 'NameList'
     function getName(para1: jint): JLString; overload;
     function getNamespaceURI(para1: jint): JLString; overload;
     function getLength(): jint; overload;
@@ -14798,7 +14798,7 @@
     function containsNS(para1: JLString; para2: JLString): jboolean; overload;
   end;
 
-  OWDNamedNodeMap = interface external 'org.w3c.dom' name 'NamedNodeMap' 
+  OWDNamedNodeMap = interface external 'org.w3c.dom' name 'NamedNodeMap'
     function getNamedItem(para1: JLString): OWDNode; overload;
     function setNamedItem(para1: OWDNode): OWDNode; overload;  // throws org.w3c.dom.DOMException
     function removeNamedItem(para1: JLString): OWDNode; overload;  // throws org.w3c.dom.DOMException
@@ -14809,7 +14809,7 @@
     function removeNamedItemNS(para1: JLString; para2: JLString): OWDNode; overload;  // throws org.w3c.dom.DOMException
   end;
 
-  OWDNode = interface external 'org.w3c.dom' name 'Node' 
+  OWDNode = interface external 'org.w3c.dom' name 'Node'
     const
       ELEMENT_NODE = 1;
       ATTRIBUTE_NODE = 2;
@@ -14868,12 +14868,12 @@
     function getUserData(para1: JLString): JLObject; overload;
   end;
 
-  OWDNodeList = interface external 'org.w3c.dom' name 'NodeList' 
+  OWDNodeList = interface external 'org.w3c.dom' name 'NodeList'
     function item(para1: jint): OWDNode; overload;
     function getLength(): jint; overload;
   end;
 
-  OWDTypeInfo = interface external 'org.w3c.dom' name 'TypeInfo' 
+  OWDTypeInfo = interface external 'org.w3c.dom' name 'TypeInfo'
     const
       DERIVATION_RESTRICTION = 1;
       DERIVATION_EXTENSION = 2;
@@ -14884,7 +14884,7 @@
     function isDerivedFrom(para1: JLString; para2: JLString; para3: jint): jboolean; overload;
   end;
 
-  OWDUserDataHandler = interface external 'org.w3c.dom' name 'UserDataHandler' 
+  OWDUserDataHandler = interface external 'org.w3c.dom' name 'UserDataHandler'
     const
       NODE_CLONED = 1;
       NODE_IMPORTED = 2;
@@ -14905,7 +14905,7 @@
     procedure addSource(para1: OWDDOMImplementationSource); overload; virtual;
   end;
 
-  OWDCCSS2Properties = interface external 'org.w3c.dom.css' name 'CSS2Properties' 
+  OWDCCSS2Properties = interface external 'org.w3c.dom.css' name 'CSS2Properties'
     function getAzimuth(): JLString; overload;
     procedure setAzimuth(para1: JLString); overload;  // throws org.w3c.dom.DOMException
     function getBackground(): JLString; overload;
@@ -15152,7 +15152,7 @@
     procedure setZIndex(para1: JLString); overload;  // throws org.w3c.dom.DOMException
   end;
 
-  OWDCCSSRule = interface external 'org.w3c.dom.css' name 'CSSRule' 
+  OWDCCSSRule = interface external 'org.w3c.dom.css' name 'CSSRule'
     const
       UNKNOWN_RULE = 0;
       STYLE_RULE = 1;
@@ -15168,12 +15168,12 @@
     function getParentRule(): OWDCCSSRule; overload;
   end;
 
-  OWDCCSSRuleList = interface external 'org.w3c.dom.css' name 'CSSRuleList' 
+  OWDCCSSRuleList = interface external 'org.w3c.dom.css' name 'CSSRuleList'
     function getLength(): jint; overload;
     function item(para1: jint): OWDCCSSRule; overload;
   end;
 
-  OWDCCSSStyleDeclaration = interface external 'org.w3c.dom.css' name 'CSSStyleDeclaration' 
+  OWDCCSSStyleDeclaration = interface external 'org.w3c.dom.css' name 'CSSStyleDeclaration'
     function getCssText(): JLString; overload;
     procedure setCssText(para1: JLString); overload;  // throws org.w3c.dom.DOMException
     function getPropertyValue(para1: JLString): JLString; overload;
@@ -15186,7 +15186,7 @@
     function getParentRule(): OWDCCSSRule; overload;
   end;
 
-  OWDCCSSValue = interface external 'org.w3c.dom.css' name 'CSSValue' 
+  OWDCCSSValue = interface external 'org.w3c.dom.css' name 'CSSValue'
     const
       CSS_INHERIT = 0;
       CSS_PRIMITIVE_VALUE = 1;
@@ -15197,34 +15197,34 @@
     function getCssValueType(): jshort; overload;
   end;
 
-  OWDCCounter = interface external 'org.w3c.dom.css' name 'Counter' 
+  OWDCCounter = interface external 'org.w3c.dom.css' name 'Counter'
     function getIdentifier(): JLString; overload;
     function getListStyle(): JLString; overload;
     function getSeparator(): JLString; overload;
   end;
 
-  OWDCElementCSSInlineStyle = interface external 'org.w3c.dom.css' name 'ElementCSSInlineStyle' 
+  OWDCElementCSSInlineStyle = interface external 'org.w3c.dom.css' name 'ElementCSSInlineStyle'
     function getStyle(): OWDCCSSStyleDeclaration; overload;
   end;
 
-  OWDCRGBColor = interface external 'org.w3c.dom.css' name 'RGBColor' 
+  OWDCRGBColor = interface external 'org.w3c.dom.css' name 'RGBColor'
     function getRed(): OWDCCSSPrimitiveValue; overload;
     function getGreen(): OWDCCSSPrimitiveValue; overload;
     function getBlue(): OWDCCSSPrimitiveValue; overload;
   end;
 
-  OWDCRect = interface external 'org.w3c.dom.css' name 'Rect' 
+  OWDCRect = interface external 'org.w3c.dom.css' name 'Rect'
     function getTop(): OWDCCSSPrimitiveValue; overload;
     function getRight(): OWDCCSSPrimitiveValue; overload;
     function getBottom(): OWDCCSSPrimitiveValue; overload;
     function getLeft(): OWDCCSSPrimitiveValue; overload;
   end;
 
-  OWDEDocumentEvent = interface external 'org.w3c.dom.events' name 'DocumentEvent' 
+  OWDEDocumentEvent = interface external 'org.w3c.dom.events' name 'DocumentEvent'
     function createEvent(para1: JLString): OWDEEvent; overload;  // throws org.w3c.dom.DOMException
   end;
 
-  OWDEEvent = interface external 'org.w3c.dom.events' name 'Event' 
+  OWDEEvent = interface external 'org.w3c.dom.events' name 'Event'
     const
       CAPTURING_PHASE = 1;
       AT_TARGET = 2;
@@ -15241,23 +15241,23 @@
     procedure initEvent(para1: JLString; para2: jboolean; para3: jboolean); overload;
   end;
 
-  OWDEEventListener = interface external 'org.w3c.dom.events' name 'EventListener' 
+  OWDEEventListener = interface external 'org.w3c.dom.events' name 'EventListener'
     procedure handleEvent(para1: OWDEEvent); overload;
   end;
 
-  OWDEEventTarget = interface external 'org.w3c.dom.events' name 'EventTarget' 
+  OWDEEventTarget = interface external 'org.w3c.dom.events' name 'EventTarget'
     procedure addEventListener(para1: JLString; para2: OWDEEventListener; para3: jboolean); overload;
     procedure removeEventListener(para1: JLString; para2: OWDEEventListener; para3: jboolean); overload;
     function dispatchEvent(para1: OWDEEvent): jboolean; overload;  // throws org.w3c.dom.events.EventException
   end;
 
-  OWDHHTMLCollection = interface external 'org.w3c.dom.html' name 'HTMLCollection' 
+  OWDHHTMLCollection = interface external 'org.w3c.dom.html' name 'HTMLCollection'
     function getLength(): jint; overload;
     function item(para1: jint): OWDNode; overload;
     function namedItem(para1: JLString): OWDNode; overload;
   end;
 
-  OWDLDOMImplementationLS = interface external 'org.w3c.dom.ls' name 'DOMImplementationLS' 
+  OWDLDOMImplementationLS = interface external 'org.w3c.dom.ls' name 'DOMImplementationLS'
     const
       MODE_SYNCHRONOUS = 1;
       MODE_ASYNCHRONOUS = 2;
@@ -15267,7 +15267,7 @@
     function createLSOutput(): OWDLLSOutput; overload;
   end;
 
-  OWDLLSInput = interface external 'org.w3c.dom.ls' name 'LSInput' 
+  OWDLLSInput = interface external 'org.w3c.dom.ls' name 'LSInput'
     function getCharacterStream(): JIReader; overload;
     procedure setCharacterStream(para1: JIReader); overload;
     function getByteStream(): JIInputStream; overload;
@@ -15286,7 +15286,7 @@
     procedure setCertifiedText(para1: jboolean); overload;
   end;
 
-  OWDLLSOutput = interface external 'org.w3c.dom.ls' name 'LSOutput' 
+  OWDLLSOutput = interface external 'org.w3c.dom.ls' name 'LSOutput'
     function getCharacterStream(): JIWriter; overload;
     procedure setCharacterStream(para1: JIWriter); overload;
     function getByteStream(): JIOutputStream; overload;
@@ -15297,7 +15297,7 @@
     procedure setEncoding(para1: JLString); overload;
   end;
 
-  OWDLLSParser = interface external 'org.w3c.dom.ls' name 'LSParser' 
+  OWDLLSParser = interface external 'org.w3c.dom.ls' name 'LSParser'
     const
       ACTION_APPEND_AS_CHILDREN = 1;
       ACTION_REPLACE_CHILDREN = 2;
@@ -15315,7 +15315,7 @@
     procedure abort(); overload;
   end;
 
-  OWDLLSParserFilter = interface external 'org.w3c.dom.ls' name 'LSParserFilter' 
+  OWDLLSParserFilter = interface external 'org.w3c.dom.ls' name 'LSParserFilter'
     const
       FILTER_ACCEPT = 1;
       FILTER_REJECT = 2;
@@ -15326,11 +15326,11 @@
     function getWhatToShow(): jint; overload;
   end;
 
-  OWDLLSResourceResolver = interface external 'org.w3c.dom.ls' name 'LSResourceResolver' 
+  OWDLLSResourceResolver = interface external 'org.w3c.dom.ls' name 'LSResourceResolver'
     function resolveResource(para1: JLString; para2: JLString; para3: JLString; para4: JLString; para5: JLString): OWDLLSInput; overload;
   end;
 
-  OWDLLSSerializer = interface external 'org.w3c.dom.ls' name 'LSSerializer' 
+  OWDLLSSerializer = interface external 'org.w3c.dom.ls' name 'LSSerializer'
     function getDomConfig(): OWDDOMConfiguration; overload;
     function getNewLine(): JLString; overload;
     procedure setNewLine(para1: JLString); overload;
@@ -15341,11 +15341,11 @@
     function writeToString(para1: OWDNode): JLString; overload;  // throws org.w3c.dom.DOMException, org.w3c.dom.ls.LSException
   end;
 
-  OWDRDocumentRange = interface external 'org.w3c.dom.ranges' name 'DocumentRange' 
+  OWDRDocumentRange = interface external 'org.w3c.dom.ranges' name 'DocumentRange'
     function createRange(): OWDRRange; overload;
   end;
 
-  OWDRRange = interface external 'org.w3c.dom.ranges' name 'Range' 
+  OWDRRange = interface external 'org.w3c.dom.ranges' name 'Range'
     const
       START_TO_START = 0;
       START_TO_END = 1;
@@ -15377,15 +15377,15 @@
     procedure detach(); overload;  // throws org.w3c.dom.DOMException
   end;
 
-  OWDSDocumentStyle = interface external 'org.w3c.dom.stylesheets' name 'DocumentStyle' 
+  OWDSDocumentStyle = interface external 'org.w3c.dom.stylesheets' name 'DocumentStyle'
     function getStyleSheets(): OWDSStyleSheetList; overload;
   end;
 
-  OWDSLinkStyle = interface external 'org.w3c.dom.stylesheets' name 'LinkStyle' 
+  OWDSLinkStyle = interface external 'org.w3c.dom.stylesheets' name 'LinkStyle'
     function getSheet(): OWDSStyleSheet; overload;
   end;
 
-  OWDSMediaList = interface external 'org.w3c.dom.stylesheets' name 'MediaList' 
+  OWDSMediaList = interface external 'org.w3c.dom.stylesheets' name 'MediaList'
     function getMediaText(): JLString; overload;
     procedure setMediaText(para1: JLString); overload;  // throws org.w3c.dom.DOMException
     function getLength(): jint; overload;
@@ -15394,7 +15394,7 @@
     procedure appendMedium(para1: JLString); overload;  // throws org.w3c.dom.DOMException
   end;
 
-  OWDSStyleSheet = interface external 'org.w3c.dom.stylesheets' name 'StyleSheet' 
+  OWDSStyleSheet = interface external 'org.w3c.dom.stylesheets' name 'StyleSheet'
     function getType(): JLString; overload;
     function getDisabled(): jboolean; overload;
     procedure setDisabled(para1: jboolean); overload;
@@ -15405,17 +15405,17 @@
     function getMedia(): OWDSMediaList; overload;
   end;
 
-  OWDSStyleSheetList = interface external 'org.w3c.dom.stylesheets' name 'StyleSheetList' 
+  OWDSStyleSheetList = interface external 'org.w3c.dom.stylesheets' name 'StyleSheetList'
     function getLength(): jint; overload;
     function item(para1: jint): OWDSStyleSheet; overload;
   end;
 
-  OWDTDocumentTraversal = interface external 'org.w3c.dom.traversal' name 'DocumentTraversal' 
+  OWDTDocumentTraversal = interface external 'org.w3c.dom.traversal' name 'DocumentTraversal'
     function createNodeIterator(para1: OWDNode; para2: jint; para3: OWDTNodeFilter; para4: jboolean): OWDTNodeIterator; overload;  // throws org.w3c.dom.DOMException
     function createTreeWalker(para1: OWDNode; para2: jint; para3: OWDTNodeFilter; para4: jboolean): OWDTTreeWalker; overload;  // throws org.w3c.dom.DOMException
   end;
 
-  OWDTNodeFilter = interface external 'org.w3c.dom.traversal' name 'NodeFilter' 
+  OWDTNodeFilter = interface external 'org.w3c.dom.traversal' name 'NodeFilter'
     const
       FILTER_ACCEPT = 1;
       FILTER_REJECT = 2;
@@ -15436,7 +15436,7 @@
     function acceptNode(para1: OWDNode): jshort; overload;
   end;
 
-  OWDTNodeIterator = interface external 'org.w3c.dom.traversal' name 'NodeIterator' 
+  OWDTNodeIterator = interface external 'org.w3c.dom.traversal' name 'NodeIterator'
     function getRoot(): OWDNode; overload;
     function getWhatToShow(): jint; overload;
     function getFilter(): OWDTNodeFilter; overload;
@@ -15446,7 +15446,7 @@
     procedure detach(); overload;
   end;
 
-  OWDTTreeWalker = interface external 'org.w3c.dom.traversal' name 'TreeWalker' 
+  OWDTTreeWalker = interface external 'org.w3c.dom.traversal' name 'TreeWalker'
     function getRoot(): OWDNode; overload;
     function getWhatToShow(): jint; overload;
     function getFilter(): OWDTNodeFilter; overload;
@@ -15462,29 +15462,29 @@
     function nextNode(): OWDNode; overload;
   end;
 
-  OWDVAbstractView = interface external 'org.w3c.dom.views' name 'AbstractView' 
+  OWDVAbstractView = interface external 'org.w3c.dom.views' name 'AbstractView'
     function getDocument(): OWDVDocumentView; overload;
   end;
 
-  OWDVDocumentView = interface external 'org.w3c.dom.views' name 'DocumentView' 
+  OWDVDocumentView = interface external 'org.w3c.dom.views' name 'DocumentView'
     function getDefaultView(): OWDVAbstractView; overload;
   end;
 
-  OWDXXPathEvaluator = interface external 'org.w3c.dom.xpath' name 'XPathEvaluator' 
+  OWDXXPathEvaluator = interface external 'org.w3c.dom.xpath' name 'XPathEvaluator'
     function createExpression(para1: JLString; para2: OWDXXPathNSResolver): OWDXXPathExpression; overload;  // throws org.w3c.dom.xpath.XPathException, org.w3c.dom.DOMException
     function createNSResolver(para1: OWDNode): OWDXXPathNSResolver; overload;
     function evaluate(para1: JLString; para2: OWDNode; para3: OWDXXPathNSResolver; para4: jshort; para5: JLObject): JLObject; overload;  // throws org.w3c.dom.xpath.XPathException, org.w3c.dom.DOMException
   end;
 
-  OWDXXPathExpression = interface external 'org.w3c.dom.xpath' name 'XPathExpression' 
+  OWDXXPathExpression = interface external 'org.w3c.dom.xpath' name 'XPathExpression'
     function evaluate(para1: OWDNode; para2: jshort; para3: JLObject): JLObject; overload;  // throws org.w3c.dom.xpath.XPathException, org.w3c.dom.DOMException
   end;
 
-  OWDXXPathNSResolver = interface external 'org.w3c.dom.xpath' name 'XPathNSResolver' 
+  OWDXXPathNSResolver = interface external 'org.w3c.dom.xpath' name 'XPathNSResolver'
     function lookupNamespaceURI(para1: JLString): JLString; overload;
   end;
 
-  OWDXXPathResult = interface external 'org.w3c.dom.xpath' name 'XPathResult' 
+  OWDXXPathResult = interface external 'org.w3c.dom.xpath' name 'XPathResult'
     const
       ANY_TYPE = 0;
       NUMBER_TYPE = 1;
@@ -15507,7 +15507,7 @@
     function snapshotItem(para1: jint): OWDNode; overload;  // throws org.w3c.dom.xpath.XPathException
   end;
 
-  OXSAttributeList = interface external 'org.xml.sax' name 'AttributeList' 
+  OXSAttributeList = interface external 'org.xml.sax' name 'AttributeList'
     function getLength(): jint; overload;
     function getName(para1: jint): JLString; overload;
     function getType(para1: jint): JLString; overload;
@@ -15516,7 +15516,7 @@
     function getValue(para1: JLString): JLString; overload;
   end;
 
-  OXSAttributes = interface external 'org.xml.sax' name 'Attributes' 
+  OXSAttributes = interface external 'org.xml.sax' name 'Attributes'
     function getLength(): jint; overload;
     function getURI(para1: jint): JLString; overload;
     function getLocalName(para1: jint): JLString; overload;
@@ -15531,7 +15531,7 @@
     function getValue(para1: JLString): JLString; overload;
   end;
 
-  OXSContentHandler = interface external 'org.xml.sax' name 'ContentHandler' 
+  OXSContentHandler = interface external 'org.xml.sax' name 'ContentHandler'
     procedure setDocumentLocator(para1: OXSLocator); overload;
     procedure startDocument(); overload;  // throws org.xml.sax.SAXException
     procedure endDocument(); overload;  // throws org.xml.sax.SAXException
@@ -15547,12 +15547,12 @@
     procedure skippedEntity(para1: JLString); overload;  // throws org.xml.sax.SAXException
   end;
 
-  OXSDTDHandler = interface external 'org.xml.sax' name 'DTDHandler' 
+  OXSDTDHandler = interface external 'org.xml.sax' name 'DTDHandler'
     procedure notationDecl(para1: JLString; para2: JLString; para3: JLString); overload;  // throws org.xml.sax.SAXException
     procedure unparsedEntityDecl(para1: JLString; para2: JLString; para3: JLString; para4: JLString); overload;  // throws org.xml.sax.SAXException
   end;
 
-  OXSDocumentHandler = interface external 'org.xml.sax' name 'DocumentHandler' 
+  OXSDocumentHandler = interface external 'org.xml.sax' name 'DocumentHandler'
     procedure setDocumentLocator(para1: OXSLocator); overload;
     procedure startDocument(); overload;  // throws org.xml.sax.SAXException
     procedure endDocument(); overload;  // throws org.xml.sax.SAXException
@@ -15565,11 +15565,11 @@
     procedure processingInstruction(para1: JLString; para2: JLString); overload;  // throws org.xml.sax.SAXException
   end;
 
-  OXSEntityResolver = interface external 'org.xml.sax' name 'EntityResolver' 
+  OXSEntityResolver = interface external 'org.xml.sax' name 'EntityResolver'
     function resolveEntity(para1: JLString; para2: JLString): OXSInputSource; overload;  // throws org.xml.sax.SAXException, java.io.IOException
   end;
 
-  OXSErrorHandler = interface external 'org.xml.sax' name 'ErrorHandler' 
+  OXSErrorHandler = interface external 'org.xml.sax' name 'ErrorHandler'
     procedure warning(para1: OXSSAXParseException); overload;  // throws org.xml.sax.SAXException
     procedure error(para1: OXSSAXParseException); overload;  // throws org.xml.sax.SAXException
     procedure fatalError(para1: OXSSAXParseException); overload;  // throws org.xml.sax.SAXException
@@ -15593,14 +15593,14 @@
     function getCharacterStream(): JIReader; overload; virtual;
   end;
 
-  OXSLocator = interface external 'org.xml.sax' name 'Locator' 
+  OXSLocator = interface external 'org.xml.sax' name 'Locator'
     function getPublicId(): JLString; overload;
     function getSystemId(): JLString; overload;
     function getLineNumber(): jint; overload;
     function getColumnNumber(): jint; overload;
   end;
 
-  OXSParser = interface external 'org.xml.sax' name 'Parser' 
+  OXSParser = interface external 'org.xml.sax' name 'Parser'
     procedure setLocale(para1: JULocale); overload;  // throws org.xml.sax.SAXException
     procedure setEntityResolver(para1: OXSEntityResolver); overload;
     procedure setDTDHandler(para1: OXSDTDHandler); overload;
@@ -15610,7 +15610,7 @@
     procedure parse(para1: JLString); overload;  // throws org.xml.sax.SAXException, java.io.IOException
   end;
 
-  OXSXMLReader = interface external 'org.xml.sax' name 'XMLReader' 
+  OXSXMLReader = interface external 'org.xml.sax' name 'XMLReader'
     function getFeature(para1: JLString): jboolean; overload;  // throws org.xml.sax.SAXNotRecognizedException, org.xml.sax.SAXNotSupportedException
     procedure setFeature(para1: JLString; para2: jboolean); overload;  // throws org.xml.sax.SAXNotRecognizedException, org.xml.sax.SAXNotSupportedException
     function getProperty(para1: JLString): JLObject; overload;  // throws org.xml.sax.SAXNotRecognizedException, org.xml.sax.SAXNotSupportedException
@@ -15627,14 +15627,14 @@
     procedure parse(para1: JLString); overload;  // throws java.io.IOException, org.xml.sax.SAXException
   end;
 
-  OXSEDeclHandler = interface external 'org.xml.sax.ext' name 'DeclHandler' 
+  OXSEDeclHandler = interface external 'org.xml.sax.ext' name 'DeclHandler'
     procedure elementDecl(para1: JLString; para2: JLString); overload;  // throws org.xml.sax.SAXException
     procedure attributeDecl(para1: JLString; para2: JLString; para3: JLString; para4: JLString; para5: JLString); overload;  // throws org.xml.sax.SAXException
     procedure internalEntityDecl(para1: JLString; para2: JLString); overload;  // throws org.xml.sax.SAXException
     procedure externalEntityDecl(para1: JLString; para2: JLString; para3: JLString); overload;  // throws org.xml.sax.SAXException
   end;
 
-  OXSELexicalHandler = interface external 'org.xml.sax.ext' name 'LexicalHandler' 
+  OXSELexicalHandler = interface external 'org.xml.sax.ext' name 'LexicalHandler'
     procedure startDTD(para1: JLString; para2: JLString; para3: JLString); overload;  // throws org.xml.sax.SAXException
     procedure endDTD(); overload;  // throws org.xml.sax.SAXException
     procedure startEntity(para1: JLString); overload;  // throws org.xml.sax.SAXException
@@ -15652,7 +15652,7 @@
       Arr1InnerContext = array of InnerContext;
       Arr2InnerContext = array of Arr1InnerContext;
       Arr3InnerContext = array of Arr2InnerContext;
-      InnerContext = class sealed external 'org.xml.sax.helpers' name 'Context' 
+      InnerContext = class sealed external 'org.xml.sax.helpers' name 'Context'
       end;
 
   public
@@ -16458,7 +16458,7 @@
       Arr1InnerCursorDisposer = array of InnerCursorDisposer;
       Arr2InnerCursorDisposer = array of Arr1InnerCursorDisposer;
       Arr3InnerCursorDisposer = array of Arr2InnerCursorDisposer;
-      InnerCursorDisposer = class external 'java.awt' name 'CursorDisposer' 
+      InnerCursorDisposer = class external 'java.awt' name 'CursorDisposer'
       end;
 
   public
@@ -16688,7 +16688,7 @@
       Arr1InnerAccessibleAWTMenuComponent = array of InnerAccessibleAWTMenuComponent;
       Arr2InnerAccessibleAWTMenuComponent = array of Arr1InnerAccessibleAWTMenuComponent;
       Arr3InnerAccessibleAWTMenuComponent = array of Arr2InnerAccessibleAWTMenuComponent;
-      InnerAccessibleAWTMenuComponent = class abstract external 'java.awt' name 'AccessibleAWTMenuComponent' 
+      InnerAccessibleAWTMenuComponent = class abstract external 'java.awt' name 'AccessibleAWTMenuComponent'
       end;
 
   public
@@ -16996,7 +16996,7 @@
       Arr1InnerTransferableProxy = array of InnerTransferableProxy;
       Arr2InnerTransferableProxy = array of Arr1InnerTransferableProxy;
       Arr3InnerTransferableProxy = array of Arr2InnerTransferableProxy;
-      InnerTransferableProxy = class external 'java.awt.dnd' name 'TransferableProxy' 
+      InnerTransferableProxy = class external 'java.awt.dnd' name 'TransferableProxy'
       end;
 
   public
@@ -17142,25 +17142,25 @@
       Arr1InnerWeakClassKey = array of InnerWeakClassKey;
       Arr2InnerWeakClassKey = array of Arr1InnerWeakClassKey;
       Arr3InnerWeakClassKey = array of Arr2InnerWeakClassKey;
-      InnerCaches = class external 'java.io' name 'Caches' 
+      InnerCaches = class external 'java.io' name 'Caches'
       end;
 
-      InnerClassDataSlot = class external 'java.io' name 'ClassDataSlot' 
+      InnerClassDataSlot = class external 'java.io' name 'ClassDataSlot'
       end;
 
-      InnerEntryFuture = class external 'java.io' name 'EntryFuture' 
+      InnerEntryFuture = class external 'java.io' name 'EntryFuture'
       end;
 
-      InnerFieldReflector = class external 'java.io' name 'FieldReflector' 
+      InnerFieldReflector = class external 'java.io' name 'FieldReflector'
       end;
 
-      InnerMemberSignature = class external 'java.io' name 'MemberSignature' 
+      InnerMemberSignature = class external 'java.io' name 'MemberSignature'
       end;
 
-      InnerFieldReflectorKey = class external 'java.io' name 'FieldReflectorKey' 
+      InnerFieldReflectorKey = class external 'java.io' name 'FieldReflectorKey'
       end;
 
-      InnerWeakClassKey = class external 'java.io' name 'WeakClassKey' 
+      InnerWeakClassKey = class external 'java.io' name 'WeakClassKey'
       end;
 
   public
@@ -17238,22 +17238,22 @@
       Arr1InnerType = array of InnerType;
       Arr2InnerType = array of Arr1InnerType;
       Arr3InnerType = array of Arr2InnerType;
-      InnerCacheEntry = class sealed external 'java.net' name 'CacheEntry' 
+      InnerCacheEntry = class sealed external 'java.net' name 'CacheEntry'
       end;
 
-      InnerCache = class sealed external 'java.net' name 'Cache' 
+      InnerCache = class sealed external 'java.net' name 'Cache'
       public
         type
           InnerType = class;
           Arr1InnerType = array of InnerType;
           Arr2InnerType = array of Arr1InnerType;
           Arr3InnerType = array of Arr2InnerType;
-          InnerType = class sealed external 'java.net' name 'Type' 
+          InnerType = class sealed external 'java.net' name 'Type'
           end;
 
       end;
 
-      InnerType = class sealed external 'java.net' name 'Type' 
+      InnerType = class sealed external 'java.net' name 'Type'
       end;
 
   public
@@ -17338,10 +17338,10 @@
       Arr1InnerMarshalledObjectOutputStream = array of InnerMarshalledObjectOutputStream;
       Arr2InnerMarshalledObjectOutputStream = array of Arr1InnerMarshalledObjectOutputStream;
       Arr3InnerMarshalledObjectOutputStream = array of Arr2InnerMarshalledObjectOutputStream;
-      InnerMarshalledObjectInputStream = class external 'java.rmi' name 'MarshalledObjectInputStream' 
+      InnerMarshalledObjectInputStream = class external 'java.rmi' name 'MarshalledObjectInputStream'
       end;
 
-      InnerMarshalledObjectOutputStream = class external 'java.rmi' name 'MarshalledObjectOutputStream' 
+      InnerMarshalledObjectOutputStream = class external 'java.rmi' name 'MarshalledObjectOutputStream'
       end;
 
   public
@@ -17606,7 +17606,7 @@
       Arr1InnerCurrencyNameGetter = array of InnerCurrencyNameGetter;
       Arr2InnerCurrencyNameGetter = array of Arr1InnerCurrencyNameGetter;
       Arr3InnerCurrencyNameGetter = array of Arr2InnerCurrencyNameGetter;
-      InnerCurrencyNameGetter = class external 'java.util' name 'CurrencyNameGetter' 
+      InnerCurrencyNameGetter = class external 'java.util' name 'CurrencyNameGetter'
       end;
 
   public
@@ -17663,13 +17663,13 @@
       Arr1InnerSync = array of InnerSync;
       Arr2InnerSync = array of Arr1InnerSync;
       Arr3InnerSync = array of Arr2InnerSync;
-      InnerFairSync = class sealed external 'java.util.concurrent' name 'FairSync' 
+      InnerFairSync = class sealed external 'java.util.concurrent' name 'FairSync'
       end;
 
-      InnerNonfairSync = class sealed external 'java.util.concurrent' name 'NonfairSync' 
+      InnerNonfairSync = class sealed external 'java.util.concurrent' name 'NonfairSync'
       end;
 
-      InnerSync = class abstract external 'java.util.concurrent' name 'Sync' 
+      InnerSync = class abstract external 'java.util.concurrent' name 'Sync'
       end;
 
   public
@@ -18072,166 +18072,166 @@
       Arr1InnerTreeInfo = array of InnerTreeInfo;
       Arr2InnerTreeInfo = array of Arr1InnerTreeInfo;
       Arr3InnerTreeInfo = array of Arr2InnerTreeInfo;
-      InnerAll = class sealed external 'java.util.regex' name 'All' 
+      InnerAll = class sealed external 'java.util.regex' name 'All'
       end;
 
-      InnerBackRef = class external 'java.util.regex' name 'BackRef' 
+      InnerBackRef = class external 'java.util.regex' name 'BackRef'
       end;
 
-      InnerBegin = class sealed external 'java.util.regex' name 'Begin' 
+      InnerBegin = class sealed external 'java.util.regex' name 'Begin'
       end;
 
-      InnerBehind = class external 'java.util.regex' name 'Behind' 
+      InnerBehind = class external 'java.util.regex' name 'Behind'
       end;
 
-      InnerBehindS = class sealed external 'java.util.regex' name 'BehindS' 
+      InnerBehindS = class sealed external 'java.util.regex' name 'BehindS'
       end;
 
-      InnerBitClass = class sealed external 'java.util.regex' name 'BitClass' 
+      InnerBitClass = class sealed external 'java.util.regex' name 'BitClass'
       end;
 
-      InnerBmpCharProperty = class abstract external 'java.util.regex' name 'BmpCharProperty' 
+      InnerBmpCharProperty = class abstract external 'java.util.regex' name 'BmpCharProperty'
       end;
 
-      InnerBnM = class external 'java.util.regex' name 'BnM' 
+      InnerBnM = class external 'java.util.regex' name 'BnM'
       end;
 
-      InnerBnMS = class sealed external 'java.util.regex' name 'BnMS' 
+      InnerBnMS = class sealed external 'java.util.regex' name 'BnMS'
       end;
 
-      InnerBound = class sealed external 'java.util.regex' name 'Bound' 
+      InnerBound = class sealed external 'java.util.regex' name 'Bound'
       end;
 
-      InnerBranch = class sealed external 'java.util.regex' name 'Branch' 
+      InnerBranch = class sealed external 'java.util.regex' name 'Branch'
       end;
 
-      InnerBranchConn = class sealed external 'java.util.regex' name 'BranchConn' 
+      InnerBranchConn = class sealed external 'java.util.regex' name 'BranchConn'
       end;
 
-      InnerCIBackRef = class external 'java.util.regex' name 'CIBackRef' 
+      InnerCIBackRef = class external 'java.util.regex' name 'CIBackRef'
       end;
 
-      InnerCaret = class sealed external 'java.util.regex' name 'Caret' 
+      InnerCaret = class sealed external 'java.util.regex' name 'Caret'
       end;
 
-      InnerCategory = class sealed external 'java.util.regex' name 'Category' 
+      InnerCategory = class sealed external 'java.util.regex' name 'Category'
       end;
 
-      InnerCharProperty = class abstract external 'java.util.regex' name 'CharProperty' 
+      InnerCharProperty = class abstract external 'java.util.regex' name 'CharProperty'
       end;
 
-      InnerConditional = class sealed external 'java.util.regex' name 'Conditional' 
+      InnerConditional = class sealed external 'java.util.regex' name 'Conditional'
       end;
 
-      InnerCtype = class sealed external 'java.util.regex' name 'Ctype' 
+      InnerCtype = class sealed external 'java.util.regex' name 'Ctype'
       end;
 
-      InnerCurly = class sealed external 'java.util.regex' name 'Curly' 
+      InnerCurly = class sealed external 'java.util.regex' name 'Curly'
       end;
 
-      InnerDollar = class sealed external 'java.util.regex' name 'Dollar' 
+      InnerDollar = class sealed external 'java.util.regex' name 'Dollar'
       end;
 
-      InnerDot = class sealed external 'java.util.regex' name 'Dot' 
+      InnerDot = class sealed external 'java.util.regex' name 'Dot'
       end;
 
-      InnerEnd = class sealed external 'java.util.regex' name 'End' 
+      InnerEnd = class sealed external 'java.util.regex' name 'End'
       end;
 
-      InnerFirst = class sealed external 'java.util.regex' name 'First' 
+      InnerFirst = class sealed external 'java.util.regex' name 'First'
       end;
 
-      InnerGroupCurly = class sealed external 'java.util.regex' name 'GroupCurly' 
+      InnerGroupCurly = class sealed external 'java.util.regex' name 'GroupCurly'
       end;
 
-      InnerGroupHead = class sealed external 'java.util.regex' name 'GroupHead' 
+      InnerGroupHead = class sealed external 'java.util.regex' name 'GroupHead'
       end;
 
-      InnerGroupRef = class sealed external 'java.util.regex' name 'GroupRef' 
+      InnerGroupRef = class sealed external 'java.util.regex' name 'GroupRef'
       end;
 
-      InnerGroupTail = class sealed external 'java.util.regex' name 'GroupTail' 
+      InnerGroupTail = class sealed external 'java.util.regex' name 'GroupTail'
       end;
 
-      InnerLastMatch = class sealed external 'java.util.regex' name 'LastMatch' 
+      InnerLastMatch = class sealed external 'java.util.regex' name 'LastMatch'
       end;
 
-      InnerLastNode = class external 'java.util.regex' name 'LastNode' 
+      InnerLastNode = class external 'java.util.regex' name 'LastNode'
       end;
 
-      InnerLazyLoop = class sealed external 'java.util.regex' name 'LazyLoop' 
+      InnerLazyLoop = class sealed external 'java.util.regex' name 'LazyLoop'
       end;
 
-      InnerLoop = class external 'java.util.regex' name 'Loop' 
+      InnerLoop = class external 'java.util.regex' name 'Loop'
       end;
 
-      InnerNeg = class sealed external 'java.util.regex' name 'Neg' 
+      InnerNeg = class sealed external 'java.util.regex' name 'Neg'
       end;
 
-      InnerNotBehind = class external 'java.util.regex' name 'NotBehind' 
+      InnerNotBehind = class external 'java.util.regex' name 'NotBehind'
       end;
 
-      InnerNotBehindS = class sealed external 'java.util.regex' name 'NotBehindS' 
+      InnerNotBehindS = class sealed external 'java.util.regex' name 'NotBehindS'
       end;
 
-      InnerPos = class sealed external 'java.util.regex' name 'Pos' 
+      InnerPos = class sealed external 'java.util.regex' name 'Pos'
       end;
 
-      InnerProlog = class sealed external 'java.util.regex' name 'Prolog' 
+      InnerProlog = class sealed external 'java.util.regex' name 'Prolog'
       end;
 
-      InnerQues = class sealed external 'java.util.regex' name 'Ques' 
+      InnerQues = class sealed external 'java.util.regex' name 'Ques'
       end;
 
-      InnerSingle = class sealed external 'java.util.regex' name 'Single' 
+      InnerSingle = class sealed external 'java.util.regex' name 'Single'
       end;
 
-      InnerSingleI = class sealed external 'java.util.regex' name 'SingleI' 
+      InnerSingleI = class sealed external 'java.util.regex' name 'SingleI'
       end;
 
-      InnerSingleS = class sealed external 'java.util.regex' name 'SingleS' 
+      InnerSingleS = class sealed external 'java.util.regex' name 'SingleS'
       end;
 
-      InnerSingleU = class sealed external 'java.util.regex' name 'SingleU' 
+      InnerSingleU = class sealed external 'java.util.regex' name 'SingleU'
       end;
 
-      InnerSlice = class sealed external 'java.util.regex' name 'Slice' 
+      InnerSlice = class sealed external 'java.util.regex' name 'Slice'
       end;
 
-      InnerSliceI = class external 'java.util.regex' name 'SliceI' 
+      InnerSliceI = class external 'java.util.regex' name 'SliceI'
       end;
 
-      InnerSliceIS = class external 'java.util.regex' name 'SliceIS' 
+      InnerSliceIS = class external 'java.util.regex' name 'SliceIS'
       end;
 
-      InnerSliceNode = class external 'java.util.regex' name 'SliceNode' 
+      InnerSliceNode = class external 'java.util.regex' name 'SliceNode'
       end;
 
-      InnerSliceS = class sealed external 'java.util.regex' name 'SliceS' 
+      InnerSliceS = class sealed external 'java.util.regex' name 'SliceS'
       end;
 
-      InnerSliceU = class sealed external 'java.util.regex' name 'SliceU' 
+      InnerSliceU = class sealed external 'java.util.regex' name 'SliceU'
       end;
 
-      InnerSliceUS = class sealed external 'java.util.regex' name 'SliceUS' 
+      InnerSliceUS = class sealed external 'java.util.regex' name 'SliceUS'
       end;
 
-      InnerStart = class external 'java.util.regex' name 'Start' 
+      InnerStart = class external 'java.util.regex' name 'Start'
       end;
 
-      InnerStartS = class sealed external 'java.util.regex' name 'StartS' 
+      InnerStartS = class sealed external 'java.util.regex' name 'StartS'
       end;
 
-      InnerUnixCaret = class sealed external 'java.util.regex' name 'UnixCaret' 
+      InnerUnixCaret = class sealed external 'java.util.regex' name 'UnixCaret'
       end;
 
-      InnerUnixDollar = class sealed external 'java.util.regex' name 'UnixDollar' 
+      InnerUnixDollar = class sealed external 'java.util.regex' name 'UnixDollar'
       end;
 
-      InnerUnixDot = class sealed external 'java.util.regex' name 'UnixDot' 
+      InnerUnixDot = class sealed external 'java.util.regex' name 'UnixDot'
       end;
 
-      InnerCharPropertyNames = class external 'java.util.regex' name 'CharPropertyNames' 
+      InnerCharPropertyNames = class external 'java.util.regex' name 'CharPropertyNames'
       public
         type
           InnerCharPropertyFactory = class;
@@ -18242,18 +18242,18 @@
           Arr1InnerCloneableProperty = array of InnerCloneableProperty;
           Arr2InnerCloneableProperty = array of Arr1InnerCloneableProperty;
           Arr3InnerCloneableProperty = array of Arr2InnerCloneableProperty;
-          InnerCharPropertyFactory = class abstract external 'java.util.regex' name 'CharPropertyFactory' 
+          InnerCharPropertyFactory = class abstract external 'java.util.regex' name 'CharPropertyFactory'
           end;
 
-          InnerCloneableProperty = class abstract external 'java.util.regex' name 'CloneableProperty' 
+          InnerCloneableProperty = class abstract external 'java.util.regex' name 'CloneableProperty'
           end;
 
       end;
 
-      InnerNode = class external 'java.util.regex' name 'Node' 
+      InnerNode = class external 'java.util.regex' name 'Node'
       end;
 
-      InnerTreeInfo = class sealed external 'java.util.regex' name 'TreeInfo' 
+      InnerTreeInfo = class sealed external 'java.util.regex' name 'TreeInfo'
       end;
 
   public
@@ -18569,10 +18569,10 @@
       Arr1InnerSecureSet = array of InnerSecureSet;
       Arr2InnerSecureSet = array of Arr1InnerSecureSet;
       Arr3InnerSecureSet = array of Arr2InnerSecureSet;
-      InnerClassSet = class external 'javax.security.auth' name 'ClassSet' 
+      InnerClassSet = class external 'javax.security.auth' name 'ClassSet'
       end;
 
-      InnerSecureSet = class external 'javax.security.auth' name 'SecureSet' 
+      InnerSecureSet = class external 'javax.security.auth' name 'SecureSet'
       end;
 
   public
@@ -18730,7 +18730,7 @@
       Arr1InnerDoPostEvent = array of InnerDoPostEvent;
       Arr2InnerDoPostEvent = array of Arr1InnerDoPostEvent;
       Arr3InnerDoPostEvent = array of Arr2InnerDoPostEvent;
-      InnerDoPostEvent = class external 'javax.swing' name 'DoPostEvent' 
+      InnerDoPostEvent = class external 'javax.swing' name 'DoPostEvent'
       end;
 
   strict protected
@@ -18794,25 +18794,25 @@
       Arr1InnerTransferAction = array of InnerTransferAction;
       Arr2InnerTransferAction = array of Arr1InnerTransferAction;
       Arr3InnerTransferAction = array of Arr2InnerTransferAction;
-      InnerHasGetTransferHandler = interface external 'javax.swing' name 'HasGetTransferHandler' 
+      InnerHasGetTransferHandler = interface external 'javax.swing' name 'HasGetTransferHandler'
       end;
 
-      InnerDragHandler = class external 'javax.swing' name 'DragHandler' 
+      InnerDragHandler = class external 'javax.swing' name 'DragHandler'
       end;
 
-      InnerDropHandler = class external 'javax.swing' name 'DropHandler' 
+      InnerDropHandler = class external 'javax.swing' name 'DropHandler'
       end;
 
-      InnerPropertyTransferable = class external 'javax.swing' name 'PropertyTransferable' 
+      InnerPropertyTransferable = class external 'javax.swing' name 'PropertyTransferable'
       end;
 
-      InnerSwingDragGestureRecognizer = class external 'javax.swing' name 'SwingDragGestureRecognizer' 
+      InnerSwingDragGestureRecognizer = class external 'javax.swing' name 'SwingDragGestureRecognizer'
       end;
 
-      InnerSwingDropTarget = class external 'javax.swing' name 'SwingDropTarget' 
+      InnerSwingDropTarget = class external 'javax.swing' name 'SwingDropTarget'
       end;
 
-      InnerTransferAction = class external 'javax.swing' name 'TransferAction' 
+      InnerTransferAction = class external 'javax.swing' name 'TransferAction'
       end;
 
   public
@@ -18885,7 +18885,7 @@
       Arr1InnerLAFState = array of InnerLAFState;
       Arr2InnerLAFState = array of Arr1InnerLAFState;
       Arr3InnerLAFState = array of Arr2InnerLAFState;
-      InnerLAFState = class external 'javax.swing' name 'LAFState' 
+      InnerLAFState = class external 'javax.swing' name 'LAFState'
       end;
 
   public
@@ -18996,28 +18996,28 @@
       Arr1InnerRadioButtonMenuItemIcon = array of InnerRadioButtonMenuItemIcon;
       Arr2InnerRadioButtonMenuItemIcon = array of Arr1InnerRadioButtonMenuItemIcon;
       Arr3InnerRadioButtonMenuItemIcon = array of Arr2InnerRadioButtonMenuItemIcon;
-      InnerCheckBoxIcon = class external 'javax.swing.plaf.basic' name 'CheckBoxIcon' 
+      InnerCheckBoxIcon = class external 'javax.swing.plaf.basic' name 'CheckBoxIcon'
       end;
 
-      InnerEmptyFrameIcon = class external 'javax.swing.plaf.basic' name 'EmptyFrameIcon' 
+      InnerEmptyFrameIcon = class external 'javax.swing.plaf.basic' name 'EmptyFrameIcon'
       end;
 
-      InnerCheckBoxMenuItemIcon = class external 'javax.swing.plaf.basic' name 'CheckBoxMenuItemIcon' 
+      InnerCheckBoxMenuItemIcon = class external 'javax.swing.plaf.basic' name 'CheckBoxMenuItemIcon'
       end;
 
-      InnerMenuArrowIcon = class external 'javax.swing.plaf.basic' name 'MenuArrowIcon' 
+      InnerMenuArrowIcon = class external 'javax.swing.plaf.basic' name 'MenuArrowIcon'
       end;
 
-      InnerMenuItemArrowIcon = class external 'javax.swing.plaf.basic' name 'MenuItemArrowIcon' 
+      InnerMenuItemArrowIcon = class external 'javax.swing.plaf.basic' name 'MenuItemArrowIcon'
       end;
 
-      InnerMenuItemCheckIcon = class external 'javax.swing.plaf.basic' name 'MenuItemCheckIcon' 
+      InnerMenuItemCheckIcon = class external 'javax.swing.plaf.basic' name 'MenuItemCheckIcon'
       end;
 
-      InnerRadioButtonIcon = class external 'javax.swing.plaf.basic' name 'RadioButtonIcon' 
+      InnerRadioButtonIcon = class external 'javax.swing.plaf.basic' name 'RadioButtonIcon'
       end;
 
-      InnerRadioButtonMenuItemIcon = class external 'javax.swing.plaf.basic' name 'RadioButtonMenuItemIcon' 
+      InnerRadioButtonMenuItemIcon = class external 'javax.swing.plaf.basic' name 'RadioButtonMenuItemIcon'
       end;
 
   public
@@ -19220,58 +19220,58 @@
       Arr1InnerLengthUnit = array of InnerLengthUnit;
       Arr2InnerLengthUnit = array of Arr1InnerLengthUnit;
       Arr3InnerLengthUnit = array of Arr2InnerLengthUnit;
-      InnerLayoutIterator = interface external 'javax.swing.text.html' name 'LayoutIterator' 
+      InnerLayoutIterator = interface external 'javax.swing.text.html' name 'LayoutIterator'
       end;
 
-      InnerShorthandBackgroundParser = class external 'javax.swing.text.html' name 'ShorthandBackgroundParser' 
+      InnerShorthandBackgroundParser = class external 'javax.swing.text.html' name 'ShorthandBackgroundParser'
       end;
 
-      InnerShorthandFontParser = class external 'javax.swing.text.html' name 'ShorthandFontParser' 
+      InnerShorthandFontParser = class external 'javax.swing.text.html' name 'ShorthandFontParser'
       end;
 
-      InnerShorthandMarginParser = class external 'javax.swing.text.html' name 'ShorthandMarginParser' 
+      InnerShorthandMarginParser = class external 'javax.swing.text.html' name 'ShorthandMarginParser'
       end;
 
-      InnerValue = class sealed external 'javax.swing.text.html' name 'Value' 
+      InnerValue = class sealed external 'javax.swing.text.html' name 'Value'
       end;
 
-      InnerBackgroundImage = class external 'javax.swing.text.html' name 'BackgroundImage' 
+      InnerBackgroundImage = class external 'javax.swing.text.html' name 'BackgroundImage'
       end;
 
-      InnerBackgroundPosition = class external 'javax.swing.text.html' name 'BackgroundPosition' 
+      InnerBackgroundPosition = class external 'javax.swing.text.html' name 'BackgroundPosition'
       end;
 
-      InnerBorderStyle = class external 'javax.swing.text.html' name 'BorderStyle' 
+      InnerBorderStyle = class external 'javax.swing.text.html' name 'BorderStyle'
       end;
 
-      InnerBorderWidthValue = class external 'javax.swing.text.html' name 'BorderWidthValue' 
+      InnerBorderWidthValue = class external 'javax.swing.text.html' name 'BorderWidthValue'
       end;
 
-      InnerColorValue = class external 'javax.swing.text.html' name 'ColorValue' 
+      InnerColorValue = class external 'javax.swing.text.html' name 'ColorValue'
       end;
 
-      InnerCssValueMapper = class external 'javax.swing.text.html' name 'CssValueMapper' 
+      InnerCssValueMapper = class external 'javax.swing.text.html' name 'CssValueMapper'
       end;
 
-      InnerFontFamily = class external 'javax.swing.text.html' name 'FontFamily' 
+      InnerFontFamily = class external 'javax.swing.text.html' name 'FontFamily'
       end;
 
-      InnerFontSize = class external 'javax.swing.text.html' name 'FontSize' 
+      InnerFontSize = class external 'javax.swing.text.html' name 'FontSize'
       end;
 
-      InnerFontWeight = class external 'javax.swing.text.html' name 'FontWeight' 
+      InnerFontWeight = class external 'javax.swing.text.html' name 'FontWeight'
       end;
 
-      InnerLengthValue = class external 'javax.swing.text.html' name 'LengthValue' 
+      InnerLengthValue = class external 'javax.swing.text.html' name 'LengthValue'
       end;
 
-      InnerStringValue = class external 'javax.swing.text.html' name 'StringValue' 
+      InnerStringValue = class external 'javax.swing.text.html' name 'StringValue'
       end;
 
-      InnerCssValue = class external 'javax.swing.text.html' name 'CssValue' 
+      InnerCssValue = class external 'javax.swing.text.html' name 'CssValue'
       end;
 
-      InnerLengthUnit = class external 'javax.swing.text.html' name 'LengthUnit' 
+      InnerLengthUnit = class external 'javax.swing.text.html' name 'LengthUnit'
       end;
 
   public
@@ -19583,19 +19583,19 @@
       Arr1InnerPolygonRegionContainment = array of InnerPolygonRegionContainment;
       Arr2InnerPolygonRegionContainment = array of Arr1InnerPolygonRegionContainment;
       Arr3InnerPolygonRegionContainment = array of Arr2InnerPolygonRegionContainment;
-      InnerRegionContainment = interface external 'javax.swing.text.html' name 'RegionContainment' 
+      InnerRegionContainment = interface external 'javax.swing.text.html' name 'RegionContainment'
       end;
 
-      InnerCircleRegionContainment = class external 'javax.swing.text.html' name 'CircleRegionContainment' 
+      InnerCircleRegionContainment = class external 'javax.swing.text.html' name 'CircleRegionContainment'
       end;
 
-      InnerDefaultRegionContainment = class external 'javax.swing.text.html' name 'DefaultRegionContainment' 
+      InnerDefaultRegionContainment = class external 'javax.swing.text.html' name 'DefaultRegionContainment'
       end;
 
-      InnerRectangleRegionContainment = class external 'javax.swing.text.html' name 'RectangleRegionContainment' 
+      InnerRectangleRegionContainment = class external 'javax.swing.text.html' name 'RectangleRegionContainment'
       end;
 
-      InnerPolygonRegionContainment = class external 'javax.swing.text.html' name 'PolygonRegionContainment' 
+      InnerPolygonRegionContainment = class external 'javax.swing.text.html' name 'PolygonRegionContainment'
       end;
 
   public
@@ -20228,7 +20228,7 @@
       Arr1InnerCookieAttributeAssignor = array of InnerCookieAttributeAssignor;
       Arr2InnerCookieAttributeAssignor = array of Arr1InnerCookieAttributeAssignor;
       Arr3InnerCookieAttributeAssignor = array of Arr2InnerCookieAttributeAssignor;
-      InnerCookieAttributeAssignor = interface external 'java.net' name 'CookieAttributeAssignor' 
+      InnerCookieAttributeAssignor = interface external 'java.net' name 'CookieAttributeAssignor'
       end;
 
   public
@@ -20325,10 +20325,10 @@
       Arr1InnerBreakIteratorGetter = array of InnerBreakIteratorGetter;
       Arr2InnerBreakIteratorGetter = array of Arr1InnerBreakIteratorGetter;
       Arr3InnerBreakIteratorGetter = array of Arr2InnerBreakIteratorGetter;
-      InnerBreakIteratorCache = class sealed external 'java.text' name 'BreakIteratorCache' 
+      InnerBreakIteratorCache = class sealed external 'java.text' name 'BreakIteratorCache'
       end;
 
-      InnerBreakIteratorGetter = class external 'java.text' name 'BreakIteratorGetter' 
+      InnerBreakIteratorGetter = class external 'java.text' name 'BreakIteratorGetter'
       end;
 
   public
@@ -20383,7 +20383,7 @@
       Arr1InnerDateFormatSymbolsGetter = array of InnerDateFormatSymbolsGetter;
       Arr2InnerDateFormatSymbolsGetter = array of Arr1InnerDateFormatSymbolsGetter;
       Arr3InnerDateFormatSymbolsGetter = array of Arr2InnerDateFormatSymbolsGetter;
-      InnerDateFormatSymbolsGetter = class external 'java.text' name 'DateFormatSymbolsGetter' 
+      InnerDateFormatSymbolsGetter = class external 'java.text' name 'DateFormatSymbolsGetter'
       end;
 
   public
@@ -20426,7 +20426,7 @@
       Arr1InnerDecimalFormatSymbolsGetter = array of InnerDecimalFormatSymbolsGetter;
       Arr2InnerDecimalFormatSymbolsGetter = array of Arr1InnerDecimalFormatSymbolsGetter;
       Arr3InnerDecimalFormatSymbolsGetter = array of Arr2InnerDecimalFormatSymbolsGetter;
-      InnerDecimalFormatSymbolsGetter = class external 'java.text' name 'DecimalFormatSymbolsGetter' 
+      InnerDecimalFormatSymbolsGetter = class external 'java.text' name 'DecimalFormatSymbolsGetter'
       end;
 
   public
@@ -20501,7 +20501,7 @@
       Arr1InnerLocaleNameGetter = array of InnerLocaleNameGetter;
       Arr2InnerLocaleNameGetter = array of Arr1InnerLocaleNameGetter;
       Arr3InnerLocaleNameGetter = array of Arr2InnerLocaleNameGetter;
-      InnerLocaleNameGetter = class external 'java.util' name 'LocaleNameGetter' 
+      InnerLocaleNameGetter = class external 'java.util' name 'LocaleNameGetter'
       end;
 
   public
@@ -20563,7 +20563,7 @@
       Arr1InnerDisplayNames = array of InnerDisplayNames;
       Arr2InnerDisplayNames = array of Arr1InnerDisplayNames;
       Arr3InnerDisplayNames = array of Arr2InnerDisplayNames;
-      InnerDisplayNames = class external 'java.util' name 'DisplayNames' 
+      InnerDisplayNames = class external 'java.util' name 'DisplayNames'
       end;
 
   public
@@ -20601,7 +20601,7 @@
       Arr1InnerFastInputStream = array of InnerFastInputStream;
       Arr2InnerFastInputStream = array of Arr1InnerFastInputStream;
       Arr3InnerFastInputStream = array of Arr2InnerFastInputStream;
-      InnerFastInputStream = class external 'java.util.jar' name 'FastInputStream' 
+      InnerFastInputStream = class external 'java.util.jar' name 'FastInputStream'
       end;
 
   public
@@ -20925,19 +20925,19 @@
       Arr1InnerParameterMapEntrySetIterator = array of InnerParameterMapEntrySetIterator;
       Arr2InnerParameterMapEntrySetIterator = array of Arr1InnerParameterMapEntrySetIterator;
       Arr3InnerParameterMapEntrySetIterator = array of Arr2InnerParameterMapEntrySetIterator;
-      InnerLexicalAnalyzer = class external 'javax.print' name 'LexicalAnalyzer' 
+      InnerLexicalAnalyzer = class external 'javax.print' name 'LexicalAnalyzer'
       end;
 
-      InnerParameterMap = class external 'javax.print' name 'ParameterMap' 
+      InnerParameterMap = class external 'javax.print' name 'ParameterMap'
       end;
 
-      InnerParameterMapEntry = class external 'javax.print' name 'ParameterMapEntry' 
+      InnerParameterMapEntry = class external 'javax.print' name 'ParameterMapEntry'
       end;
 
-      InnerParameterMapEntrySet = class external 'javax.print' name 'ParameterMapEntrySet' 
+      InnerParameterMapEntrySet = class external 'javax.print' name 'ParameterMapEntrySet'
       end;
 
-      InnerParameterMapEntrySetIterator = class external 'javax.print' name 'ParameterMapEntrySetIterator' 
+      InnerParameterMapEntrySetIterator = class external 'javax.print' name 'ParameterMapEntrySetIterator'
       end;
 
   public
@@ -21282,7 +21282,7 @@
       Arr1InnerStackItem = array of InnerStackItem;
       Arr2InnerStackItem = array of Arr1InnerStackItem;
       Arr3InnerStackItem = array of Arr2InnerStackItem;
-      InnerStackItem = class external 'javax.swing.text' name 'StackItem' 
+      InnerStackItem = class external 'javax.swing.text' name 'StackItem'
       end;
 
   public
@@ -21393,7 +21393,7 @@
     procedure mail(para1: JNURI); overload; virtual;  // throws java.io.IOException
   end;
 
-  JAEventFilter = interface external 'java.awt' name 'EventFilter' 
+  JAEventFilter = interface external 'java.awt' name 'EventFilter'
     type
       InnerFilterAction = class;
       Arr1InnerFilterAction = array of InnerFilterAction;
@@ -21935,25 +21935,25 @@
       Arr1InnerRegexFilter = array of InnerRegexFilter;
       Arr2InnerRegexFilter = array of Arr1InnerRegexFilter;
       Arr3InnerRegexFilter = array of Arr2InnerRegexFilter;
-      InnerAndFilter = class external 'javax.swing' name 'AndFilter' 
+      InnerAndFilter = class external 'javax.swing' name 'AndFilter'
       end;
 
-      InnerDateFilter = class external 'javax.swing' name 'DateFilter' 
+      InnerDateFilter = class external 'javax.swing' name 'DateFilter'
       end;
 
-      InnerGeneralFilter = class abstract external 'javax.swing' name 'GeneralFilter' 
+      InnerGeneralFilter = class abstract external 'javax.swing' name 'GeneralFilter'
       end;
 
-      InnerNotFilter = class external 'javax.swing' name 'NotFilter' 
+      InnerNotFilter = class external 'javax.swing' name 'NotFilter'
       end;
 
-      InnerNumberFilter = class external 'javax.swing' name 'NumberFilter' 
+      InnerNumberFilter = class external 'javax.swing' name 'NumberFilter'
       end;
 
-      InnerOrFilter = class external 'javax.swing' name 'OrFilter' 
+      InnerOrFilter = class external 'javax.swing' name 'OrFilter'
       end;
 
-      InnerRegexFilter = class external 'javax.swing' name 'RegexFilter' 
+      InnerRegexFilter = class external 'javax.swing' name 'RegexFilter'
       end;
 
   public
@@ -22013,7 +22013,7 @@
     class function valueOf(para1: JLString): JSSortOrder; static; overload;
   end;
 
-  JTDiagnostic = interface external 'javax.tools' name 'Diagnostic' 
+  JTDiagnostic = interface external 'javax.tools' name 'Diagnostic'
     type
       InnerKind = class;
       Arr1InnerKind = array of InnerKind;
@@ -22168,13 +22168,13 @@
       Arr1InnerToolkitEventMulticaster = array of InnerToolkitEventMulticaster;
       Arr2InnerToolkitEventMulticaster = array of Arr1InnerToolkitEventMulticaster;
       Arr3InnerToolkitEventMulticaster = array of Arr2InnerToolkitEventMulticaster;
-      InnerDesktopPropertyChangeSupport = class external 'java.awt' name 'DesktopPropertyChangeSupport' 
+      InnerDesktopPropertyChangeSupport = class external 'java.awt' name 'DesktopPropertyChangeSupport'
       end;
 
-      InnerSelectiveAWTEventListener = class external 'java.awt' name 'SelectiveAWTEventListener' 
+      InnerSelectiveAWTEventListener = class external 'java.awt' name 'SelectiveAWTEventListener'
       end;
 
-      InnerToolkitEventMulticaster = class external 'java.awt' name 'ToolkitEventMulticaster' 
+      InnerToolkitEventMulticaster = class external 'java.awt' name 'ToolkitEventMulticaster'
       end;
 
   strict protected
@@ -22312,28 +22312,28 @@
       Arr1InnerPrintHeavyweightComponentsCallback = array of InnerPrintHeavyweightComponentsCallback;
       Arr2InnerPrintHeavyweightComponentsCallback = array of Arr1InnerPrintHeavyweightComponentsCallback;
       Arr3InnerPrintHeavyweightComponentsCallback = array of Arr2InnerPrintHeavyweightComponentsCallback;
-      InnerPaintAllCallback = class sealed external 'java.awt' name 'PaintAllCallback' 
+      InnerPaintAllCallback = class sealed external 'java.awt' name 'PaintAllCallback'
       end;
 
-      InnerPaintCallback = class sealed external 'java.awt' name 'PaintCallback' 
+      InnerPaintCallback = class sealed external 'java.awt' name 'PaintCallback'
       end;
 
-      InnerPaintHeavyweightComponentsCallback = class sealed external 'java.awt' name 'PaintHeavyweightComponentsCallback' 
+      InnerPaintHeavyweightComponentsCallback = class sealed external 'java.awt' name 'PaintHeavyweightComponentsCallback'
       end;
 
-      InnerPeerPaintCallback = class sealed external 'java.awt' name 'PeerPaintCallback' 
+      InnerPeerPaintCallback = class sealed external 'java.awt' name 'PeerPaintCallback'
       end;
 
-      InnerPeerPrintCallback = class sealed external 'java.awt' name 'PeerPrintCallback' 
+      InnerPeerPrintCallback = class sealed external 'java.awt' name 'PeerPrintCallback'
       end;
 
-      InnerPrintAllCallback = class sealed external 'java.awt' name 'PrintAllCallback' 
+      InnerPrintAllCallback = class sealed external 'java.awt' name 'PrintAllCallback'
       end;
 
-      InnerPrintCallback = class sealed external 'java.awt' name 'PrintCallback' 
+      InnerPrintCallback = class sealed external 'java.awt' name 'PrintCallback'
       end;
 
-      InnerPrintHeavyweightComponentsCallback = class sealed external 'java.awt' name 'PrintHeavyweightComponentsCallback' 
+      InnerPrintHeavyweightComponentsCallback = class sealed external 'java.awt' name 'PrintHeavyweightComponentsCallback'
       end;
 
   end;
@@ -23029,7 +23029,7 @@
       fFULLWIDTH_DIGITS: JAIInputSubset; external name 'FULLWIDTH_DIGITS';
   end;
 
-  JAISInputMethod = interface external 'java.awt.im.spi' name 'InputMethod' 
+  JAISInputMethod = interface external 'java.awt.im.spi' name 'InputMethod'
     procedure setInputMethodContext(para1: JAISInputMethodContext); overload;
     function setLocale(para1: JULocale): jboolean; overload;
     function getLocale(): JULocale; overload;
@@ -23370,7 +23370,7 @@
       Arr1InnerLazyInitialization = array of InnerLazyInitialization;
       Arr2InnerLazyInitialization = array of Arr1InnerLazyInitialization;
       Arr3InnerLazyInitialization = array of Arr2InnerLazyInitialization;
-      InnerLazyInitialization = class external 'java.io' name 'LazyInitialization' 
+      InnerLazyInitialization = class external 'java.io' name 'LazyInitialization'
       end;
 
   public
@@ -23461,7 +23461,7 @@
       Arr1InnerParser = array of InnerParser;
       Arr2InnerParser = array of Arr1InnerParser;
       Arr3InnerParser = array of Arr2InnerParser;
-      InnerParser = class external 'java.net' name 'Parser' 
+      InnerParser = class external 'java.net' name 'Parser'
       end;
 
   public
@@ -23603,7 +23603,7 @@
       Arr1InnerRdnEntry = array of InnerRdnEntry;
       Arr2InnerRdnEntry = array of Arr1InnerRdnEntry;
       Arr3InnerRdnEntry = array of Arr2InnerRdnEntry;
-      InnerRdnEntry = class external 'javax.naming.ldap' name 'RdnEntry' 
+      InnerRdnEntry = class external 'javax.naming.ldap' name 'RdnEntry'
       end;
 
   public
@@ -23850,10 +23850,10 @@
       Arr1InnerStringBuilderHelper = array of InnerStringBuilderHelper;
       Arr2InnerStringBuilderHelper = array of Arr1InnerStringBuilderHelper;
       Arr3InnerStringBuilderHelper = array of Arr2InnerStringBuilderHelper;
-      InnerLongOverflow = class external 'java.math' name 'LongOverflow' 
+      InnerLongOverflow = class external 'java.math' name 'LongOverflow'
       end;
 
-      InnerStringBuilderHelper = class external 'java.math' name 'StringBuilderHelper' 
+      InnerStringBuilderHelper = class external 'java.math' name 'StringBuilderHelper'
       end;
 
   public
@@ -24434,7 +24434,7 @@
       Arr1InnerLazyIterator = array of InnerLazyIterator;
       Arr2InnerLazyIterator = array of Arr1InnerLazyIterator;
       Arr3InnerLazyIterator = array of Arr2InnerLazyIterator;
-      InnerLazyIterator = class external 'java.util' name 'LazyIterator' 
+      InnerLazyIterator = class external 'java.util' name 'LazyIterator'
       end;
 
   public
@@ -24490,25 +24490,25 @@
       Arr1InnerValues = array of InnerValues;
       Arr2InnerValues = array of Arr1InnerValues;
       Arr3InnerValues = array of Arr2InnerValues;
-      InnerKeyIterator = class external 'java.util' name 'KeyIterator' 
+      InnerKeyIterator = class external 'java.util' name 'KeyIterator'
       end;
 
-      InnerValueIterator = class external 'java.util' name 'ValueIterator' 
+      InnerValueIterator = class external 'java.util' name 'ValueIterator'
       end;
 
-      InnerEntryIterator = class external 'java.util' name 'EntryIterator' 
+      InnerEntryIterator = class external 'java.util' name 'EntryIterator'
       end;
 
-      InnerEntrySet = class external 'java.util' name 'EntrySet' 
+      InnerEntrySet = class external 'java.util' name 'EntrySet'
       end;
 
-      InnerKeySet = class external 'java.util' name 'KeySet' 
+      InnerKeySet = class external 'java.util' name 'KeySet'
       end;
 
-      InnerEnumMapIterator = class abstract external 'java.util' name 'EnumMapIterator' 
+      InnerEnumMapIterator = class abstract external 'java.util' name 'EnumMapIterator'
       end;
 
-      InnerValues = class external 'java.util' name 'Values' 
+      InnerValues = class external 'java.util' name 'Values'
       end;
 
   public
@@ -24563,25 +24563,25 @@
       Arr1InnerValues = array of InnerValues;
       Arr2InnerValues = array of Arr1InnerValues;
       Arr3InnerValues = array of Arr2InnerValues;
-      InnerEntryIterator = class external 'java.util' name 'EntryIterator' 
+      InnerEntryIterator = class external 'java.util' name 'EntryIterator'
       end;
 
-      InnerKeyIterator = class external 'java.util' name 'KeyIterator' 
+      InnerKeyIterator = class external 'java.util' name 'KeyIterator'
       end;
 
-      InnerValueIterator = class external 'java.util' name 'ValueIterator' 
+      InnerValueIterator = class external 'java.util' name 'ValueIterator'
       end;
 
-      InnerEntrySet = class external 'java.util' name 'EntrySet' 
+      InnerEntrySet = class external 'java.util' name 'EntrySet'
       end;
 
-      InnerKeySet = class external 'java.util' name 'KeySet' 
+      InnerKeySet = class external 'java.util' name 'KeySet'
       end;
 
-      InnerIdentityHashMapIterator = class abstract external 'java.util' name 'IdentityHashMapIterator' 
+      InnerIdentityHashMapIterator = class abstract external 'java.util' name 'IdentityHashMapIterator'
       end;
 
-      InnerValues = class external 'java.util' name 'Values' 
+      InnerValues = class external 'java.util' name 'Values'
       end;
 
   public
@@ -24738,7 +24738,7 @@
       Arr1InnerEnumSetIterator = array of InnerEnumSetIterator;
       Arr2InnerEnumSetIterator = array of Arr1InnerEnumSetIterator;
       Arr3InnerEnumSetIterator = array of Arr2InnerEnumSetIterator;
-      InnerEnumSetIterator = class external 'java.util' name 'EnumSetIterator' 
+      InnerEnumSetIterator = class external 'java.util' name 'EnumSetIterator'
       end;
 
   public
@@ -24766,7 +24766,7 @@
       Arr1InnerEnumSetIterator = array of InnerEnumSetIterator;
       Arr2InnerEnumSetIterator = array of Arr1InnerEnumSetIterator;
       Arr3InnerEnumSetIterator = array of Arr2InnerEnumSetIterator;
-      InnerEnumSetIterator = class external 'java.util' name 'EnumSetIterator' 
+      InnerEnumSetIterator = class external 'java.util' name 'EnumSetIterator'
       end;
 
   public
@@ -24808,19 +24808,19 @@
       Arr1InnerLinkedHashIterator = array of InnerLinkedHashIterator;
       Arr2InnerLinkedHashIterator = array of Arr1InnerLinkedHashIterator;
       Arr3InnerLinkedHashIterator = array of Arr2InnerLinkedHashIterator;
-      InnerEntry = class external 'java.util' name 'Entry' 
+      InnerEntry = class external 'java.util' name 'Entry'
       end;
 
-      InnerKeyIterator = class external 'java.util' name 'KeyIterator' 
+      InnerKeyIterator = class external 'java.util' name 'KeyIterator'
       end;
 
-      InnerValueIterator = class external 'java.util' name 'ValueIterator' 
+      InnerValueIterator = class external 'java.util' name 'ValueIterator'
       end;
 
-      InnerEntryIterator = class external 'java.util' name 'EntryIterator' 
+      InnerEntryIterator = class external 'java.util' name 'EntryIterator'
       end;
 
-      InnerLinkedHashIterator = class abstract external 'java.util' name 'LinkedHashIterator' 
+      InnerLinkedHashIterator = class abstract external 'java.util' name 'LinkedHashIterator'
       end;
 
   public
@@ -24896,16 +24896,16 @@
       Arr1InnerStateInfo = array of InnerStateInfo;
       Arr2InnerStateInfo = array of Arr1InnerStateInfo;
       Arr3InnerStateInfo = array of Arr2InnerStateInfo;
-      InnerAggregatePainter = class external 'javax.swing.plaf.synth' name 'AggregatePainter' 
+      InnerAggregatePainter = class external 'javax.swing.plaf.synth' name 'AggregatePainter'
       end;
 
-      InnerDelegatingPainter = class external 'javax.swing.plaf.synth' name 'DelegatingPainter' 
+      InnerDelegatingPainter = class external 'javax.swing.plaf.synth' name 'DelegatingPainter'
       end;
 
-      InnerPainterInfo = class external 'javax.swing.plaf.synth' name 'PainterInfo' 
+      InnerPainterInfo = class external 'javax.swing.plaf.synth' name 'PainterInfo'
       end;
 
-      InnerStateInfo = class external 'javax.swing.plaf.synth' name 'StateInfo' 
+      InnerStateInfo = class external 'javax.swing.plaf.synth' name 'StateInfo'
       end;
 
   public
@@ -25576,10 +25576,10 @@
       Arr1InnerLightweightFocusRequest = array of InnerLightweightFocusRequest;
       Arr2InnerLightweightFocusRequest = array of Arr1InnerLightweightFocusRequest;
       Arr3InnerLightweightFocusRequest = array of Arr2InnerLightweightFocusRequest;
-      InnerHeavyweightFocusRequest = class sealed external 'java.awt' name 'HeavyweightFocusRequest' 
+      InnerHeavyweightFocusRequest = class sealed external 'java.awt' name 'HeavyweightFocusRequest'
       end;
 
-      InnerLightweightFocusRequest = class sealed external 'java.awt' name 'LightweightFocusRequest' 
+      InnerLightweightFocusRequest = class sealed external 'java.awt' name 'LightweightFocusRequest'
       end;
 
   public
@@ -25801,16 +25801,16 @@
       Arr1InnerInt = array of InnerInt;
       Arr2InnerInt = array of Arr1InnerInt;
       Arr3InnerInt = array of Arr2InnerInt;
-      InnerAny = class external 'java.awt' name 'Any' 
+      InnerAny = class external 'java.awt' name 'Any'
       end;
 
-      InnerByte = class external 'java.awt' name 'Byte' 
+      InnerByte = class external 'java.awt' name 'Byte'
       end;
 
-      InnerByteFilter = class external 'java.awt' name 'ByteFilter' 
+      InnerByteFilter = class external 'java.awt' name 'ByteFilter'
       end;
 
-      InnerInt = class external 'java.awt' name 'Int' 
+      InnerInt = class external 'java.awt' name 'Int'
       end;
 
   public
@@ -25839,7 +25839,7 @@
       Arr1InnerPolygonPathIterator = array of InnerPolygonPathIterator;
       Arr2InnerPolygonPathIterator = array of Arr1InnerPolygonPathIterator;
       Arr3InnerPolygonPathIterator = array of Arr2InnerPolygonPathIterator;
-      InnerPolygonPathIterator = class external 'java.awt' name 'PolygonPathIterator' 
+      InnerPolygonPathIterator = class external 'java.awt' name 'PolygonPathIterator'
       end;
 
   public
@@ -26128,7 +26128,7 @@
       Arr1InnerIterator = array of InnerIterator;
       Arr2InnerIterator = array of Arr1InnerIterator;
       Arr3InnerIterator = array of Arr2InnerIterator;
-      InnerIterator = class abstract external 'java.awt.geom' name 'Iterator' 
+      InnerIterator = class abstract external 'java.awt.geom' name 'Iterator'
       end;
 
   public
@@ -26152,10 +26152,10 @@
           Arr1InnerTxIterator = array of InnerTxIterator;
           Arr2InnerTxIterator = array of Arr1InnerTxIterator;
           Arr3InnerTxIterator = array of Arr2InnerTxIterator;
-          InnerCopyIterator = class external 'java.awt.geom' name 'CopyIterator' 
+          InnerCopyIterator = class external 'java.awt.geom' name 'CopyIterator'
           end;
 
-          InnerTxIterator = class external 'java.awt.geom' name 'TxIterator' 
+          InnerTxIterator = class external 'java.awt.geom' name 'TxIterator'
           end;
 
       public
@@ -26186,10 +26186,10 @@
           Arr1InnerTxIterator = array of InnerTxIterator;
           Arr2InnerTxIterator = array of Arr1InnerTxIterator;
           Arr3InnerTxIterator = array of Arr2InnerTxIterator;
-          InnerCopyIterator = class external 'java.awt.geom' name 'CopyIterator' 
+          InnerCopyIterator = class external 'java.awt.geom' name 'CopyIterator'
           end;
 
-          InnerTxIterator = class external 'java.awt.geom' name 'TxIterator' 
+          InnerTxIterator = class external 'java.awt.geom' name 'TxIterator'
           end;
 
       public
@@ -26395,7 +26395,7 @@
       Arr1InnerFillAdapter = array of InnerFillAdapter;
       Arr2InnerFillAdapter = array of Arr1InnerFillAdapter;
       Arr3InnerFillAdapter = array of Arr2InnerFillAdapter;
-      InnerFillAdapter = class external 'java.awt' name 'FillAdapter' 
+      InnerFillAdapter = class external 'java.awt' name 'FillAdapter'
       end;
 
   public
@@ -26905,25 +26905,25 @@
       Arr1InnerProxyCapabilities = array of InnerProxyCapabilities;
       Arr2InnerProxyCapabilities = array of Arr1InnerProxyCapabilities;
       Arr3InnerProxyCapabilities = array of Arr2InnerProxyCapabilities;
-      InnerAWTTreeLock = class external 'java.awt' name 'AWTTreeLock' 
+      InnerAWTTreeLock = class external 'java.awt' name 'AWTTreeLock'
       end;
 
-      InnerSingleBufferStrategy = class external 'java.awt' name 'SingleBufferStrategy' 
+      InnerSingleBufferStrategy = class external 'java.awt' name 'SingleBufferStrategy'
       end;
 
-      InnerBltSubRegionBufferStrategy = class external 'java.awt' name 'BltSubRegionBufferStrategy' 
+      InnerBltSubRegionBufferStrategy = class external 'java.awt' name 'BltSubRegionBufferStrategy'
       end;
 
-      InnerFlipSubRegionBufferStrategy = class external 'java.awt' name 'FlipSubRegionBufferStrategy' 
+      InnerFlipSubRegionBufferStrategy = class external 'java.awt' name 'FlipSubRegionBufferStrategy'
       end;
 
-      InnerDummyRequestFocusController = class external 'java.awt' name 'DummyRequestFocusController' 
+      InnerDummyRequestFocusController = class external 'java.awt' name 'DummyRequestFocusController'
       end;
 
-      InnerNativeInLightFixer = class sealed external 'java.awt' name 'NativeInLightFixer' 
+      InnerNativeInLightFixer = class sealed external 'java.awt' name 'NativeInLightFixer'
       end;
 
-      InnerProxyCapabilities = class external 'java.awt' name 'ProxyCapabilities' 
+      InnerProxyCapabilities = class external 'java.awt' name 'ProxyCapabilities'
       end;
 
   public
@@ -26944,7 +26944,7 @@
       Arr1InnerFlipBufferStrategy = array of InnerFlipBufferStrategy;
       Arr2InnerFlipBufferStrategy = array of Arr1InnerFlipBufferStrategy;
       Arr3InnerFlipBufferStrategy = array of Arr2InnerFlipBufferStrategy;
-      InnerAccessibleAWTComponent = class abstract external 'java.awt' name 'AccessibleAWTComponent' 
+      InnerAccessibleAWTComponent = class abstract external 'java.awt' name 'AccessibleAWTComponent'
       public
         type
           InnerAccessibleAWTComponentHandler = class;
@@ -26955,10 +26955,10 @@
           Arr1InnerAccessibleAWTFocusHandler = array of InnerAccessibleAWTFocusHandler;
           Arr2InnerAccessibleAWTFocusHandler = array of Arr1InnerAccessibleAWTFocusHandler;
           Arr3InnerAccessibleAWTFocusHandler = array of Arr2InnerAccessibleAWTFocusHandler;
-          InnerAccessibleAWTComponentHandler = class external 'java.awt' name 'AccessibleAWTComponentHandler' 
+          InnerAccessibleAWTComponentHandler = class external 'java.awt' name 'AccessibleAWTComponentHandler'
           end;
 
-          InnerAccessibleAWTFocusHandler = class external 'java.awt' name 'AccessibleAWTFocusHandler' 
+          InnerAccessibleAWTFocusHandler = class external 'java.awt' name 'AccessibleAWTFocusHandler'
           end;
 
       end;
@@ -26975,10 +26975,10 @@
         class function valueOf(para1: JLString): JAComponent.InnerBaselineResizeBehavior; static; overload;
       end;
 
-      InnerBltBufferStrategy = class external 'java.awt' name 'BltBufferStrategy' 
+      InnerBltBufferStrategy = class external 'java.awt' name 'BltBufferStrategy'
       end;
 
-      InnerFlipBufferStrategy = class external 'java.awt' name 'FlipBufferStrategy' 
+      InnerFlipBufferStrategy = class external 'java.awt' name 'FlipBufferStrategy'
       end;
 
   public
@@ -27643,7 +27643,7 @@
       Arr1InnerBookPage = array of InnerBookPage;
       Arr2InnerBookPage = array of Arr1InnerBookPage;
       Arr3InnerBookPage = array of Arr2InnerBookPage;
-      InnerBookPage = class external 'java.awt.print' name 'BookPage' 
+      InnerBookPage = class external 'java.awt.print' name 'BookPage'
       end;
 
   public
@@ -27681,7 +27681,7 @@
       Arr1InnerValueData = array of InnerValueData;
       Arr2InnerValueData = array of Arr1InnerValueData;
       Arr3InnerValueData = array of Arr2InnerValueData;
-      InnerValueData = class external 'java.beans' name 'ValueData' 
+      InnerValueData = class external 'java.beans' name 'ValueData'
       end;
 
   public
@@ -27981,85 +27981,85 @@
       Arr1InnerUnmodifiableSortedSet_PersistenceDelegate = array of InnerUnmodifiableSortedSet_PersistenceDelegate;
       Arr2InnerUnmodifiableSortedSet_PersistenceDelegate = array of Arr1InnerUnmodifiableSortedSet_PersistenceDelegate;
       Arr3InnerUnmodifiableSortedSet_PersistenceDelegate = array of Arr2InnerUnmodifiableSortedSet_PersistenceDelegate;
-      InnerCheckedCollection_PersistenceDelegate = class sealed external 'java.beans' name 'CheckedCollection_PersistenceDelegate' 
+      InnerCheckedCollection_PersistenceDelegate = class sealed external 'java.beans' name 'CheckedCollection_PersistenceDelegate'
       end;
 
-      InnerCheckedList_PersistenceDelegate = class sealed external 'java.beans' name 'CheckedList_PersistenceDelegate' 
+      InnerCheckedList_PersistenceDelegate = class sealed external 'java.beans' name 'CheckedList_PersistenceDelegate'
       end;
 
-      InnerCheckedMap_PersistenceDelegate = class sealed external 'java.beans' name 'CheckedMap_PersistenceDelegate' 
+      InnerCheckedMap_PersistenceDelegate = class sealed external 'java.beans' name 'CheckedMap_PersistenceDelegate'
       end;
 
-      InnerCheckedRandomAccessList_PersistenceDelegate = class sealed external 'java.beans' name 'CheckedRandomAccessList_PersistenceDelegate' 
+      InnerCheckedRandomAccessList_PersistenceDelegate = class sealed external 'java.beans' name 'CheckedRandomAccessList_PersistenceDelegate'
       end;
 
-      InnerCheckedSet_PersistenceDelegate = class sealed external 'java.beans' name 'CheckedSet_PersistenceDelegate' 
+      InnerCheckedSet_PersistenceDelegate = class sealed external 'java.beans' name 'CheckedSet_PersistenceDelegate'
       end;
 
-      InnerCheckedSortedMap_PersistenceDelegate = class sealed external 'java.beans' name 'CheckedSortedMap_PersistenceDelegate' 
+      InnerCheckedSortedMap_PersistenceDelegate = class sealed external 'java.beans' name 'CheckedSortedMap_PersistenceDelegate'
       end;
 
-      InnerCheckedSortedSet_PersistenceDelegate = class sealed external 'java.beans' name 'CheckedSortedSet_PersistenceDelegate' 
+      InnerCheckedSortedSet_PersistenceDelegate = class sealed external 'java.beans' name 'CheckedSortedSet_PersistenceDelegate'
       end;
 
-      InnerEmptyList_PersistenceDelegate = class sealed external 'java.beans' name 'EmptyList_PersistenceDelegate' 
+      InnerEmptyList_PersistenceDelegate = class sealed external 'java.beans' name 'EmptyList_PersistenceDelegate'
       end;
 
-      InnerEmptyMap_PersistenceDelegate = class sealed external 'java.beans' name 'EmptyMap_PersistenceDelegate' 
+      InnerEmptyMap_PersistenceDelegate = class sealed external 'java.beans' name 'EmptyMap_PersistenceDelegate'
       end;
 
-      InnerEmptySet_PersistenceDelegate = class sealed external 'java.beans' name 'EmptySet_PersistenceDelegate' 
+      InnerEmptySet_PersistenceDelegate = class sealed external 'java.beans' name 'EmptySet_PersistenceDelegate'
       end;
 
-      InnerSingletonList_PersistenceDelegate = class sealed external 'java.beans' name 'SingletonList_PersistenceDelegate' 
+      InnerSingletonList_PersistenceDelegate = class sealed external 'java.beans' name 'SingletonList_PersistenceDelegate'
       end;
 
-      InnerSingletonMap_PersistenceDelegate = class sealed external 'java.beans' name 'SingletonMap_PersistenceDelegate' 
+      InnerSingletonMap_PersistenceDelegate = class sealed external 'java.beans' name 'SingletonMap_PersistenceDelegate'
       end;
 
-      InnerSingletonSet_PersistenceDelegate = class sealed external 'java.beans' name 'SingletonSet_PersistenceDelegate' 
+      InnerSingletonSet_PersistenceDelegate = class sealed external 'java.beans' name 'SingletonSet_PersistenceDelegate'
       end;
 
-      InnerSynchronizedCollection_PersistenceDelegate = class sealed external 'java.beans' name 'SynchronizedCollection_PersistenceDelegate' 
+      InnerSynchronizedCollection_PersistenceDelegate = class sealed external 'java.beans' name 'SynchronizedCollection_PersistenceDelegate'
       end;
 
-      InnerSynchronizedList_PersistenceDelegate = class sealed external 'java.beans' name 'SynchronizedList_PersistenceDelegate' 
+      InnerSynchronizedList_PersistenceDelegate = class sealed external 'java.beans' name 'SynchronizedList_PersistenceDelegate'
       end;
 
-      InnerSynchronizedMap_PersistenceDelegate = class sealed external 'java.beans' name 'SynchronizedMap_PersistenceDelegate' 
+      InnerSynchronizedMap_PersistenceDelegate = class sealed external 'java.beans' name 'SynchronizedMap_PersistenceDelegate'
       end;
 
-      InnerSynchronizedRandomAccessList_PersistenceDelegate = class sealed external 'java.beans' name 'SynchronizedRandomAccessList_PersistenceDelegate' 
+      InnerSynchronizedRandomAccessList_PersistenceDelegate = class sealed external 'java.beans' name 'SynchronizedRandomAccessList_PersistenceDelegate'
       end;
 
-      InnerSynchronizedSet_PersistenceDelegate = class sealed external 'java.beans' name 'SynchronizedSet_PersistenceDelegate' 
+      InnerSynchronizedSet_PersistenceDelegate = class sealed external 'java.beans' name 'SynchronizedSet_PersistenceDelegate'
       end;
 
-      InnerSynchronizedSortedMap_PersistenceDelegate = class sealed external 'java.beans' name 'SynchronizedSortedMap_PersistenceDelegate' 
+      InnerSynchronizedSortedMap_PersistenceDelegate = class sealed external 'java.beans' name 'SynchronizedSortedMap_PersistenceDelegate'
       end;
 
-      InnerSynchronizedSortedSet_PersistenceDelegate = class sealed external 'java.beans' name 'SynchronizedSortedSet_PersistenceDelegate' 
+      InnerSynchronizedSortedSet_PersistenceDelegate = class sealed external 'java.beans' name 'SynchronizedSortedSet_PersistenceDelegate'
       end;
 
-      InnerUnmodifiableCollection_PersistenceDelegate = class sealed external 'java.beans' name 'UnmodifiableCollection_PersistenceDelegate' 
+      InnerUnmodifiableCollection_PersistenceDelegate = class sealed external 'java.beans' name 'UnmodifiableCollection_PersistenceDelegate'
       end;
 
-      InnerUnmodifiableList_PersistenceDelegate = class sealed external 'java.beans' name 'UnmodifiableList_PersistenceDelegate' 
+      InnerUnmodifiableList_PersistenceDelegate = class sealed external 'java.beans' name 'UnmodifiableList_PersistenceDelegate'
       end;
 
-      InnerUnmodifiableMap_PersistenceDelegate = class sealed external 'java.beans' name 'UnmodifiableMap_PersistenceDelegate' 
+      InnerUnmodifiableMap_PersistenceDelegate = class sealed external 'java.beans' name 'UnmodifiableMap_PersistenceDelegate'
       end;
 
-      InnerUnmodifiableRandomAccessList_PersistenceDelegate = class sealed external 'java.beans' name 'UnmodifiableRandomAccessList_PersistenceDelegate' 
+      InnerUnmodifiableRandomAccessList_PersistenceDelegate = class sealed external 'java.beans' name 'UnmodifiableRandomAccessList_PersistenceDelegate'
       end;
 
-      InnerUnmodifiableSet_PersistenceDelegate = class sealed external 'java.beans' name 'UnmodifiableSet_PersistenceDelegate' 
+      InnerUnmodifiableSet_PersistenceDelegate = class sealed external 'java.beans' name 'UnmodifiableSet_PersistenceDelegate'
       end;
 
-      InnerUnmodifiableSortedMap_PersistenceDelegate = class sealed external 'java.beans' name 'UnmodifiableSortedMap_PersistenceDelegate' 
+      InnerUnmodifiableSortedMap_PersistenceDelegate = class sealed external 'java.beans' name 'UnmodifiableSortedMap_PersistenceDelegate'
       end;
 
-      InnerUnmodifiableSortedSet_PersistenceDelegate = class sealed external 'java.beans' name 'UnmodifiableSortedSet_PersistenceDelegate' 
+      InnerUnmodifiableSortedSet_PersistenceDelegate = class sealed external 'java.beans' name 'UnmodifiableSortedSet_PersistenceDelegate'
       end;
 
   strict protected
@@ -28352,7 +28352,7 @@
       Arr1InnerLineReader = array of InnerLineReader;
       Arr2InnerLineReader = array of Arr1InnerLineReader;
       Arr3InnerLineReader = array of Arr2InnerLineReader;
-      InnerLineReader = class external 'java.io' name 'LineReader' 
+      InnerLineReader = class external 'java.io' name 'LineReader'
       end;
 
   public
@@ -28435,31 +28435,31 @@
       Arr1InnerFormatString = array of InnerFormatString;
       Arr2InnerFormatString = array of Arr1InnerFormatString;
       Arr3InnerFormatString = array of Arr2InnerFormatString;
-      InnerConversion = class external 'java.util' name 'Conversion' 
+      InnerConversion = class external 'java.util' name 'Conversion'
       end;
 
-      InnerDateTime = class external 'java.util' name 'DateTime' 
+      InnerDateTime = class external 'java.util' name 'DateTime'
       end;
 
-      InnerFixedString = class external 'java.util' name 'FixedString' 
+      InnerFixedString = class external 'java.util' name 'FixedString'
       end;
 
-      InnerFlags = class external 'java.util' name 'Flags' 
+      InnerFlags = class external 'java.util' name 'Flags'
       end;
 
-      InnerFormatSpecifier = class external 'java.util' name 'FormatSpecifier' 
+      InnerFormatSpecifier = class external 'java.util' name 'FormatSpecifier'
       public
         type
           InnerBigDecimalLayout = class;
           Arr1InnerBigDecimalLayout = array of InnerBigDecimalLayout;
           Arr2InnerBigDecimalLayout = array of Arr1InnerBigDecimalLayout;
           Arr3InnerBigDecimalLayout = array of Arr2InnerBigDecimalLayout;
-          InnerBigDecimalLayout = class external 'java.util' name 'BigDecimalLayout' 
+          InnerBigDecimalLayout = class external 'java.util' name 'BigDecimalLayout'
           end;
 
       end;
 
-      InnerFormatString = interface external 'java.util' name 'FormatString' 
+      InnerFormatString = interface external 'java.util' name 'FormatString'
       end;
 
   public
@@ -28534,7 +28534,7 @@
       Arr1InnerGate = array of InnerGate;
       Arr2InnerGate = array of Arr1InnerGate;
       Arr3InnerGate = array of Arr2InnerGate;
-      InnerGate = class external 'java.lang' name 'Gate' 
+      InnerGate = class external 'java.lang' name 'Gate'
       end;
 
   public
@@ -28583,7 +28583,7 @@
         class function valueOf(para1: JLString): JLThread.InnerState; static; overload;
       end;
 
-      InnerUncaughtExceptionHandler = interface external 'java.lang' name 'UncaughtExceptionHandler' 
+      InnerUncaughtExceptionHandler = interface external 'java.lang' name 'UncaughtExceptionHandler'
         procedure uncaughtException(para1: JLThread; para2: JLThrowable); overload;
       end;
 
@@ -29272,7 +29272,7 @@
       Arr1InnerCookiePathComparator = array of InnerCookiePathComparator;
       Arr2InnerCookiePathComparator = array of Arr1InnerCookiePathComparator;
       Arr3InnerCookiePathComparator = array of Arr2InnerCookiePathComparator;
-      InnerCookiePathComparator = class external 'java.net' name 'CookiePathComparator' 
+      InnerCookiePathComparator = class external 'java.net' name 'CookiePathComparator'
       end;
 
   public
@@ -29704,7 +29704,7 @@
       Arr1InnerWeakKeyValueMap = array of InnerWeakKeyValueMap;
       Arr2InnerWeakKeyValueMap = array of Arr1InnerWeakKeyValueMap;
       Arr3InnerWeakKeyValueMap = array of Arr2InnerWeakKeyValueMap;
-      InnerWeakKeyValueMap = class external 'javax.security.auth' name 'WeakKeyValueMap' 
+      InnerWeakKeyValueMap = class external 'javax.security.auth' name 'WeakKeyValueMap'
       end;
 
   public
@@ -29734,7 +29734,7 @@
       Arr1InnerDelegate = array of InnerDelegate;
       Arr2InnerDelegate = array of Arr1InnerDelegate;
       Arr3InnerDelegate = array of Arr2InnerDelegate;
-      InnerDelegate = class sealed external 'java.security' name 'Delegate' 
+      InnerDelegate = class sealed external 'java.security' name 'Delegate'
       end;
 
   strict protected
@@ -29760,7 +29760,7 @@
       Arr1InnerDelegate = array of InnerDelegate;
       Arr2InnerDelegate = array of Arr1InnerDelegate;
       Arr3InnerDelegate = array of Arr2InnerDelegate;
-      InnerDelegate = class external 'java.security' name 'Delegate' 
+      InnerDelegate = class external 'java.security' name 'Delegate'
       end;
 
   strict protected
@@ -29924,10 +29924,10 @@
       Arr1InnerDelegate = array of InnerDelegate;
       Arr2InnerDelegate = array of Arr1InnerDelegate;
       Arr3InnerDelegate = array of Arr2InnerDelegate;
-      InnerCipherAdapter = class external 'java.security' name 'CipherAdapter' 
+      InnerCipherAdapter = class external 'java.security' name 'CipherAdapter'
       end;
 
-      InnerDelegate = class external 'java.security' name 'Delegate' 
+      InnerDelegate = class external 'java.security' name 'Delegate'
       end;
 
   strict protected
@@ -31086,25 +31086,25 @@
       Arr1InnerValueCollection = array of InnerValueCollection;
       Arr2InnerValueCollection = array of Arr1InnerValueCollection;
       Arr3InnerValueCollection = array of Arr2InnerValueCollection;
-      InnerEmptyEnumerator = class external 'java.util' name 'EmptyEnumerator' 
+      InnerEmptyEnumerator = class external 'java.util' name 'EmptyEnumerator'
       end;
 
-      InnerEmptyIterator = class external 'java.util' name 'EmptyIterator' 
+      InnerEmptyIterator = class external 'java.util' name 'EmptyIterator'
       end;
 
-      InnerEnumerator = class external 'java.util' name 'Enumerator' 
+      InnerEnumerator = class external 'java.util' name 'Enumerator'
       end;
 
-      InnerEntry = class external 'java.util' name 'Entry' 
+      InnerEntry = class external 'java.util' name 'Entry'
       end;
 
-      InnerEntrySet = class external 'java.util' name 'EntrySet' 
+      InnerEntrySet = class external 'java.util' name 'EntrySet'
       end;
 
-      InnerKeySet = class external 'java.util' name 'KeySet' 
+      InnerKeySet = class external 'java.util' name 'KeySet'
       end;
 
-      InnerValueCollection = class external 'java.util' name 'ValueCollection' 
+      InnerValueCollection = class external 'java.util' name 'ValueCollection'
       end;
 
   public
@@ -31557,7 +31557,7 @@
       Arr1InnerQueueingFuture = array of InnerQueueingFuture;
       Arr2InnerQueueingFuture = array of Arr1InnerQueueingFuture;
       Arr3InnerQueueingFuture = array of Arr2InnerQueueingFuture;
-      InnerQueueingFuture = class external 'java.util.concurrent' name 'QueueingFuture' 
+      InnerQueueingFuture = class external 'java.util.concurrent' name 'QueueingFuture'
       end;
 
   public
@@ -31608,13 +31608,13 @@
       Arr1InnerSync = array of InnerSync;
       Arr2InnerSync = array of Arr1InnerSync;
       Arr3InnerSync = array of Arr2InnerSync;
-      InnerFairSync = class sealed external 'java.util.concurrent.locks' name 'FairSync' 
+      InnerFairSync = class sealed external 'java.util.concurrent.locks' name 'FairSync'
       end;
 
-      InnerNonfairSync = class sealed external 'java.util.concurrent.locks' name 'NonfairSync' 
+      InnerNonfairSync = class sealed external 'java.util.concurrent.locks' name 'NonfairSync'
       end;
 
-      InnerSync = class abstract external 'java.util.concurrent.locks' name 'Sync' 
+      InnerSync = class abstract external 'java.util.concurrent.locks' name 'Sync'
       end;
 
   public
@@ -31662,13 +31662,13 @@
       Arr1InnerSync = array of InnerSync;
       Arr2InnerSync = array of Arr1InnerSync;
       Arr3InnerSync = array of Arr2InnerSync;
-      InnerFairSync = class sealed external 'java.util.concurrent.locks' name 'FairSync' 
+      InnerFairSync = class sealed external 'java.util.concurrent.locks' name 'FairSync'
       end;
 
-      InnerNonfairSync = class sealed external 'java.util.concurrent.locks' name 'NonfairSync' 
+      InnerNonfairSync = class sealed external 'java.util.concurrent.locks' name 'NonfairSync'
       end;
 
-      InnerSync = class abstract external 'java.util.concurrent.locks' name 'Sync' 
+      InnerSync = class abstract external 'java.util.concurrent.locks' name 'Sync'
       public
         type
           InnerHoldCounter = class;
@@ -31679,10 +31679,10 @@
           Arr1InnerThreadLocalHoldCounter = array of InnerThreadLocalHoldCounter;
           Arr2InnerThreadLocalHoldCounter = array of Arr1InnerThreadLocalHoldCounter;
           Arr3InnerThreadLocalHoldCounter = array of Arr2InnerThreadLocalHoldCounter;
-          InnerHoldCounter = class sealed external 'java.util.concurrent.locks' name 'HoldCounter' 
+          InnerHoldCounter = class sealed external 'java.util.concurrent.locks' name 'HoldCounter'
           end;
 
-          InnerThreadLocalHoldCounter = class sealed external 'java.util.concurrent.locks' name 'ThreadLocalHoldCounter' 
+          InnerThreadLocalHoldCounter = class sealed external 'java.util.concurrent.locks' name 'ThreadLocalHoldCounter'
           end;
 
       end;
@@ -31823,13 +31823,13 @@
       Arr1InnerNodeRemovedEvent = array of InnerNodeRemovedEvent;
       Arr2InnerNodeRemovedEvent = array of Arr1InnerNodeRemovedEvent;
       Arr3InnerNodeRemovedEvent = array of Arr2InnerNodeRemovedEvent;
-      InnerEventDispatchThread = class external 'java.util.prefs' name 'EventDispatchThread' 
+      InnerEventDispatchThread = class external 'java.util.prefs' name 'EventDispatchThread'
       end;
 
-      InnerNodeAddedEvent = class external 'java.util.prefs' name 'NodeAddedEvent' 
+      InnerNodeAddedEvent = class external 'java.util.prefs' name 'NodeAddedEvent'
       end;
 
-      InnerNodeRemovedEvent = class external 'java.util.prefs' name 'NodeRemovedEvent' 
+      InnerNodeRemovedEvent = class external 'java.util.prefs' name 'NodeRemovedEvent'
       end;
 
   strict protected
@@ -32074,7 +32074,7 @@
       Arr1InnerZipFileInputStream = array of InnerZipFileInputStream;
       Arr2InnerZipFileInputStream = array of Arr1InnerZipFileInputStream;
       Arr3InnerZipFileInputStream = array of Arr2InnerZipFileInputStream;
-      InnerZipFileInputStream = class external 'java.util.zip' name 'ZipFileInputStream' 
+      InnerZipFileInputStream = class external 'java.util.zip' name 'ZipFileInputStream'
       end;
 
   public
@@ -32102,7 +32102,7 @@
       Arr1InnerProgressOptionPane = array of InnerProgressOptionPane;
       Arr2InnerProgressOptionPane = array of Arr1InnerProgressOptionPane;
       Arr3InnerProgressOptionPane = array of Arr2InnerProgressOptionPane;
-      InnerProgressOptionPane = class external 'javax.swing' name 'ProgressOptionPane' 
+      InnerProgressOptionPane = class external 'javax.swing' name 'ProgressOptionPane'
       end;
 
   public
@@ -32111,7 +32111,7 @@
       Arr1InnerAccessibleProgressMonitor = array of InnerAccessibleProgressMonitor;
       Arr2InnerAccessibleProgressMonitor = array of Arr1InnerAccessibleProgressMonitor;
       Arr3InnerAccessibleProgressMonitor = array of Arr2InnerAccessibleProgressMonitor;
-      InnerAccessibleProgressMonitor = class external 'javax.swing' name 'AccessibleProgressMonitor' 
+      InnerAccessibleProgressMonitor = class external 'javax.swing' name 'AccessibleProgressMonitor'
       end;
 
   strict protected
@@ -32166,28 +32166,28 @@
       Arr1InnerPropertyChangeHandler = array of InnerPropertyChangeHandler;
       Arr2InnerPropertyChangeHandler = array of Arr1InnerPropertyChangeHandler;
       Arr3InnerPropertyChangeHandler = array of Arr2InnerPropertyChangeHandler;
-      InnerDocumentHandler = class external 'javax.swing.text.html' name 'DocumentHandler' 
+      InnerDocumentHandler = class external 'javax.swing.text.html' name 'DocumentHandler'
       end;
 
-      InnerElementInfo = class external 'javax.swing.text.html' name 'ElementInfo' 
+      InnerElementInfo = class external 'javax.swing.text.html' name 'ElementInfo'
       end;
 
-      InnerRootHTMLAccessibleContext = class external 'javax.swing.text.html' name 'RootHTMLAccessibleContext' 
+      InnerRootHTMLAccessibleContext = class external 'javax.swing.text.html' name 'RootHTMLAccessibleContext'
       end;
 
-      InnerIconElementInfo = class external 'javax.swing.text.html' name 'IconElementInfo' 
+      InnerIconElementInfo = class external 'javax.swing.text.html' name 'IconElementInfo'
       public
         type
           InnerIconAccessibleContext = class;
           Arr1InnerIconAccessibleContext = array of InnerIconAccessibleContext;
           Arr2InnerIconAccessibleContext = array of Arr1InnerIconAccessibleContext;
           Arr3InnerIconAccessibleContext = array of Arr2InnerIconAccessibleContext;
-          InnerIconAccessibleContext = class external 'javax.swing.text.html' name 'IconAccessibleContext' 
+          InnerIconAccessibleContext = class external 'javax.swing.text.html' name 'IconAccessibleContext'
           end;
 
       end;
 
-      InnerTableElementInfo = class external 'javax.swing.text.html' name 'TableElementInfo' 
+      InnerTableElementInfo = class external 'javax.swing.text.html' name 'TableElementInfo'
       public
         type
           InnerTableCellElementInfo = class;
@@ -32198,10 +32198,10 @@
           Arr1InnerTableRowElementInfo = array of InnerTableRowElementInfo;
           Arr2InnerTableRowElementInfo = array of Arr1InnerTableRowElementInfo;
           Arr3InnerTableRowElementInfo = array of Arr2InnerTableRowElementInfo;
-          InnerTableCellElementInfo = class external 'javax.swing.text.html' name 'TableCellElementInfo' 
+          InnerTableCellElementInfo = class external 'javax.swing.text.html' name 'TableCellElementInfo'
           end;
 
-          InnerTableRowElementInfo = class external 'javax.swing.text.html' name 'TableRowElementInfo' 
+          InnerTableRowElementInfo = class external 'javax.swing.text.html' name 'TableRowElementInfo'
           end;
 
       public
@@ -32210,42 +32210,42 @@
           Arr1InnerTableAccessibleContext = array of InnerTableAccessibleContext;
           Arr2InnerTableAccessibleContext = array of Arr1InnerTableAccessibleContext;
           Arr3InnerTableAccessibleContext = array of Arr2InnerTableAccessibleContext;
-          InnerTableAccessibleContext = class external 'javax.swing.text.html' name 'TableAccessibleContext' 
+          InnerTableAccessibleContext = class external 'javax.swing.text.html' name 'TableAccessibleContext'
           public
             type
               InnerAccessibleHeadersTable = class;
               Arr1InnerAccessibleHeadersTable = array of InnerAccessibleHeadersTable;
               Arr2InnerAccessibleHeadersTable = array of Arr1InnerAccessibleHeadersTable;
               Arr3InnerAccessibleHeadersTable = array of Arr2InnerAccessibleHeadersTable;
-              InnerAccessibleHeadersTable = class external 'javax.swing.text.html' name 'AccessibleHeadersTable' 
+              InnerAccessibleHeadersTable = class external 'javax.swing.text.html' name 'AccessibleHeadersTable'
               end;
 
           end;
 
       end;
 
-      InnerTextElementInfo = class external 'javax.swing.text.html' name 'TextElementInfo' 
+      InnerTextElementInfo = class external 'javax.swing.text.html' name 'TextElementInfo'
       public
         type
           InnerTextAccessibleContext = class;
           Arr1InnerTextAccessibleContext = array of InnerTextAccessibleContext;
           Arr2InnerTextAccessibleContext = array of Arr1InnerTextAccessibleContext;
           Arr3InnerTextAccessibleContext = array of Arr2InnerTextAccessibleContext;
-          InnerTextAccessibleContext = class external 'javax.swing.text.html' name 'TextAccessibleContext' 
+          InnerTextAccessibleContext = class external 'javax.swing.text.html' name 'TextAccessibleContext'
           public
             type
               InnerIndexedSegment = class;
               Arr1InnerIndexedSegment = array of InnerIndexedSegment;
               Arr2InnerIndexedSegment = array of Arr1InnerIndexedSegment;
               Arr3InnerIndexedSegment = array of Arr2InnerIndexedSegment;
-              InnerIndexedSegment = class external 'javax.swing.text.html' name 'IndexedSegment' 
+              InnerIndexedSegment = class external 'javax.swing.text.html' name 'IndexedSegment'
               end;
 
           end;
 
       end;
 
-      InnerPropertyChangeHandler = class external 'javax.swing.text.html' name 'PropertyChangeHandler' 
+      InnerPropertyChangeHandler = class external 'javax.swing.text.html' name 'PropertyChangeHandler'
       end;
 
   public
@@ -32254,7 +32254,7 @@
       Arr1InnerHTMLAccessibleContext = array of InnerHTMLAccessibleContext;
       Arr2InnerHTMLAccessibleContext = array of Arr1InnerHTMLAccessibleContext;
       Arr3InnerHTMLAccessibleContext = array of Arr2InnerHTMLAccessibleContext;
-      InnerHTMLAccessibleContext = class abstract external 'javax.swing.text.html' name 'HTMLAccessibleContext' 
+      InnerHTMLAccessibleContext = class abstract external 'javax.swing.text.html' name 'HTMLAccessibleContext'
       end;
 
   public
@@ -32754,13 +32754,13 @@
       Arr1InnerObjectValue = array of InnerObjectValue;
       Arr2InnerObjectValue = array of Arr1InnerObjectValue;
       Arr3InnerObjectValue = array of Arr2InnerObjectValue;
-      InnerAttribute = class external 'javax.imageio.metadata' name 'Attribute' 
+      InnerAttribute = class external 'javax.imageio.metadata' name 'Attribute'
       end;
 
-      InnerElement = class external 'javax.imageio.metadata' name 'Element' 
+      InnerElement = class external 'javax.imageio.metadata' name 'Element'
       end;
 
-      InnerObjectValue = class external 'javax.imageio.metadata' name 'ObjectValue' 
+      InnerObjectValue = class external 'javax.imageio.metadata' name 'ObjectValue'
       end;
 
   public
@@ -32951,7 +32951,7 @@
       Arr1InnerArrayGettersSafeAction = array of InnerArrayGettersSafeAction;
       Arr2InnerArrayGettersSafeAction = array of Arr1InnerArrayGettersSafeAction;
       Arr3InnerArrayGettersSafeAction = array of Arr2InnerArrayGettersSafeAction;
-      InnerArrayGettersSafeAction = class external 'javax.management' name 'ArrayGettersSafeAction' 
+      InnerArrayGettersSafeAction = class external 'javax.management' name 'ArrayGettersSafeAction'
       end;
 
   public
@@ -32979,7 +32979,7 @@
       Arr1InnerMBeanInfoSafeAction = array of InnerMBeanInfoSafeAction;
       Arr2InnerMBeanInfoSafeAction = array of Arr1InnerMBeanInfoSafeAction;
       Arr3InnerMBeanInfoSafeAction = array of Arr2InnerMBeanInfoSafeAction;
-      InnerMBeanInfoSafeAction = class external 'javax.management' name 'MBeanInfoSafeAction' 
+      InnerMBeanInfoSafeAction = class external 'javax.management' name 'MBeanInfoSafeAction'
       end;
 
   public
@@ -33581,7 +33581,7 @@
       Arr1InnerSimpleLoadStoreParameter = array of InnerSimpleLoadStoreParameter;
       Arr2InnerSimpleLoadStoreParameter = array of Arr1InnerSimpleLoadStoreParameter;
       Arr3InnerSimpleLoadStoreParameter = array of Arr2InnerSimpleLoadStoreParameter;
-      InnerSimpleLoadStoreParameter = class external 'java.security' name 'SimpleLoadStoreParameter' 
+      InnerSimpleLoadStoreParameter = class external 'java.security' name 'SimpleLoadStoreParameter'
       end;
 
   public
@@ -33622,10 +33622,10 @@
       Arr1InnerPasswordProtection = array of InnerPasswordProtection;
       Arr2InnerPasswordProtection = array of Arr1InnerPasswordProtection;
       Arr3InnerPasswordProtection = array of Arr2InnerPasswordProtection;
-      InnerEntry = interface external 'java.security' name 'Entry' 
+      InnerEntry = interface external 'java.security' name 'Entry'
       end;
 
-      InnerProtectionParameter = interface external 'java.security' name 'ProtectionParameter' 
+      InnerProtectionParameter = interface external 'java.security' name 'ProtectionParameter'
       end;
 
       InnerBuilder = class abstract external 'java.security' name 'Builder' (JLObject)
@@ -33635,7 +33635,7 @@
           Arr1InnerFileBuilder = array of InnerFileBuilder;
           Arr2InnerFileBuilder = array of Arr1InnerFileBuilder;
           Arr3InnerFileBuilder = array of Arr2InnerFileBuilder;
-          InnerFileBuilder = class sealed external 'java.security' name 'FileBuilder' 
+          InnerFileBuilder = class sealed external 'java.security' name 'FileBuilder'
           end;
 
       strict protected
@@ -33648,7 +33648,7 @@
         class function newInstance(para1: JLString; para2: JSProvider; para3: JSKeyStore.InnerProtectionParameter): JSKeyStore.InnerBuilder; static; overload;
       end;
 
-      InnerLoadStoreParameter = interface external 'java.security' name 'LoadStoreParameter' 
+      InnerLoadStoreParameter = interface external 'java.security' name 'LoadStoreParameter'
         function getProtectionParameter(): JSKeyStore.InnerProtectionParameter; overload;
       end;
 
@@ -34169,7 +34169,7 @@
     function toString(): JLString; overload; virtual;
   end;
 
-  JSSLine = interface external 'javax.sound.sampled' name 'Line' 
+  JSSLine = interface external 'javax.sound.sampled' name 'Line'
     type
       InnerInfo = class;
       Arr1InnerInfo = array of InnerInfo;
@@ -34336,7 +34336,7 @@
       Arr1InnerAccessibleImageIcon = array of InnerAccessibleImageIcon;
       Arr2InnerAccessibleImageIcon = array of Arr1InnerAccessibleImageIcon;
       Arr3InnerAccessibleImageIcon = array of Arr2InnerAccessibleImageIcon;
-      InnerAccessibleImageIcon = class external 'javax.swing' name 'AccessibleImageIcon' 
+      InnerAccessibleImageIcon = class external 'javax.swing' name 'AccessibleImageIcon'
       end;
 
   strict protected
@@ -34469,7 +34469,7 @@
       Arr1InnerBufferInfo = array of InnerBufferInfo;
       Arr2InnerBufferInfo = array of Arr1InnerBufferInfo;
       Arr3InnerBufferInfo = array of Arr2InnerBufferInfo;
-      InnerBufferInfo = class external 'javax.swing' name 'BufferInfo' 
+      InnerBufferInfo = class external 'javax.swing' name 'BufferInfo'
       end;
 
   strict protected
@@ -34494,10 +34494,10 @@
       Arr1InnerRow = array of InnerRow;
       Arr2InnerRow = array of Arr1InnerRow;
       Arr3InnerRow = array of Arr2InnerRow;
-      InnerFilterEntry = class external 'javax.swing' name 'FilterEntry' 
+      InnerFilterEntry = class external 'javax.swing' name 'FilterEntry'
       end;
 
-      InnerRow = class external 'javax.swing' name 'Row' 
+      InnerRow = class external 'javax.swing' name 'Row'
       end;
 
   public
@@ -34596,7 +34596,7 @@
       Arr1InnerSharedOwnerFrame = array of InnerSharedOwnerFrame;
       Arr2InnerSharedOwnerFrame = array of Arr1InnerSharedOwnerFrame;
       Arr3InnerSharedOwnerFrame = array of Arr2InnerSharedOwnerFrame;
-      InnerSharedOwnerFrame = class external 'javax.swing' name 'SharedOwnerFrame' 
+      InnerSharedOwnerFrame = class external 'javax.swing' name 'SharedOwnerFrame'
       end;
 
   public
@@ -34894,85 +34894,85 @@
       Arr1InnerOceanVerticalSliderThumbIcon = array of InnerOceanVerticalSliderThumbIcon;
       Arr2InnerOceanVerticalSliderThumbIcon = array of Arr1InnerOceanVerticalSliderThumbIcon;
       Arr3InnerOceanVerticalSliderThumbIcon = array of Arr2InnerOceanVerticalSliderThumbIcon;
-      InnerImageCacher = class external 'javax.swing.plaf.metal' name 'ImageCacher' 
+      InnerImageCacher = class external 'javax.swing.plaf.metal' name 'ImageCacher'
       public
         type
           InnerImageGcPair = class;
           Arr1InnerImageGcPair = array of InnerImageGcPair;
           Arr2InnerImageGcPair = array of Arr1InnerImageGcPair;
           Arr3InnerImageGcPair = array of Arr2InnerImageGcPair;
-          InnerImageGcPair = class external 'javax.swing.plaf.metal' name 'ImageGcPair' 
+          InnerImageGcPair = class external 'javax.swing.plaf.metal' name 'ImageGcPair'
           end;
 
       end;
 
-      InnerCheckBoxIcon = class external 'javax.swing.plaf.metal' name 'CheckBoxIcon' 
+      InnerCheckBoxIcon = class external 'javax.swing.plaf.metal' name 'CheckBoxIcon'
       end;
 
-      InnerCheckBoxMenuItemIcon = class external 'javax.swing.plaf.metal' name 'CheckBoxMenuItemIcon' 
+      InnerCheckBoxMenuItemIcon = class external 'javax.swing.plaf.metal' name 'CheckBoxMenuItemIcon'
       end;
 
-      InnerFileChooserDetailViewIcon = class external 'javax.swing.plaf.metal' name 'FileChooserDetailViewIcon' 
+      InnerFileChooserDetailViewIcon = class external 'javax.swing.plaf.metal' name 'FileChooserDetailViewIcon'
       end;
 
-      InnerFileChooserHomeFolderIcon = class external 'javax.swing.plaf.metal' name 'FileChooserHomeFolderIcon' 
+      InnerFileChooserHomeFolderIcon = class external 'javax.swing.plaf.metal' name 'FileChooserHomeFolderIcon'
       end;
 
-      InnerFileChooserListViewIcon = class external 'javax.swing.plaf.metal' name 'FileChooserListViewIcon' 
+      InnerFileChooserListViewIcon = class external 'javax.swing.plaf.metal' name 'FileChooserListViewIcon'
       end;
 
-      InnerFileChooserNewFolderIcon = class external 'javax.swing.plaf.metal' name 'FileChooserNewFolderIcon' 
+      InnerFileChooserNewFolderIcon = class external 'javax.swing.plaf.metal' name 'FileChooserNewFolderIcon'
       end;
 
-      InnerFileChooserUpFolderIcon = class external 'javax.swing.plaf.metal' name 'FileChooserUpFolderIcon' 
+      InnerFileChooserUpFolderIcon = class external 'javax.swing.plaf.metal' name 'FileChooserUpFolderIcon'
       end;
 
-      InnerHorizontalSliderThumbIcon = class external 'javax.swing.plaf.metal' name 'HorizontalSliderThumbIcon' 
+      InnerHorizontalSliderThumbIcon = class external 'javax.swing.plaf.metal' name 'HorizontalSliderThumbIcon'
       end;
 
-      InnerInternalFrameAltMaximizeIcon = class external 'javax.swing.plaf.metal' name 'InternalFrameAltMaximizeIcon' 
+      InnerInternalFrameAltMaximizeIcon = class external 'javax.swing.plaf.metal' name 'InternalFrameAltMaximizeIcon'
       end;
 
-      InnerInternalFrameCloseIcon = class external 'javax.swing.plaf.metal' name 'InternalFrameCloseIcon' 
+      InnerInternalFrameCloseIcon = class external 'javax.swing.plaf.metal' name 'InternalFrameCloseIcon'
       end;
 
-      InnerInternalFrameDefaultMenuIcon = class external 'javax.swing.plaf.metal' name 'InternalFrameDefaultMenuIcon' 
+      InnerInternalFrameDefaultMenuIcon = class external 'javax.swing.plaf.metal' name 'InternalFrameDefaultMenuIcon'
       end;
 
-      InnerInternalFrameMaximizeIcon = class external 'javax.swing.plaf.metal' name 'InternalFrameMaximizeIcon' 
+      InnerInternalFrameMaximizeIcon = class external 'javax.swing.plaf.metal' name 'InternalFrameMaximizeIcon'
       end;
 
-      InnerInternalFrameMinimizeIcon = class external 'javax.swing.plaf.metal' name 'InternalFrameMinimizeIcon' 
+      InnerInternalFrameMinimizeIcon = class external 'javax.swing.plaf.metal' name 'InternalFrameMinimizeIcon'
       end;
 
-      InnerMenuArrowIcon = class external 'javax.swing.plaf.metal' name 'MenuArrowIcon' 
+      InnerMenuArrowIcon = class external 'javax.swing.plaf.metal' name 'MenuArrowIcon'
       end;
 
-      InnerMenuItemArrowIcon = class external 'javax.swing.plaf.metal' name 'MenuItemArrowIcon' 
+      InnerMenuItemArrowIcon = class external 'javax.swing.plaf.metal' name 'MenuItemArrowIcon'
       end;
 
-      InnerRadioButtonIcon = class external 'javax.swing.plaf.metal' name 'RadioButtonIcon' 
+      InnerRadioButtonIcon = class external 'javax.swing.plaf.metal' name 'RadioButtonIcon'
       end;
 
-      InnerRadioButtonMenuItemIcon = class external 'javax.swing.plaf.metal' name 'RadioButtonMenuItemIcon' 
+      InnerRadioButtonMenuItemIcon = class external 'javax.swing.plaf.metal' name 'RadioButtonMenuItemIcon'
       end;
 
-      InnerTreeComputerIcon = class external 'javax.swing.plaf.metal' name 'TreeComputerIcon' 
+      InnerTreeComputerIcon = class external 'javax.swing.plaf.metal' name 'TreeComputerIcon'
       end;
 
-      InnerTreeFloppyDriveIcon = class external 'javax.swing.plaf.metal' name 'TreeFloppyDriveIcon' 
+      InnerTreeFloppyDriveIcon = class external 'javax.swing.plaf.metal' name 'TreeFloppyDriveIcon'
       end;
 
-      InnerTreeHardDriveIcon = class external 'javax.swing.plaf.metal' name 'TreeHardDriveIcon' 
+      InnerTreeHardDriveIcon = class external 'javax.swing.plaf.metal' name 'TreeHardDriveIcon'
       end;
 
-      InnerVerticalSliderThumbIcon = class external 'javax.swing.plaf.metal' name 'VerticalSliderThumbIcon' 
+      InnerVerticalSliderThumbIcon = class external 'javax.swing.plaf.metal' name 'VerticalSliderThumbIcon'
       end;
 
-      InnerOceanHorizontalSliderThumbIcon = class external 'javax.swing.plaf.metal' name 'OceanHorizontalSliderThumbIcon' 
+      InnerOceanHorizontalSliderThumbIcon = class external 'javax.swing.plaf.metal' name 'OceanHorizontalSliderThumbIcon'
       end;
 
-      InnerOceanVerticalSliderThumbIcon = class external 'javax.swing.plaf.metal' name 'OceanVerticalSliderThumbIcon' 
+      InnerOceanVerticalSliderThumbIcon = class external 'javax.swing.plaf.metal' name 'OceanVerticalSliderThumbIcon'
       end;
 
   public
@@ -35099,10 +35099,10 @@
       Arr1InnerWindowsFontDelegate = array of InnerWindowsFontDelegate;
       Arr2InnerWindowsFontDelegate = array of Arr1InnerWindowsFontDelegate;
       Arr3InnerWindowsFontDelegate = array of Arr2InnerWindowsFontDelegate;
-      InnerFontDelegate = class external 'javax.swing.plaf.metal' name 'FontDelegate' 
+      InnerFontDelegate = class external 'javax.swing.plaf.metal' name 'FontDelegate'
       end;
 
-      InnerWindowsFontDelegate = class external 'javax.swing.plaf.metal' name 'WindowsFontDelegate' 
+      InnerWindowsFontDelegate = class external 'javax.swing.plaf.metal' name 'WindowsFontDelegate'
       end;
 
   public
@@ -35463,7 +35463,7 @@
       Arr1InnerMuxingAttributeNameEnumeration = array of InnerMuxingAttributeNameEnumeration;
       Arr2InnerMuxingAttributeNameEnumeration = array of Arr1InnerMuxingAttributeNameEnumeration;
       Arr3InnerMuxingAttributeNameEnumeration = array of Arr2InnerMuxingAttributeNameEnumeration;
-      InnerMuxingAttributeNameEnumeration = class external 'javax.swing.text.html' name 'MuxingAttributeNameEnumeration' 
+      InnerMuxingAttributeNameEnumeration = class external 'javax.swing.text.html' name 'MuxingAttributeNameEnumeration'
       end;
 
   public
@@ -36055,7 +36055,7 @@
       Arr1InnerCalendarFormatter = array of InnerCalendarFormatter;
       Arr2InnerCalendarFormatter = array of Arr1InnerCalendarFormatter;
       Arr3InnerCalendarFormatter = array of Arr2InnerCalendarFormatter;
-      InnerCalendarFormatter = class sealed external 'javax.xml.bind' name 'CalendarFormatter' 
+      InnerCalendarFormatter = class sealed external 'javax.xml.bind' name 'CalendarFormatter'
       end;
 
   public
@@ -36896,10 +36896,10 @@
       Arr1InnerElements = array of InnerElements;
       Arr2InnerElements = array of Arr1InnerElements;
       Arr3InnerElements = array of Arr2InnerElements;
-      InnerAddress = class external 'javax.xml.ws.wsaddressing' name 'Address' 
+      InnerAddress = class external 'javax.xml.ws.wsaddressing' name 'Address'
       end;
 
-      InnerElements = class external 'javax.xml.ws.wsaddressing' name 'Elements' 
+      InnerElements = class external 'javax.xml.ws.wsaddressing' name 'Elements'
       end;
 
   strict protected
@@ -38549,7 +38549,7 @@
       Arr1InnerAttributesAdapter = array of InnerAttributesAdapter;
       Arr2InnerAttributesAdapter = array of Arr1InnerAttributesAdapter;
       Arr3InnerAttributesAdapter = array of Arr2InnerAttributesAdapter;
-      InnerAttributesAdapter = class sealed external 'org.xml.sax.helpers' name 'AttributesAdapter' 
+      InnerAttributesAdapter = class sealed external 'org.xml.sax.helpers' name 'AttributesAdapter'
       end;
 
   public
@@ -38589,7 +38589,7 @@
       Arr1InnerAttributeListAdapter = array of InnerAttributeListAdapter;
       Arr2InnerAttributeListAdapter = array of Arr1InnerAttributeListAdapter;
       Arr3InnerAttributeListAdapter = array of Arr2InnerAttributeListAdapter;
-      InnerAttributeListAdapter = class sealed external 'org.xml.sax.helpers' name 'AttributeListAdapter' 
+      InnerAttributeListAdapter = class sealed external 'org.xml.sax.helpers' name 'AttributeListAdapter'
       end;
 
   public
@@ -39207,7 +39207,7 @@
       Arr1InnerAccessibleAWTMenuBar = array of InnerAccessibleAWTMenuBar;
       Arr2InnerAccessibleAWTMenuBar = array of Arr1InnerAccessibleAWTMenuBar;
       Arr3InnerAccessibleAWTMenuBar = array of Arr2InnerAccessibleAWTMenuBar;
-      InnerAccessibleAWTMenuBar = class external 'java.awt' name 'AccessibleAWTMenuBar' 
+      InnerAccessibleAWTMenuBar = class external 'java.awt' name 'AccessibleAWTMenuBar'
       end;
 
   public
@@ -39235,7 +39235,7 @@
       Arr1InnerAccessibleAWTMenuItem = array of InnerAccessibleAWTMenuItem;
       Arr2InnerAccessibleAWTMenuItem = array of Arr1InnerAccessibleAWTMenuItem;
       Arr3InnerAccessibleAWTMenuItem = array of Arr2InnerAccessibleAWTMenuItem;
-      InnerAccessibleAWTMenuItem = class external 'java.awt' name 'AccessibleAWTMenuItem' 
+      InnerAccessibleAWTMenuItem = class external 'java.awt' name 'AccessibleAWTMenuItem'
       end;
 
   public
@@ -39322,7 +39322,7 @@
       Arr1InnerTextFlavorComparator = array of InnerTextFlavorComparator;
       Arr2InnerTextFlavorComparator = array of Arr1InnerTextFlavorComparator;
       Arr3InnerTextFlavorComparator = array of Arr2InnerTextFlavorComparator;
-      InnerTextFlavorComparator = class external 'java.awt.datatransfer' name 'TextFlavorComparator' 
+      InnerTextFlavorComparator = class external 'java.awt.datatransfer' name 'TextFlavorComparator'
       end;
 
   public
@@ -40136,7 +40136,7 @@
       Arr1InnerNode = array of InnerNode;
       Arr2InnerNode = array of Arr1InnerNode;
       Arr3InnerNode = array of Arr2InnerNode;
-      InnerNode = class sealed external 'java.util.concurrent.locks' name 'Node' 
+      InnerNode = class sealed external 'java.util.concurrent.locks' name 'Node'
       end;
 
   public
@@ -40145,7 +40145,7 @@
       Arr1InnerConditionObject = array of InnerConditionObject;
       Arr2InnerConditionObject = array of Arr1InnerConditionObject;
       Arr3InnerConditionObject = array of Arr2InnerConditionObject;
-      InnerConditionObject = class external 'java.util.concurrent.locks' name 'ConditionObject' 
+      InnerConditionObject = class external 'java.util.concurrent.locks' name 'ConditionObject'
       end;
 
   strict protected
@@ -40189,7 +40189,7 @@
       Arr1InnerNode = array of InnerNode;
       Arr2InnerNode = array of Arr1InnerNode;
       Arr3InnerNode = array of Arr2InnerNode;
-      InnerNode = class sealed external 'java.util.concurrent.locks' name 'Node' 
+      InnerNode = class sealed external 'java.util.concurrent.locks' name 'Node'
       end;
 
   public
@@ -40198,7 +40198,7 @@
       Arr1InnerConditionObject = array of InnerConditionObject;
       Arr2InnerConditionObject = array of Arr1InnerConditionObject;
       Arr3InnerConditionObject = array of Arr2InnerConditionObject;
-      InnerConditionObject = class external 'java.util.concurrent.locks' name 'ConditionObject' 
+      InnerConditionObject = class external 'java.util.concurrent.locks' name 'ConditionObject'
       end;
 
   strict protected
@@ -40336,10 +40336,10 @@
       Arr1InnerProperty = array of InnerProperty;
       Arr2InnerProperty = array of Arr1InnerProperty;
       Arr3InnerProperty = array of Arr2InnerProperty;
-      InnerPatternProperty = class external 'javax.management' name 'PatternProperty' 
+      InnerPatternProperty = class external 'javax.management' name 'PatternProperty'
       end;
 
-      InnerProperty = class external 'javax.management' name 'Property' 
+      InnerProperty = class external 'javax.management' name 'Property'
       end;
 
   public
@@ -40637,7 +40637,7 @@
       Arr1InnerAccessibleJDialog = array of InnerAccessibleJDialog;
       Arr2InnerAccessibleJDialog = array of Arr1InnerAccessibleJDialog;
       Arr3InnerAccessibleJDialog = array of Arr2InnerAccessibleJDialog;
-      InnerAccessibleJDialog = class external 'javax.swing' name 'AccessibleJDialog' 
+      InnerAccessibleJDialog = class external 'javax.swing' name 'AccessibleJDialog'
       end;
 
   strict protected
@@ -41618,7 +41618,7 @@
       Arr1InnerSafeCharIterator = array of InnerSafeCharIterator;
       Arr2InnerSafeCharIterator = array of Arr1InnerSafeCharIterator;
       Arr3InnerSafeCharIterator = array of Arr2InnerSafeCharIterator;
-      InnerSafeCharIterator = class sealed external 'java.text' name 'SafeCharIterator' 
+      InnerSafeCharIterator = class sealed external 'java.text' name 'SafeCharIterator'
       end;
 
   strict protected
@@ -41855,7 +41855,7 @@
       Arr1InnerValuesEnumImpl = array of InnerValuesEnumImpl;
       Arr2InnerValuesEnumImpl = array of Arr1InnerValuesEnumImpl;
       Arr3InnerValuesEnumImpl = array of Arr2InnerValuesEnumImpl;
-      InnerValuesEnumImpl = class external 'javax.naming.directory' name 'ValuesEnumImpl' 
+      InnerValuesEnumImpl = class external 'javax.naming.directory' name 'ValuesEnumImpl'
       end;
 
   strict protected
@@ -41900,10 +41900,10 @@
       Arr1InnerIDEnumImpl = array of InnerIDEnumImpl;
       Arr2InnerIDEnumImpl = array of Arr1InnerIDEnumImpl;
       Arr3InnerIDEnumImpl = array of Arr2InnerIDEnumImpl;
-      InnerAttrEnumImpl = class external 'javax.naming.directory' name 'AttrEnumImpl' 
+      InnerAttrEnumImpl = class external 'javax.naming.directory' name 'AttrEnumImpl'
       end;
 
-      InnerIDEnumImpl = class external 'javax.naming.directory' name 'IDEnumImpl' 
+      InnerIDEnumImpl = class external 'javax.naming.directory' name 'IDEnumImpl'
       end;
 
   public
@@ -42276,7 +42276,7 @@
     function clone(): JLObject; overload; virtual;
   end;
 
-  JAPDesktopPeer = interface external 'java.awt.peer' name 'DesktopPeer' 
+  JAPDesktopPeer = interface external 'java.awt.peer' name 'DesktopPeer'
     function isSupported(para1: JADesktop.InnerAction): jboolean; overload;
     procedure open(para1: JIFile); overload;  // throws java.io.IOException
     procedure edit(para1: JIFile); overload;  // throws java.io.IOException
@@ -42300,13 +42300,13 @@
       Arr1InnerToolkitModalEventFilter = array of InnerToolkitModalEventFilter;
       Arr2InnerToolkitModalEventFilter = array of Arr1InnerToolkitModalEventFilter;
       Arr3InnerToolkitModalEventFilter = array of Arr2InnerToolkitModalEventFilter;
-      InnerApplicationModalEventFilter = class external 'java.awt' name 'ApplicationModalEventFilter' 
+      InnerApplicationModalEventFilter = class external 'java.awt' name 'ApplicationModalEventFilter'
       end;
 
-      InnerDocumentModalEventFilter = class external 'java.awt' name 'DocumentModalEventFilter' 
+      InnerDocumentModalEventFilter = class external 'java.awt' name 'DocumentModalEventFilter'
       end;
 
-      InnerToolkitModalEventFilter = class external 'java.awt' name 'ToolkitModalEventFilter' 
+      InnerToolkitModalEventFilter = class external 'java.awt' name 'ToolkitModalEventFilter'
       end;
 
   strict protected
@@ -42366,7 +42366,7 @@
     procedure setSSLParameters(para1: JNSSSLParameters); overload; virtual;
   end;
 
-  JAPMessager = interface external 'javax.annotation.processing' name 'Messager' 
+  JAPMessager = interface external 'javax.annotation.processing' name 'Messager'
     procedure printMessage(para1: JTDiagnostic.InnerKind; para2: JLCharSequence); overload;
     procedure printMessage(para1: JTDiagnostic.InnerKind; para2: JLCharSequence; para3: JLMEElement); overload;
     procedure printMessage(para1: JTDiagnostic.InnerKind; para2: JLCharSequence; para3: JLMEElement; para4: JLMEAnnotationMirror); overload;
@@ -42521,34 +42521,34 @@
       Arr1InnerWriteThroughEntry = array of InnerWriteThroughEntry;
       Arr2InnerWriteThroughEntry = array of Arr1InnerWriteThroughEntry;
       Arr3InnerWriteThroughEntry = array of Arr2InnerWriteThroughEntry;
-      InnerEntryIterator = class sealed external 'java.util.concurrent' name 'EntryIterator' 
+      InnerEntryIterator = class sealed external 'java.util.concurrent' name 'EntryIterator'
       end;
 
-      InnerEntrySet = class sealed external 'java.util.concurrent' name 'EntrySet' 
+      InnerEntrySet = class sealed external 'java.util.concurrent' name 'EntrySet'
       end;
 
-      InnerKeySet = class sealed external 'java.util.concurrent' name 'KeySet' 
+      InnerKeySet = class sealed external 'java.util.concurrent' name 'KeySet'
       end;
 
-      InnerHashEntry = class sealed external 'java.util.concurrent' name 'HashEntry' 
+      InnerHashEntry = class sealed external 'java.util.concurrent' name 'HashEntry'
       end;
 
-      InnerHashIterator = class abstract external 'java.util.concurrent' name 'HashIterator' 
+      InnerHashIterator = class abstract external 'java.util.concurrent' name 'HashIterator'
       end;
 
-      InnerKeyIterator = class sealed external 'java.util.concurrent' name 'KeyIterator' 
+      InnerKeyIterator = class sealed external 'java.util.concurrent' name 'KeyIterator'
       end;
 
-      InnerValueIterator = class sealed external 'java.util.concurrent' name 'ValueIterator' 
+      InnerValueIterator = class sealed external 'java.util.concurrent' name 'ValueIterator'
       end;
 
-      InnerSegment = class sealed external 'java.util.concurrent' name 'Segment' 
+      InnerSegment = class sealed external 'java.util.concurrent' name 'Segment'
       end;
 
-      InnerValues = class sealed external 'java.util.concurrent' name 'Values' 
+      InnerValues = class sealed external 'java.util.concurrent' name 'Values'
       end;
 
-      InnerWriteThroughEntry = class sealed external 'java.util.concurrent' name 'WriteThroughEntry' 
+      InnerWriteThroughEntry = class sealed external 'java.util.concurrent' name 'WriteThroughEntry'
       end;
 
   public
@@ -43009,10 +43009,10 @@
       Arr1InnerListItr = array of InnerListItr;
       Arr2InnerListItr = array of Arr1InnerListItr;
       Arr3InnerListItr = array of Arr2InnerListItr;
-      InnerItr = class external 'java.util' name 'Itr' 
+      InnerItr = class external 'java.util' name 'Itr'
       end;
 
-      InnerListItr = class external 'java.util' name 'ListItr' 
+      InnerListItr = class external 'java.util' name 'ListItr'
       end;
 
   strict protected
@@ -43055,13 +43055,13 @@
       Arr1InnerCOWSubList = array of InnerCOWSubList;
       Arr2InnerCOWSubList = array of Arr1InnerCOWSubList;
       Arr3InnerCOWSubList = array of Arr2InnerCOWSubList;
-      InnerCOWIterator = class external 'java.util.concurrent' name 'COWIterator' 
+      InnerCOWIterator = class external 'java.util.concurrent' name 'COWIterator'
       end;
 
-      InnerCOWSubListIterator = class external 'java.util.concurrent' name 'COWSubListIterator' 
+      InnerCOWSubListIterator = class external 'java.util.concurrent' name 'COWSubListIterator'
       end;
 
-      InnerCOWSubList = class external 'java.util.concurrent' name 'COWSubList' 
+      InnerCOWSubList = class external 'java.util.concurrent' name 'COWSubList'
       end;
 
   public
@@ -44453,7 +44453,7 @@
       Arr1InnerDeallocator = array of InnerDeallocator;
       Arr2InnerDeallocator = array of Arr1InnerDeallocator;
       Arr3InnerDeallocator = array of Arr2InnerDeallocator;
-      InnerDeallocator = class external 'java.nio' name 'Deallocator' 
+      InnerDeallocator = class external 'java.nio' name 'Deallocator'
       end;
 
   strict protected
@@ -44658,7 +44658,7 @@
     function tailSet(para1: JLObject): JUSortedSet; overload;
   end;
 
-  JAPComponentPeer = interface external 'java.awt.peer' name 'ComponentPeer' 
+  JAPComponentPeer = interface external 'java.awt.peer' name 'ComponentPeer'
     const
       SET_LOCATION = 1;
       SET_SIZE = 2;
@@ -44813,10 +44813,10 @@
       Arr1InnerTypeAheadMarker = array of InnerTypeAheadMarker;
       Arr2InnerTypeAheadMarker = array of Arr1InnerTypeAheadMarker;
       Arr3InnerTypeAheadMarker = array of Arr2InnerTypeAheadMarker;
-      InnerDefaultKeyboardFocusManagerSentEvent = class external 'java.awt' name 'DefaultKeyboardFocusManagerSentEvent' 
+      InnerDefaultKeyboardFocusManagerSentEvent = class external 'java.awt' name 'DefaultKeyboardFocusManagerSentEvent'
       end;
 
-      InnerTypeAheadMarker = class external 'java.awt' name 'TypeAheadMarker' 
+      InnerTypeAheadMarker = class external 'java.awt' name 'TypeAheadMarker'
       end;
 
   public
@@ -44882,7 +44882,7 @@
       Arr1InnerCard = array of InnerCard;
       Arr2InnerCard = array of Arr1InnerCard;
       Arr3InnerCard = array of Arr2InnerCard;
-      InnerCard = class external 'java.awt' name 'Card' 
+      InnerCard = class external 'java.awt' name 'Card'
       end;
 
   public
@@ -45030,37 +45030,37 @@
       Arr1InnerSpringDelta = array of InnerSpringDelta;
       Arr2InnerSpringDelta = array of Arr1InnerSpringDelta;
       Arr3InnerSpringDelta = array of Arr2InnerSpringDelta;
-      InnerAutoPreferredGapSpring = class external 'javax.swing' name 'AutoPreferredGapSpring' 
+      InnerAutoPreferredGapSpring = class external 'javax.swing' name 'AutoPreferredGapSpring'
       end;
 
-      InnerBaselineGroup = class external 'javax.swing' name 'BaselineGroup' 
+      InnerBaselineGroup = class external 'javax.swing' name 'BaselineGroup'
       end;
 
-      InnerComponentSpring = class sealed external 'javax.swing' name 'ComponentSpring' 
+      InnerComponentSpring = class sealed external 'javax.swing' name 'ComponentSpring'
       end;
 
-      InnerContainerAutoPreferredGapSpring = class external 'javax.swing' name 'ContainerAutoPreferredGapSpring' 
+      InnerContainerAutoPreferredGapSpring = class external 'javax.swing' name 'ContainerAutoPreferredGapSpring'
       end;
 
-      InnerGapSpring = class external 'javax.swing' name 'GapSpring' 
+      InnerGapSpring = class external 'javax.swing' name 'GapSpring'
       end;
 
-      InnerPreferredGapSpring = class external 'javax.swing' name 'PreferredGapSpring' 
+      InnerPreferredGapSpring = class external 'javax.swing' name 'PreferredGapSpring'
       end;
 
-      InnerAutoPreferredGapMatch = class sealed external 'javax.swing' name 'AutoPreferredGapMatch' 
+      InnerAutoPreferredGapMatch = class sealed external 'javax.swing' name 'AutoPreferredGapMatch'
       end;
 
-      InnerComponentInfo = class external 'javax.swing' name 'ComponentInfo' 
+      InnerComponentInfo = class external 'javax.swing' name 'ComponentInfo'
       end;
 
-      InnerLinkInfo = class external 'javax.swing' name 'LinkInfo' 
+      InnerLinkInfo = class external 'javax.swing' name 'LinkInfo'
       end;
 
-      InnerSpring = class abstract external 'javax.swing' name 'Spring' 
+      InnerSpring = class abstract external 'javax.swing' name 'Spring'
       end;
 
-      InnerSpringDelta = class sealed external 'javax.swing' name 'SpringDelta' 
+      InnerSpringDelta = class sealed external 'javax.swing' name 'SpringDelta'
       end;
 
   public
@@ -45081,10 +45081,10 @@
       Arr1InnerSequentialGroup = array of InnerSequentialGroup;
       Arr2InnerSequentialGroup = array of Arr1InnerSequentialGroup;
       Arr3InnerSequentialGroup = array of Arr2InnerSequentialGroup;
-      InnerGroup = class abstract external 'javax.swing' name 'Group' 
+      InnerGroup = class abstract external 'javax.swing' name 'Group'
       end;
 
-      InnerParallelGroup = class external 'javax.swing' name 'ParallelGroup' 
+      InnerParallelGroup = class external 'javax.swing' name 'ParallelGroup'
       end;
 
       InnerAlignment = class sealed external 'javax.swing' name 'Alignment' (JLEnum)
@@ -45099,7 +45099,7 @@
         class function valueOf(para1: JLString): JSGroupLayout.InnerAlignment; static; overload;
       end;
 
-      InnerSequentialGroup = class external 'javax.swing' name 'SequentialGroup' 
+      InnerSequentialGroup = class external 'javax.swing' name 'SequentialGroup'
       end;
 
   public
@@ -45165,7 +45165,7 @@
       Arr1InnerSpringProxy = array of InnerSpringProxy;
       Arr2InnerSpringProxy = array of Arr1InnerSpringProxy;
       Arr3InnerSpringProxy = array of Arr2InnerSpringProxy;
-      InnerSpringProxy = class external 'javax.swing' name 'SpringProxy' 
+      InnerSpringProxy = class external 'javax.swing' name 'SpringProxy'
       end;
 
   public
@@ -45909,7 +45909,7 @@
       Arr1InnerAccessibleAWTButton = array of InnerAccessibleAWTButton;
       Arr2InnerAccessibleAWTButton = array of Arr1InnerAccessibleAWTButton;
       Arr3InnerAccessibleAWTButton = array of Arr2InnerAccessibleAWTButton;
-      InnerAccessibleAWTButton = class external 'java.awt' name 'AccessibleAWTButton' 
+      InnerAccessibleAWTButton = class external 'java.awt' name 'AccessibleAWTButton'
       end;
 
   public
@@ -45939,7 +45939,7 @@
       Arr1InnerAccessibleAWTCanvas = array of InnerAccessibleAWTCanvas;
       Arr2InnerAccessibleAWTCanvas = array of Arr1InnerAccessibleAWTCanvas;
       Arr3InnerAccessibleAWTCanvas = array of Arr2InnerAccessibleAWTCanvas;
-      InnerAccessibleAWTCanvas = class external 'java.awt' name 'AccessibleAWTCanvas' 
+      InnerAccessibleAWTCanvas = class external 'java.awt' name 'AccessibleAWTCanvas'
       end;
 
   public
@@ -45961,7 +45961,7 @@
       Arr1InnerAccessibleAWTCheckbox = array of InnerAccessibleAWTCheckbox;
       Arr2InnerAccessibleAWTCheckbox = array of Arr1InnerAccessibleAWTCheckbox;
       Arr3InnerAccessibleAWTCheckbox = array of Arr2InnerAccessibleAWTCheckbox;
-      InnerAccessibleAWTCheckbox = class external 'java.awt' name 'AccessibleAWTCheckbox' 
+      InnerAccessibleAWTCheckbox = class external 'java.awt' name 'AccessibleAWTCheckbox'
       end;
 
   public
@@ -45997,7 +45997,7 @@
       Arr1InnerAccessibleAWTChoice = array of InnerAccessibleAWTChoice;
       Arr2InnerAccessibleAWTChoice = array of Arr1InnerAccessibleAWTChoice;
       Arr3InnerAccessibleAWTChoice = array of Arr2InnerAccessibleAWTChoice;
-      InnerAccessibleAWTChoice = class external 'java.awt' name 'AccessibleAWTChoice' 
+      InnerAccessibleAWTChoice = class external 'java.awt' name 'AccessibleAWTChoice'
       end;
 
   public
@@ -46048,16 +46048,16 @@
       Arr1InnerWakingRunnable = array of InnerWakingRunnable;
       Arr2InnerWakingRunnable = array of Arr1InnerWakingRunnable;
       Arr3InnerWakingRunnable = array of Arr2InnerWakingRunnable;
-      InnerEventTargetFilter = interface external 'java.awt' name 'EventTargetFilter' 
+      InnerEventTargetFilter = interface external 'java.awt' name 'EventTargetFilter'
       end;
 
-      InnerDropTargetEventTargetFilter = class external 'java.awt' name 'DropTargetEventTargetFilter' 
+      InnerDropTargetEventTargetFilter = class external 'java.awt' name 'DropTargetEventTargetFilter'
       end;
 
-      InnerMouseEventTargetFilter = class external 'java.awt' name 'MouseEventTargetFilter' 
+      InnerMouseEventTargetFilter = class external 'java.awt' name 'MouseEventTargetFilter'
       end;
 
-      InnerWakingRunnable = class sealed external 'java.awt' name 'WakingRunnable' 
+      InnerWakingRunnable = class sealed external 'java.awt' name 'WakingRunnable'
       end;
 
   public
@@ -46066,14 +46066,14 @@
       Arr1InnerAccessibleAWTContainer = array of InnerAccessibleAWTContainer;
       Arr2InnerAccessibleAWTContainer = array of Arr1InnerAccessibleAWTContainer;
       Arr3InnerAccessibleAWTContainer = array of Arr2InnerAccessibleAWTContainer;
-      InnerAccessibleAWTContainer = class external 'java.awt' name 'AccessibleAWTContainer' 
+      InnerAccessibleAWTContainer = class external 'java.awt' name 'AccessibleAWTContainer'
       public
         type
           InnerAccessibleContainerHandler = class;
           Arr1InnerAccessibleContainerHandler = array of InnerAccessibleContainerHandler;
           Arr2InnerAccessibleContainerHandler = array of Arr1InnerAccessibleContainerHandler;
           Arr3InnerAccessibleContainerHandler = array of Arr2InnerAccessibleContainerHandler;
-          InnerAccessibleContainerHandler = class external 'java.awt' name 'AccessibleContainerHandler' 
+          InnerAccessibleContainerHandler = class external 'java.awt' name 'AccessibleContainerHandler'
           end;
 
       end;
@@ -46169,7 +46169,7 @@
       Arr1InnerAccessibleAWTLabel = array of InnerAccessibleAWTLabel;
       Arr2InnerAccessibleAWTLabel = array of Arr1InnerAccessibleAWTLabel;
       Arr3InnerAccessibleAWTLabel = array of Arr2InnerAccessibleAWTLabel;
-      InnerAccessibleAWTLabel = class external 'java.awt' name 'AccessibleAWTLabel' 
+      InnerAccessibleAWTLabel = class external 'java.awt' name 'AccessibleAWTLabel'
       end;
 
   public
@@ -46199,14 +46199,14 @@
       Arr1InnerAccessibleAWTList = array of InnerAccessibleAWTList;
       Arr2InnerAccessibleAWTList = array of Arr1InnerAccessibleAWTList;
       Arr3InnerAccessibleAWTList = array of Arr2InnerAccessibleAWTList;
-      InnerAccessibleAWTList = class external 'java.awt' name 'AccessibleAWTList' 
+      InnerAccessibleAWTList = class external 'java.awt' name 'AccessibleAWTList'
       public
         type
           InnerAccessibleAWTListChild = class;
           Arr1InnerAccessibleAWTListChild = array of InnerAccessibleAWTListChild;
           Arr2InnerAccessibleAWTListChild = array of Arr1InnerAccessibleAWTListChild;
           Arr3InnerAccessibleAWTListChild = array of Arr2InnerAccessibleAWTListChild;
-          InnerAccessibleAWTListChild = class external 'java.awt' name 'AccessibleAWTListChild' 
+          InnerAccessibleAWTListChild = class external 'java.awt' name 'AccessibleAWTListChild'
           end;
 
       end;
@@ -46279,7 +46279,7 @@
       Arr1InnerAccessibleAWTScrollBar = array of InnerAccessibleAWTScrollBar;
       Arr2InnerAccessibleAWTScrollBar = array of Arr1InnerAccessibleAWTScrollBar;
       Arr3InnerAccessibleAWTScrollBar = array of Arr2InnerAccessibleAWTScrollBar;
-      InnerAccessibleAWTScrollBar = class external 'java.awt' name 'AccessibleAWTScrollBar' 
+      InnerAccessibleAWTScrollBar = class external 'java.awt' name 'AccessibleAWTScrollBar'
       end;
 
   public
@@ -46332,7 +46332,7 @@
       Arr1InnerAccessibleAWTTextComponent = array of InnerAccessibleAWTTextComponent;
       Arr2InnerAccessibleAWTTextComponent = array of Arr1InnerAccessibleAWTTextComponent;
       Arr3InnerAccessibleAWTTextComponent = array of Arr2InnerAccessibleAWTTextComponent;
-      InnerAccessibleAWTTextComponent = class external 'java.awt' name 'AccessibleAWTTextComponent' 
+      InnerAccessibleAWTTextComponent = class external 'java.awt' name 'AccessibleAWTTextComponent'
       end;
 
   strict protected
@@ -46774,7 +46774,7 @@
       Arr1InnerTargetDataLineInputStream = array of InnerTargetDataLineInputStream;
       Arr2InnerTargetDataLineInputStream = array of Arr1InnerTargetDataLineInputStream;
       Arr3InnerTargetDataLineInputStream = array of Arr2InnerTargetDataLineInputStream;
-      InnerTargetDataLineInputStream = class external 'javax.sound.sampled' name 'TargetDataLineInputStream' 
+      InnerTargetDataLineInputStream = class external 'javax.sound.sampled' name 'TargetDataLineInputStream'
       end;
 
   strict protected
@@ -46983,16 +46983,16 @@
       Arr1InnerRemoteMBeanServerConnection = array of InnerRemoteMBeanServerConnection;
       Arr2InnerRemoteMBeanServerConnection = array of Arr1InnerRemoteMBeanServerConnection;
       Arr3InnerRemoteMBeanServerConnection = array of Arr2InnerRemoteMBeanServerConnection;
-      InnerObjectInputStreamWithLoader = class sealed external 'javax.management.remote.rmi' name 'ObjectInputStreamWithLoader' 
+      InnerObjectInputStreamWithLoader = class sealed external 'javax.management.remote.rmi' name 'ObjectInputStreamWithLoader'
       end;
 
-      InnerRMIClientCommunicatorAdmin = class external 'javax.management.remote.rmi' name 'RMIClientCommunicatorAdmin' 
+      InnerRMIClientCommunicatorAdmin = class external 'javax.management.remote.rmi' name 'RMIClientCommunicatorAdmin'
       end;
 
-      InnerRMINotifClient = class external 'javax.management.remote.rmi' name 'RMINotifClient' 
+      InnerRMINotifClient = class external 'javax.management.remote.rmi' name 'RMINotifClient'
       end;
 
-      InnerRemoteMBeanServerConnection = class external 'javax.management.remote.rmi' name 'RemoteMBeanServerConnection' 
+      InnerRemoteMBeanServerConnection = class external 'javax.management.remote.rmi' name 'RemoteMBeanServerConnection'
       end;
 
   public
@@ -47038,40 +47038,40 @@
       Arr1InnerGetFieldImpl = array of InnerGetFieldImpl;
       Arr2InnerGetFieldImpl = array of Arr1InnerGetFieldImpl;
       Arr3InnerGetFieldImpl = array of Arr2InnerGetFieldImpl;
-      InnerBlockDataInputStream = class external 'java.io' name 'BlockDataInputStream' 
+      InnerBlockDataInputStream = class external 'java.io' name 'BlockDataInputStream'
       end;
 
-      InnerPeekInputStream = class external 'java.io' name 'PeekInputStream' 
+      InnerPeekInputStream = class external 'java.io' name 'PeekInputStream'
       end;
 
-      InnerCaches = class external 'java.io' name 'Caches' 
+      InnerCaches = class external 'java.io' name 'Caches'
       end;
 
-      InnerHandleTable = class external 'java.io' name 'HandleTable' 
+      InnerHandleTable = class external 'java.io' name 'HandleTable'
       public
         type
           InnerHandleList = class;
           Arr1InnerHandleList = array of InnerHandleList;
           Arr2InnerHandleList = array of Arr1InnerHandleList;
           Arr3InnerHandleList = array of Arr2InnerHandleList;
-          InnerHandleList = class external 'java.io' name 'HandleList' 
+          InnerHandleList = class external 'java.io' name 'HandleList'
           end;
 
       end;
 
-      InnerValidationList = class external 'java.io' name 'ValidationList' 
+      InnerValidationList = class external 'java.io' name 'ValidationList'
       public
         type
           InnerCallback = class;
           Arr1InnerCallback = array of InnerCallback;
           Arr2InnerCallback = array of Arr1InnerCallback;
           Arr3InnerCallback = array of Arr2InnerCallback;
-          InnerCallback = class external 'java.io' name 'Callback' 
+          InnerCallback = class external 'java.io' name 'Callback'
           end;
 
       end;
 
-      InnerGetFieldImpl = class external 'java.io' name 'GetFieldImpl' 
+      InnerGetFieldImpl = class external 'java.io' name 'GetFieldImpl'
       end;
 
   public
@@ -47329,22 +47329,22 @@
       Arr1InnerPutFieldImpl = array of InnerPutFieldImpl;
       Arr2InnerPutFieldImpl = array of Arr1InnerPutFieldImpl;
       Arr3InnerPutFieldImpl = array of Arr2InnerPutFieldImpl;
-      InnerBlockDataOutputStream = class external 'java.io' name 'BlockDataOutputStream' 
+      InnerBlockDataOutputStream = class external 'java.io' name 'BlockDataOutputStream'
       end;
 
-      InnerCaches = class external 'java.io' name 'Caches' 
+      InnerCaches = class external 'java.io' name 'Caches'
       end;
 
-      InnerDebugTraceInfoStack = class external 'java.io' name 'DebugTraceInfoStack' 
+      InnerDebugTraceInfoStack = class external 'java.io' name 'DebugTraceInfoStack'
       end;
 
-      InnerHandleTable = class external 'java.io' name 'HandleTable' 
+      InnerHandleTable = class external 'java.io' name 'HandleTable'
       end;
 
-      InnerReplaceTable = class external 'java.io' name 'ReplaceTable' 
+      InnerReplaceTable = class external 'java.io' name 'ReplaceTable'
       end;
 
-      InnerPutFieldImpl = class external 'java.io' name 'PutFieldImpl' 
+      InnerPutFieldImpl = class external 'java.io' name 'PutFieldImpl'
       end;
 
   public
@@ -47723,10 +47723,10 @@
       Arr1InnerStopDispatchEvent = array of InnerStopDispatchEvent;
       Arr2InnerStopDispatchEvent = array of Arr1InnerStopDispatchEvent;
       Arr3InnerStopDispatchEvent = array of Arr2InnerStopDispatchEvent;
-      InnerHierarchyEventFilter = class external 'java.awt' name 'HierarchyEventFilter' 
+      InnerHierarchyEventFilter = class external 'java.awt' name 'HierarchyEventFilter'
       end;
 
-      InnerStopDispatchEvent = class external 'java.awt' name 'StopDispatchEvent' 
+      InnerStopDispatchEvent = class external 'java.awt' name 'StopDispatchEvent'
       end;
 
   public
@@ -47815,7 +47815,7 @@
       Arr1InnerFinalizerThread = array of InnerFinalizerThread;
       Arr2InnerFinalizerThread = array of Arr1InnerFinalizerThread;
       Arr3InnerFinalizerThread = array of Arr2InnerFinalizerThread;
-      InnerFinalizerThread = class external 'java.lang.ref' name 'FinalizerThread' 
+      InnerFinalizerThread = class external 'java.lang.ref' name 'FinalizerThread'
       end;
 
   end;
@@ -47891,7 +47891,7 @@
       Arr1InnerDefaultHostnameVerifier = array of InnerDefaultHostnameVerifier;
       Arr2InnerDefaultHostnameVerifier = array of Arr1InnerDefaultHostnameVerifier;
       Arr3InnerDefaultHostnameVerifier = array of Arr2InnerDefaultHostnameVerifier;
-      InnerDefaultHostnameVerifier = class external 'javax.net.ssl' name 'DefaultHostnameVerifier' 
+      InnerDefaultHostnameVerifier = class external 'javax.net.ssl' name 'DefaultHostnameVerifier'
       end;
 
   strict protected
@@ -47922,7 +47922,7 @@
       Arr1InnerMethodToHash_Maps = array of InnerMethodToHash_Maps;
       Arr2InnerMethodToHash_Maps = array of Arr1InnerMethodToHash_Maps;
       Arr3InnerMethodToHash_Maps = array of Arr2InnerMethodToHash_Maps;
-      InnerMethodToHash_Maps = class external 'java.rmi.server' name 'MethodToHash_Maps' 
+      InnerMethodToHash_Maps = class external 'java.rmi.server' name 'MethodToHash_Maps'
       end;
 
   public
@@ -47963,13 +47963,13 @@
       Arr1InnerRMIServerCommunicatorAdmin = array of InnerRMIServerCommunicatorAdmin;
       Arr2InnerRMIServerCommunicatorAdmin = array of Arr1InnerRMIServerCommunicatorAdmin;
       Arr3InnerRMIServerCommunicatorAdmin = array of Arr2InnerRMIServerCommunicatorAdmin;
-      InnerPrivilegedOperation = class external 'javax.management.remote.rmi' name 'PrivilegedOperation' 
+      InnerPrivilegedOperation = class external 'javax.management.remote.rmi' name 'PrivilegedOperation'
       end;
 
-      InnerSetCcl = class external 'javax.management.remote.rmi' name 'SetCcl' 
+      InnerSetCcl = class external 'javax.management.remote.rmi' name 'SetCcl'
       end;
 
-      InnerRMIServerCommunicatorAdmin = class external 'javax.management.remote.rmi' name 'RMIServerCommunicatorAdmin' 
+      InnerRMIServerCommunicatorAdmin = class external 'javax.management.remote.rmi' name 'RMIServerCommunicatorAdmin'
       end;
 
   public
@@ -48120,7 +48120,7 @@
       Arr1InnerCredOwner = array of InnerCredOwner;
       Arr2InnerCredOwner = array of Arr1InnerCredOwner;
       Arr3InnerCredOwner = array of Arr2InnerCredOwner;
-      InnerCredOwner = class external 'javax.security.auth' name 'CredOwner' 
+      InnerCredOwner = class external 'javax.security.auth' name 'CredOwner'
       end;
 
   public
@@ -48459,7 +48459,7 @@
       Arr1InnerLineReader = array of InnerLineReader;
       Arr2InnerLineReader = array of Arr1InnerLineReader;
       Arr3InnerLineReader = array of Arr2InnerLineReader;
-      InnerLineReader = class external 'java.util' name 'LineReader' 
+      InnerLineReader = class external 'java.util' name 'LineReader'
       end;
 
   strict protected
@@ -48504,11 +48504,11 @@
       Arr1InnerProxyLazyValue = array of InnerProxyLazyValue;
       Arr2InnerProxyLazyValue = array of Arr1InnerProxyLazyValue;
       Arr3InnerProxyLazyValue = array of Arr2InnerProxyLazyValue;
-      InnerActiveValue = interface external 'javax.swing' name 'ActiveValue' 
+      InnerActiveValue = interface external 'javax.swing' name 'ActiveValue'
         function createValue(para1: JSUIDefaults): JLObject; overload;
       end;
 
-      InnerLazyValue = interface external 'javax.swing' name 'LazyValue' 
+      InnerLazyValue = interface external 'javax.swing' name 'LazyValue'
         function createValue(para1: JSUIDefaults): JLObject; overload;
       end;
 
@@ -48749,7 +48749,7 @@
       Arr1InnerBorderlessTextField = array of InnerBorderlessTextField;
       Arr2InnerBorderlessTextField = array of Arr1InnerBorderlessTextField;
       Arr3InnerBorderlessTextField = array of Arr2InnerBorderlessTextField;
-      InnerBorderlessTextField = class external 'javax.swing.plaf.basic' name 'BorderlessTextField' 
+      InnerBorderlessTextField = class external 'javax.swing.plaf.basic' name 'BorderlessTextField'
       end;
 
   public
@@ -48949,7 +48949,7 @@
       Arr1InnerOwnedWeakReference = array of InnerOwnedWeakReference;
       Arr2InnerOwnedWeakReference = array of Arr1InnerOwnedWeakReference;
       Arr3InnerOwnedWeakReference = array of Arr2InnerOwnedWeakReference;
-      InnerOwnedWeakReference = class external 'javax.swing' name 'OwnedWeakReference' 
+      InnerOwnedWeakReference = class external 'javax.swing' name 'OwnedWeakReference'
       end;
 
   public
@@ -49021,7 +49021,7 @@
       Arr1InnerActions = array of InnerActions;
       Arr2InnerActions = array of Arr1InnerActions;
       Arr3InnerActions = array of Arr2InnerActions;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
   public
@@ -49139,7 +49139,7 @@
       Arr1InnerSync = array of InnerSync;
       Arr2InnerSync = array of Arr1InnerSync;
       Arr3InnerSync = array of Arr2InnerSync;
-      InnerSync = class sealed external 'java.util.concurrent' name 'Sync' 
+      InnerSync = class sealed external 'java.util.concurrent' name 'Sync'
       end;
 
   public
@@ -49171,10 +49171,10 @@
       Arr1InnerSwingWorkerPropertyChangeSupport = array of InnerSwingWorkerPropertyChangeSupport;
       Arr2InnerSwingWorkerPropertyChangeSupport = array of Arr1InnerSwingWorkerPropertyChangeSupport;
       Arr3InnerSwingWorkerPropertyChangeSupport = array of Arr2InnerSwingWorkerPropertyChangeSupport;
-      InnerDoSubmitAccumulativeRunnable = class external 'javax.swing' name 'DoSubmitAccumulativeRunnable' 
+      InnerDoSubmitAccumulativeRunnable = class external 'javax.swing' name 'DoSubmitAccumulativeRunnable'
       end;
 
-      InnerSwingWorkerPropertyChangeSupport = class external 'javax.swing' name 'SwingWorkerPropertyChangeSupport' 
+      InnerSwingWorkerPropertyChangeSupport = class external 'javax.swing' name 'SwingWorkerPropertyChangeSupport'
       end;
 
   public
@@ -49239,10 +49239,10 @@
       Arr1InnerMeteredStream = array of InnerMeteredStream;
       Arr2InnerMeteredStream = array of Arr1InnerMeteredStream;
       Arr3InnerMeteredStream = array of Arr2InnerMeteredStream;
-      InnerInitializationErrorManager = class external 'java.util.logging' name 'InitializationErrorManager' 
+      InnerInitializationErrorManager = class external 'java.util.logging' name 'InitializationErrorManager'
       end;
 
-      InnerMeteredStream = class external 'java.util.logging' name 'MeteredStream' 
+      InnerMeteredStream = class external 'java.util.logging' name 'MeteredStream'
       end;
 
   public
@@ -49282,16 +49282,16 @@
       Arr1InnerRemove = array of InnerRemove;
       Arr2InnerRemove = array of Arr1InnerRemove;
       Arr3InnerRemove = array of Arr2InnerRemove;
-      InnerChange = class abstract external 'java.util.prefs' name 'Change' 
+      InnerChange = class abstract external 'java.util.prefs' name 'Change'
       end;
 
-      InnerNodeCreate = class external 'java.util.prefs' name 'NodeCreate' 
+      InnerNodeCreate = class external 'java.util.prefs' name 'NodeCreate'
       end;
 
-      InnerPut = class external 'java.util.prefs' name 'Put' 
+      InnerPut = class external 'java.util.prefs' name 'Put'
       end;
 
-      InnerRemove = class external 'java.util.prefs' name 'Remove' 
+      InnerRemove = class external 'java.util.prefs' name 'Remove'
       end;
 
   public
@@ -49334,7 +49334,7 @@
       Arr1InnerJarFileEntry = array of InnerJarFileEntry;
       Arr2InnerJarFileEntry = array of Arr1InnerJarFileEntry;
       Arr3InnerJarFileEntry = array of Arr2InnerJarFileEntry;
-      InnerJarFileEntry = class external 'java.util.jar' name 'JarFileEntry' 
+      InnerJarFileEntry = class external 'java.util.jar' name 'JarFileEntry'
       end;
 
   public
@@ -49712,13 +49712,13 @@
       Arr1InnerWildcardListenerInfo = array of InnerWildcardListenerInfo;
       Arr2InnerWildcardListenerInfo = array of Arr1InnerWildcardListenerInfo;
       Arr3InnerWildcardListenerInfo = array of Arr2InnerWildcardListenerInfo;
-      InnerListenerInfo = class external 'javax.management' name 'ListenerInfo' 
+      InnerListenerInfo = class external 'javax.management' name 'ListenerInfo'
       end;
 
-      InnerSendNotifJob = class external 'javax.management' name 'SendNotifJob' 
+      InnerSendNotifJob = class external 'javax.management' name 'SendNotifJob'
       end;
 
-      InnerWildcardListenerInfo = class external 'javax.management' name 'WildcardListenerInfo' 
+      InnerWildcardListenerInfo = class external 'javax.management' name 'WildcardListenerInfo'
       end;
 
   public
@@ -50119,7 +50119,7 @@
       Arr1InnerEditorDelegate = array of InnerEditorDelegate;
       Arr2InnerEditorDelegate = array of Arr1InnerEditorDelegate;
       Arr3InnerEditorDelegate = array of Arr2InnerEditorDelegate;
-      InnerEditorDelegate = class external 'javax.swing' name 'EditorDelegate' 
+      InnerEditorDelegate = class external 'javax.swing' name 'EditorDelegate'
       end;
 
   strict protected
@@ -50154,10 +50154,10 @@
       Arr1InnerEditorContainer = array of InnerEditorContainer;
       Arr2InnerEditorContainer = array of Arr1InnerEditorContainer;
       Arr3InnerEditorContainer = array of Arr2InnerEditorContainer;
-      InnerDefaultTextField = class external 'javax.swing.tree' name 'DefaultTextField' 
+      InnerDefaultTextField = class external 'javax.swing.tree' name 'DefaultTextField'
       end;
 
-      InnerEditorContainer = class external 'javax.swing.tree' name 'EditorContainer' 
+      InnerEditorContainer = class external 'javax.swing.tree' name 'EditorContainer'
       end;
 
   strict protected
@@ -50254,10 +50254,10 @@
       Arr1InnerLoadFilesThread = array of InnerLoadFilesThread;
       Arr2InnerLoadFilesThread = array of Arr1InnerLoadFilesThread;
       Arr3InnerLoadFilesThread = array of Arr2InnerLoadFilesThread;
-      InnerDoChangeContents = class external 'javax.swing.plaf.basic' name 'DoChangeContents' 
+      InnerDoChangeContents = class external 'javax.swing.plaf.basic' name 'DoChangeContents'
       end;
 
-      InnerLoadFilesThread = class external 'javax.swing.plaf.basic' name 'LoadFilesThread' 
+      InnerLoadFilesThread = class external 'javax.swing.plaf.basic' name 'LoadFilesThread'
       end;
 
   public
@@ -50304,10 +50304,10 @@
       Arr1InnerTableRowSorterModelWrapper = array of InnerTableRowSorterModelWrapper;
       Arr2InnerTableRowSorterModelWrapper = array of Arr1InnerTableRowSorterModelWrapper;
       Arr3InnerTableRowSorterModelWrapper = array of Arr2InnerTableRowSorterModelWrapper;
-      InnerComparableComparator = class external 'javax.swing.table' name 'ComparableComparator' 
+      InnerComparableComparator = class external 'javax.swing.table' name 'ComparableComparator'
       end;
 
-      InnerTableRowSorterModelWrapper = class external 'javax.swing.table' name 'TableRowSorterModelWrapper' 
+      InnerTableRowSorterModelWrapper = class external 'javax.swing.table' name 'TableRowSorterModelWrapper'
       end;
 
   public
@@ -50406,10 +50406,10 @@
       Arr1InnerIFIcon = array of InnerIFIcon;
       Arr2InnerIFIcon = array of Arr1InnerIFIcon;
       Arr3InnerIFIcon = array of Arr2InnerIFIcon;
-      InnerCOIcon = class external 'javax.swing.plaf.metal' name 'COIcon' 
+      InnerCOIcon = class external 'javax.swing.plaf.metal' name 'COIcon'
       end;
 
-      InnerIFIcon = class external 'javax.swing.plaf.metal' name 'IFIcon' 
+      InnerIFIcon = class external 'javax.swing.plaf.metal' name 'IFIcon'
       end;
 
   public
@@ -50489,7 +50489,7 @@
       Arr1InnerEmptyAttributeSet = array of InnerEmptyAttributeSet;
       Arr2InnerEmptyAttributeSet = array of Arr1InnerEmptyAttributeSet;
       Arr3InnerEmptyAttributeSet = array of Arr2InnerEmptyAttributeSet;
-      InnerEmptyAttributeSet = class external 'javax.swing.text' name 'EmptyAttributeSet' 
+      InnerEmptyAttributeSet = class external 'javax.swing.text' name 'EmptyAttributeSet'
       end;
 
   public
@@ -50564,13 +50564,13 @@
       Arr1InnerSafeDamager = array of InnerSafeDamager;
       Arr2InnerSafeDamager = array of Arr1InnerSafeDamager;
       Arr3InnerSafeDamager = array of Arr2InnerSafeDamager;
-      InnerHighlightInfo = class external 'javax.swing.text' name 'HighlightInfo' 
+      InnerHighlightInfo = class external 'javax.swing.text' name 'HighlightInfo'
       end;
 
-      InnerLayeredHighlightInfo = class external 'javax.swing.text' name 'LayeredHighlightInfo' 
+      InnerLayeredHighlightInfo = class external 'javax.swing.text' name 'LayeredHighlightInfo'
       end;
 
-      InnerSafeDamager = class external 'javax.swing.text' name 'SafeDamager' 
+      InnerSafeDamager = class external 'javax.swing.text' name 'SafeDamager'
       end;
 
   public
@@ -50612,7 +50612,7 @@
       Arr1InnerFlushTask = array of InnerFlushTask;
       Arr2InnerFlushTask = array of Arr1InnerFlushTask;
       Arr3InnerFlushTask = array of Arr2InnerFlushTask;
-      InnerFlushTask = class external 'javax.swing.text' name 'FlushTask' 
+      InnerFlushTask = class external 'javax.swing.text' name 'FlushTask'
       end;
 
   public
@@ -50625,10 +50625,10 @@
       Arr1InnerChildState = array of InnerChildState;
       Arr2InnerChildState = array of Arr1InnerChildState;
       Arr3InnerChildState = array of Arr2InnerChildState;
-      InnerChildLocator = class external 'javax.swing.text' name 'ChildLocator' 
+      InnerChildLocator = class external 'javax.swing.text' name 'ChildLocator'
       end;
 
-      InnerChildState = class external 'javax.swing.text' name 'ChildState' 
+      InnerChildState = class external 'javax.swing.text' name 'ChildState'
       end;
 
   strict protected
@@ -50689,7 +50689,7 @@
       Arr1InnerInvalidator = array of InnerInvalidator;
       Arr2InnerInvalidator = array of Arr1InnerInvalidator;
       Arr3InnerInvalidator = array of Arr2InnerInvalidator;
-      InnerInvalidator = class external 'javax.swing.text' name 'Invalidator' 
+      InnerInvalidator = class external 'javax.swing.text' name 'Invalidator'
       end;
 
   public
@@ -50756,7 +50756,7 @@
       Arr1InnerJustificationInfo = array of InnerJustificationInfo;
       Arr2InnerJustificationInfo = array of Arr1InnerJustificationInfo;
       Arr3InnerJustificationInfo = array of Arr2InnerJustificationInfo;
-      InnerJustificationInfo = class external 'javax.swing.text' name 'JustificationInfo' 
+      InnerJustificationInfo = class external 'javax.swing.text' name 'JustificationInfo'
       end;
 
   public
@@ -50891,10 +50891,10 @@
       Arr1InnerImageLabelView = array of InnerImageLabelView;
       Arr2InnerImageLabelView = array of Arr1InnerImageLabelView;
       Arr3InnerImageLabelView = array of Arr2InnerImageLabelView;
-      InnerImageHandler = class external 'javax.swing.text.html' name 'ImageHandler' 
+      InnerImageHandler = class external 'javax.swing.text.html' name 'ImageHandler'
       end;
 
-      InnerImageLabelView = class external 'javax.swing.text.html' name 'ImageLabelView' 
+      InnerImageLabelView = class external 'javax.swing.text.html' name 'ImageLabelView'
       end;
 
   public
@@ -50940,13 +50940,13 @@
       Arr1InnerVisibleFHTreeStateNodeEnumeration = array of InnerVisibleFHTreeStateNodeEnumeration;
       Arr2InnerVisibleFHTreeStateNodeEnumeration = array of Arr1InnerVisibleFHTreeStateNodeEnumeration;
       Arr3InnerVisibleFHTreeStateNodeEnumeration = array of Arr2InnerVisibleFHTreeStateNodeEnumeration;
-      InnerFHTreeStateNode = class external 'javax.swing.tree' name 'FHTreeStateNode' 
+      InnerFHTreeStateNode = class external 'javax.swing.tree' name 'FHTreeStateNode'
       end;
 
-      InnerSearchInfo = class external 'javax.swing.tree' name 'SearchInfo' 
+      InnerSearchInfo = class external 'javax.swing.tree' name 'SearchInfo'
       end;
 
-      InnerVisibleFHTreeStateNodeEnumeration = class external 'javax.swing.tree' name 'VisibleFHTreeStateNodeEnumeration' 
+      InnerVisibleFHTreeStateNodeEnumeration = class external 'javax.swing.tree' name 'VisibleFHTreeStateNodeEnumeration'
       end;
 
   public
@@ -50983,10 +50983,10 @@
       Arr1InnerVisibleTreeStateNodeEnumeration = array of InnerVisibleTreeStateNodeEnumeration;
       Arr2InnerVisibleTreeStateNodeEnumeration = array of Arr1InnerVisibleTreeStateNodeEnumeration;
       Arr3InnerVisibleTreeStateNodeEnumeration = array of Arr2InnerVisibleTreeStateNodeEnumeration;
-      InnerTreeStateNode = class external 'javax.swing.tree' name 'TreeStateNode' 
+      InnerTreeStateNode = class external 'javax.swing.tree' name 'TreeStateNode'
       end;
 
-      InnerVisibleTreeStateNodeEnumeration = class external 'javax.swing.tree' name 'VisibleTreeStateNodeEnumeration' 
+      InnerVisibleTreeStateNodeEnumeration = class external 'javax.swing.tree' name 'VisibleTreeStateNodeEnumeration'
       end;
 
   public
@@ -51034,30 +51034,30 @@
       Arr1InnerBreadthFirstEnumeration = array of InnerBreadthFirstEnumeration;
       Arr2InnerBreadthFirstEnumeration = array of Arr1InnerBreadthFirstEnumeration;
       Arr3InnerBreadthFirstEnumeration = array of Arr2InnerBreadthFirstEnumeration;
-      InnerPathBetweenNodesEnumeration = class sealed external 'javax.swing.tree' name 'PathBetweenNodesEnumeration' 
+      InnerPathBetweenNodesEnumeration = class sealed external 'javax.swing.tree' name 'PathBetweenNodesEnumeration'
       end;
 
-      InnerPostorderEnumeration = class sealed external 'javax.swing.tree' name 'PostorderEnumeration' 
+      InnerPostorderEnumeration = class sealed external 'javax.swing.tree' name 'PostorderEnumeration'
       end;
 
-      InnerPreorderEnumeration = class sealed external 'javax.swing.tree' name 'PreorderEnumeration' 
+      InnerPreorderEnumeration = class sealed external 'javax.swing.tree' name 'PreorderEnumeration'
       end;
 
-      InnerBreadthFirstEnumeration = class sealed external 'javax.swing.tree' name 'BreadthFirstEnumeration' 
+      InnerBreadthFirstEnumeration = class sealed external 'javax.swing.tree' name 'BreadthFirstEnumeration'
       public
         type
           InnerQueue = class;
           Arr1InnerQueue = array of InnerQueue;
           Arr2InnerQueue = array of Arr1InnerQueue;
           Arr3InnerQueue = array of Arr2InnerQueue;
-          InnerQueue = class sealed external 'javax.swing.tree' name 'Queue' 
+          InnerQueue = class sealed external 'javax.swing.tree' name 'Queue'
           public
             type
               InnerQNode = class;
               Arr1InnerQNode = array of InnerQNode;
               Arr2InnerQNode = array of Arr1InnerQNode;
               Arr3InnerQNode = array of Arr2InnerQNode;
-              InnerQNode = class sealed external 'javax.swing.tree' name 'QNode' 
+              InnerQNode = class sealed external 'javax.swing.tree' name 'QNode'
               end;
 
           end;
@@ -51151,16 +51151,16 @@
       Arr1InnerDefaultFilterBypass = array of InnerDefaultFilterBypass;
       Arr2InnerDefaultFilterBypass = array of Arr1InnerDefaultFilterBypass;
       Arr3InnerDefaultFilterBypass = array of Arr2InnerDefaultFilterBypass;
-      InnerBidiElement = class external 'javax.swing.text' name 'BidiElement' 
+      InnerBidiElement = class external 'javax.swing.text' name 'BidiElement'
       end;
 
-      InnerBidiRootElement = class external 'javax.swing.text' name 'BidiRootElement' 
+      InnerBidiRootElement = class external 'javax.swing.text' name 'BidiRootElement'
       end;
 
-      InnerUndoRedoDocumentEvent = class external 'javax.swing.text' name 'UndoRedoDocumentEvent' 
+      InnerUndoRedoDocumentEvent = class external 'javax.swing.text' name 'UndoRedoDocumentEvent'
       end;
 
-      InnerDefaultFilterBypass = class external 'javax.swing.text' name 'DefaultFilterBypass' 
+      InnerDefaultFilterBypass = class external 'javax.swing.text' name 'DefaultFilterBypass'
       end;
 
   public
@@ -51193,7 +51193,7 @@
       Arr1InnerElementEdit = array of InnerElementEdit;
       Arr2InnerElementEdit = array of Arr1InnerElementEdit;
       Arr3InnerElementEdit = array of Arr2InnerElementEdit;
-      InnerAttributeContext = interface external 'javax.swing.text' name 'AttributeContext' 
+      InnerAttributeContext = interface external 'javax.swing.text' name 'AttributeContext'
         function addAttribute(para1: JSTAttributeSet; para2: JLObject; para3: JLObject): JSTAttributeSet; overload;
         function addAttributes(para1: JSTAttributeSet; para2: JSTAttributeSet): JSTAttributeSet; overload;
         function removeAttribute(para1: JSTAttributeSet; para2: JLObject): JSTAttributeSet; overload;
@@ -51203,7 +51203,7 @@
         procedure reclaim(para1: JSTAttributeSet); overload;
       end;
 
-      InnerContent = interface external 'javax.swing.text' name 'Content' 
+      InnerContent = interface external 'javax.swing.text' name 'Content'
         function createPosition(para1: jint): JSTPosition; overload;  // throws javax.swing.text.BadLocationException
         function length(): jint; overload;
         function insertString(para1: jint; para2: JLString): JSUUndoableEdit; overload;  // throws javax.swing.text.BadLocationException
@@ -51212,16 +51212,16 @@
         procedure getChars(para1: jint; para2: jint; para3: JSTSegment); overload;  // throws javax.swing.text.BadLocationException
       end;
 
-      InnerAbstractElement = class abstract external 'javax.swing.text' name 'AbstractElement' 
+      InnerAbstractElement = class abstract external 'javax.swing.text' name 'AbstractElement'
       end;
 
-      InnerBranchElement = class external 'javax.swing.text' name 'BranchElement' 
+      InnerBranchElement = class external 'javax.swing.text' name 'BranchElement'
       end;
 
-      InnerLeafElement = class external 'javax.swing.text' name 'LeafElement' 
+      InnerLeafElement = class external 'javax.swing.text' name 'LeafElement'
       end;
 
-      InnerDefaultDocumentEvent = class external 'javax.swing.text' name 'DefaultDocumentEvent' 
+      InnerDefaultDocumentEvent = class external 'javax.swing.text' name 'DefaultDocumentEvent'
       end;
 
       InnerElementEdit = class external 'javax.swing.text' name 'ElementEdit' (JSUAbstractUndoableEdit, JSEDocumentEvent.InnerElementChange)
@@ -51371,7 +51371,7 @@
       Arr1InnerLocation = array of InnerLocation;
       Arr2InnerLocation = array of Arr1InnerLocation;
       Arr3InnerLocation = array of Arr2InnerLocation;
-      InnerLocation = interface external 'javax.tools' name 'Location' 
+      InnerLocation = interface external 'javax.tools' name 'Location'
         function getName(): JLString; overload;
         function isOutputLocation(): jboolean; overload;
       end;
@@ -51439,7 +51439,7 @@
       Arr1InnerDelayedNodeIterator = array of InnerDelayedNodeIterator;
       Arr2InnerDelayedNodeIterator = array of Arr1InnerDelayedNodeIterator;
       Arr3InnerDelayedNodeIterator = array of Arr2InnerDelayedNodeIterator;
-      InnerDelayedNodeIterator = class external 'org.jcp.xml.dsig.internal.dom' name 'DelayedNodeIterator' 
+      InnerDelayedNodeIterator = class external 'org.jcp.xml.dsig.internal.dom' name 'DelayedNodeIterator'
       end;
 
   public
@@ -51498,7 +51498,7 @@
       Arr1InnerMechanismMapEntry = array of InnerMechanismMapEntry;
       Arr2InnerMechanismMapEntry = array of Arr1InnerMechanismMapEntry;
       Arr3InnerMechanismMapEntry = array of Arr2InnerMechanismMapEntry;
-      InnerMechanismMapEntry = class external 'javax.xml.crypto.dsig' name 'MechanismMapEntry' 
+      InnerMechanismMapEntry = class external 'javax.xml.crypto.dsig' name 'MechanismMapEntry'
       end;
 
   strict protected
@@ -51542,16 +51542,16 @@
       Arr1InnerSHA512 = array of InnerSHA512;
       Arr2InnerSHA512 = array of Arr1InnerSHA512;
       Arr3InnerSHA512 = array of Arr2InnerSHA512;
-      InnerSHA1 = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA1' 
+      InnerSHA1 = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA1'
       end;
 
-      InnerSHA256 = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA256' 
+      InnerSHA256 = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA256'
       end;
 
-      InnerSHA384 = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA384' 
+      InnerSHA384 = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA384'
       end;
 
-      InnerSHA512 = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA512' 
+      InnerSHA512 = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA512'
       end;
 
   public
@@ -51673,19 +51673,19 @@
       Arr1InnerSHA512withRSA = array of InnerSHA512withRSA;
       Arr2InnerSHA512withRSA = array of Arr1InnerSHA512withRSA;
       Arr3InnerSHA512withRSA = array of Arr2InnerSHA512withRSA;
-      InnerSHA1withDSA = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA1withDSA' 
+      InnerSHA1withDSA = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA1withDSA'
       end;
 
-      InnerSHA1withRSA = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA1withRSA' 
+      InnerSHA1withRSA = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA1withRSA'
       end;
 
-      InnerSHA256withRSA = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA256withRSA' 
+      InnerSHA256withRSA = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA256withRSA'
       end;
 
-      InnerSHA384withRSA = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA384withRSA' 
+      InnerSHA384withRSA = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA384withRSA'
       end;
 
-      InnerSHA512withRSA = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA512withRSA' 
+      InnerSHA512withRSA = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA512withRSA'
       end;
 
   public
@@ -51783,7 +51783,7 @@
       Arr1InnerDOMSignatureValue = array of InnerDOMSignatureValue;
       Arr2InnerDOMSignatureValue = array of Arr1InnerDOMSignatureValue;
       Arr3InnerDOMSignatureValue = array of Arr2InnerDOMSignatureValue;
-      InnerDOMSignatureValue = class external 'org.jcp.xml.dsig.internal.dom' name 'DOMSignatureValue' 
+      InnerDOMSignatureValue = class external 'org.jcp.xml.dsig.internal.dom' name 'DOMSignatureValue'
       end;
 
   public
@@ -52281,7 +52281,7 @@
       Arr1InnerLazyImageIcon = array of InnerLazyImageIcon;
       Arr2InnerLazyImageIcon = array of Arr1InnerLazyImageIcon;
       Arr3InnerLazyImageIcon = array of Arr2InnerLazyImageIcon;
-      InnerLazyImageIcon = class external 'javax.swing.plaf.synth' name 'LazyImageIcon' 
+      InnerLazyImageIcon = class external 'javax.swing.plaf.synth' name 'LazyImageIcon'
       end;
 
   public
@@ -52634,7 +52634,7 @@
       Arr1InnerAccessibleAWTCheckboxMenuItem = array of InnerAccessibleAWTCheckboxMenuItem;
       Arr2InnerAccessibleAWTCheckboxMenuItem = array of Arr1InnerAccessibleAWTCheckboxMenuItem;
       Arr3InnerAccessibleAWTCheckboxMenuItem = array of Arr2InnerAccessibleAWTCheckboxMenuItem;
-      InnerAccessibleAWTCheckboxMenuItem = class external 'java.awt' name 'AccessibleAWTCheckboxMenuItem' 
+      InnerAccessibleAWTCheckboxMenuItem = class external 'java.awt' name 'AccessibleAWTCheckboxMenuItem'
       end;
 
   public
@@ -52664,7 +52664,7 @@
       Arr1InnerAccessibleAWTMenu = array of InnerAccessibleAWTMenu;
       Arr2InnerAccessibleAWTMenu = array of Arr1InnerAccessibleAWTMenu;
       Arr3InnerAccessibleAWTMenu = array of Arr2InnerAccessibleAWTMenu;
-      InnerAccessibleAWTMenu = class external 'java.awt' name 'AccessibleAWTMenu' 
+      InnerAccessibleAWTMenu = class external 'java.awt' name 'AccessibleAWTMenu'
       end;
 
   public
@@ -53910,10 +53910,10 @@
       Arr1InnerPrinterStateReasonSetIterator = array of InnerPrinterStateReasonSetIterator;
       Arr2InnerPrinterStateReasonSetIterator = array of Arr1InnerPrinterStateReasonSetIterator;
       Arr3InnerPrinterStateReasonSetIterator = array of Arr2InnerPrinterStateReasonSetIterator;
-      InnerPrinterStateReasonSet = class external 'javax.print.attribute.standard' name 'PrinterStateReasonSet' 
+      InnerPrinterStateReasonSet = class external 'javax.print.attribute.standard' name 'PrinterStateReasonSet'
       end;
 
-      InnerPrinterStateReasonSetIterator = class external 'javax.print.attribute.standard' name 'PrinterStateReasonSetIterator' 
+      InnerPrinterStateReasonSetIterator = class external 'javax.print.attribute.standard' name 'PrinterStateReasonSetIterator'
       end;
 
   public
@@ -54024,10 +54024,10 @@
       Arr1InnerDisposeOnClose = array of InnerDisposeOnClose;
       Arr2InnerDisposeOnClose = array of Arr1InnerDisposeOnClose;
       Arr3InnerDisposeOnClose = array of Arr2InnerDisposeOnClose;
-      InnerCloser = class external 'javax.swing' name 'Closer' 
+      InnerCloser = class external 'javax.swing' name 'Closer'
       end;
 
-      InnerDisposeOnClose = class external 'javax.swing' name 'DisposeOnClose' 
+      InnerDisposeOnClose = class external 'javax.swing' name 'DisposeOnClose'
       end;
 
   public
@@ -54813,7 +54813,7 @@
     function readResolve(): JLObject; overload; virtual;  // throws java.io.InvalidObjectException
   end;
 
-  JAIInputMethodRequests = interface external 'java.awt.im' name 'InputMethodRequests' 
+  JAIInputMethodRequests = interface external 'java.awt.im' name 'InputMethodRequests'
     function getTextLocation(para1: JAFTextHitInfo): JARectangle; overload;
     function getLocationOffset(para1: jint; para2: jint): JAFTextHitInfo; overload;
     function getInsertPositionOffset(): jint; overload;
@@ -54837,10 +54837,10 @@
       Arr1InnerAttributedStringIterator = array of InnerAttributedStringIterator;
       Arr2InnerAttributedStringIterator = array of Arr1InnerAttributedStringIterator;
       Arr3InnerAttributedStringIterator = array of Arr2InnerAttributedStringIterator;
-      InnerAttributeMap = class sealed external 'java.text' name 'AttributeMap' 
+      InnerAttributeMap = class sealed external 'java.text' name 'AttributeMap'
       end;
 
-      InnerAttributedStringIterator = class sealed external 'java.text' name 'AttributedStringIterator' 
+      InnerAttributedStringIterator = class sealed external 'java.text' name 'AttributedStringIterator'
       end;
 
   public
@@ -54867,7 +54867,7 @@
       Arr1InnerFieldDelegate = array of InnerFieldDelegate;
       Arr2InnerFieldDelegate = array of Arr1InnerFieldDelegate;
       Arr3InnerFieldDelegate = array of Arr2InnerFieldDelegate;
-      InnerFieldDelegate = interface external 'java.text' name 'FieldDelegate' 
+      InnerFieldDelegate = interface external 'java.text' name 'FieldDelegate'
       end;
 
   public
@@ -54947,52 +54947,52 @@
       Arr1InnerValues = array of InnerValues;
       Arr2InnerValues = array of Arr1InnerValues;
       Arr3InnerValues = array of Arr2InnerValues;
-      InnerAscendingSubMap = class sealed external 'java.util' name 'AscendingSubMap' 
+      InnerAscendingSubMap = class sealed external 'java.util' name 'AscendingSubMap'
       public
         type
           InnerAscendingEntrySetView = class;
           Arr1InnerAscendingEntrySetView = array of InnerAscendingEntrySetView;
           Arr2InnerAscendingEntrySetView = array of Arr1InnerAscendingEntrySetView;
           Arr3InnerAscendingEntrySetView = array of Arr2InnerAscendingEntrySetView;
-          InnerAscendingEntrySetView = class sealed external 'java.util' name 'AscendingEntrySetView' 
+          InnerAscendingEntrySetView = class sealed external 'java.util' name 'AscendingEntrySetView'
           end;
 
       end;
 
-      InnerDescendingKeyIterator = class sealed external 'java.util' name 'DescendingKeyIterator' 
+      InnerDescendingKeyIterator = class sealed external 'java.util' name 'DescendingKeyIterator'
       end;
 
-      InnerDescendingSubMap = class sealed external 'java.util' name 'DescendingSubMap' 
+      InnerDescendingSubMap = class sealed external 'java.util' name 'DescendingSubMap'
       public
         type
           InnerDescendingEntrySetView = class;
           Arr1InnerDescendingEntrySetView = array of InnerDescendingEntrySetView;
           Arr2InnerDescendingEntrySetView = array of Arr1InnerDescendingEntrySetView;
           Arr3InnerDescendingEntrySetView = array of Arr2InnerDescendingEntrySetView;
-          InnerDescendingEntrySetView = class sealed external 'java.util' name 'DescendingEntrySetView' 
+          InnerDescendingEntrySetView = class sealed external 'java.util' name 'DescendingEntrySetView'
           end;
 
       end;
 
-      InnerKeyIterator = class sealed external 'java.util' name 'KeyIterator' 
+      InnerKeyIterator = class sealed external 'java.util' name 'KeyIterator'
       end;
 
-      InnerValueIterator = class sealed external 'java.util' name 'ValueIterator' 
+      InnerValueIterator = class sealed external 'java.util' name 'ValueIterator'
       end;
 
-      InnerEntry = class sealed external 'java.util' name 'Entry' 
+      InnerEntry = class sealed external 'java.util' name 'Entry'
       end;
 
-      InnerEntryIterator = class sealed external 'java.util' name 'EntryIterator' 
+      InnerEntryIterator = class sealed external 'java.util' name 'EntryIterator'
       end;
 
-      InnerEntrySet = class external 'java.util' name 'EntrySet' 
+      InnerEntrySet = class external 'java.util' name 'EntrySet'
       end;
 
-      InnerKeySet = class sealed external 'java.util' name 'KeySet' 
+      InnerKeySet = class sealed external 'java.util' name 'KeySet'
       end;
 
-      InnerNavigableSubMap = class abstract external 'java.util' name 'NavigableSubMap' 
+      InnerNavigableSubMap = class abstract external 'java.util' name 'NavigableSubMap'
       public
         type
           InnerDescendingSubMapKeyIterator = class;
@@ -55019,33 +55019,33 @@
           Arr1InnerSubMapIterator = array of InnerSubMapIterator;
           Arr2InnerSubMapIterator = array of Arr1InnerSubMapIterator;
           Arr3InnerSubMapIterator = array of Arr2InnerSubMapIterator;
-          InnerDescendingSubMapKeyIterator = class sealed external 'java.util' name 'DescendingSubMapKeyIterator' 
+          InnerDescendingSubMapKeyIterator = class sealed external 'java.util' name 'DescendingSubMapKeyIterator'
           end;
 
-          InnerSubMapKeyIterator = class sealed external 'java.util' name 'SubMapKeyIterator' 
+          InnerSubMapKeyIterator = class sealed external 'java.util' name 'SubMapKeyIterator'
           end;
 
-          InnerDescendingSubMapEntryIterator = class sealed external 'java.util' name 'DescendingSubMapEntryIterator' 
+          InnerDescendingSubMapEntryIterator = class sealed external 'java.util' name 'DescendingSubMapEntryIterator'
           end;
 
-          InnerSubMapEntryIterator = class sealed external 'java.util' name 'SubMapEntryIterator' 
+          InnerSubMapEntryIterator = class sealed external 'java.util' name 'SubMapEntryIterator'
           end;
 
-          InnerEntrySetView = class abstract external 'java.util' name 'EntrySetView' 
+          InnerEntrySetView = class abstract external 'java.util' name 'EntrySetView'
           end;
 
-          InnerSubMapIterator = class abstract external 'java.util' name 'SubMapIterator' 
+          InnerSubMapIterator = class abstract external 'java.util' name 'SubMapIterator'
           end;
 
       end;
 
-      InnerPrivateEntryIterator = class abstract external 'java.util' name 'PrivateEntryIterator' 
+      InnerPrivateEntryIterator = class abstract external 'java.util' name 'PrivateEntryIterator'
       end;
 
-      InnerSubMap = class external 'java.util' name 'SubMap' 
+      InnerSubMap = class external 'java.util' name 'SubMap'
       end;
 
-      InnerValues = class external 'java.util' name 'Values' 
+      InnerValues = class external 'java.util' name 'Values'
       end;
 
   public
@@ -55240,7 +55240,7 @@
       Arr1InnerItr = array of InnerItr;
       Arr2InnerItr = array of Arr1InnerItr;
       Arr3InnerItr = array of Arr2InnerItr;
-      InnerItr = class sealed external 'java.util' name 'Itr' 
+      InnerItr = class sealed external 'java.util' name 'Itr'
       end;
 
   public
@@ -55276,10 +55276,10 @@
       Arr1InnerItr = array of InnerItr;
       Arr2InnerItr = array of Arr1InnerItr;
       Arr3InnerItr = array of Arr2InnerItr;
-      InnerNode = class external 'java.util.concurrent' name 'Node' 
+      InnerNode = class external 'java.util.concurrent' name 'Node'
       end;
 
-      InnerItr = class external 'java.util.concurrent' name 'Itr' 
+      InnerItr = class external 'java.util.concurrent' name 'Itr'
       end;
 
   public
@@ -55310,10 +55310,10 @@
       Arr1InnerDescendingIterator = array of InnerDescendingIterator;
       Arr2InnerDescendingIterator = array of Arr1InnerDescendingIterator;
       Arr3InnerDescendingIterator = array of Arr2InnerDescendingIterator;
-      InnerDeqIterator = class external 'java.util' name 'DeqIterator' 
+      InnerDeqIterator = class external 'java.util' name 'DeqIterator'
       end;
 
-      InnerDescendingIterator = class external 'java.util' name 'DescendingIterator' 
+      InnerDescendingIterator = class external 'java.util' name 'DescendingIterator'
       end;
 
   public
@@ -55363,7 +55363,7 @@
       Arr1InnerItr = array of InnerItr;
       Arr2InnerItr = array of Arr1InnerItr;
       Arr3InnerItr = array of Arr2InnerItr;
-      InnerItr = class external 'java.util.concurrent' name 'Itr' 
+      InnerItr = class external 'java.util.concurrent' name 'Itr'
       end;
 
   public
@@ -55431,7 +55431,7 @@
       Arr1InnerItr = array of InnerItr;
       Arr2InnerItr = array of Arr1InnerItr;
       Arr3InnerItr = array of Arr2InnerItr;
-      InnerItr = class external 'java.util.concurrent' name 'Itr' 
+      InnerItr = class external 'java.util.concurrent' name 'Itr'
       end;
 
   public
@@ -55476,10 +55476,10 @@
       Arr1InnerItr = array of InnerItr;
       Arr2InnerItr = array of Arr1InnerItr;
       Arr3InnerItr = array of Arr2InnerItr;
-      InnerNode = class external 'java.util.concurrent' name 'Node' 
+      InnerNode = class external 'java.util.concurrent' name 'Node'
       end;
 
-      InnerItr = class external 'java.util.concurrent' name 'Itr' 
+      InnerItr = class external 'java.util.concurrent' name 'Itr'
       end;
 
   public
@@ -55513,7 +55513,7 @@
       Arr1InnerItr = array of InnerItr;
       Arr2InnerItr = array of Arr1InnerItr;
       Arr3InnerItr = array of Arr2InnerItr;
-      InnerItr = class external 'java.util.concurrent' name 'Itr' 
+      InnerItr = class external 'java.util.concurrent' name 'Itr'
       end;
 
   public
@@ -55575,43 +55575,43 @@
       Arr1InnerWaitQueue = array of InnerWaitQueue;
       Arr2InnerWaitQueue = array of Arr1InnerWaitQueue;
       Arr3InnerWaitQueue = array of Arr2InnerWaitQueue;
-      InnerTransferer = class abstract external 'java.util.concurrent' name 'Transferer' 
+      InnerTransferer = class abstract external 'java.util.concurrent' name 'Transferer'
       end;
 
-      InnerEmptyIterator = class external 'java.util.concurrent' name 'EmptyIterator' 
+      InnerEmptyIterator = class external 'java.util.concurrent' name 'EmptyIterator'
       end;
 
-      InnerFifoWaitQueue = class external 'java.util.concurrent' name 'FifoWaitQueue' 
+      InnerFifoWaitQueue = class external 'java.util.concurrent' name 'FifoWaitQueue'
       end;
 
-      InnerLifoWaitQueue = class external 'java.util.concurrent' name 'LifoWaitQueue' 
+      InnerLifoWaitQueue = class external 'java.util.concurrent' name 'LifoWaitQueue'
       end;
 
-      InnerTransferQueue = class sealed external 'java.util.concurrent' name 'TransferQueue' 
+      InnerTransferQueue = class sealed external 'java.util.concurrent' name 'TransferQueue'
       public
         type
           InnerQNode = class;
           Arr1InnerQNode = array of InnerQNode;
           Arr2InnerQNode = array of Arr1InnerQNode;
           Arr3InnerQNode = array of Arr2InnerQNode;
-          InnerQNode = class sealed external 'java.util.concurrent' name 'QNode' 
+          InnerQNode = class sealed external 'java.util.concurrent' name 'QNode'
           end;
 
       end;
 
-      InnerTransferStack = class sealed external 'java.util.concurrent' name 'TransferStack' 
+      InnerTransferStack = class sealed external 'java.util.concurrent' name 'TransferStack'
       public
         type
           InnerSNode = class;
           Arr1InnerSNode = array of InnerSNode;
           Arr2InnerSNode = array of Arr1InnerSNode;
           Arr3InnerSNode = array of Arr2InnerSNode;
-          InnerSNode = class sealed external 'java.util.concurrent' name 'SNode' 
+          InnerSNode = class sealed external 'java.util.concurrent' name 'SNode'
           end;
 
       end;
 
-      InnerWaitQueue = class external 'java.util.concurrent' name 'WaitQueue' 
+      InnerWaitQueue = class external 'java.util.concurrent' name 'WaitQueue'
       end;
 
   public
@@ -56653,7 +56653,7 @@
       Arr1InnerAccessibleAWTPanel = array of InnerAccessibleAWTPanel;
       Arr2InnerAccessibleAWTPanel = array of Arr1InnerAccessibleAWTPanel;
       Arr3InnerAccessibleAWTPanel = array of Arr2InnerAccessibleAWTPanel;
-      InnerAccessibleAWTPanel = class external 'java.awt' name 'AccessibleAWTPanel' 
+      InnerAccessibleAWTPanel = class external 'java.awt' name 'AccessibleAWTPanel'
       end;
 
   public
@@ -56670,7 +56670,7 @@
       Arr1InnerPeerFixer = array of InnerPeerFixer;
       Arr2InnerPeerFixer = array of Arr1InnerPeerFixer;
       Arr3InnerPeerFixer = array of Arr2InnerPeerFixer;
-      InnerPeerFixer = class external 'java.awt' name 'PeerFixer' 
+      InnerPeerFixer = class external 'java.awt' name 'PeerFixer'
       end;
 
   public
@@ -56679,7 +56679,7 @@
       Arr1InnerAccessibleAWTScrollPane = array of InnerAccessibleAWTScrollPane;
       Arr2InnerAccessibleAWTScrollPane = array of Arr1InnerAccessibleAWTScrollPane;
       Arr3InnerAccessibleAWTScrollPane = array of Arr2InnerAccessibleAWTScrollPane;
-      InnerAccessibleAWTScrollPane = class external 'java.awt' name 'AccessibleAWTScrollPane' 
+      InnerAccessibleAWTScrollPane = class external 'java.awt' name 'AccessibleAWTScrollPane'
       end;
 
   public
@@ -56724,7 +56724,7 @@
       Arr1InnerWindowDisposerRecord = array of InnerWindowDisposerRecord;
       Arr2InnerWindowDisposerRecord = array of Arr1InnerWindowDisposerRecord;
       Arr3InnerWindowDisposerRecord = array of Arr2InnerWindowDisposerRecord;
-      InnerWindowDisposerRecord = class external 'java.awt' name 'WindowDisposerRecord' 
+      InnerWindowDisposerRecord = class external 'java.awt' name 'WindowDisposerRecord'
       end;
 
   public
@@ -56733,7 +56733,7 @@
       Arr1InnerAccessibleAWTWindow = array of InnerAccessibleAWTWindow;
       Arr2InnerAccessibleAWTWindow = array of Arr1InnerAccessibleAWTWindow;
       Arr3InnerAccessibleAWTWindow = array of Arr2InnerAccessibleAWTWindow;
-      InnerAccessibleAWTWindow = class external 'java.awt' name 'AccessibleAWTWindow' 
+      InnerAccessibleAWTWindow = class external 'java.awt' name 'AccessibleAWTWindow'
       end;
 
   public
@@ -56823,7 +56823,7 @@
       Arr1InnerAccessibleCellRendererPane = array of InnerAccessibleCellRendererPane;
       Arr2InnerAccessibleCellRendererPane = array of Arr1InnerAccessibleCellRendererPane;
       Arr3InnerAccessibleCellRendererPane = array of Arr2InnerAccessibleCellRendererPane;
-      InnerAccessibleCellRendererPane = class external 'javax.swing' name 'AccessibleCellRendererPane' 
+      InnerAccessibleCellRendererPane = class external 'javax.swing' name 'AccessibleCellRendererPane'
       end;
 
   strict protected
@@ -56862,16 +56862,16 @@
       Arr1InnerReadObjectCallback = array of InnerReadObjectCallback;
       Arr2InnerReadObjectCallback = array of Arr1InnerReadObjectCallback;
       Arr3InnerReadObjectCallback = array of Arr2InnerReadObjectCallback;
-      InnerActionStandin = class sealed external 'javax.swing' name 'ActionStandin' 
+      InnerActionStandin = class sealed external 'javax.swing' name 'ActionStandin'
       end;
 
-      InnerIntVector = class sealed external 'javax.swing' name 'IntVector' 
+      InnerIntVector = class sealed external 'javax.swing' name 'IntVector'
       end;
 
-      InnerKeyboardState = class external 'javax.swing' name 'KeyboardState' 
+      InnerKeyboardState = class external 'javax.swing' name 'KeyboardState'
       end;
 
-      InnerReadObjectCallback = class external 'javax.swing' name 'ReadObjectCallback' 
+      InnerReadObjectCallback = class external 'javax.swing' name 'ReadObjectCallback'
       end;
 
   public
@@ -56880,7 +56880,7 @@
       Arr1InnerAccessibleJComponent = array of InnerAccessibleJComponent;
       Arr2InnerAccessibleJComponent = array of Arr1InnerAccessibleJComponent;
       Arr3InnerAccessibleJComponent = array of Arr2InnerAccessibleJComponent;
-      InnerAccessibleJComponent = class abstract external 'javax.swing' name 'AccessibleJComponent' 
+      InnerAccessibleJComponent = class abstract external 'javax.swing' name 'AccessibleJComponent'
       public
         type
           InnerAccessibleContainerHandler = class;
@@ -56891,10 +56891,10 @@
           Arr1InnerAccessibleFocusHandler = array of InnerAccessibleFocusHandler;
           Arr2InnerAccessibleFocusHandler = array of Arr1InnerAccessibleFocusHandler;
           Arr3InnerAccessibleFocusHandler = array of Arr2InnerAccessibleFocusHandler;
-          InnerAccessibleContainerHandler = class external 'javax.swing' name 'AccessibleContainerHandler' 
+          InnerAccessibleContainerHandler = class external 'javax.swing' name 'AccessibleContainerHandler'
           end;
 
-          InnerAccessibleFocusHandler = class external 'javax.swing' name 'AccessibleFocusHandler' 
+          InnerAccessibleFocusHandler = class external 'javax.swing' name 'AccessibleFocusHandler'
           end;
 
       end;
@@ -57074,7 +57074,7 @@
       Arr1InnerOneTouchActionHandler = array of InnerOneTouchActionHandler;
       Arr2InnerOneTouchActionHandler = array of Arr1InnerOneTouchActionHandler;
       Arr3InnerOneTouchActionHandler = array of Arr2InnerOneTouchActionHandler;
-      InnerOneTouchActionHandler = class external 'javax.swing.plaf.basic' name 'OneTouchActionHandler' 
+      InnerOneTouchActionHandler = class external 'javax.swing.plaf.basic' name 'OneTouchActionHandler'
       end;
 
   public
@@ -57095,16 +57095,16 @@
       Arr1InnerVerticalDragController = array of InnerVerticalDragController;
       Arr2InnerVerticalDragController = array of Arr1InnerVerticalDragController;
       Arr3InnerVerticalDragController = array of Arr2InnerVerticalDragController;
-      InnerDragController = class external 'javax.swing.plaf.basic' name 'DragController' 
+      InnerDragController = class external 'javax.swing.plaf.basic' name 'DragController'
       end;
 
-      InnerDividerLayout = class external 'javax.swing.plaf.basic' name 'DividerLayout' 
+      InnerDividerLayout = class external 'javax.swing.plaf.basic' name 'DividerLayout'
       end;
 
-      InnerMouseHandler = class external 'javax.swing.plaf.basic' name 'MouseHandler' 
+      InnerMouseHandler = class external 'javax.swing.plaf.basic' name 'MouseHandler'
       end;
 
-      InnerVerticalDragController = class external 'javax.swing.plaf.basic' name 'VerticalDragController' 
+      InnerVerticalDragController = class external 'javax.swing.plaf.basic' name 'VerticalDragController'
       end;
 
   strict protected
@@ -57155,7 +57155,7 @@
       Arr1InnerAccessibleAWTTextArea = array of InnerAccessibleAWTTextArea;
       Arr2InnerAccessibleAWTTextArea = array of Arr1InnerAccessibleAWTTextArea;
       Arr3InnerAccessibleAWTTextArea = array of Arr2InnerAccessibleAWTTextArea;
-      InnerAccessibleAWTTextArea = class external 'java.awt' name 'AccessibleAWTTextArea' 
+      InnerAccessibleAWTTextArea = class external 'java.awt' name 'AccessibleAWTTextArea'
       end;
 
   public
@@ -57203,7 +57203,7 @@
       Arr1InnerAccessibleAWTTextField = array of InnerAccessibleAWTTextField;
       Arr2InnerAccessibleAWTTextField = array of Arr1InnerAccessibleAWTTextField;
       Arr3InnerAccessibleAWTTextField = array of Arr2InnerAccessibleAWTTextField;
-      InnerAccessibleAWTTextField = class external 'java.awt' name 'AccessibleAWTTextField' 
+      InnerAccessibleAWTTextField = class external 'java.awt' name 'AccessibleAWTTextField'
       end;
 
   public
@@ -57423,10 +57423,10 @@
       Arr1InnerSplitPaneDividerBorder = array of InnerSplitPaneDividerBorder;
       Arr2InnerSplitPaneDividerBorder = array of Arr1InnerSplitPaneDividerBorder;
       Arr3InnerSplitPaneDividerBorder = array of Arr2InnerSplitPaneDividerBorder;
-      InnerRolloverMarginBorder = class external 'javax.swing.plaf.basic' name 'RolloverMarginBorder' 
+      InnerRolloverMarginBorder = class external 'javax.swing.plaf.basic' name 'RolloverMarginBorder'
       end;
 
-      InnerSplitPaneDividerBorder = class external 'javax.swing.plaf.basic' name 'SplitPaneDividerBorder' 
+      InnerSplitPaneDividerBorder = class external 'javax.swing.plaf.basic' name 'SplitPaneDividerBorder'
       end;
 
   public
@@ -57580,22 +57580,22 @@
       Arr1InnerRolloverMarginBorder = array of InnerRolloverMarginBorder;
       Arr2InnerRolloverMarginBorder = array of Arr1InnerRolloverMarginBorder;
       Arr3InnerRolloverMarginBorder = array of Arr2InnerRolloverMarginBorder;
-      InnerDialogBorder = class external 'javax.swing.plaf.metal' name 'DialogBorder' 
+      InnerDialogBorder = class external 'javax.swing.plaf.metal' name 'DialogBorder'
       end;
 
-      InnerFrameBorder = class external 'javax.swing.plaf.metal' name 'FrameBorder' 
+      InnerFrameBorder = class external 'javax.swing.plaf.metal' name 'FrameBorder'
       end;
 
-      InnerErrorDialogBorder = class external 'javax.swing.plaf.metal' name 'ErrorDialogBorder' 
+      InnerErrorDialogBorder = class external 'javax.swing.plaf.metal' name 'ErrorDialogBorder'
       end;
 
-      InnerQuestionDialogBorder = class external 'javax.swing.plaf.metal' name 'QuestionDialogBorder' 
+      InnerQuestionDialogBorder = class external 'javax.swing.plaf.metal' name 'QuestionDialogBorder'
       end;
 
-      InnerWarningDialogBorder = class external 'javax.swing.plaf.metal' name 'WarningDialogBorder' 
+      InnerWarningDialogBorder = class external 'javax.swing.plaf.metal' name 'WarningDialogBorder'
       end;
 
-      InnerRolloverMarginBorder = class external 'javax.swing.plaf.metal' name 'RolloverMarginBorder' 
+      InnerRolloverMarginBorder = class external 'javax.swing.plaf.metal' name 'RolloverMarginBorder'
       end;
 
   public
@@ -58321,7 +58321,7 @@
       Arr1InnerStreamDisposerRecord = array of InnerStreamDisposerRecord;
       Arr2InnerStreamDisposerRecord = array of Arr1InnerStreamDisposerRecord;
       Arr3InnerStreamDisposerRecord = array of Arr2InnerStreamDisposerRecord;
-      InnerStreamDisposerRecord = class external 'javax.imageio.stream' name 'StreamDisposerRecord' 
+      InnerStreamDisposerRecord = class external 'javax.imageio.stream' name 'StreamDisposerRecord'
       end;
 
   public
@@ -58358,7 +58358,7 @@
       Arr1InnerStreamDisposerRecord = array of InnerStreamDisposerRecord;
       Arr2InnerStreamDisposerRecord = array of Arr1InnerStreamDisposerRecord;
       Arr3InnerStreamDisposerRecord = array of Arr2InnerStreamDisposerRecord;
-      InnerStreamDisposerRecord = class external 'javax.imageio.stream' name 'StreamDisposerRecord' 
+      InnerStreamDisposerRecord = class external 'javax.imageio.stream' name 'StreamDisposerRecord'
       end;
 
   public
@@ -59050,7 +59050,7 @@
       Arr1InnerColInfo = array of InnerColInfo;
       Arr2InnerColInfo = array of Arr1InnerColInfo;
       Arr3InnerColInfo = array of Arr2InnerColInfo;
-      InnerColInfo = class external 'javax.sql.rowset' name 'ColInfo' 
+      InnerColInfo = class external 'javax.sql.rowset' name 'ColInfo'
       end;
 
   public
@@ -59227,13 +59227,13 @@
       Arr1InnerUString = array of InnerUString;
       Arr2InnerUString = array of Arr1InnerUString;
       Arr3InnerUString = array of Arr2InnerUString;
-      InnerEngineDescription = class external 'java.security' name 'EngineDescription' 
+      InnerEngineDescription = class external 'java.security' name 'EngineDescription'
       end;
 
-      InnerServiceKey = class external 'java.security' name 'ServiceKey' 
+      InnerServiceKey = class external 'java.security' name 'ServiceKey'
       end;
 
-      InnerUString = class external 'java.security' name 'UString' 
+      InnerUString = class external 'java.security' name 'UString'
       end;
 
   public
@@ -59288,7 +59288,7 @@
       Arr1InnerMultiUIDefaultsEnumerator = array of InnerMultiUIDefaultsEnumerator;
       Arr2InnerMultiUIDefaultsEnumerator = array of Arr1InnerMultiUIDefaultsEnumerator;
       Arr3InnerMultiUIDefaultsEnumerator = array of Arr2InnerMultiUIDefaultsEnumerator;
-      InnerMultiUIDefaultsEnumerator = class external 'javax.swing' name 'MultiUIDefaultsEnumerator' 
+      InnerMultiUIDefaultsEnumerator = class external 'javax.swing' name 'MultiUIDefaultsEnumerator'
       end;
 
   public
@@ -59346,7 +59346,7 @@
       Arr1InnerEditorBorder = array of InnerEditorBorder;
       Arr2InnerEditorBorder = array of Arr1InnerEditorBorder;
       Arr3InnerEditorBorder = array of Arr2InnerEditorBorder;
-      InnerEditorBorder = class external 'javax.swing.plaf.metal' name 'EditorBorder' 
+      InnerEditorBorder = class external 'javax.swing.plaf.metal' name 'EditorBorder'
       end;
 
   public
@@ -59378,10 +59378,10 @@
       Arr1InnerMoveBeforeEnterListener = array of InnerMoveBeforeEnterListener;
       Arr2InnerMoveBeforeEnterListener = array of Arr1InnerMoveBeforeEnterListener;
       Arr3InnerMoveBeforeEnterListener = array of Arr2InnerMoveBeforeEnterListener;
-      InnerActions = class external 'javax.swing' name 'Actions' 
+      InnerActions = class external 'javax.swing' name 'Actions'
       end;
 
-      InnerMoveBeforeEnterListener = class external 'javax.swing' name 'MoveBeforeEnterListener' 
+      InnerMoveBeforeEnterListener = class external 'javax.swing' name 'MoveBeforeEnterListener'
       end;
 
   public
@@ -59398,13 +59398,13 @@
       Arr1InnerstillInsideTimerAction = array of InnerstillInsideTimerAction;
       Arr2InnerstillInsideTimerAction = array of Arr1InnerstillInsideTimerAction;
       Arr3InnerstillInsideTimerAction = array of Arr2InnerstillInsideTimerAction;
-      InnerinsideTimerAction = class external 'javax.swing' name 'insideTimerAction' 
+      InnerinsideTimerAction = class external 'javax.swing' name 'insideTimerAction'
       end;
 
-      InneroutsideTimerAction = class external 'javax.swing' name 'outsideTimerAction' 
+      InneroutsideTimerAction = class external 'javax.swing' name 'outsideTimerAction'
       end;
 
-      InnerstillInsideTimerAction = class external 'javax.swing' name 'stillInsideTimerAction' 
+      InnerstillInsideTimerAction = class external 'javax.swing' name 'stillInsideTimerAction'
       end;
 
   strict protected
@@ -59508,7 +59508,7 @@
       Arr1InnerWorker = array of InnerWorker;
       Arr2InnerWorker = array of Arr1InnerWorker;
       Arr3InnerWorker = array of Arr2InnerWorker;
-      InnerWorker = class sealed external 'java.util.concurrent' name 'Worker' 
+      InnerWorker = class sealed external 'java.util.concurrent' name 'Worker'
       end;
 
   public
@@ -59835,19 +59835,19 @@
       Arr1InnerNumericalType = array of InnerNumericalType;
       Arr2InnerNumericalType = array of Arr1InnerNumericalType;
       Arr3InnerNumericalType = array of Arr2InnerNumericalType;
-      InnerObservedObject = class external 'javax.management.monitor' name 'ObservedObject' 
+      InnerObservedObject = class external 'javax.management.monitor' name 'ObservedObject'
       end;
 
-      InnerDaemonThreadFactory = class external 'javax.management.monitor' name 'DaemonThreadFactory' 
+      InnerDaemonThreadFactory = class external 'javax.management.monitor' name 'DaemonThreadFactory'
       end;
 
-      InnerMonitorTask = class external 'javax.management.monitor' name 'MonitorTask' 
+      InnerMonitorTask = class external 'javax.management.monitor' name 'MonitorTask'
       end;
 
-      InnerSchedulerTask = class external 'javax.management.monitor' name 'SchedulerTask' 
+      InnerSchedulerTask = class external 'javax.management.monitor' name 'SchedulerTask'
       end;
 
-      InnerNumericalType = class sealed external 'javax.management.monitor' name 'NumericalType' 
+      InnerNumericalType = class sealed external 'javax.management.monitor' name 'NumericalType'
       end;
 
   strict protected
@@ -60201,7 +60201,7 @@
       Arr1InnerBrowseFileAction = array of InnerBrowseFileAction;
       Arr2InnerBrowseFileAction = array of Arr1InnerBrowseFileAction;
       Arr3InnerBrowseFileAction = array of Arr2InnerBrowseFileAction;
-      InnerBrowseFileAction = class external 'javax.swing.text.html' name 'BrowseFileAction' 
+      InnerBrowseFileAction = class external 'javax.swing.text.html' name 'BrowseFileAction'
       end;
 
   public
@@ -60210,7 +60210,7 @@
       Arr1InnerMouseEventListener = array of InnerMouseEventListener;
       Arr2InnerMouseEventListener = array of Arr1InnerMouseEventListener;
       Arr3InnerMouseEventListener = array of Arr2InnerMouseEventListener;
-      InnerMouseEventListener = class external 'javax.swing.text.html' name 'MouseEventListener' 
+      InnerMouseEventListener = class external 'javax.swing.text.html' name 'MouseEventListener'
       end;
 
   public
@@ -60236,7 +60236,7 @@
       Arr1InnerFrameEditorPane = array of InnerFrameEditorPane;
       Arr2InnerFrameEditorPane = array of Arr1InnerFrameEditorPane;
       Arr3InnerFrameEditorPane = array of Arr2InnerFrameEditorPane;
-      InnerFrameEditorPane = class external 'javax.swing.text.html' name 'FrameEditorPane' 
+      InnerFrameEditorPane = class external 'javax.swing.text.html' name 'FrameEditorPane'
       end;
 
   public
@@ -60410,28 +60410,28 @@
       Arr1InnerStyleChangeUndoableEdit = array of InnerStyleChangeUndoableEdit;
       Arr2InnerStyleChangeUndoableEdit = array of Arr1InnerStyleChangeUndoableEdit;
       Arr3InnerStyleChangeUndoableEdit = array of Arr2InnerStyleChangeUndoableEdit;
-      InnerAbstractChangeHandler = class abstract external 'javax.swing.text' name 'AbstractChangeHandler' 
+      InnerAbstractChangeHandler = class abstract external 'javax.swing.text' name 'AbstractChangeHandler'
       public
         type
           InnerDocReference = class;
           Arr1InnerDocReference = array of InnerDocReference;
           Arr2InnerDocReference = array of Arr1InnerDocReference;
           Arr3InnerDocReference = array of Arr2InnerDocReference;
-          InnerDocReference = class external 'javax.swing.text' name 'DocReference' 
+          InnerDocReference = class external 'javax.swing.text' name 'DocReference'
           end;
 
       end;
 
-      InnerChangeUpdateRunnable = class external 'javax.swing.text' name 'ChangeUpdateRunnable' 
+      InnerChangeUpdateRunnable = class external 'javax.swing.text' name 'ChangeUpdateRunnable'
       end;
 
-      InnerStyleChangeHandler = class external 'javax.swing.text' name 'StyleChangeHandler' 
+      InnerStyleChangeHandler = class external 'javax.swing.text' name 'StyleChangeHandler'
       end;
 
-      InnerStyleContextChangeHandler = class external 'javax.swing.text' name 'StyleContextChangeHandler' 
+      InnerStyleContextChangeHandler = class external 'javax.swing.text' name 'StyleContextChangeHandler'
       end;
 
-      InnerStyleChangeUndoableEdit = class external 'javax.swing.text' name 'StyleChangeUndoableEdit' 
+      InnerStyleChangeUndoableEdit = class external 'javax.swing.text' name 'StyleChangeUndoableEdit'
       end;
 
   public
@@ -60491,17 +60491,17 @@
         procedure undo(); overload; virtual;  // throws javax.swing.undo.CannotUndoException
       end;
 
-      InnerSectionElement = class external 'javax.swing.text' name 'SectionElement' 
+      InnerSectionElement = class external 'javax.swing.text' name 'SectionElement'
       end;
 
-      InnerElementBuffer = class external 'javax.swing.text' name 'ElementBuffer' 
+      InnerElementBuffer = class external 'javax.swing.text' name 'ElementBuffer'
       public
         type
           InnerElemChanges = class;
           Arr1InnerElemChanges = array of InnerElemChanges;
           Arr2InnerElemChanges = array of Arr1InnerElemChanges;
           Arr3InnerElemChanges = array of Arr2InnerElemChanges;
-          InnerElemChanges = class external 'javax.swing.text' name 'ElemChanges' 
+          InnerElemChanges = class external 'javax.swing.text' name 'ElemChanges'
           end;
 
       end;
@@ -60575,22 +60575,22 @@
       Arr1InnerUndoPosRef = array of InnerUndoPosRef;
       Arr2InnerUndoPosRef = array of Arr1InnerUndoPosRef;
       Arr3InnerUndoPosRef = array of Arr2InnerUndoPosRef;
-      InnerInsertUndo = class external 'javax.swing.text' name 'InsertUndo' 
+      InnerInsertUndo = class external 'javax.swing.text' name 'InsertUndo'
       end;
 
-      InnerRemoveUndo = class external 'javax.swing.text' name 'RemoveUndo' 
+      InnerRemoveUndo = class external 'javax.swing.text' name 'RemoveUndo'
       end;
 
-      InnerMarkData = class sealed external 'javax.swing.text' name 'MarkData' 
+      InnerMarkData = class sealed external 'javax.swing.text' name 'MarkData'
       end;
 
-      InnerMarkVector = class external 'javax.swing.text' name 'MarkVector' 
+      InnerMarkVector = class external 'javax.swing.text' name 'MarkVector'
       end;
 
-      InnerStickyPosition = class sealed external 'javax.swing.text' name 'StickyPosition' 
+      InnerStickyPosition = class sealed external 'javax.swing.text' name 'StickyPosition'
       end;
 
-      InnerUndoPosRef = class sealed external 'javax.swing.text' name 'UndoPosRef' 
+      InnerUndoPosRef = class sealed external 'javax.swing.text' name 'UndoPosRef'
       end;
 
   public
@@ -60658,19 +60658,19 @@
       Arr1InnerUndoPosRef = array of InnerUndoPosRef;
       Arr2InnerUndoPosRef = array of Arr1InnerUndoPosRef;
       Arr3InnerUndoPosRef = array of Arr2InnerUndoPosRef;
-      InnerInsertUndo = class external 'javax.swing.text' name 'InsertUndo' 
+      InnerInsertUndo = class external 'javax.swing.text' name 'InsertUndo'
       end;
 
-      InnerRemoveUndo = class external 'javax.swing.text' name 'RemoveUndo' 
+      InnerRemoveUndo = class external 'javax.swing.text' name 'RemoveUndo'
       end;
 
-      InnerPosRec = class sealed external 'javax.swing.text' name 'PosRec' 
+      InnerPosRec = class sealed external 'javax.swing.text' name 'PosRec'
       end;
 
-      InnerStickyPosition = class sealed external 'javax.swing.text' name 'StickyPosition' 
+      InnerStickyPosition = class sealed external 'javax.swing.text' name 'StickyPosition'
       end;
 
-      InnerUndoPosRef = class sealed external 'javax.swing.text' name 'UndoPosRef' 
+      InnerUndoPosRef = class sealed external 'javax.swing.text' name 'UndoPosRef'
       end;
 
   public
@@ -60702,13 +60702,13 @@
       Arr1InnerKeyEnumeration = array of InnerKeyEnumeration;
       Arr2InnerKeyEnumeration = array of Arr1InnerKeyEnumeration;
       Arr3InnerKeyEnumeration = array of Arr2InnerKeyEnumeration;
-      InnerFontKey = class external 'javax.swing.text' name 'FontKey' 
+      InnerFontKey = class external 'javax.swing.text' name 'FontKey'
       end;
 
-      InnerKeyBuilder = class external 'javax.swing.text' name 'KeyBuilder' 
+      InnerKeyBuilder = class external 'javax.swing.text' name 'KeyBuilder'
       end;
 
-      InnerKeyEnumeration = class external 'javax.swing.text' name 'KeyEnumeration' 
+      InnerKeyEnumeration = class external 'javax.swing.text' name 'KeyEnumeration'
       end;
 
   public
@@ -60721,10 +60721,10 @@
       Arr1InnerSmallAttributeSet = array of InnerSmallAttributeSet;
       Arr2InnerSmallAttributeSet = array of Arr1InnerSmallAttributeSet;
       Arr3InnerSmallAttributeSet = array of Arr2InnerSmallAttributeSet;
-      InnerNamedStyle = class external 'javax.swing.text' name 'NamedStyle' 
+      InnerNamedStyle = class external 'javax.swing.text' name 'NamedStyle'
       end;
 
-      InnerSmallAttributeSet = class external 'javax.swing.text' name 'SmallAttributeSet' 
+      InnerSmallAttributeSet = class external 'javax.swing.text' name 'SmallAttributeSet'
       end;
 
   public
@@ -60798,7 +60798,7 @@
     function toString(): JLString; overload; virtual;
   end;
 
-  JAPFiler = interface external 'javax.annotation.processing' name 'Filer' 
+  JAPFiler = interface external 'javax.annotation.processing' name 'Filer'
     function createSourceFile(para1: JLCharSequence; para2: Arr1JLMEElement): JTJavaFileObject; overload;  // throws java.io.IOException
     function createSourceFile(para1: JLCharSequence; const para2: array of JLMEElement): JTJavaFileObject; overload;  // throws java.io.IOException
     function createClassFile(para1: JLCharSequence; para2: Arr1JLMEElement): JTJavaFileObject; overload;  // throws java.io.IOException
@@ -60913,16 +60913,16 @@
       Arr1InnerSHA512 = array of InnerSHA512;
       Arr2InnerSHA512 = array of Arr1InnerSHA512;
       Arr3InnerSHA512 = array of Arr2InnerSHA512;
-      InnerSHA1 = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA1' 
+      InnerSHA1 = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA1'
       end;
 
-      InnerSHA256 = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA256' 
+      InnerSHA256 = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA256'
       end;
 
-      InnerSHA384 = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA384' 
+      InnerSHA384 = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA384'
       end;
 
-      InnerSHA512 = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA512' 
+      InnerSHA512 = class sealed external 'org.jcp.xml.dsig.internal.dom' name 'SHA512'
       end;
 
   public
@@ -61854,7 +61854,7 @@
       Arr1InnerAccessibleAWTPopupMenu = array of InnerAccessibleAWTPopupMenu;
       Arr2InnerAccessibleAWTPopupMenu = array of Arr1InnerAccessibleAWTPopupMenu;
       Arr3InnerAccessibleAWTPopupMenu = array of Arr2InnerAccessibleAWTPopupMenu;
-      InnerAccessibleAWTPopupMenu = class external 'java.awt' name 'AccessibleAWTPopupMenu' 
+      InnerAccessibleAWTPopupMenu = class external 'java.awt' name 'AccessibleAWTPopupMenu'
       end;
 
   public
@@ -62624,7 +62624,7 @@
       Arr1InnerDateFormatGetter = array of InnerDateFormatGetter;
       Arr2InnerDateFormatGetter = array of Arr1InnerDateFormatGetter;
       Arr3InnerDateFormatGetter = array of Arr2InnerDateFormatGetter;
-      InnerDateFormatGetter = class external 'java.text' name 'DateFormatGetter' 
+      InnerDateFormatGetter = class external 'java.text' name 'DateFormatGetter'
       end;
 
   public
@@ -62733,7 +62733,7 @@
       Arr1InnerDelegate = array of InnerDelegate;
       Arr2InnerDelegate = array of Arr1InnerDelegate;
       Arr3InnerDelegate = array of Arr2InnerDelegate;
-      InnerDelegate = class external 'java.text' name 'Delegate' 
+      InnerDelegate = class external 'java.text' name 'Delegate'
       end;
 
   public
@@ -62803,7 +62803,7 @@
       Arr1InnerNumberFormatGetter = array of InnerNumberFormatGetter;
       Arr2InnerNumberFormatGetter = array of Arr1InnerNumberFormatGetter;
       Arr3InnerNumberFormatGetter = array of Arr2InnerNumberFormatGetter;
-      InnerNumberFormatGetter = class external 'java.text' name 'NumberFormatGetter' 
+      InnerNumberFormatGetter = class external 'java.text' name 'NumberFormatGetter'
       end;
 
   public
@@ -62929,37 +62929,37 @@
       Arr1InnerValues = array of InnerValues;
       Arr2InnerValues = array of Arr1InnerValues;
       Arr3InnerValues = array of Arr2InnerValues;
-      InnerIndex = class external 'java.util.concurrent' name 'Index' 
+      InnerIndex = class external 'java.util.concurrent' name 'Index'
       end;
 
-      InnerNode = class sealed external 'java.util.concurrent' name 'Node' 
+      InnerNode = class sealed external 'java.util.concurrent' name 'Node'
       end;
 
-      InnerComparableUsingComparator = class sealed external 'java.util.concurrent' name 'ComparableUsingComparator' 
+      InnerComparableUsingComparator = class sealed external 'java.util.concurrent' name 'ComparableUsingComparator'
       end;
 
-      InnerHeadIndex = class sealed external 'java.util.concurrent' name 'HeadIndex' 
+      InnerHeadIndex = class sealed external 'java.util.concurrent' name 'HeadIndex'
       end;
 
-      InnerKeyIterator = class sealed external 'java.util.concurrent' name 'KeyIterator' 
+      InnerKeyIterator = class sealed external 'java.util.concurrent' name 'KeyIterator'
       end;
 
-      InnerValueIterator = class sealed external 'java.util.concurrent' name 'ValueIterator' 
+      InnerValueIterator = class sealed external 'java.util.concurrent' name 'ValueIterator'
       end;
 
-      InnerEntryIterator = class sealed external 'java.util.concurrent' name 'EntryIterator' 
+      InnerEntryIterator = class sealed external 'java.util.concurrent' name 'EntryIterator'
       end;
 
-      InnerEntrySet = class sealed external 'java.util.concurrent' name 'EntrySet' 
+      InnerEntrySet = class sealed external 'java.util.concurrent' name 'EntrySet'
       end;
 
-      InnerIter = class abstract external 'java.util.concurrent' name 'Iter' 
+      InnerIter = class abstract external 'java.util.concurrent' name 'Iter'
       end;
 
-      InnerKeySet = class sealed external 'java.util.concurrent' name 'KeySet' 
+      InnerKeySet = class sealed external 'java.util.concurrent' name 'KeySet'
       end;
 
-      InnerSubMap = class sealed external 'java.util.concurrent' name 'SubMap' 
+      InnerSubMap = class sealed external 'java.util.concurrent' name 'SubMap'
       public
         type
           InnerSubMapKeyIterator = class;
@@ -62978,21 +62978,21 @@
           Arr1InnerSubMapIter = array of InnerSubMapIter;
           Arr2InnerSubMapIter = array of Arr1InnerSubMapIter;
           Arr3InnerSubMapIter = array of Arr2InnerSubMapIter;
-          InnerSubMapKeyIterator = class sealed external 'java.util.concurrent' name 'SubMapKeyIterator' 
+          InnerSubMapKeyIterator = class sealed external 'java.util.concurrent' name 'SubMapKeyIterator'
           end;
 
-          InnerSubMapValueIterator = class sealed external 'java.util.concurrent' name 'SubMapValueIterator' 
+          InnerSubMapValueIterator = class sealed external 'java.util.concurrent' name 'SubMapValueIterator'
           end;
 
-          InnerSubMapEntryIterator = class sealed external 'java.util.concurrent' name 'SubMapEntryIterator' 
+          InnerSubMapEntryIterator = class sealed external 'java.util.concurrent' name 'SubMapEntryIterator'
           end;
 
-          InnerSubMapIter = class abstract external 'java.util.concurrent' name 'SubMapIter' 
+          InnerSubMapIter = class abstract external 'java.util.concurrent' name 'SubMapIter'
           end;
 
       end;
 
-      InnerValues = class sealed external 'java.util.concurrent' name 'Values' 
+      InnerValues = class sealed external 'java.util.concurrent' name 'Values'
       end;
 
   public
@@ -63067,13 +63067,13 @@
       Arr1InnerListItr = array of InnerListItr;
       Arr2InnerListItr = array of Arr1InnerListItr;
       Arr3InnerListItr = array of Arr2InnerListItr;
-      InnerEntry = class external 'java.util' name 'Entry' 
+      InnerEntry = class external 'java.util' name 'Entry'
       end;
 
-      InnerDescendingIterator = class external 'java.util' name 'DescendingIterator' 
+      InnerDescendingIterator = class external 'java.util' name 'DescendingIterator'
       end;
 
-      InnerListItr = class external 'java.util' name 'ListItr' 
+      InnerListItr = class external 'java.util' name 'ListItr'
       end;
 
   public
@@ -63210,16 +63210,16 @@
       Arr1InnerItr = array of InnerItr;
       Arr2InnerItr = array of Arr1InnerItr;
       Arr3InnerItr = array of Arr2InnerItr;
-      InnerNode = class sealed external 'java.util.concurrent' name 'Node' 
+      InnerNode = class sealed external 'java.util.concurrent' name 'Node'
       end;
 
-      InnerAbstractItr = class abstract external 'java.util.concurrent' name 'AbstractItr' 
+      InnerAbstractItr = class abstract external 'java.util.concurrent' name 'AbstractItr'
       end;
 
-      InnerDescendingItr = class external 'java.util.concurrent' name 'DescendingItr' 
+      InnerDescendingItr = class external 'java.util.concurrent' name 'DescendingItr'
       end;
 
-      InnerItr = class external 'java.util.concurrent' name 'Itr' 
+      InnerItr = class external 'java.util.concurrent' name 'Itr'
       end;
 
   public
@@ -63350,13 +63350,13 @@
       Arr1InnerSafeScroller = array of InnerSafeScroller;
       Arr2InnerSafeScroller = array of Arr1InnerSafeScroller;
       Arr3InnerSafeScroller = array of Arr2InnerSafeScroller;
-      InnerDefaultFilterBypass = class external 'javax.swing.text' name 'DefaultFilterBypass' 
+      InnerDefaultFilterBypass = class external 'javax.swing.text' name 'DefaultFilterBypass'
       end;
 
-      InnerHandler = class external 'javax.swing.text' name 'Handler' 
+      InnerHandler = class external 'javax.swing.text' name 'Handler'
       end;
 
-      InnerSafeScroller = class external 'javax.swing.text' name 'SafeScroller' 
+      InnerSafeScroller = class external 'javax.swing.text' name 'SafeScroller'
       end;
 
   public
@@ -63440,7 +63440,7 @@
       Arr1InnerAccessibleApplet = array of InnerAccessibleApplet;
       Arr2InnerAccessibleApplet = array of Arr1InnerAccessibleApplet;
       Arr3InnerAccessibleApplet = array of Arr2InnerAccessibleApplet;
-      InnerAccessibleApplet = class external 'java.applet' name 'AccessibleApplet' 
+      InnerAccessibleApplet = class external 'java.applet' name 'AccessibleApplet'
       end;
 
   public
@@ -63478,7 +63478,7 @@
       Arr1InnerAccessibleAWTFrame = array of InnerAccessibleAWTFrame;
       Arr2InnerAccessibleAWTFrame = array of Arr1InnerAccessibleAWTFrame;
       Arr3InnerAccessibleAWTFrame = array of Arr2InnerAccessibleAWTFrame;
-      InnerAccessibleAWTFrame = class external 'java.awt' name 'AccessibleAWTFrame' 
+      InnerAccessibleAWTFrame = class external 'java.awt' name 'AccessibleAWTFrame'
       end;
 
   public
@@ -63542,7 +63542,7 @@
       Arr1InnerAccessibleJWindow = array of InnerAccessibleJWindow;
       Arr2InnerAccessibleJWindow = array of Arr1InnerAccessibleJWindow;
       Arr3InnerAccessibleJWindow = array of Arr2InnerAccessibleJWindow;
-      InnerAccessibleJWindow = class external 'javax.swing' name 'AccessibleJWindow' 
+      InnerAccessibleJWindow = class external 'javax.swing' name 'AccessibleJWindow'
       end;
 
   strict protected
@@ -63599,10 +63599,10 @@
       Arr1InnerHandler = array of InnerHandler;
       Arr2InnerHandler = array of Arr1InnerHandler;
       Arr3InnerHandler = array of Arr2InnerHandler;
-      InnerButtonActionPropertyChangeListener = class external 'javax.swing' name 'ButtonActionPropertyChangeListener' 
+      InnerButtonActionPropertyChangeListener = class external 'javax.swing' name 'ButtonActionPropertyChangeListener'
       end;
 
-      InnerHandler = class external 'javax.swing' name 'Handler' 
+      InnerHandler = class external 'javax.swing' name 'Handler'
       end;
 
   public
@@ -63615,19 +63615,19 @@
       Arr1InnerButtonChangeListener = array of InnerButtonChangeListener;
       Arr2InnerButtonChangeListener = array of Arr1InnerButtonChangeListener;
       Arr3InnerButtonChangeListener = array of Arr2InnerButtonChangeListener;
-      InnerAccessibleAbstractButton = class abstract external 'javax.swing' name 'AccessibleAbstractButton' 
+      InnerAccessibleAbstractButton = class abstract external 'javax.swing' name 'AccessibleAbstractButton'
       public
         type
           InnerButtonKeyBinding = class;
           Arr1InnerButtonKeyBinding = array of InnerButtonKeyBinding;
           Arr2InnerButtonKeyBinding = array of Arr1InnerButtonKeyBinding;
           Arr3InnerButtonKeyBinding = array of Arr2InnerButtonKeyBinding;
-          InnerButtonKeyBinding = class external 'javax.swing' name 'ButtonKeyBinding' 
+          InnerButtonKeyBinding = class external 'javax.swing' name 'ButtonKeyBinding'
           end;
 
       end;
 
-      InnerButtonChangeListener = class external 'javax.swing' name 'ButtonChangeListener' 
+      InnerButtonChangeListener = class external 'javax.swing' name 'ButtonChangeListener'
       end;
 
   public
@@ -63777,7 +63777,7 @@
       Arr1InnerFiller = array of InnerFiller;
       Arr2InnerFiller = array of Arr1InnerFiller;
       Arr3InnerFiller = array of Arr2InnerFiller;
-      InnerAccessibleBox = class external 'javax.swing' name 'AccessibleBox' 
+      InnerAccessibleBox = class external 'javax.swing' name 'AccessibleBox'
       end;
 
       InnerFiller = class external 'javax.swing' name 'Filler' (JSJComponent, JAAccessible)
@@ -63787,7 +63787,7 @@
           Arr1InnerAccessibleBoxFiller = array of InnerAccessibleBoxFiller;
           Arr2InnerAccessibleBoxFiller = array of Arr1InnerAccessibleBoxFiller;
           Arr3InnerAccessibleBoxFiller = array of Arr2InnerAccessibleBoxFiller;
-          InnerAccessibleBoxFiller = class external 'javax.swing' name 'AccessibleBoxFiller' 
+          InnerAccessibleBoxFiller = class external 'javax.swing' name 'AccessibleBoxFiller'
           end;
 
       public
@@ -63823,7 +63823,7 @@
       Arr1InnerAccessibleJColorChooser = array of InnerAccessibleJColorChooser;
       Arr2InnerAccessibleJColorChooser = array of Arr1InnerAccessibleJColorChooser;
       Arr3InnerAccessibleJColorChooser = array of Arr2InnerAccessibleJColorChooser;
-      InnerAccessibleJColorChooser = class external 'javax.swing' name 'AccessibleJColorChooser' 
+      InnerAccessibleJColorChooser = class external 'javax.swing' name 'AccessibleJColorChooser'
       end;
 
   public
@@ -63876,10 +63876,10 @@
       Arr1InnerDefaultKeySelectionManager = array of InnerDefaultKeySelectionManager;
       Arr2InnerDefaultKeySelectionManager = array of Arr1InnerDefaultKeySelectionManager;
       Arr3InnerDefaultKeySelectionManager = array of Arr2InnerDefaultKeySelectionManager;
-      InnerComboBoxActionPropertyChangeListener = class external 'javax.swing' name 'ComboBoxActionPropertyChangeListener' 
+      InnerComboBoxActionPropertyChangeListener = class external 'javax.swing' name 'ComboBoxActionPropertyChangeListener'
       end;
 
-      InnerDefaultKeySelectionManager = class external 'javax.swing' name 'DefaultKeySelectionManager' 
+      InnerDefaultKeySelectionManager = class external 'javax.swing' name 'DefaultKeySelectionManager'
       end;
 
   public
@@ -63892,7 +63892,7 @@
       Arr1InnerKeySelectionManager = array of InnerKeySelectionManager;
       Arr2InnerKeySelectionManager = array of Arr1InnerKeySelectionManager;
       Arr3InnerKeySelectionManager = array of Arr2InnerKeySelectionManager;
-      InnerAccessibleJComboBox = class external 'javax.swing' name 'AccessibleJComboBox' 
+      InnerAccessibleJComboBox = class external 'javax.swing' name 'AccessibleJComboBox'
       public
         type
           InnerAccessibleEditor = class;
@@ -63915,24 +63915,24 @@
           Arr1InnerEditorAccessibleContext = array of InnerEditorAccessibleContext;
           Arr2InnerEditorAccessibleContext = array of Arr1InnerEditorAccessibleContext;
           Arr3InnerEditorAccessibleContext = array of Arr2InnerEditorAccessibleContext;
-          InnerAccessibleEditor = class external 'javax.swing' name 'AccessibleEditor' 
+          InnerAccessibleEditor = class external 'javax.swing' name 'AccessibleEditor'
           end;
 
-          InnerAccessibleJComboBoxListSelectionListener = class external 'javax.swing' name 'AccessibleJComboBoxListSelectionListener' 
+          InnerAccessibleJComboBoxListSelectionListener = class external 'javax.swing' name 'AccessibleJComboBoxListSelectionListener'
           end;
 
-          InnerAccessibleJComboBoxPopupMenuListener = class external 'javax.swing' name 'AccessibleJComboBoxPopupMenuListener' 
+          InnerAccessibleJComboBoxPopupMenuListener = class external 'javax.swing' name 'AccessibleJComboBoxPopupMenuListener'
           end;
 
-          InnerAccessibleJComboBoxPropertyChangeListener = class external 'javax.swing' name 'AccessibleJComboBoxPropertyChangeListener' 
+          InnerAccessibleJComboBoxPropertyChangeListener = class external 'javax.swing' name 'AccessibleJComboBoxPropertyChangeListener'
           end;
 
-          InnerEditorAccessibleContext = class external 'javax.swing' name 'EditorAccessibleContext' 
+          InnerEditorAccessibleContext = class external 'javax.swing' name 'EditorAccessibleContext'
           end;
 
       end;
 
-      InnerKeySelectionManager = interface external 'javax.swing' name 'KeySelectionManager' 
+      InnerKeySelectionManager = interface external 'javax.swing' name 'KeySelectionManager'
         function selectionForKey(para1: jchar; para2: JSComboBoxModel): jint; overload;
       end;
 
@@ -64038,7 +64038,7 @@
       Arr1InnerWeakPCL = array of InnerWeakPCL;
       Arr2InnerWeakPCL = array of Arr1InnerWeakPCL;
       Arr3InnerWeakPCL = array of Arr2InnerWeakPCL;
-      InnerWeakPCL = class external 'javax.swing' name 'WeakPCL' 
+      InnerWeakPCL = class external 'javax.swing' name 'WeakPCL'
       end;
 
   public
@@ -64047,7 +64047,7 @@
       Arr1InnerAccessibleJFileChooser = array of InnerAccessibleJFileChooser;
       Arr2InnerAccessibleJFileChooser = array of Arr1InnerAccessibleJFileChooser;
       Arr3InnerAccessibleJFileChooser = array of Arr2InnerAccessibleJFileChooser;
-      InnerAccessibleJFileChooser = class external 'javax.swing' name 'AccessibleJFileChooser' 
+      InnerAccessibleJFileChooser = class external 'javax.swing' name 'AccessibleJFileChooser'
       end;
 
   public
@@ -64178,7 +64178,7 @@
       Arr1InnerFocusPropertyChangeListener = array of InnerFocusPropertyChangeListener;
       Arr2InnerFocusPropertyChangeListener = array of Arr1InnerFocusPropertyChangeListener;
       Arr3InnerFocusPropertyChangeListener = array of Arr2InnerFocusPropertyChangeListener;
-      InnerFocusPropertyChangeListener = class external 'javax.swing' name 'FocusPropertyChangeListener' 
+      InnerFocusPropertyChangeListener = class external 'javax.swing' name 'FocusPropertyChangeListener'
       end;
 
   public
@@ -64191,7 +64191,7 @@
       Arr1InnerJDesktopIcon = array of InnerJDesktopIcon;
       Arr2InnerJDesktopIcon = array of Arr1InnerJDesktopIcon;
       Arr3InnerJDesktopIcon = array of Arr2InnerJDesktopIcon;
-      InnerAccessibleJInternalFrame = class external 'javax.swing' name 'AccessibleJInternalFrame' 
+      InnerAccessibleJInternalFrame = class external 'javax.swing' name 'AccessibleJInternalFrame'
       end;
 
       InnerJDesktopIcon = class external 'javax.swing' name 'JDesktopIcon' (JSJComponent, JAAccessible)
@@ -64201,7 +64201,7 @@
           Arr1InnerAccessibleJDesktopIcon = array of InnerAccessibleJDesktopIcon;
           Arr2InnerAccessibleJDesktopIcon = array of Arr1InnerAccessibleJDesktopIcon;
           Arr3InnerAccessibleJDesktopIcon = array of Arr2InnerAccessibleJDesktopIcon;
-          InnerAccessibleJDesktopIcon = class external 'javax.swing' name 'AccessibleJDesktopIcon' 
+          InnerAccessibleJDesktopIcon = class external 'javax.swing' name 'AccessibleJDesktopIcon'
           end;
 
       public
@@ -64348,14 +64348,14 @@
       Arr1InnerAccessibleJLabel = array of InnerAccessibleJLabel;
       Arr2InnerAccessibleJLabel = array of Arr1InnerAccessibleJLabel;
       Arr3InnerAccessibleJLabel = array of Arr2InnerAccessibleJLabel;
-      InnerAccessibleJLabel = class external 'javax.swing' name 'AccessibleJLabel' 
+      InnerAccessibleJLabel = class external 'javax.swing' name 'AccessibleJLabel'
       public
         type
           InnerLabelKeyBinding = class;
           Arr1InnerLabelKeyBinding = array of InnerLabelKeyBinding;
           Arr2InnerLabelKeyBinding = array of Arr1InnerLabelKeyBinding;
           Arr3InnerLabelKeyBinding = array of Arr2InnerLabelKeyBinding;
-          InnerLabelKeyBinding = class external 'javax.swing' name 'LabelKeyBinding' 
+          InnerLabelKeyBinding = class external 'javax.swing' name 'LabelKeyBinding'
           end;
 
       end;
@@ -64415,7 +64415,7 @@
       Arr1InnerAccessibleJLayeredPane = array of InnerAccessibleJLayeredPane;
       Arr2InnerAccessibleJLayeredPane = array of Arr1InnerAccessibleJLayeredPane;
       Arr3InnerAccessibleJLayeredPane = array of Arr2InnerAccessibleJLayeredPane;
-      InnerAccessibleJLayeredPane = class external 'javax.swing' name 'AccessibleJLayeredPane' 
+      InnerAccessibleJLayeredPane = class external 'javax.swing' name 'AccessibleJLayeredPane'
       end;
 
   public
@@ -64469,7 +64469,7 @@
       Arr1InnerListSelectionHandler = array of InnerListSelectionHandler;
       Arr2InnerListSelectionHandler = array of Arr1InnerListSelectionHandler;
       Arr3InnerListSelectionHandler = array of Arr2InnerListSelectionHandler;
-      InnerListSelectionHandler = class external 'javax.swing' name 'ListSelectionHandler' 
+      InnerListSelectionHandler = class external 'javax.swing' name 'ListSelectionHandler'
       end;
 
   public
@@ -64482,14 +64482,14 @@
       Arr1InnerDropLocation = array of InnerDropLocation;
       Arr2InnerDropLocation = array of Arr1InnerDropLocation;
       Arr3InnerDropLocation = array of Arr2InnerDropLocation;
-      InnerAccessibleJList = class external 'javax.swing' name 'AccessibleJList' 
+      InnerAccessibleJList = class external 'javax.swing' name 'AccessibleJList'
       public
         type
           InnerAccessibleJListChild = class;
           Arr1InnerAccessibleJListChild = array of InnerAccessibleJListChild;
           Arr2InnerAccessibleJListChild = array of Arr1InnerAccessibleJListChild;
           Arr3InnerAccessibleJListChild = array of Arr2InnerAccessibleJListChild;
-          InnerAccessibleJListChild = class external 'javax.swing' name 'AccessibleJListChild' 
+          InnerAccessibleJListChild = class external 'javax.swing' name 'AccessibleJListChild'
           end;
 
       end;
@@ -64601,7 +64601,7 @@
       Arr1InnerAccessibleJMenuBar = array of InnerAccessibleJMenuBar;
       Arr2InnerAccessibleJMenuBar = array of Arr1InnerAccessibleJMenuBar;
       Arr3InnerAccessibleJMenuBar = array of Arr2InnerAccessibleJMenuBar;
-      InnerAccessibleJMenuBar = class external 'javax.swing' name 'AccessibleJMenuBar' 
+      InnerAccessibleJMenuBar = class external 'javax.swing' name 'AccessibleJMenuBar'
       end;
 
   public
@@ -64653,7 +64653,7 @@
       Arr1InnerModalPrivilegedAction = array of InnerModalPrivilegedAction;
       Arr2InnerModalPrivilegedAction = array of Arr1InnerModalPrivilegedAction;
       Arr3InnerModalPrivilegedAction = array of Arr2InnerModalPrivilegedAction;
-      InnerModalPrivilegedAction = class external 'javax.swing' name 'ModalPrivilegedAction' 
+      InnerModalPrivilegedAction = class external 'javax.swing' name 'ModalPrivilegedAction'
       end;
 
   public
@@ -64662,7 +64662,7 @@
       Arr1InnerAccessibleJOptionPane = array of InnerAccessibleJOptionPane;
       Arr2InnerAccessibleJOptionPane = array of Arr1InnerAccessibleJOptionPane;
       Arr3InnerAccessibleJOptionPane = array of Arr2InnerAccessibleJOptionPane;
-      InnerAccessibleJOptionPane = class external 'javax.swing' name 'AccessibleJOptionPane' 
+      InnerAccessibleJOptionPane = class external 'javax.swing' name 'AccessibleJOptionPane'
       end;
 
   public
@@ -64797,7 +64797,7 @@
       Arr1InnerAccessibleJPanel = array of InnerAccessibleJPanel;
       Arr2InnerAccessibleJPanel = array of Arr1InnerAccessibleJPanel;
       Arr3InnerAccessibleJPanel = array of Arr2InnerAccessibleJPanel;
-      InnerAccessibleJPanel = class external 'javax.swing' name 'AccessibleJPanel' 
+      InnerAccessibleJPanel = class external 'javax.swing' name 'AccessibleJPanel'
       end;
 
   public
@@ -64822,7 +64822,7 @@
       Arr1InnerModelListener = array of InnerModelListener;
       Arr2InnerModelListener = array of Arr1InnerModelListener;
       Arr3InnerModelListener = array of Arr2InnerModelListener;
-      InnerModelListener = class external 'javax.swing' name 'ModelListener' 
+      InnerModelListener = class external 'javax.swing' name 'ModelListener'
       end;
 
   public
@@ -64831,7 +64831,7 @@
       Arr1InnerAccessibleJProgressBar = array of InnerAccessibleJProgressBar;
       Arr2InnerAccessibleJProgressBar = array of Arr1InnerAccessibleJProgressBar;
       Arr3InnerAccessibleJProgressBar = array of Arr2InnerAccessibleJProgressBar;
-      InnerAccessibleJProgressBar = class external 'javax.swing' name 'AccessibleJProgressBar' 
+      InnerAccessibleJProgressBar = class external 'javax.swing' name 'AccessibleJProgressBar'
       end;
 
   strict protected
@@ -64897,7 +64897,7 @@
       Arr1InnerDefaultAction = array of InnerDefaultAction;
       Arr2InnerDefaultAction = array of Arr1InnerDefaultAction;
       Arr3InnerDefaultAction = array of Arr2InnerDefaultAction;
-      InnerDefaultAction = class external 'javax.swing' name 'DefaultAction' 
+      InnerDefaultAction = class external 'javax.swing' name 'DefaultAction'
       end;
 
   public
@@ -64910,10 +64910,10 @@
       Arr1InnerRootLayout = array of InnerRootLayout;
       Arr2InnerRootLayout = array of Arr1InnerRootLayout;
       Arr3InnerRootLayout = array of Arr2InnerRootLayout;
-      InnerAccessibleJRootPane = class external 'javax.swing' name 'AccessibleJRootPane' 
+      InnerAccessibleJRootPane = class external 'javax.swing' name 'AccessibleJRootPane'
       end;
 
-      InnerRootLayout = class external 'javax.swing' name 'RootLayout' 
+      InnerRootLayout = class external 'javax.swing' name 'RootLayout'
       end;
 
   public
@@ -64981,7 +64981,7 @@
       Arr1InnerModelListener = array of InnerModelListener;
       Arr2InnerModelListener = array of Arr1InnerModelListener;
       Arr3InnerModelListener = array of Arr2InnerModelListener;
-      InnerModelListener = class external 'javax.swing' name 'ModelListener' 
+      InnerModelListener = class external 'javax.swing' name 'ModelListener'
       end;
 
   public
@@ -64990,7 +64990,7 @@
       Arr1InnerAccessibleJScrollBar = array of InnerAccessibleJScrollBar;
       Arr2InnerAccessibleJScrollBar = array of Arr1InnerAccessibleJScrollBar;
       Arr3InnerAccessibleJScrollBar = array of Arr2InnerAccessibleJScrollBar;
-      InnerAccessibleJScrollBar = class external 'javax.swing' name 'AccessibleJScrollBar' 
+      InnerAccessibleJScrollBar = class external 'javax.swing' name 'AccessibleJScrollBar'
       end;
 
   strict protected
@@ -65054,10 +65054,10 @@
       Arr1InnerScrollBar = array of InnerScrollBar;
       Arr2InnerScrollBar = array of Arr1InnerScrollBar;
       Arr3InnerScrollBar = array of Arr2InnerScrollBar;
-      InnerAccessibleJScrollPane = class external 'javax.swing' name 'AccessibleJScrollPane' 
+      InnerAccessibleJScrollPane = class external 'javax.swing' name 'AccessibleJScrollPane'
       end;
 
-      InnerScrollBar = class external 'javax.swing' name 'ScrollBar' 
+      InnerScrollBar = class external 'javax.swing' name 'ScrollBar'
       end;
 
   strict protected
@@ -65127,7 +65127,7 @@
       Arr1InnerAccessibleJSeparator = array of InnerAccessibleJSeparator;
       Arr2InnerAccessibleJSeparator = array of Arr1InnerAccessibleJSeparator;
       Arr3InnerAccessibleJSeparator = array of Arr2InnerAccessibleJSeparator;
-      InnerAccessibleJSeparator = class external 'javax.swing' name 'AccessibleJSeparator' 
+      InnerAccessibleJSeparator = class external 'javax.swing' name 'AccessibleJSeparator'
       end;
 
   public
@@ -65152,7 +65152,7 @@
       Arr1InnerModelListener = array of InnerModelListener;
       Arr2InnerModelListener = array of Arr1InnerModelListener;
       Arr3InnerModelListener = array of Arr2InnerModelListener;
-      InnerModelListener = class external 'javax.swing' name 'ModelListener' 
+      InnerModelListener = class external 'javax.swing' name 'ModelListener'
       end;
 
   public
@@ -65161,7 +65161,7 @@
       Arr1InnerAccessibleJSlider = array of InnerAccessibleJSlider;
       Arr2InnerAccessibleJSlider = array of Arr1InnerAccessibleJSlider;
       Arr3InnerAccessibleJSlider = array of Arr2InnerAccessibleJSlider;
-      InnerAccessibleJSlider = class external 'javax.swing' name 'AccessibleJSlider' 
+      InnerAccessibleJSlider = class external 'javax.swing' name 'AccessibleJSlider'
       end;
 
   strict protected
@@ -65242,7 +65242,7 @@
       Arr1InnerAccessibleJSplitPane = array of InnerAccessibleJSplitPane;
       Arr2InnerAccessibleJSplitPane = array of Arr1InnerAccessibleJSplitPane;
       Arr3InnerAccessibleJSplitPane = array of Arr2InnerAccessibleJSplitPane;
-      InnerAccessibleJSplitPane = class external 'javax.swing' name 'AccessibleJSplitPane' 
+      InnerAccessibleJSplitPane = class external 'javax.swing' name 'AccessibleJSplitPane'
       end;
 
   public
@@ -65325,7 +65325,7 @@
       Arr1InnerPage = array of InnerPage;
       Arr2InnerPage = array of Arr1InnerPage;
       Arr3InnerPage = array of Arr2InnerPage;
-      InnerPage = class external 'javax.swing' name 'Page' 
+      InnerPage = class external 'javax.swing' name 'Page'
       end;
 
   public
@@ -65338,10 +65338,10 @@
       Arr1InnerModelListener = array of InnerModelListener;
       Arr2InnerModelListener = array of Arr1InnerModelListener;
       Arr3InnerModelListener = array of Arr2InnerModelListener;
-      InnerAccessibleJTabbedPane = class external 'javax.swing' name 'AccessibleJTabbedPane' 
+      InnerAccessibleJTabbedPane = class external 'javax.swing' name 'AccessibleJTabbedPane'
       end;
 
-      InnerModelListener = class external 'javax.swing' name 'ModelListener' 
+      InnerModelListener = class external 'javax.swing' name 'ModelListener'
       end;
 
   public
@@ -65490,46 +65490,46 @@
       Arr1InnerThreadSafePrintable = array of InnerThreadSafePrintable;
       Arr2InnerThreadSafePrintable = array of Arr1InnerThreadSafePrintable;
       Arr3InnerThreadSafePrintable = array of Arr2InnerThreadSafePrintable;
-      InnerBooleanEditor = class external 'javax.swing' name 'BooleanEditor' 
+      InnerBooleanEditor = class external 'javax.swing' name 'BooleanEditor'
       end;
 
-      InnerGenericEditor = class external 'javax.swing' name 'GenericEditor' 
+      InnerGenericEditor = class external 'javax.swing' name 'GenericEditor'
       end;
 
-      InnerBooleanRenderer = class external 'javax.swing' name 'BooleanRenderer' 
+      InnerBooleanRenderer = class external 'javax.swing' name 'BooleanRenderer'
       end;
 
-      InnerCellEditorRemover = class external 'javax.swing' name 'CellEditorRemover' 
+      InnerCellEditorRemover = class external 'javax.swing' name 'CellEditorRemover'
       end;
 
-      InnerModelChange = class sealed external 'javax.swing' name 'ModelChange' 
+      InnerModelChange = class sealed external 'javax.swing' name 'ModelChange'
       end;
 
-      InnerResizable2 = interface external 'javax.swing' name 'Resizable2' 
+      InnerResizable2 = interface external 'javax.swing' name 'Resizable2'
       end;
 
-      InnerDateRenderer = class external 'javax.swing' name 'DateRenderer' 
+      InnerDateRenderer = class external 'javax.swing' name 'DateRenderer'
       end;
 
-      InnerIconRenderer = class external 'javax.swing' name 'IconRenderer' 
+      InnerIconRenderer = class external 'javax.swing' name 'IconRenderer'
       end;
 
-      InnerNumberRenderer = class external 'javax.swing' name 'NumberRenderer' 
+      InnerNumberRenderer = class external 'javax.swing' name 'NumberRenderer'
       end;
 
-      InnerDoubleRenderer = class external 'javax.swing' name 'DoubleRenderer' 
+      InnerDoubleRenderer = class external 'javax.swing' name 'DoubleRenderer'
       end;
 
-      InnerNumberEditor = class external 'javax.swing' name 'NumberEditor' 
+      InnerNumberEditor = class external 'javax.swing' name 'NumberEditor'
       end;
 
-      InnerResizable3 = interface external 'javax.swing' name 'Resizable3' 
+      InnerResizable3 = interface external 'javax.swing' name 'Resizable3'
       end;
 
-      InnerSortManager = class sealed external 'javax.swing' name 'SortManager' 
+      InnerSortManager = class sealed external 'javax.swing' name 'SortManager'
       end;
 
-      InnerThreadSafePrintable = class external 'javax.swing' name 'ThreadSafePrintable' 
+      InnerThreadSafePrintable = class external 'javax.swing' name 'ThreadSafePrintable'
       end;
 
   public
@@ -65546,7 +65546,7 @@
       Arr1InnerPrintMode = array of InnerPrintMode;
       Arr2InnerPrintMode = array of Arr1InnerPrintMode;
       Arr3InnerPrintMode = array of Arr2InnerPrintMode;
-      InnerAccessibleJTable = class external 'javax.swing' name 'AccessibleJTable' 
+      InnerAccessibleJTable = class external 'javax.swing' name 'AccessibleJTable'
       public
         type
           InnerAccessibleJTableHeaderCell = class;
@@ -65557,10 +65557,10 @@
           Arr1InnerAccessibleTableHeader = array of InnerAccessibleTableHeader;
           Arr2InnerAccessibleTableHeader = array of Arr1InnerAccessibleTableHeader;
           Arr3InnerAccessibleTableHeader = array of Arr2InnerAccessibleTableHeader;
-          InnerAccessibleJTableHeaderCell = class external 'javax.swing' name 'AccessibleJTableHeaderCell' 
+          InnerAccessibleJTableHeaderCell = class external 'javax.swing' name 'AccessibleJTableHeaderCell'
           end;
 
-          InnerAccessibleTableHeader = class external 'javax.swing' name 'AccessibleTableHeader' 
+          InnerAccessibleTableHeader = class external 'javax.swing' name 'AccessibleTableHeader'
           end;
 
       public
@@ -65573,10 +65573,10 @@
           Arr1InnerAccessibleJTableModelChange = array of InnerAccessibleJTableModelChange;
           Arr2InnerAccessibleJTableModelChange = array of Arr1InnerAccessibleJTableModelChange;
           Arr3InnerAccessibleJTableModelChange = array of Arr2InnerAccessibleJTableModelChange;
-          InnerAccessibleJTableCell = class external 'javax.swing' name 'AccessibleJTableCell' 
+          InnerAccessibleJTableCell = class external 'javax.swing' name 'AccessibleJTableCell'
           end;
 
-          InnerAccessibleJTableModelChange = class external 'javax.swing' name 'AccessibleJTableModelChange' 
+          InnerAccessibleJTableModelChange = class external 'javax.swing' name 'AccessibleJTableModelChange'
           end;
 
       end;
@@ -65812,7 +65812,7 @@
       Arr1InnerAccessibleJToolTip = array of InnerAccessibleJToolTip;
       Arr2InnerAccessibleJToolTip = array of Arr1InnerAccessibleJToolTip;
       Arr3InnerAccessibleJToolTip = array of Arr2InnerAccessibleJToolTip;
-      InnerAccessibleJToolTip = class external 'javax.swing' name 'AccessibleJToolTip' 
+      InnerAccessibleJToolTip = class external 'javax.swing' name 'AccessibleJToolTip'
       end;
 
   public
@@ -65837,7 +65837,7 @@
       Arr1InnerTreeTimer = array of InnerTreeTimer;
       Arr2InnerTreeTimer = array of Arr1InnerTreeTimer;
       Arr3InnerTreeTimer = array of Arr2InnerTreeTimer;
-      InnerTreeTimer = class external 'javax.swing' name 'TreeTimer' 
+      InnerTreeTimer = class external 'javax.swing' name 'TreeTimer'
       end;
 
   public
@@ -65866,14 +65866,14 @@
       Arr1InnerTreeSelectionRedirector = array of InnerTreeSelectionRedirector;
       Arr2InnerTreeSelectionRedirector = array of Arr1InnerTreeSelectionRedirector;
       Arr3InnerTreeSelectionRedirector = array of Arr2InnerTreeSelectionRedirector;
-      InnerAccessibleJTree = class external 'javax.swing' name 'AccessibleJTree' 
+      InnerAccessibleJTree = class external 'javax.swing' name 'AccessibleJTree'
       public
         type
           InnerAccessibleJTreeNode = class;
           Arr1InnerAccessibleJTreeNode = array of InnerAccessibleJTreeNode;
           Arr2InnerAccessibleJTreeNode = array of Arr1InnerAccessibleJTreeNode;
           Arr3InnerAccessibleJTreeNode = array of Arr2InnerAccessibleJTreeNode;
-          InnerAccessibleJTreeNode = class external 'javax.swing' name 'AccessibleJTreeNode' 
+          InnerAccessibleJTreeNode = class external 'javax.swing' name 'AccessibleJTreeNode'
           end;
 
       end;
@@ -65919,10 +65919,10 @@
         procedure removeSelectionPaths(var para1: array of JSTTreePath); overload; virtual;
       end;
 
-      InnerTreeModelHandler = class external 'javax.swing' name 'TreeModelHandler' 
+      InnerTreeModelHandler = class external 'javax.swing' name 'TreeModelHandler'
       end;
 
-      InnerTreeSelectionRedirector = class external 'javax.swing' name 'TreeSelectionRedirector' 
+      InnerTreeSelectionRedirector = class external 'javax.swing' name 'TreeSelectionRedirector'
       end;
 
   strict protected
@@ -66127,10 +66127,10 @@
       Arr1InnerViewListener = array of InnerViewListener;
       Arr2InnerViewListener = array of Arr1InnerViewListener;
       Arr3InnerViewListener = array of Arr2InnerViewListener;
-      InnerAccessibleJViewport = class external 'javax.swing' name 'AccessibleJViewport' 
+      InnerAccessibleJViewport = class external 'javax.swing' name 'AccessibleJViewport'
       end;
 
-      InnerViewListener = class external 'javax.swing' name 'ViewListener' 
+      InnerViewListener = class external 'javax.swing' name 'ViewListener'
       end;
 
   strict protected
@@ -66213,13 +66213,13 @@
       Arr1InnerNoFocusButton = array of InnerNoFocusButton;
       Arr2InnerNoFocusButton = array of Arr1InnerNoFocusButton;
       Arr3InnerNoFocusButton = array of Arr2InnerNoFocusButton;
-      InnerShowSystemMenuAction = class external 'javax.swing.plaf.basic' name 'ShowSystemMenuAction' 
+      InnerShowSystemMenuAction = class external 'javax.swing.plaf.basic' name 'ShowSystemMenuAction'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
-      InnerNoFocusButton = class external 'javax.swing.plaf.basic' name 'NoFocusButton' 
+      InnerNoFocusButton = class external 'javax.swing.plaf.basic' name 'NoFocusButton'
       end;
 
   public
@@ -66260,31 +66260,31 @@
       Arr1InnerSystemMenuBar = array of InnerSystemMenuBar;
       Arr2InnerSystemMenuBar = array of Arr1InnerSystemMenuBar;
       Arr3InnerSystemMenuBar = array of Arr2InnerSystemMenuBar;
-      InnerCloseAction = class external 'javax.swing.plaf.basic' name 'CloseAction' 
+      InnerCloseAction = class external 'javax.swing.plaf.basic' name 'CloseAction'
       end;
 
-      InnerIconifyAction = class external 'javax.swing.plaf.basic' name 'IconifyAction' 
+      InnerIconifyAction = class external 'javax.swing.plaf.basic' name 'IconifyAction'
       end;
 
-      InnerMaximizeAction = class external 'javax.swing.plaf.basic' name 'MaximizeAction' 
+      InnerMaximizeAction = class external 'javax.swing.plaf.basic' name 'MaximizeAction'
       end;
 
-      InnerMoveAction = class external 'javax.swing.plaf.basic' name 'MoveAction' 
+      InnerMoveAction = class external 'javax.swing.plaf.basic' name 'MoveAction'
       end;
 
-      InnerRestoreAction = class external 'javax.swing.plaf.basic' name 'RestoreAction' 
+      InnerRestoreAction = class external 'javax.swing.plaf.basic' name 'RestoreAction'
       end;
 
-      InnerSizeAction = class external 'javax.swing.plaf.basic' name 'SizeAction' 
+      InnerSizeAction = class external 'javax.swing.plaf.basic' name 'SizeAction'
       end;
 
-      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler' 
+      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler'
       end;
 
-      InnerTitlePaneLayout = class external 'javax.swing.plaf.basic' name 'TitlePaneLayout' 
+      InnerTitlePaneLayout = class external 'javax.swing.plaf.basic' name 'TitlePaneLayout'
       end;
 
-      InnerSystemMenuBar = class external 'javax.swing.plaf.basic' name 'SystemMenuBar' 
+      InnerSystemMenuBar = class external 'javax.swing.plaf.basic' name 'SystemMenuBar'
       end;
 
   strict protected
@@ -66381,28 +66381,28 @@
       Arr1InnerWindowHandler = array of InnerWindowHandler;
       Arr2InnerWindowHandler = array of Arr1InnerWindowHandler;
       Arr3InnerWindowHandler = array of Arr2InnerWindowHandler;
-      InnerCloseAction = class external 'javax.swing.plaf.metal' name 'CloseAction' 
+      InnerCloseAction = class external 'javax.swing.plaf.metal' name 'CloseAction'
       end;
 
-      InnerIconifyAction = class external 'javax.swing.plaf.metal' name 'IconifyAction' 
+      InnerIconifyAction = class external 'javax.swing.plaf.metal' name 'IconifyAction'
       end;
 
-      InnerMaximizeAction = class external 'javax.swing.plaf.metal' name 'MaximizeAction' 
+      InnerMaximizeAction = class external 'javax.swing.plaf.metal' name 'MaximizeAction'
       end;
 
-      InnerRestoreAction = class external 'javax.swing.plaf.metal' name 'RestoreAction' 
+      InnerRestoreAction = class external 'javax.swing.plaf.metal' name 'RestoreAction'
       end;
 
-      InnerPropertyChangeHandler = class external 'javax.swing.plaf.metal' name 'PropertyChangeHandler' 
+      InnerPropertyChangeHandler = class external 'javax.swing.plaf.metal' name 'PropertyChangeHandler'
       end;
 
-      InnerSystemMenuBar = class external 'javax.swing.plaf.metal' name 'SystemMenuBar' 
+      InnerSystemMenuBar = class external 'javax.swing.plaf.metal' name 'SystemMenuBar'
       end;
 
-      InnerTitlePaneLayout = class external 'javax.swing.plaf.metal' name 'TitlePaneLayout' 
+      InnerTitlePaneLayout = class external 'javax.swing.plaf.metal' name 'TitlePaneLayout'
       end;
 
-      InnerWindowHandler = class external 'javax.swing.plaf.metal' name 'WindowHandler' 
+      InnerWindowHandler = class external 'javax.swing.plaf.metal' name 'WindowHandler'
       end;
 
   public
@@ -66423,14 +66423,14 @@
       Arr1InnerAccessibleJTableHeader = array of InnerAccessibleJTableHeader;
       Arr2InnerAccessibleJTableHeader = array of Arr1InnerAccessibleJTableHeader;
       Arr3InnerAccessibleJTableHeader = array of Arr2InnerAccessibleJTableHeader;
-      InnerAccessibleJTableHeader = class external 'javax.swing.table' name 'AccessibleJTableHeader' 
+      InnerAccessibleJTableHeader = class external 'javax.swing.table' name 'AccessibleJTableHeader'
       public
         type
           InnerAccessibleJTableHeaderEntry = class;
           Arr1InnerAccessibleJTableHeaderEntry = array of InnerAccessibleJTableHeaderEntry;
           Arr2InnerAccessibleJTableHeaderEntry = array of Arr1InnerAccessibleJTableHeaderEntry;
           Arr3InnerAccessibleJTableHeaderEntry = array of Arr2InnerAccessibleJTableHeaderEntry;
-          InnerAccessibleJTableHeaderEntry = class external 'javax.swing.table' name 'AccessibleJTableHeaderEntry' 
+          InnerAccessibleJTableHeaderEntry = class external 'javax.swing.table' name 'AccessibleJTableHeaderEntry'
           end;
 
       end;
@@ -66525,28 +66525,28 @@
       Arr1InnerMutableCaretEvent = array of InnerMutableCaretEvent;
       Arr2InnerMutableCaretEvent = array of Arr1InnerMutableCaretEvent;
       Arr3InnerMutableCaretEvent = array of Arr2InnerMutableCaretEvent;
-      InnerComposedTextCaret = class external 'javax.swing.text' name 'ComposedTextCaret' 
+      InnerComposedTextCaret = class external 'javax.swing.text' name 'ComposedTextCaret'
       end;
 
-      InnerDefaultKeymap = class external 'javax.swing.text' name 'DefaultKeymap' 
+      InnerDefaultKeymap = class external 'javax.swing.text' name 'DefaultKeymap'
       end;
 
-      InnerDefaultTransferHandler = class external 'javax.swing.text' name 'DefaultTransferHandler' 
+      InnerDefaultTransferHandler = class external 'javax.swing.text' name 'DefaultTransferHandler'
       end;
 
-      InnerDoSetCaretPosition = class external 'javax.swing.text' name 'DoSetCaretPosition' 
+      InnerDoSetCaretPosition = class external 'javax.swing.text' name 'DoSetCaretPosition'
       end;
 
-      InnerInputMethodRequestsHandler = class external 'javax.swing.text' name 'InputMethodRequestsHandler' 
+      InnerInputMethodRequestsHandler = class external 'javax.swing.text' name 'InputMethodRequestsHandler'
       end;
 
-      InnerKeymapActionMap = class external 'javax.swing.text' name 'KeymapActionMap' 
+      InnerKeymapActionMap = class external 'javax.swing.text' name 'KeymapActionMap'
       end;
 
-      InnerKeymapWrapper = class external 'javax.swing.text' name 'KeymapWrapper' 
+      InnerKeymapWrapper = class external 'javax.swing.text' name 'KeymapWrapper'
       end;
 
-      InnerMutableCaretEvent = class external 'javax.swing.text' name 'MutableCaretEvent' 
+      InnerMutableCaretEvent = class external 'javax.swing.text' name 'MutableCaretEvent'
       end;
 
   public
@@ -66563,14 +66563,14 @@
       Arr1InnerDropLocation = array of InnerDropLocation;
       Arr2InnerDropLocation = array of Arr1InnerDropLocation;
       Arr3InnerDropLocation = array of Arr2InnerDropLocation;
-      InnerAccessibleJTextComponent = class external 'javax.swing.text' name 'AccessibleJTextComponent' 
+      InnerAccessibleJTextComponent = class external 'javax.swing.text' name 'AccessibleJTextComponent'
       public
         type
           InnerIndexedSegment = class;
           Arr1InnerIndexedSegment = array of InnerIndexedSegment;
           Arr2InnerIndexedSegment = array of Arr1InnerIndexedSegment;
           Arr3InnerIndexedSegment = array of Arr2InnerIndexedSegment;
-          InnerIndexedSegment = class external 'javax.swing.text' name 'IndexedSegment' 
+          InnerIndexedSegment = class external 'javax.swing.text' name 'IndexedSegment'
           end;
 
       end;
@@ -66690,7 +66690,7 @@
       Arr1InnerMetalDividerLayout = array of InnerMetalDividerLayout;
       Arr2InnerMetalDividerLayout = array of Arr1InnerMetalDividerLayout;
       Arr3InnerMetalDividerLayout = array of Arr2InnerMetalDividerLayout;
-      InnerMetalDividerLayout = class external 'javax.swing.plaf.metal' name 'MetalDividerLayout' 
+      InnerMetalDividerLayout = class external 'javax.swing.plaf.metal' name 'MetalDividerLayout'
       end;
 
   public
@@ -66824,10 +66824,10 @@
       Arr1InnerHandler = array of InnerHandler;
       Arr2InnerHandler = array of Arr1InnerHandler;
       Arr3InnerHandler = array of Arr2InnerHandler;
-      InnerColorTransferHandler = class external 'javax.swing.plaf.basic' name 'ColorTransferHandler' 
+      InnerColorTransferHandler = class external 'javax.swing.plaf.basic' name 'ColorTransferHandler'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
   public
@@ -66836,7 +66836,7 @@
       Arr1InnerPropertyHandler = array of InnerPropertyHandler;
       Arr2InnerPropertyHandler = array of Arr1InnerPropertyHandler;
       Arr3InnerPropertyHandler = array of Arr2InnerPropertyHandler;
-      InnerPropertyHandler = class external 'javax.swing.plaf.basic' name 'PropertyHandler' 
+      InnerPropertyHandler = class external 'javax.swing.plaf.basic' name 'PropertyHandler'
       end;
 
   strict protected
@@ -66898,13 +66898,13 @@
       Arr1InnerHandler = array of InnerHandler;
       Arr2InnerHandler = array of Arr1InnerHandler;
       Arr3InnerHandler = array of Arr2InnerHandler;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
-      InnerDefaultKeySelectionManager = class external 'javax.swing.plaf.basic' name 'DefaultKeySelectionManager' 
+      InnerDefaultKeySelectionManager = class external 'javax.swing.plaf.basic' name 'DefaultKeySelectionManager'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
   public
@@ -66933,22 +66933,22 @@
       Arr1InnerKeyHandler = array of InnerKeyHandler;
       Arr2InnerKeyHandler = array of Arr1InnerKeyHandler;
       Arr3InnerKeyHandler = array of Arr2InnerKeyHandler;
-      InnerComboBoxLayoutManager = class external 'javax.swing.plaf.basic' name 'ComboBoxLayoutManager' 
+      InnerComboBoxLayoutManager = class external 'javax.swing.plaf.basic' name 'ComboBoxLayoutManager'
       end;
 
-      InnerFocusHandler = class external 'javax.swing.plaf.basic' name 'FocusHandler' 
+      InnerFocusHandler = class external 'javax.swing.plaf.basic' name 'FocusHandler'
       end;
 
-      InnerListDataHandler = class external 'javax.swing.plaf.basic' name 'ListDataHandler' 
+      InnerListDataHandler = class external 'javax.swing.plaf.basic' name 'ListDataHandler'
       end;
 
-      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler' 
+      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler'
       end;
 
-      InnerItemHandler = class external 'javax.swing.plaf.basic' name 'ItemHandler' 
+      InnerItemHandler = class external 'javax.swing.plaf.basic' name 'ItemHandler'
       end;
 
-      InnerKeyHandler = class external 'javax.swing.plaf.basic' name 'KeyHandler' 
+      InnerKeyHandler = class external 'javax.swing.plaf.basic' name 'KeyHandler'
       end;
 
   strict protected
@@ -67089,13 +67089,13 @@
       Arr1InnerHandler = array of InnerHandler;
       Arr2InnerHandler = array of Arr1InnerHandler;
       Arr3InnerHandler = array of Arr2InnerHandler;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
-      InnerBasicDesktopManager = class external 'javax.swing.plaf.basic' name 'BasicDesktopManager' 
+      InnerBasicDesktopManager = class external 'javax.swing.plaf.basic' name 'BasicDesktopManager'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
   public
@@ -67120,19 +67120,19 @@
       Arr1InnerOpenAction = array of InnerOpenAction;
       Arr2InnerOpenAction = array of Arr1InnerOpenAction;
       Arr3InnerOpenAction = array of Arr2InnerOpenAction;
-      InnerCloseAction = class external 'javax.swing.plaf.basic' name 'CloseAction' 
+      InnerCloseAction = class external 'javax.swing.plaf.basic' name 'CloseAction'
       end;
 
-      InnerMaximizeAction = class external 'javax.swing.plaf.basic' name 'MaximizeAction' 
+      InnerMaximizeAction = class external 'javax.swing.plaf.basic' name 'MaximizeAction'
       end;
 
-      InnerMinimizeAction = class external 'javax.swing.plaf.basic' name 'MinimizeAction' 
+      InnerMinimizeAction = class external 'javax.swing.plaf.basic' name 'MinimizeAction'
       end;
 
-      InnerNavigateAction = class external 'javax.swing.plaf.basic' name 'NavigateAction' 
+      InnerNavigateAction = class external 'javax.swing.plaf.basic' name 'NavigateAction'
       end;
 
-      InnerOpenAction = class external 'javax.swing.plaf.basic' name 'OpenAction' 
+      InnerOpenAction = class external 'javax.swing.plaf.basic' name 'OpenAction'
       end;
 
   strict protected
@@ -67204,22 +67204,22 @@
       Arr1InnerHandler = array of InnerHandler;
       Arr2InnerHandler = array of Arr1InnerHandler;
       Arr3InnerHandler = array of Arr2InnerHandler;
-      InnerGlobFilter = class external 'javax.swing.plaf.basic' name 'GlobFilter' 
+      InnerGlobFilter = class external 'javax.swing.plaf.basic' name 'GlobFilter'
       end;
 
-      InnerFileTransferHandler = class external 'javax.swing.plaf.basic' name 'FileTransferHandler' 
+      InnerFileTransferHandler = class external 'javax.swing.plaf.basic' name 'FileTransferHandler'
       public
         type
           InnerFileTransferable = class;
           Arr1InnerFileTransferable = array of InnerFileTransferable;
           Arr2InnerFileTransferable = array of Arr1InnerFileTransferable;
           Arr3InnerFileTransferable = array of Arr2InnerFileTransferable;
-          InnerFileTransferable = class external 'javax.swing.plaf.basic' name 'FileTransferable' 
+          InnerFileTransferable = class external 'javax.swing.plaf.basic' name 'FileTransferable'
           end;
 
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
   public
@@ -67264,34 +67264,34 @@
       Arr1InnerSelectionListener = array of InnerSelectionListener;
       Arr2InnerSelectionListener = array of Arr1InnerSelectionListener;
       Arr3InnerSelectionListener = array of Arr2InnerSelectionListener;
-      InnerAcceptAllFileFilter = class external 'javax.swing.plaf.basic' name 'AcceptAllFileFilter' 
+      InnerAcceptAllFileFilter = class external 'javax.swing.plaf.basic' name 'AcceptAllFileFilter'
       end;
 
-      InnerApproveSelectionAction = class external 'javax.swing.plaf.basic' name 'ApproveSelectionAction' 
+      InnerApproveSelectionAction = class external 'javax.swing.plaf.basic' name 'ApproveSelectionAction'
       end;
 
-      InnerCancelSelectionAction = class external 'javax.swing.plaf.basic' name 'CancelSelectionAction' 
+      InnerCancelSelectionAction = class external 'javax.swing.plaf.basic' name 'CancelSelectionAction'
       end;
 
-      InnerChangeToParentDirectoryAction = class external 'javax.swing.plaf.basic' name 'ChangeToParentDirectoryAction' 
+      InnerChangeToParentDirectoryAction = class external 'javax.swing.plaf.basic' name 'ChangeToParentDirectoryAction'
       end;
 
-      InnerGoHomeAction = class external 'javax.swing.plaf.basic' name 'GoHomeAction' 
+      InnerGoHomeAction = class external 'javax.swing.plaf.basic' name 'GoHomeAction'
       end;
 
-      InnerNewFolderAction = class external 'javax.swing.plaf.basic' name 'NewFolderAction' 
+      InnerNewFolderAction = class external 'javax.swing.plaf.basic' name 'NewFolderAction'
       end;
 
-      InnerUpdateAction = class external 'javax.swing.plaf.basic' name 'UpdateAction' 
+      InnerUpdateAction = class external 'javax.swing.plaf.basic' name 'UpdateAction'
       end;
 
-      InnerBasicFileView = class external 'javax.swing.plaf.basic' name 'BasicFileView' 
+      InnerBasicFileView = class external 'javax.swing.plaf.basic' name 'BasicFileView'
       end;
 
-      InnerDoubleClickListener = class external 'javax.swing.plaf.basic' name 'DoubleClickListener' 
+      InnerDoubleClickListener = class external 'javax.swing.plaf.basic' name 'DoubleClickListener'
       end;
 
-      InnerSelectionListener = class external 'javax.swing.plaf.basic' name 'SelectionListener' 
+      InnerSelectionListener = class external 'javax.swing.plaf.basic' name 'SelectionListener'
       end;
 
   strict protected
@@ -67412,7 +67412,7 @@
       Arr1InnerHandler = array of InnerHandler;
       Arr2InnerHandler = array of Arr1InnerHandler;
       Arr3InnerHandler = array of Arr2InnerHandler;
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
   public
@@ -67441,22 +67441,22 @@
       Arr1InnerInternalFrameLayout = array of InnerInternalFrameLayout;
       Arr2InnerInternalFrameLayout = array of Arr1InnerInternalFrameLayout;
       Arr3InnerInternalFrameLayout = array of Arr2InnerInternalFrameLayout;
-      InnerBasicInternalFrameListener = class external 'javax.swing.plaf.basic' name 'BasicInternalFrameListener' 
+      InnerBasicInternalFrameListener = class external 'javax.swing.plaf.basic' name 'BasicInternalFrameListener'
       end;
 
-      InnerBorderListener = class external 'javax.swing.plaf.basic' name 'BorderListener' 
+      InnerBorderListener = class external 'javax.swing.plaf.basic' name 'BorderListener'
       end;
 
-      InnerComponentHandler = class external 'javax.swing.plaf.basic' name 'ComponentHandler' 
+      InnerComponentHandler = class external 'javax.swing.plaf.basic' name 'ComponentHandler'
       end;
 
-      InnerGlassPaneDispatcher = class external 'javax.swing.plaf.basic' name 'GlassPaneDispatcher' 
+      InnerGlassPaneDispatcher = class external 'javax.swing.plaf.basic' name 'GlassPaneDispatcher'
       end;
 
-      InnerInternalFramePropertyChangeListener = class external 'javax.swing.plaf.basic' name 'InternalFramePropertyChangeListener' 
+      InnerInternalFramePropertyChangeListener = class external 'javax.swing.plaf.basic' name 'InternalFramePropertyChangeListener'
       end;
 
-      InnerInternalFrameLayout = class external 'javax.swing.plaf.basic' name 'InternalFrameLayout' 
+      InnerInternalFrameLayout = class external 'javax.swing.plaf.basic' name 'InternalFrameLayout'
       end;
 
   strict protected
@@ -67561,7 +67561,7 @@
       Arr1InnerActions = array of InnerActions;
       Arr2InnerActions = array of Arr1InnerActions;
       Arr3InnerActions = array of Arr2InnerActions;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
   strict protected
@@ -67631,13 +67631,13 @@
       Arr1InnerListTransferHandler = array of InnerListTransferHandler;
       Arr2InnerListTransferHandler = array of Arr1InnerListTransferHandler;
       Arr3InnerListTransferHandler = array of Arr2InnerListTransferHandler;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
-      InnerListTransferHandler = class external 'javax.swing.plaf.basic' name 'ListTransferHandler' 
+      InnerListTransferHandler = class external 'javax.swing.plaf.basic' name 'ListTransferHandler'
       end;
 
   public
@@ -67662,19 +67662,19 @@
       Arr1InnerListSelectionHandler = array of InnerListSelectionHandler;
       Arr2InnerListSelectionHandler = array of Arr1InnerListSelectionHandler;
       Arr3InnerListSelectionHandler = array of Arr2InnerListSelectionHandler;
-      InnerFocusHandler = class external 'javax.swing.plaf.basic' name 'FocusHandler' 
+      InnerFocusHandler = class external 'javax.swing.plaf.basic' name 'FocusHandler'
       end;
 
-      InnerMouseInputHandler = class external 'javax.swing.plaf.basic' name 'MouseInputHandler' 
+      InnerMouseInputHandler = class external 'javax.swing.plaf.basic' name 'MouseInputHandler'
       end;
 
-      InnerListDataHandler = class external 'javax.swing.plaf.basic' name 'ListDataHandler' 
+      InnerListDataHandler = class external 'javax.swing.plaf.basic' name 'ListDataHandler'
       end;
 
-      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler' 
+      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler'
       end;
 
-      InnerListSelectionHandler = class external 'javax.swing.plaf.basic' name 'ListSelectionHandler' 
+      InnerListSelectionHandler = class external 'javax.swing.plaf.basic' name 'ListSelectionHandler'
       end;
 
   strict protected
@@ -67771,10 +67771,10 @@
       Arr1InnerHandler = array of InnerHandler;
       Arr2InnerHandler = array of Arr1InnerHandler;
       Arr3InnerHandler = array of Arr2InnerHandler;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
   strict protected
@@ -67842,25 +67842,25 @@
       Arr1InnerMultiplexingTextField = array of InnerMultiplexingTextField;
       Arr2InnerMultiplexingTextField = array of Arr1InnerMultiplexingTextField;
       Arr3InnerMultiplexingTextField = array of Arr2InnerMultiplexingTextField;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
-      InnerButtonFactory = class external 'javax.swing.plaf.basic' name 'ButtonFactory' 
+      InnerButtonFactory = class external 'javax.swing.plaf.basic' name 'ButtonFactory'
       public
         type
           InnerConstrainedButton = class;
           Arr1InnerConstrainedButton = array of InnerConstrainedButton;
           Arr2InnerConstrainedButton = array of Arr1InnerConstrainedButton;
           Arr3InnerConstrainedButton = array of Arr2InnerConstrainedButton;
-          InnerConstrainedButton = class external 'javax.swing.plaf.basic' name 'ConstrainedButton' 
+          InnerConstrainedButton = class external 'javax.swing.plaf.basic' name 'ConstrainedButton'
           end;
 
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
-      InnerMultiplexingTextField = class external 'javax.swing.plaf.basic' name 'MultiplexingTextField' 
+      InnerMultiplexingTextField = class external 'javax.swing.plaf.basic' name 'MultiplexingTextField'
       end;
 
   public
@@ -67877,7 +67877,7 @@
       Arr1InnerPropertyChangeHandler = array of InnerPropertyChangeHandler;
       Arr2InnerPropertyChangeHandler = array of Arr1InnerPropertyChangeHandler;
       Arr3InnerPropertyChangeHandler = array of Arr2InnerPropertyChangeHandler;
-      InnerButtonActionListener = class external 'javax.swing.plaf.basic' name 'ButtonActionListener' 
+      InnerButtonActionListener = class external 'javax.swing.plaf.basic' name 'ButtonActionListener'
       end;
 
       InnerButtonAreaLayout = class external 'javax.swing.plaf.basic' name 'ButtonAreaLayout' (JLObject, JALayoutManager)
@@ -67901,7 +67901,7 @@
         procedure removeLayoutComponent(para1: JAComponent); overload; virtual;
       end;
 
-      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler' 
+      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler'
       end;
 
   public
@@ -68037,19 +68037,19 @@
       Arr1InnerMouseGrabber = array of InnerMouseGrabber;
       Arr2InnerMouseGrabber = array of Arr1InnerMouseGrabber;
       Arr3InnerMouseGrabber = array of Arr2InnerMouseGrabber;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
-      InnerBasicMenuKeyListener = class external 'javax.swing.plaf.basic' name 'BasicMenuKeyListener' 
+      InnerBasicMenuKeyListener = class external 'javax.swing.plaf.basic' name 'BasicMenuKeyListener'
       end;
 
-      InnerBasicPopupMenuListener = class external 'javax.swing.plaf.basic' name 'BasicPopupMenuListener' 
+      InnerBasicPopupMenuListener = class external 'javax.swing.plaf.basic' name 'BasicPopupMenuListener'
       end;
 
-      InnerMenuKeyboardHelper = class external 'javax.swing.plaf.basic' name 'MenuKeyboardHelper' 
+      InnerMenuKeyboardHelper = class external 'javax.swing.plaf.basic' name 'MenuKeyboardHelper'
       end;
 
-      InnerMouseGrabber = class external 'javax.swing.plaf.basic' name 'MouseGrabber' 
+      InnerMouseGrabber = class external 'javax.swing.plaf.basic' name 'MouseGrabber'
       end;
 
   strict protected
@@ -68106,10 +68106,10 @@
       Arr1InnerHandler = array of InnerHandler;
       Arr2InnerHandler = array of Arr1InnerHandler;
       Arr3InnerHandler = array of Arr2InnerHandler;
-      InnerAnimator = class external 'javax.swing.plaf.basic' name 'Animator' 
+      InnerAnimator = class external 'javax.swing.plaf.basic' name 'Animator'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
   public
@@ -68118,7 +68118,7 @@
       Arr1InnerChangeHandler = array of InnerChangeHandler;
       Arr2InnerChangeHandler = array of Arr1InnerChangeHandler;
       Arr3InnerChangeHandler = array of Arr2InnerChangeHandler;
-      InnerChangeHandler = class external 'javax.swing.plaf.basic' name 'ChangeHandler' 
+      InnerChangeHandler = class external 'javax.swing.plaf.basic' name 'ChangeHandler'
       end;
 
   strict protected
@@ -68202,10 +68202,10 @@
       Arr1InnerRootPaneInputMap = array of InnerRootPaneInputMap;
       Arr2InnerRootPaneInputMap = array of Arr1InnerRootPaneInputMap;
       Arr3InnerRootPaneInputMap = array of Arr2InnerRootPaneInputMap;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
-      InnerRootPaneInputMap = class external 'javax.swing.plaf.basic' name 'RootPaneInputMap' 
+      InnerRootPaneInputMap = class external 'javax.swing.plaf.basic' name 'RootPaneInputMap'
       end;
 
   public
@@ -68257,10 +68257,10 @@
       Arr1InnerHandler = array of InnerHandler;
       Arr2InnerHandler = array of Arr1InnerHandler;
       Arr3InnerHandler = array of Arr2InnerHandler;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
   public
@@ -68285,19 +68285,19 @@
       Arr1InnerTrackListener = array of InnerTrackListener;
       Arr2InnerTrackListener = array of Arr1InnerTrackListener;
       Arr3InnerTrackListener = array of Arr2InnerTrackListener;
-      InnerArrowButtonListener = class external 'javax.swing.plaf.basic' name 'ArrowButtonListener' 
+      InnerArrowButtonListener = class external 'javax.swing.plaf.basic' name 'ArrowButtonListener'
       end;
 
-      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler' 
+      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler'
       end;
 
-      InnerModelListener = class external 'javax.swing.plaf.basic' name 'ModelListener' 
+      InnerModelListener = class external 'javax.swing.plaf.basic' name 'ModelListener'
       end;
 
-      InnerScrollListener = class external 'javax.swing.plaf.basic' name 'ScrollListener' 
+      InnerScrollListener = class external 'javax.swing.plaf.basic' name 'ScrollListener'
       end;
 
-      InnerTrackListener = class external 'javax.swing.plaf.basic' name 'TrackListener' 
+      InnerTrackListener = class external 'javax.swing.plaf.basic' name 'TrackListener'
       end;
 
   strict protected
@@ -68418,10 +68418,10 @@
       Arr1InnerHandler = array of InnerHandler;
       Arr2InnerHandler = array of Arr1InnerHandler;
       Arr3InnerHandler = array of Arr2InnerHandler;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
   public
@@ -68446,19 +68446,19 @@
       Arr1InnerMouseWheelHandler = array of InnerMouseWheelHandler;
       Arr2InnerMouseWheelHandler = array of Arr1InnerMouseWheelHandler;
       Arr3InnerMouseWheelHandler = array of Arr2InnerMouseWheelHandler;
-      InnerHSBChangeListener = class external 'javax.swing.plaf.basic' name 'HSBChangeListener' 
+      InnerHSBChangeListener = class external 'javax.swing.plaf.basic' name 'HSBChangeListener'
       end;
 
-      InnerVSBChangeListener = class external 'javax.swing.plaf.basic' name 'VSBChangeListener' 
+      InnerVSBChangeListener = class external 'javax.swing.plaf.basic' name 'VSBChangeListener'
       end;
 
-      InnerViewportChangeHandler = class external 'javax.swing.plaf.basic' name 'ViewportChangeHandler' 
+      InnerViewportChangeHandler = class external 'javax.swing.plaf.basic' name 'ViewportChangeHandler'
       end;
 
-      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler' 
+      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler'
       end;
 
-      InnerMouseWheelHandler = class external 'javax.swing.plaf.basic' name 'MouseWheelHandler' 
+      InnerMouseWheelHandler = class external 'javax.swing.plaf.basic' name 'MouseWheelHandler'
       end;
 
   strict protected
@@ -68601,13 +68601,13 @@
       Arr1InnerHandler = array of InnerHandler;
       Arr2InnerHandler = array of Arr1InnerHandler;
       Arr3InnerHandler = array of Arr2InnerHandler;
-      InnerSharedActionScroller = class external 'javax.swing.plaf.basic' name 'SharedActionScroller' 
+      InnerSharedActionScroller = class external 'javax.swing.plaf.basic' name 'SharedActionScroller'
       end;
 
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
   public
@@ -68640,25 +68640,25 @@
       Arr1InnerTrackListener = array of InnerTrackListener;
       Arr2InnerTrackListener = array of Arr1InnerTrackListener;
       Arr3InnerTrackListener = array of Arr2InnerTrackListener;
-      InnerActionScroller = class external 'javax.swing.plaf.basic' name 'ActionScroller' 
+      InnerActionScroller = class external 'javax.swing.plaf.basic' name 'ActionScroller'
       end;
 
-      InnerChangeHandler = class external 'javax.swing.plaf.basic' name 'ChangeHandler' 
+      InnerChangeHandler = class external 'javax.swing.plaf.basic' name 'ChangeHandler'
       end;
 
-      InnerComponentHandler = class external 'javax.swing.plaf.basic' name 'ComponentHandler' 
+      InnerComponentHandler = class external 'javax.swing.plaf.basic' name 'ComponentHandler'
       end;
 
-      InnerFocusHandler = class external 'javax.swing.plaf.basic' name 'FocusHandler' 
+      InnerFocusHandler = class external 'javax.swing.plaf.basic' name 'FocusHandler'
       end;
 
-      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler' 
+      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler'
       end;
 
-      InnerScrollListener = class external 'javax.swing.plaf.basic' name 'ScrollListener' 
+      InnerScrollListener = class external 'javax.swing.plaf.basic' name 'ScrollListener'
       end;
 
-      InnerTrackListener = class external 'javax.swing.plaf.basic' name 'TrackListener' 
+      InnerTrackListener = class external 'javax.swing.plaf.basic' name 'TrackListener'
       end;
 
   public
@@ -68810,10 +68810,10 @@
       Arr1InnerHandler = array of InnerHandler;
       Arr2InnerHandler = array of Arr1InnerHandler;
       Arr3InnerHandler = array of Arr2InnerHandler;
-      InnerArrowButtonHandler = class external 'javax.swing.plaf.basic' name 'ArrowButtonHandler' 
+      InnerArrowButtonHandler = class external 'javax.swing.plaf.basic' name 'ArrowButtonHandler'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
   strict protected
@@ -68874,10 +68874,10 @@
       Arr1InnerHandler = array of InnerHandler;
       Arr2InnerHandler = array of Arr1InnerHandler;
       Arr3InnerHandler = array of Arr2InnerHandler;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
   public
@@ -68918,31 +68918,31 @@
       Arr1InnerKeyboardUpLeftHandler = array of InnerKeyboardUpLeftHandler;
       Arr2InnerKeyboardUpLeftHandler = array of Arr1InnerKeyboardUpLeftHandler;
       Arr3InnerKeyboardUpLeftHandler = array of Arr2InnerKeyboardUpLeftHandler;
-      InnerBasicHorizontalLayoutManager = class external 'javax.swing.plaf.basic' name 'BasicHorizontalLayoutManager' 
+      InnerBasicHorizontalLayoutManager = class external 'javax.swing.plaf.basic' name 'BasicHorizontalLayoutManager'
       end;
 
-      InnerBasicVerticalLayoutManager = class external 'javax.swing.plaf.basic' name 'BasicVerticalLayoutManager' 
+      InnerBasicVerticalLayoutManager = class external 'javax.swing.plaf.basic' name 'BasicVerticalLayoutManager'
       end;
 
-      InnerFocusHandler = class external 'javax.swing.plaf.basic' name 'FocusHandler' 
+      InnerFocusHandler = class external 'javax.swing.plaf.basic' name 'FocusHandler'
       end;
 
-      InnerPropertyHandler = class external 'javax.swing.plaf.basic' name 'PropertyHandler' 
+      InnerPropertyHandler = class external 'javax.swing.plaf.basic' name 'PropertyHandler'
       end;
 
-      InnerKeyboardDownRightHandler = class external 'javax.swing.plaf.basic' name 'KeyboardDownRightHandler' 
+      InnerKeyboardDownRightHandler = class external 'javax.swing.plaf.basic' name 'KeyboardDownRightHandler'
       end;
 
-      InnerKeyboardEndHandler = class external 'javax.swing.plaf.basic' name 'KeyboardEndHandler' 
+      InnerKeyboardEndHandler = class external 'javax.swing.plaf.basic' name 'KeyboardEndHandler'
       end;
 
-      InnerKeyboardHomeHandler = class external 'javax.swing.plaf.basic' name 'KeyboardHomeHandler' 
+      InnerKeyboardHomeHandler = class external 'javax.swing.plaf.basic' name 'KeyboardHomeHandler'
       end;
 
-      InnerKeyboardResizeToggleHandler = class external 'javax.swing.plaf.basic' name 'KeyboardResizeToggleHandler' 
+      InnerKeyboardResizeToggleHandler = class external 'javax.swing.plaf.basic' name 'KeyboardResizeToggleHandler'
       end;
 
-      InnerKeyboardUpLeftHandler = class external 'javax.swing.plaf.basic' name 'KeyboardUpLeftHandler' 
+      InnerKeyboardUpLeftHandler = class external 'javax.swing.plaf.basic' name 'KeyboardUpLeftHandler'
       end;
 
   strict protected
@@ -69095,31 +69095,31 @@
       Arr1InnerScrollableTabViewport = array of InnerScrollableTabViewport;
       Arr2InnerScrollableTabViewport = array of Arr1InnerScrollableTabViewport;
       Arr3InnerScrollableTabViewport = array of Arr2InnerScrollableTabViewport;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
-      InnerCroppedEdge = class external 'javax.swing.plaf.basic' name 'CroppedEdge' 
+      InnerCroppedEdge = class external 'javax.swing.plaf.basic' name 'CroppedEdge'
       end;
 
-      InnerScrollableTabPanel = class external 'javax.swing.plaf.basic' name 'ScrollableTabPanel' 
+      InnerScrollableTabPanel = class external 'javax.swing.plaf.basic' name 'ScrollableTabPanel'
       end;
 
-      InnerTabContainer = class external 'javax.swing.plaf.basic' name 'TabContainer' 
+      InnerTabContainer = class external 'javax.swing.plaf.basic' name 'TabContainer'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
-      InnerScrollableTabButton = class external 'javax.swing.plaf.basic' name 'ScrollableTabButton' 
+      InnerScrollableTabButton = class external 'javax.swing.plaf.basic' name 'ScrollableTabButton'
       end;
 
-      InnerScrollableTabSupport = class external 'javax.swing.plaf.basic' name 'ScrollableTabSupport' 
+      InnerScrollableTabSupport = class external 'javax.swing.plaf.basic' name 'ScrollableTabSupport'
       end;
 
-      InnerTabbedPaneScrollLayout = class external 'javax.swing.plaf.basic' name 'TabbedPaneScrollLayout' 
+      InnerTabbedPaneScrollLayout = class external 'javax.swing.plaf.basic' name 'TabbedPaneScrollLayout'
       end;
 
-      InnerScrollableTabViewport = class external 'javax.swing.plaf.basic' name 'ScrollableTabViewport' 
+      InnerScrollableTabViewport = class external 'javax.swing.plaf.basic' name 'ScrollableTabViewport'
       end;
 
   public
@@ -69144,19 +69144,19 @@
       Arr1InnerTabbedPaneLayout = array of InnerTabbedPaneLayout;
       Arr2InnerTabbedPaneLayout = array of Arr1InnerTabbedPaneLayout;
       Arr3InnerTabbedPaneLayout = array of Arr2InnerTabbedPaneLayout;
-      InnerFocusHandler = class external 'javax.swing.plaf.basic' name 'FocusHandler' 
+      InnerFocusHandler = class external 'javax.swing.plaf.basic' name 'FocusHandler'
       end;
 
-      InnerTabSelectionHandler = class external 'javax.swing.plaf.basic' name 'TabSelectionHandler' 
+      InnerTabSelectionHandler = class external 'javax.swing.plaf.basic' name 'TabSelectionHandler'
       end;
 
-      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler' 
+      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler'
       end;
 
-      InnerMouseHandler = class external 'javax.swing.plaf.basic' name 'MouseHandler' 
+      InnerMouseHandler = class external 'javax.swing.plaf.basic' name 'MouseHandler'
       end;
 
-      InnerTabbedPaneLayout = class external 'javax.swing.plaf.basic' name 'TabbedPaneLayout' 
+      InnerTabbedPaneLayout = class external 'javax.swing.plaf.basic' name 'TabbedPaneLayout'
       end;
 
   strict protected
@@ -69314,7 +69314,7 @@
       Arr1InnerActions = array of InnerActions;
       Arr2InnerActions = array of Arr1InnerActions;
       Arr3InnerActions = array of Arr2InnerActions;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
   public
@@ -69323,7 +69323,7 @@
       Arr1InnerMouseInputHandler = array of InnerMouseInputHandler;
       Arr2InnerMouseInputHandler = array of Arr1InnerMouseInputHandler;
       Arr3InnerMouseInputHandler = array of Arr2InnerMouseInputHandler;
-      InnerMouseInputHandler = class external 'javax.swing.plaf.basic' name 'MouseInputHandler' 
+      InnerMouseInputHandler = class external 'javax.swing.plaf.basic' name 'MouseInputHandler'
       end;
 
   strict protected
@@ -69393,13 +69393,13 @@
       Arr1InnerTableTransferHandler = array of InnerTableTransferHandler;
       Arr2InnerTableTransferHandler = array of Arr1InnerTableTransferHandler;
       Arr3InnerTableTransferHandler = array of Arr2InnerTableTransferHandler;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
-      InnerTableTransferHandler = class external 'javax.swing.plaf.basic' name 'TableTransferHandler' 
+      InnerTableTransferHandler = class external 'javax.swing.plaf.basic' name 'TableTransferHandler'
       end;
 
   public
@@ -69416,13 +69416,13 @@
       Arr1InnerKeyHandler = array of InnerKeyHandler;
       Arr2InnerKeyHandler = array of Arr1InnerKeyHandler;
       Arr3InnerKeyHandler = array of Arr2InnerKeyHandler;
-      InnerFocusHandler = class external 'javax.swing.plaf.basic' name 'FocusHandler' 
+      InnerFocusHandler = class external 'javax.swing.plaf.basic' name 'FocusHandler'
       end;
 
-      InnerMouseInputHandler = class external 'javax.swing.plaf.basic' name 'MouseInputHandler' 
+      InnerMouseInputHandler = class external 'javax.swing.plaf.basic' name 'MouseInputHandler'
       end;
 
-      InnerKeyHandler = class external 'javax.swing.plaf.basic' name 'KeyHandler' 
+      InnerKeyHandler = class external 'javax.swing.plaf.basic' name 'KeyHandler'
       end;
 
   strict protected
@@ -69523,10 +69523,10 @@
       Arr1InnerHandler = array of InnerHandler;
       Arr2InnerHandler = array of Arr1InnerHandler;
       Arr3InnerHandler = array of Arr2InnerHandler;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
   public
@@ -69555,22 +69555,22 @@
       Arr1InnerPropertyListener = array of InnerPropertyListener;
       Arr2InnerPropertyListener = array of Arr1InnerPropertyListener;
       Arr3InnerPropertyListener = array of Arr2InnerPropertyListener;
-      InnerDockingListener = class external 'javax.swing.plaf.basic' name 'DockingListener' 
+      InnerDockingListener = class external 'javax.swing.plaf.basic' name 'DockingListener'
       end;
 
-      InnerDragWindow = class external 'javax.swing.plaf.basic' name 'DragWindow' 
+      InnerDragWindow = class external 'javax.swing.plaf.basic' name 'DragWindow'
       end;
 
-      InnerFrameListener = class external 'javax.swing.plaf.basic' name 'FrameListener' 
+      InnerFrameListener = class external 'javax.swing.plaf.basic' name 'FrameListener'
       end;
 
-      InnerToolBarContListener = class external 'javax.swing.plaf.basic' name 'ToolBarContListener' 
+      InnerToolBarContListener = class external 'javax.swing.plaf.basic' name 'ToolBarContListener'
       end;
 
-      InnerToolBarFocusListener = class external 'javax.swing.plaf.basic' name 'ToolBarFocusListener' 
+      InnerToolBarFocusListener = class external 'javax.swing.plaf.basic' name 'ToolBarFocusListener'
       end;
 
-      InnerPropertyListener = class external 'javax.swing.plaf.basic' name 'PropertyListener' 
+      InnerPropertyListener = class external 'javax.swing.plaf.basic' name 'PropertyListener'
       end;
 
   strict protected
@@ -69671,7 +69671,7 @@
       Arr1InnerPropertyChangeHandler = array of InnerPropertyChangeHandler;
       Arr2InnerPropertyChangeHandler = array of Arr1InnerPropertyChangeHandler;
       Arr3InnerPropertyChangeHandler = array of Arr2InnerPropertyChangeHandler;
-      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler' 
+      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler'
       end;
 
   public
@@ -69726,13 +69726,13 @@
       Arr1InnerTreeTransferHandler = array of InnerTreeTransferHandler;
       Arr2InnerTreeTransferHandler = array of Arr1InnerTreeTransferHandler;
       Arr3InnerTreeTransferHandler = array of Arr2InnerTreeTransferHandler;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
-      InnerTreeTransferHandler = class external 'javax.swing.plaf.basic' name 'TreeTransferHandler' 
+      InnerTreeTransferHandler = class external 'javax.swing.plaf.basic' name 'TreeTransferHandler'
       end;
 
   public
@@ -69809,58 +69809,58 @@
       Arr1InnerTreeTraverseAction = array of InnerTreeTraverseAction;
       Arr2InnerTreeTraverseAction = array of Arr1InnerTreeTraverseAction;
       Arr3InnerTreeTraverseAction = array of Arr2InnerTreeTraverseAction;
-      InnerCellEditorHandler = class external 'javax.swing.plaf.basic' name 'CellEditorHandler' 
+      InnerCellEditorHandler = class external 'javax.swing.plaf.basic' name 'CellEditorHandler'
       end;
 
-      InnerComponentHandler = class external 'javax.swing.plaf.basic' name 'ComponentHandler' 
+      InnerComponentHandler = class external 'javax.swing.plaf.basic' name 'ComponentHandler'
       end;
 
-      InnerFocusHandler = class external 'javax.swing.plaf.basic' name 'FocusHandler' 
+      InnerFocusHandler = class external 'javax.swing.plaf.basic' name 'FocusHandler'
       end;
 
-      InnerTreeSelectionHandler = class external 'javax.swing.plaf.basic' name 'TreeSelectionHandler' 
+      InnerTreeSelectionHandler = class external 'javax.swing.plaf.basic' name 'TreeSelectionHandler'
       end;
 
-      InnerTreeModelHandler = class external 'javax.swing.plaf.basic' name 'TreeModelHandler' 
+      InnerTreeModelHandler = class external 'javax.swing.plaf.basic' name 'TreeModelHandler'
       end;
 
-      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler' 
+      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler'
       end;
 
-      InnerSelectionModelPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'SelectionModelPropertyChangeHandler' 
+      InnerSelectionModelPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'SelectionModelPropertyChangeHandler'
       end;
 
-      InnerTreeExpansionHandler = class external 'javax.swing.plaf.basic' name 'TreeExpansionHandler' 
+      InnerTreeExpansionHandler = class external 'javax.swing.plaf.basic' name 'TreeExpansionHandler'
       end;
 
-      InnerKeyHandler = class external 'javax.swing.plaf.basic' name 'KeyHandler' 
+      InnerKeyHandler = class external 'javax.swing.plaf.basic' name 'KeyHandler'
       end;
 
-      InnerMouseHandler = class external 'javax.swing.plaf.basic' name 'MouseHandler' 
+      InnerMouseHandler = class external 'javax.swing.plaf.basic' name 'MouseHandler'
       end;
 
-      InnerMouseInputHandler = class external 'javax.swing.plaf.basic' name 'MouseInputHandler' 
+      InnerMouseInputHandler = class external 'javax.swing.plaf.basic' name 'MouseInputHandler'
       end;
 
-      InnerNodeDimensionsHandler = class external 'javax.swing.plaf.basic' name 'NodeDimensionsHandler' 
+      InnerNodeDimensionsHandler = class external 'javax.swing.plaf.basic' name 'NodeDimensionsHandler'
       end;
 
-      InnerTreeCancelEditingAction = class external 'javax.swing.plaf.basic' name 'TreeCancelEditingAction' 
+      InnerTreeCancelEditingAction = class external 'javax.swing.plaf.basic' name 'TreeCancelEditingAction'
       end;
 
-      InnerTreeHomeAction = class external 'javax.swing.plaf.basic' name 'TreeHomeAction' 
+      InnerTreeHomeAction = class external 'javax.swing.plaf.basic' name 'TreeHomeAction'
       end;
 
-      InnerTreeIncrementAction = class external 'javax.swing.plaf.basic' name 'TreeIncrementAction' 
+      InnerTreeIncrementAction = class external 'javax.swing.plaf.basic' name 'TreeIncrementAction'
       end;
 
-      InnerTreePageAction = class external 'javax.swing.plaf.basic' name 'TreePageAction' 
+      InnerTreePageAction = class external 'javax.swing.plaf.basic' name 'TreePageAction'
       end;
 
-      InnerTreeToggleAction = class external 'javax.swing.plaf.basic' name 'TreeToggleAction' 
+      InnerTreeToggleAction = class external 'javax.swing.plaf.basic' name 'TreeToggleAction'
       end;
 
-      InnerTreeTraverseAction = class external 'javax.swing.plaf.basic' name 'TreeTraverseAction' 
+      InnerTreeTraverseAction = class external 'javax.swing.plaf.basic' name 'TreeTraverseAction'
       end;
 
   strict protected
@@ -70284,7 +70284,7 @@
       Arr1InnerXEntry = array of InnerXEntry;
       Arr2InnerXEntry = array of Arr1InnerXEntry;
       Arr3InnerXEntry = array of Arr2InnerXEntry;
-      InnerXEntry = class external 'java.util.zip' name 'XEntry' 
+      InnerXEntry = class external 'java.util.zip' name 'XEntry'
       end;
 
   public
@@ -70343,40 +70343,40 @@
       Arr1InnerTextHandlingDestination = array of InnerTextHandlingDestination;
       Arr2InnerTextHandlingDestination = array of Arr1InnerTextHandlingDestination;
       Arr3InnerTextHandlingDestination = array of Arr2InnerTextHandlingDestination;
-      InnerDestination = interface external 'javax.swing.text.rtf' name 'Destination' 
+      InnerDestination = interface external 'javax.swing.text.rtf' name 'Destination'
       end;
 
-      InnerAttributeTrackingDestination = class abstract external 'javax.swing.text.rtf' name 'AttributeTrackingDestination' 
+      InnerAttributeTrackingDestination = class abstract external 'javax.swing.text.rtf' name 'AttributeTrackingDestination'
       end;
 
-      InnerColortblDestination = class external 'javax.swing.text.rtf' name 'ColortblDestination' 
+      InnerColortblDestination = class external 'javax.swing.text.rtf' name 'ColortblDestination'
       end;
 
-      InnerDiscardingDestination = class external 'javax.swing.text.rtf' name 'DiscardingDestination' 
+      InnerDiscardingDestination = class external 'javax.swing.text.rtf' name 'DiscardingDestination'
       end;
 
-      InnerDocumentDestination = class external 'javax.swing.text.rtf' name 'DocumentDestination' 
+      InnerDocumentDestination = class external 'javax.swing.text.rtf' name 'DocumentDestination'
       end;
 
-      InnerFonttblDestination = class external 'javax.swing.text.rtf' name 'FonttblDestination' 
+      InnerFonttblDestination = class external 'javax.swing.text.rtf' name 'FonttblDestination'
       end;
 
-      InnerInfoDestination = class external 'javax.swing.text.rtf' name 'InfoDestination' 
+      InnerInfoDestination = class external 'javax.swing.text.rtf' name 'InfoDestination'
       end;
 
-      InnerStylesheetDestination = class external 'javax.swing.text.rtf' name 'StylesheetDestination' 
+      InnerStylesheetDestination = class external 'javax.swing.text.rtf' name 'StylesheetDestination'
       public
         type
           InnerStyleDefiningDestination = class;
           Arr1InnerStyleDefiningDestination = array of InnerStyleDefiningDestination;
           Arr2InnerStyleDefiningDestination = array of Arr1InnerStyleDefiningDestination;
           Arr3InnerStyleDefiningDestination = array of Arr2InnerStyleDefiningDestination;
-          InnerStyleDefiningDestination = class external 'javax.swing.text.rtf' name 'StyleDefiningDestination' 
+          InnerStyleDefiningDestination = class external 'javax.swing.text.rtf' name 'StyleDefiningDestination'
           end;
 
       end;
 
-      InnerTextHandlingDestination = class abstract external 'javax.swing.text.rtf' name 'TextHandlingDestination' 
+      InnerTextHandlingDestination = class abstract external 'javax.swing.text.rtf' name 'TextHandlingDestination'
       end;
 
   public
@@ -70472,7 +70472,7 @@
       Arr1InnerBCSIterator = array of InnerBCSIterator;
       Arr2InnerBCSIterator = array of Arr1InnerBCSIterator;
       Arr3InnerBCSIterator = array of Arr2InnerBCSIterator;
-      InnerBCSChild = class external 'java.beans.beancontext' name 'BCSChild' 
+      InnerBCSChild = class external 'java.beans.beancontext' name 'BCSChild'
       end;
 
       InnerBCSIterator = class sealed external 'java.beans.beancontext' name 'BCSIterator' (JLObject, JUIterator)
@@ -70572,10 +70572,10 @@
       Arr1InnerScheduledFutureTask = array of InnerScheduledFutureTask;
       Arr2InnerScheduledFutureTask = array of Arr1InnerScheduledFutureTask;
       Arr3InnerScheduledFutureTask = array of Arr2InnerScheduledFutureTask;
-      InnerDelayedWorkQueue = class external 'java.util.concurrent' name 'DelayedWorkQueue' 
+      InnerDelayedWorkQueue = class external 'java.util.concurrent' name 'DelayedWorkQueue'
       end;
 
-      InnerScheduledFutureTask = class external 'java.util.concurrent' name 'ScheduledFutureTask' 
+      InnerScheduledFutureTask = class external 'java.util.concurrent' name 'ScheduledFutureTask'
       end;
 
   public
@@ -70612,7 +70612,7 @@
       Arr1InnerCounterMonitorObservedObject = array of InnerCounterMonitorObservedObject;
       Arr2InnerCounterMonitorObservedObject = array of Arr1InnerCounterMonitorObservedObject;
       Arr3InnerCounterMonitorObservedObject = array of Arr2InnerCounterMonitorObservedObject;
-      InnerCounterMonitorObservedObject = class external 'javax.management.monitor' name 'CounterMonitorObservedObject' 
+      InnerCounterMonitorObservedObject = class external 'javax.management.monitor' name 'CounterMonitorObservedObject'
       end;
 
   public
@@ -70647,7 +70647,7 @@
       Arr1InnerGaugeMonitorObservedObject = array of InnerGaugeMonitorObservedObject;
       Arr2InnerGaugeMonitorObservedObject = array of Arr1InnerGaugeMonitorObservedObject;
       Arr3InnerGaugeMonitorObservedObject = array of Arr2InnerGaugeMonitorObservedObject;
-      InnerGaugeMonitorObservedObject = class external 'javax.management.monitor' name 'GaugeMonitorObservedObject' 
+      InnerGaugeMonitorObservedObject = class external 'javax.management.monitor' name 'GaugeMonitorObservedObject'
       end;
 
   public
@@ -70678,7 +70678,7 @@
       Arr1InnerStringMonitorObservedObject = array of InnerStringMonitorObservedObject;
       Arr2InnerStringMonitorObservedObject = array of Arr1InnerStringMonitorObservedObject;
       Arr3InnerStringMonitorObservedObject = array of Arr2InnerStringMonitorObservedObject;
-      InnerStringMonitorObservedObject = class external 'javax.management.monitor' name 'StringMonitorObservedObject' 
+      InnerStringMonitorObservedObject = class external 'javax.management.monitor' name 'StringMonitorObservedObject'
       end;
 
   public
@@ -70739,10 +70739,10 @@
       Arr1InnerStartTagBorder = array of InnerStartTagBorder;
       Arr2InnerStartTagBorder = array of Arr1InnerStartTagBorder;
       Arr3InnerStartTagBorder = array of Arr2InnerStartTagBorder;
-      InnerEndTagBorder = class external 'javax.swing.text.html' name 'EndTagBorder' 
+      InnerEndTagBorder = class external 'javax.swing.text.html' name 'EndTagBorder'
       end;
 
-      InnerStartTagBorder = class external 'javax.swing.text.html' name 'StartTagBorder' 
+      InnerStartTagBorder = class external 'javax.swing.text.html' name 'StartTagBorder'
       end;
 
   strict protected
@@ -70765,7 +70765,7 @@
       Arr1InnerLogicalView = array of InnerLogicalView;
       Arr2InnerLogicalView = array of Arr1InnerLogicalView;
       Arr3InnerLogicalView = array of Arr2InnerLogicalView;
-      InnerLogicalView = class external 'javax.swing.text' name 'LogicalView' 
+      InnerLogicalView = class external 'javax.swing.text' name 'LogicalView'
       end;
 
   public
@@ -70820,7 +70820,7 @@
       Arr1InnerGridCell = array of InnerGridCell;
       Arr2InnerGridCell = array of Arr1InnerGridCell;
       Arr3InnerGridCell = array of Arr2InnerGridCell;
-      InnerGridCell = interface external 'javax.swing.text' name 'GridCell' 
+      InnerGridCell = interface external 'javax.swing.text' name 'GridCell'
       end;
 
   public
@@ -70833,10 +70833,10 @@
       Arr1InnerTableRow = array of InnerTableRow;
       Arr2InnerTableRow = array of Arr1InnerTableRow;
       Arr3InnerTableRow = array of Arr2InnerTableRow;
-      InnerTableCell = class external 'javax.swing.text' name 'TableCell' 
+      InnerTableCell = class external 'javax.swing.text' name 'TableCell'
       end;
 
-      InnerTableRow = class external 'javax.swing.text' name 'TableRow' 
+      InnerTableRow = class external 'javax.swing.text' name 'TableRow'
       end;
 
   public
@@ -70864,7 +70864,7 @@
       Arr1InnerWrappedLine = array of InnerWrappedLine;
       Arr2InnerWrappedLine = array of Arr1InnerWrappedLine;
       Arr3InnerWrappedLine = array of Arr2InnerWrappedLine;
-      InnerWrappedLine = class external 'javax.swing.text' name 'WrappedLine' 
+      InnerWrappedLine = class external 'javax.swing.text' name 'WrappedLine'
       end;
 
   public
@@ -70897,7 +70897,7 @@
       Arr1InnerZone = array of InnerZone;
       Arr2InnerZone = array of Arr1InnerZone;
       Arr3InnerZone = array of Arr2InnerZone;
-      InnerZone = class external 'javax.swing.text' name 'Zone' 
+      InnerZone = class external 'javax.swing.text' name 'Zone'
       end;
 
   public
@@ -70966,13 +70966,13 @@
       Arr1InnerRowIterator = array of InnerRowIterator;
       Arr2InnerRowIterator = array of Arr1InnerRowIterator;
       Arr3InnerRowIterator = array of Arr2InnerRowIterator;
-      InnerCellView = class external 'javax.swing.text.html' name 'CellView' 
+      InnerCellView = class external 'javax.swing.text.html' name 'CellView'
       end;
 
-      InnerColumnIterator = class external 'javax.swing.text.html' name 'ColumnIterator' 
+      InnerColumnIterator = class external 'javax.swing.text.html' name 'ColumnIterator'
       end;
 
-      InnerRowIterator = class external 'javax.swing.text.html' name 'RowIterator' 
+      InnerRowIterator = class external 'javax.swing.text.html' name 'RowIterator'
       end;
 
   public
@@ -70981,7 +70981,7 @@
       Arr1InnerRowView = array of InnerRowView;
       Arr2InnerRowView = array of Arr1InnerRowView;
       Arr3InnerRowView = array of Arr2InnerRowView;
-      InnerRowView = class external 'javax.swing.text.html' name 'RowView' 
+      InnerRowView = class external 'javax.swing.text.html' name 'RowView'
       end;
 
   public
@@ -71092,28 +71092,28 @@
       Arr1InnerSmallConversionSet = array of InnerSmallConversionSet;
       Arr2InnerSmallConversionSet = array of Arr1InnerSmallConversionSet;
       Arr3InnerSmallConversionSet = array of Arr2InnerSmallConversionSet;
-      InnerSearchBuffer = class external 'javax.swing.text.html' name 'SearchBuffer' 
+      InnerSearchBuffer = class external 'javax.swing.text.html' name 'SearchBuffer'
       end;
 
-      InnerBackgroundImagePainter = class external 'javax.swing.text.html' name 'BackgroundImagePainter' 
+      InnerBackgroundImagePainter = class external 'javax.swing.text.html' name 'BackgroundImagePainter'
       end;
 
-      InnerCssParser = class external 'javax.swing.text.html' name 'CssParser' 
+      InnerCssParser = class external 'javax.swing.text.html' name 'CssParser'
       end;
 
-      InnerLargeConversionSet = class external 'javax.swing.text.html' name 'LargeConversionSet' 
+      InnerLargeConversionSet = class external 'javax.swing.text.html' name 'LargeConversionSet'
       end;
 
-      InnerResolvedStyle = class external 'javax.swing.text.html' name 'ResolvedStyle' 
+      InnerResolvedStyle = class external 'javax.swing.text.html' name 'ResolvedStyle'
       end;
 
-      InnerViewAttributeSet = class external 'javax.swing.text.html' name 'ViewAttributeSet' 
+      InnerViewAttributeSet = class external 'javax.swing.text.html' name 'ViewAttributeSet'
       end;
 
-      InnerSelectorMapping = class external 'javax.swing.text.html' name 'SelectorMapping' 
+      InnerSelectorMapping = class external 'javax.swing.text.html' name 'SelectorMapping'
       end;
 
-      InnerSmallConversionSet = class external 'javax.swing.text.html' name 'SmallConversionSet' 
+      InnerSmallConversionSet = class external 'javax.swing.text.html' name 'SmallConversionSet'
       end;
 
   public
@@ -71133,7 +71133,7 @@
           Arr1InnerHorizontalMargin = array of InnerHorizontalMargin;
           Arr2InnerHorizontalMargin = array of Arr1InnerHorizontalMargin;
           Arr3InnerHorizontalMargin = array of Arr2InnerHorizontalMargin;
-          InnerHorizontalMargin = class sealed external 'javax.swing.text.html' name 'HorizontalMargin' 
+          InnerHorizontalMargin = class sealed external 'javax.swing.text.html' name 'HorizontalMargin'
           end;
 
       public
@@ -71874,34 +71874,34 @@
       Arr1InnerUpdateHandler = array of InnerUpdateHandler;
       Arr2InnerUpdateHandler = array of Arr1InnerUpdateHandler;
       Arr3InnerUpdateHandler = array of Arr2InnerUpdateHandler;
-      InnerBasicCursor = class external 'javax.swing.plaf.basic' name 'BasicCursor' 
+      InnerBasicCursor = class external 'javax.swing.plaf.basic' name 'BasicCursor'
       end;
 
-      InnerDragListener = class external 'javax.swing.plaf.basic' name 'DragListener' 
+      InnerDragListener = class external 'javax.swing.plaf.basic' name 'DragListener'
       end;
 
-      InnerFocusAction = class external 'javax.swing.plaf.basic' name 'FocusAction' 
+      InnerFocusAction = class external 'javax.swing.plaf.basic' name 'FocusAction'
       end;
 
-      InnerRootView = class external 'javax.swing.plaf.basic' name 'RootView' 
+      InnerRootView = class external 'javax.swing.plaf.basic' name 'RootView'
       end;
 
-      InnerTextActionWrapper = class external 'javax.swing.plaf.basic' name 'TextActionWrapper' 
+      InnerTextActionWrapper = class external 'javax.swing.plaf.basic' name 'TextActionWrapper'
       end;
 
-      InnerTextTransferHandler = class external 'javax.swing.plaf.basic' name 'TextTransferHandler' 
+      InnerTextTransferHandler = class external 'javax.swing.plaf.basic' name 'TextTransferHandler'
       public
         type
           InnerTextTransferable = class;
           Arr1InnerTextTransferable = array of InnerTextTransferable;
           Arr2InnerTextTransferable = array of Arr1InnerTextTransferable;
           Arr3InnerTextTransferable = array of Arr2InnerTextTransferable;
-          InnerTextTransferable = class external 'javax.swing.plaf.basic' name 'TextTransferable' 
+          InnerTextTransferable = class external 'javax.swing.plaf.basic' name 'TextTransferable'
           end;
 
       end;
 
-      InnerUpdateHandler = class external 'javax.swing.plaf.basic' name 'UpdateHandler' 
+      InnerUpdateHandler = class external 'javax.swing.plaf.basic' name 'UpdateHandler'
       end;
 
   public
@@ -71978,7 +71978,7 @@
       Arr1InnerAccessibleJApplet = array of InnerAccessibleJApplet;
       Arr2InnerAccessibleJApplet = array of Arr1InnerAccessibleJApplet;
       Arr3InnerAccessibleJApplet = array of Arr2InnerAccessibleJApplet;
-      InnerAccessibleJApplet = class external 'javax.swing' name 'AccessibleJApplet' 
+      InnerAccessibleJApplet = class external 'javax.swing' name 'AccessibleJApplet'
       end;
 
   strict protected
@@ -72028,7 +72028,7 @@
       Arr1InnerAccessibleJFrame = array of InnerAccessibleJFrame;
       Arr2InnerAccessibleJFrame = array of Arr1InnerAccessibleJFrame;
       Arr3InnerAccessibleJFrame = array of Arr2InnerAccessibleJFrame;
-      InnerAccessibleJFrame = class external 'javax.swing' name 'AccessibleJFrame' 
+      InnerAccessibleJFrame = class external 'javax.swing' name 'AccessibleJFrame'
       end;
 
   public
@@ -72091,7 +72091,7 @@
       Arr1InnerAccessibleJButton = array of InnerAccessibleJButton;
       Arr2InnerAccessibleJButton = array of Arr1InnerAccessibleJButton;
       Arr3InnerAccessibleJButton = array of Arr2InnerAccessibleJButton;
-      InnerAccessibleJButton = class external 'javax.swing' name 'AccessibleJButton' 
+      InnerAccessibleJButton = class external 'javax.swing' name 'AccessibleJButton'
       end;
 
   public
@@ -72119,7 +72119,7 @@
       Arr1InnerMenuItemFocusListener = array of InnerMenuItemFocusListener;
       Arr2InnerMenuItemFocusListener = array of Arr1InnerMenuItemFocusListener;
       Arr3InnerMenuItemFocusListener = array of Arr2InnerMenuItemFocusListener;
-      InnerMenuItemFocusListener = class external 'javax.swing' name 'MenuItemFocusListener' 
+      InnerMenuItemFocusListener = class external 'javax.swing' name 'MenuItemFocusListener'
       end;
 
   public
@@ -72128,7 +72128,7 @@
       Arr1InnerAccessibleJMenuItem = array of InnerAccessibleJMenuItem;
       Arr2InnerAccessibleJMenuItem = array of Arr1InnerAccessibleJMenuItem;
       Arr3InnerAccessibleJMenuItem = array of Arr2InnerAccessibleJMenuItem;
-      InnerAccessibleJMenuItem = class external 'javax.swing' name 'AccessibleJMenuItem' 
+      InnerAccessibleJMenuItem = class external 'javax.swing' name 'AccessibleJMenuItem'
       end;
 
   public
@@ -72195,7 +72195,7 @@
       Arr1InnerToggleButtonModel = array of InnerToggleButtonModel;
       Arr2InnerToggleButtonModel = array of Arr1InnerToggleButtonModel;
       Arr3InnerToggleButtonModel = array of Arr2InnerToggleButtonModel;
-      InnerAccessibleJToggleButton = class external 'javax.swing' name 'AccessibleJToggleButton' 
+      InnerAccessibleJToggleButton = class external 'javax.swing' name 'AccessibleJToggleButton'
       end;
 
       InnerToggleButtonModel = class external 'javax.swing' name 'ToggleButtonModel' (JSDefaultButtonModel)
@@ -72230,7 +72230,7 @@
       Arr1InnerMouseInputHandler = array of InnerMouseInputHandler;
       Arr2InnerMouseInputHandler = array of Arr1InnerMouseInputHandler;
       Arr3InnerMouseInputHandler = array of Arr2InnerMouseInputHandler;
-      InnerMouseInputHandler = class external 'javax.swing.plaf.basic' name 'MouseInputHandler' 
+      InnerMouseInputHandler = class external 'javax.swing.plaf.basic' name 'MouseInputHandler'
       end;
 
   strict protected
@@ -72420,7 +72420,7 @@
       Arr1InnerComponentPosition = array of InnerComponentPosition;
       Arr2InnerComponentPosition = array of Arr1InnerComponentPosition;
       Arr3InnerComponentPosition = array of Arr2InnerComponentPosition;
-      InnerComponentPosition = class external 'javax.swing' name 'ComponentPosition' 
+      InnerComponentPosition = class external 'javax.swing' name 'ComponentPosition'
       end;
 
   public
@@ -72429,7 +72429,7 @@
       Arr1InnerAccessibleJDesktopPane = array of InnerAccessibleJDesktopPane;
       Arr2InnerAccessibleJDesktopPane = array of Arr1InnerAccessibleJDesktopPane;
       Arr3InnerAccessibleJDesktopPane = array of Arr2InnerAccessibleJDesktopPane;
-      InnerAccessibleJDesktopPane = class external 'javax.swing' name 'AccessibleJDesktopPane' 
+      InnerAccessibleJDesktopPane = class external 'javax.swing' name 'AccessibleJDesktopPane'
       end;
 
   public
@@ -72482,16 +72482,16 @@
       Arr1InnerNumberEditorFormatter = array of InnerNumberEditorFormatter;
       Arr2InnerNumberEditorFormatter = array of Arr1InnerNumberEditorFormatter;
       Arr3InnerNumberEditorFormatter = array of Arr2InnerNumberEditorFormatter;
-      InnerDateEditorFormatter = class external 'javax.swing' name 'DateEditorFormatter' 
+      InnerDateEditorFormatter = class external 'javax.swing' name 'DateEditorFormatter'
       end;
 
-      InnerDisabledAction = class external 'javax.swing' name 'DisabledAction' 
+      InnerDisabledAction = class external 'javax.swing' name 'DisabledAction'
       end;
 
-      InnerModelListener = class external 'javax.swing' name 'ModelListener' 
+      InnerModelListener = class external 'javax.swing' name 'ModelListener'
       end;
 
-      InnerNumberEditorFormatter = class external 'javax.swing' name 'NumberEditorFormatter' 
+      InnerNumberEditorFormatter = class external 'javax.swing' name 'NumberEditorFormatter'
       end;
 
   public
@@ -72516,7 +72516,7 @@
       Arr1InnerNumberEditor = array of InnerNumberEditor;
       Arr2InnerNumberEditor = array of Arr1InnerNumberEditor;
       Arr3InnerNumberEditor = array of Arr2InnerNumberEditor;
-      InnerAccessibleJSpinner = class external 'javax.swing' name 'AccessibleJSpinner' 
+      InnerAccessibleJSpinner = class external 'javax.swing' name 'AccessibleJSpinner'
       end;
 
       InnerDefaultEditor = class external 'javax.swing' name 'DefaultEditor' (JSJPanel, JSEChangeListener, JBPropertyChangeListener, JALayoutManager)
@@ -72552,14 +72552,14 @@
           Arr1InnerListFormatter = array of InnerListFormatter;
           Arr2InnerListFormatter = array of Arr1InnerListFormatter;
           Arr3InnerListFormatter = array of Arr2InnerListFormatter;
-          InnerListFormatter = class external 'javax.swing' name 'ListFormatter' 
+          InnerListFormatter = class external 'javax.swing' name 'ListFormatter'
           public
             type
               InnerFilter = class;
               Arr1InnerFilter = array of InnerFilter;
               Arr2InnerFilter = array of Arr1InnerFilter;
               Arr3InnerFilter = array of Arr2InnerFilter;
-              InnerFilter = class external 'javax.swing' name 'Filter' 
+              InnerFilter = class external 'javax.swing' name 'Filter'
               end;
 
           end;
@@ -72612,7 +72612,7 @@
       Arr1InnerModelListener = array of InnerModelListener;
       Arr2InnerModelListener = array of Arr1InnerModelListener;
       Arr3InnerModelListener = array of Arr2InnerModelListener;
-      InnerModelListener = class external 'javax.swing.colorchooser' name 'ModelListener' 
+      InnerModelListener = class external 'javax.swing.colorchooser' name 'ModelListener'
       end;
 
   public
@@ -72674,7 +72674,7 @@
       Arr1InnerSeparator = array of InnerSeparator;
       Arr2InnerSeparator = array of Arr1InnerSeparator;
       Arr3InnerSeparator = array of Arr2InnerSeparator;
-      InnerAccessibleJPopupMenu = class external 'javax.swing' name 'AccessibleJPopupMenu' 
+      InnerAccessibleJPopupMenu = class external 'javax.swing' name 'AccessibleJPopupMenu'
       end;
 
       InnerSeparator = class external 'javax.swing' name 'Separator' (JSJSeparator)
@@ -72763,7 +72763,7 @@
       Arr1InnerDefaultToolBarLayout = array of InnerDefaultToolBarLayout;
       Arr2InnerDefaultToolBarLayout = array of Arr1InnerDefaultToolBarLayout;
       Arr3InnerDefaultToolBarLayout = array of Arr2InnerDefaultToolBarLayout;
-      InnerDefaultToolBarLayout = class external 'javax.swing' name 'DefaultToolBarLayout' 
+      InnerDefaultToolBarLayout = class external 'javax.swing' name 'DefaultToolBarLayout'
       end;
 
   public
@@ -72776,7 +72776,7 @@
       Arr1InnerSeparator = array of InnerSeparator;
       Arr2InnerSeparator = array of Arr1InnerSeparator;
       Arr3InnerSeparator = array of Arr2InnerSeparator;
-      InnerAccessibleJToolBar = class external 'javax.swing' name 'AccessibleJToolBar' 
+      InnerAccessibleJToolBar = class external 'javax.swing' name 'AccessibleJToolBar'
       end;
 
       InnerSeparator = class external 'javax.swing' name 'Separator' (JSJSeparator)
@@ -72845,10 +72845,10 @@
       Arr1InnerMetalTitlePaneLayout = array of InnerMetalTitlePaneLayout;
       Arr2InnerMetalTitlePaneLayout = array of Arr1InnerMetalTitlePaneLayout;
       Arr3InnerMetalTitlePaneLayout = array of Arr2InnerMetalTitlePaneLayout;
-      InnerMetalPropertyChangeHandler = class external 'javax.swing.plaf.metal' name 'MetalPropertyChangeHandler' 
+      InnerMetalPropertyChangeHandler = class external 'javax.swing.plaf.metal' name 'MetalPropertyChangeHandler'
       end;
 
-      InnerMetalTitlePaneLayout = class external 'javax.swing.plaf.metal' name 'MetalTitlePaneLayout' 
+      InnerMetalTitlePaneLayout = class external 'javax.swing.plaf.metal' name 'MetalTitlePaneLayout'
       end;
 
   strict protected
@@ -72886,10 +72886,10 @@
       Arr1InnerSynthTitlePaneLayout = array of InnerSynthTitlePaneLayout;
       Arr2InnerSynthTitlePaneLayout = array of Arr1InnerSynthTitlePaneLayout;
       Arr3InnerSynthTitlePaneLayout = array of Arr2InnerSynthTitlePaneLayout;
-      InnerJPopupMenuUIResource = class external 'javax.swing.plaf.synth' name 'JPopupMenuUIResource' 
+      InnerJPopupMenuUIResource = class external 'javax.swing.plaf.synth' name 'JPopupMenuUIResource'
       end;
 
-      InnerSynthTitlePaneLayout = class external 'javax.swing.plaf.synth' name 'SynthTitlePaneLayout' 
+      InnerSynthTitlePaneLayout = class external 'javax.swing.plaf.synth' name 'SynthTitlePaneLayout'
       end;
 
   strict protected
@@ -72941,30 +72941,30 @@
       Arr1InnerPlainEditorKit = array of InnerPlainEditorKit;
       Arr2InnerPlainEditorKit = array of Arr1InnerPlainEditorKit;
       Arr3InnerPlainEditorKit = array of Arr2InnerPlainEditorKit;
-      InnerHeaderParser = class external 'javax.swing' name 'HeaderParser' 
+      InnerHeaderParser = class external 'javax.swing' name 'HeaderParser'
       end;
 
-      InnerPageLoader = class external 'javax.swing' name 'PageLoader' 
+      InnerPageLoader = class external 'javax.swing' name 'PageLoader'
       end;
 
-      InnerPageStream = class external 'javax.swing' name 'PageStream' 
+      InnerPageStream = class external 'javax.swing' name 'PageStream'
       end;
 
-      InnerPlainEditorKit = class external 'javax.swing' name 'PlainEditorKit' 
+      InnerPlainEditorKit = class external 'javax.swing' name 'PlainEditorKit'
       public
         type
           InnerPlainParagraph = class;
           Arr1InnerPlainParagraph = array of InnerPlainParagraph;
           Arr2InnerPlainParagraph = array of Arr1InnerPlainParagraph;
           Arr3InnerPlainParagraph = array of Arr2InnerPlainParagraph;
-          InnerPlainParagraph = class external 'javax.swing' name 'PlainParagraph' 
+          InnerPlainParagraph = class external 'javax.swing' name 'PlainParagraph'
           public
             type
               InnerLogicalView = class;
               Arr1InnerLogicalView = array of InnerLogicalView;
               Arr2InnerLogicalView = array of Arr1InnerLogicalView;
               Arr3InnerLogicalView = array of Arr2InnerLogicalView;
-              InnerLogicalView = class external 'javax.swing' name 'LogicalView' 
+              InnerLogicalView = class external 'javax.swing' name 'LogicalView'
               end;
 
           end;
@@ -72985,20 +72985,20 @@
       Arr1InnerJEditorPaneAccessibleHypertextSupport = array of InnerJEditorPaneAccessibleHypertextSupport;
       Arr2InnerJEditorPaneAccessibleHypertextSupport = array of Arr1InnerJEditorPaneAccessibleHypertextSupport;
       Arr3InnerJEditorPaneAccessibleHypertextSupport = array of Arr2InnerJEditorPaneAccessibleHypertextSupport;
-      InnerAccessibleJEditorPane = class external 'javax.swing' name 'AccessibleJEditorPane' 
+      InnerAccessibleJEditorPane = class external 'javax.swing' name 'AccessibleJEditorPane'
       end;
 
-      InnerAccessibleJEditorPaneHTML = class external 'javax.swing' name 'AccessibleJEditorPaneHTML' 
+      InnerAccessibleJEditorPaneHTML = class external 'javax.swing' name 'AccessibleJEditorPaneHTML'
       end;
 
-      InnerJEditorPaneAccessibleHypertextSupport = class external 'javax.swing' name 'JEditorPaneAccessibleHypertextSupport' 
+      InnerJEditorPaneAccessibleHypertextSupport = class external 'javax.swing' name 'JEditorPaneAccessibleHypertextSupport'
       public
         type
           InnerLinkVector = class;
           Arr1InnerLinkVector = array of InnerLinkVector;
           Arr2InnerLinkVector = array of Arr1InnerLinkVector;
           Arr3InnerLinkVector = array of Arr2InnerLinkVector;
-          InnerLinkVector = class external 'javax.swing' name 'LinkVector' 
+          InnerLinkVector = class external 'javax.swing' name 'LinkVector'
           end;
 
       public
@@ -73007,7 +73007,7 @@
           Arr1InnerHTMLLink = array of InnerHTMLLink;
           Arr2InnerHTMLLink = array of Arr1InnerHTMLLink;
           Arr3InnerHTMLLink = array of Arr2InnerHTMLLink;
-          InnerHTMLLink = class external 'javax.swing' name 'HTMLLink' 
+          InnerHTMLLink = class external 'javax.swing' name 'HTMLLink'
           end;
 
       end;
@@ -73066,7 +73066,7 @@
       Arr1InnerAccessibleJTextArea = array of InnerAccessibleJTextArea;
       Arr2InnerAccessibleJTextArea = array of Arr1InnerAccessibleJTextArea;
       Arr3InnerAccessibleJTextArea = array of Arr2InnerAccessibleJTextArea;
-      InnerAccessibleJTextArea = class external 'javax.swing' name 'AccessibleJTextArea' 
+      InnerAccessibleJTextArea = class external 'javax.swing' name 'AccessibleJTextArea'
       end;
 
   public
@@ -73129,13 +73129,13 @@
       Arr1InnerTextFieldActionPropertyChangeListener = array of InnerTextFieldActionPropertyChangeListener;
       Arr2InnerTextFieldActionPropertyChangeListener = array of Arr1InnerTextFieldActionPropertyChangeListener;
       Arr3InnerTextFieldActionPropertyChangeListener = array of Arr2InnerTextFieldActionPropertyChangeListener;
-      InnerNotifyAction = class external 'javax.swing' name 'NotifyAction' 
+      InnerNotifyAction = class external 'javax.swing' name 'NotifyAction'
       end;
 
-      InnerScrollRepainter = class external 'javax.swing' name 'ScrollRepainter' 
+      InnerScrollRepainter = class external 'javax.swing' name 'ScrollRepainter'
       end;
 
-      InnerTextFieldActionPropertyChangeListener = class external 'javax.swing' name 'TextFieldActionPropertyChangeListener' 
+      InnerTextFieldActionPropertyChangeListener = class external 'javax.swing' name 'TextFieldActionPropertyChangeListener'
       end;
 
   public
@@ -73144,7 +73144,7 @@
       Arr1InnerAccessibleJTextField = array of InnerAccessibleJTextField;
       Arr2InnerAccessibleJTextField = array of Arr1InnerAccessibleJTextField;
       Arr3InnerAccessibleJTextField = array of Arr2InnerAccessibleJTextField;
-      InnerAccessibleJTextField = class external 'javax.swing' name 'AccessibleJTextField' 
+      InnerAccessibleJTextField = class external 'javax.swing' name 'AccessibleJTextField'
       end;
 
   public
@@ -73333,10 +73333,10 @@
       Arr1InnerHandler = array of InnerHandler;
       Arr2InnerHandler = array of Arr1InnerHandler;
       Arr3InnerHandler = array of Arr2InnerHandler;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
   public
@@ -73345,7 +73345,7 @@
       Arr1InnerMouseInputHandler = array of InnerMouseInputHandler;
       Arr2InnerMouseInputHandler = array of Arr1InnerMouseInputHandler;
       Arr3InnerMouseInputHandler = array of Arr2InnerMouseInputHandler;
-      InnerMouseInputHandler = class external 'javax.swing.plaf.basic' name 'MouseInputHandler' 
+      InnerMouseInputHandler = class external 'javax.swing.plaf.basic' name 'MouseInputHandler'
       end;
 
   strict protected
@@ -73528,13 +73528,13 @@
       Arr1InnerMetalComboPopup = array of InnerMetalComboPopup;
       Arr2InnerMetalComboPopup = array of Arr1InnerMetalComboPopup;
       Arr3InnerMetalComboPopup = array of Arr2InnerMetalComboPopup;
-      InnerMetalComboBoxLayoutManager = class external 'javax.swing.plaf.metal' name 'MetalComboBoxLayoutManager' 
+      InnerMetalComboBoxLayoutManager = class external 'javax.swing.plaf.metal' name 'MetalComboBoxLayoutManager'
       end;
 
-      InnerMetalPropertyChangeListener = class external 'javax.swing.plaf.metal' name 'MetalPropertyChangeListener' 
+      InnerMetalPropertyChangeListener = class external 'javax.swing.plaf.metal' name 'MetalPropertyChangeListener'
       end;
 
-      InnerMetalComboPopup = class external 'javax.swing.plaf.metal' name 'MetalComboPopup' 
+      InnerMetalComboPopup = class external 'javax.swing.plaf.metal' name 'MetalComboPopup'
       end;
 
   public
@@ -73582,16 +73582,16 @@
       Arr1InnerSynthComboBoxRenderer = array of InnerSynthComboBoxRenderer;
       Arr2InnerSynthComboBoxRenderer = array of Arr1InnerSynthComboBoxRenderer;
       Arr3InnerSynthComboBoxRenderer = array of Arr2InnerSynthComboBoxRenderer;
-      InnerButtonHandler = class sealed external 'javax.swing.plaf.synth' name 'ButtonHandler' 
+      InnerButtonHandler = class sealed external 'javax.swing.plaf.synth' name 'ButtonHandler'
       end;
 
-      InnerEditorFocusHandler = class external 'javax.swing.plaf.synth' name 'EditorFocusHandler' 
+      InnerEditorFocusHandler = class external 'javax.swing.plaf.synth' name 'EditorFocusHandler'
       end;
 
-      InnerSynthComboBoxEditor = class external 'javax.swing.plaf.synth' name 'SynthComboBoxEditor' 
+      InnerSynthComboBoxEditor = class external 'javax.swing.plaf.synth' name 'SynthComboBoxEditor'
       end;
 
-      InnerSynthComboBoxRenderer = class external 'javax.swing.plaf.synth' name 'SynthComboBoxRenderer' 
+      InnerSynthComboBoxRenderer = class external 'javax.swing.plaf.synth' name 'SynthComboBoxRenderer'
       end;
 
   public
@@ -73638,10 +73638,10 @@
       Arr1InnerTaskBar = array of InnerTaskBar;
       Arr2InnerTaskBar = array of Arr1InnerTaskBar;
       Arr3InnerTaskBar = array of Arr2InnerTaskBar;
-      InnerSynthDesktopManager = class external 'javax.swing.plaf.synth' name 'SynthDesktopManager' 
+      InnerSynthDesktopManager = class external 'javax.swing.plaf.synth' name 'SynthDesktopManager'
       end;
 
-      InnerTaskBar = class external 'javax.swing.plaf.synth' name 'TaskBar' 
+      InnerTaskBar = class external 'javax.swing.plaf.synth' name 'TaskBar'
       end;
 
   public
@@ -73687,19 +73687,19 @@
       Arr1InnerMetalFileChooserUIAccessor = array of InnerMetalFileChooserUIAccessor;
       Arr2InnerMetalFileChooserUIAccessor = array of Arr1InnerMetalFileChooserUIAccessor;
       Arr3InnerMetalFileChooserUIAccessor = array of Arr2InnerMetalFileChooserUIAccessor;
-      InnerAlignedLabel = class external 'javax.swing.plaf.metal' name 'AlignedLabel' 
+      InnerAlignedLabel = class external 'javax.swing.plaf.metal' name 'AlignedLabel'
       end;
 
-      InnerButtonAreaLayout = class external 'javax.swing.plaf.metal' name 'ButtonAreaLayout' 
+      InnerButtonAreaLayout = class external 'javax.swing.plaf.metal' name 'ButtonAreaLayout'
       end;
 
-      InnerDirectoryComboBoxRenderer = class external 'javax.swing.plaf.metal' name 'DirectoryComboBoxRenderer' 
+      InnerDirectoryComboBoxRenderer = class external 'javax.swing.plaf.metal' name 'DirectoryComboBoxRenderer'
       end;
 
-      InnerIndentIcon = class external 'javax.swing.plaf.metal' name 'IndentIcon' 
+      InnerIndentIcon = class external 'javax.swing.plaf.metal' name 'IndentIcon'
       end;
 
-      InnerMetalFileChooserUIAccessor = class external 'javax.swing.plaf.metal' name 'MetalFileChooserUIAccessor' 
+      InnerMetalFileChooserUIAccessor = class external 'javax.swing.plaf.metal' name 'MetalFileChooserUIAccessor'
       end;
 
   public
@@ -73728,22 +73728,22 @@
       Arr1InnerSingleClickListener = array of InnerSingleClickListener;
       Arr2InnerSingleClickListener = array of Arr1InnerSingleClickListener;
       Arr3InnerSingleClickListener = array of Arr2InnerSingleClickListener;
-      InnerDirectoryComboBoxAction = class external 'javax.swing.plaf.metal' name 'DirectoryComboBoxAction' 
+      InnerDirectoryComboBoxAction = class external 'javax.swing.plaf.metal' name 'DirectoryComboBoxAction'
       end;
 
-      InnerDirectoryComboBoxModel = class external 'javax.swing.plaf.metal' name 'DirectoryComboBoxModel' 
+      InnerDirectoryComboBoxModel = class external 'javax.swing.plaf.metal' name 'DirectoryComboBoxModel'
       end;
 
-      InnerFileRenderer = class external 'javax.swing.plaf.metal' name 'FileRenderer' 
+      InnerFileRenderer = class external 'javax.swing.plaf.metal' name 'FileRenderer'
       end;
 
-      InnerFilterComboBoxRenderer = class external 'javax.swing.plaf.metal' name 'FilterComboBoxRenderer' 
+      InnerFilterComboBoxRenderer = class external 'javax.swing.plaf.metal' name 'FilterComboBoxRenderer'
       end;
 
-      InnerFilterComboBoxModel = class external 'javax.swing.plaf.metal' name 'FilterComboBoxModel' 
+      InnerFilterComboBoxModel = class external 'javax.swing.plaf.metal' name 'FilterComboBoxModel'
       end;
 
-      InnerSingleClickListener = class external 'javax.swing.plaf.metal' name 'SingleClickListener' 
+      InnerSingleClickListener = class external 'javax.swing.plaf.metal' name 'SingleClickListener'
       end;
 
   public
@@ -73803,10 +73803,10 @@
       Arr1InnerMetalPropertyChangeHandler = array of InnerMetalPropertyChangeHandler;
       Arr2InnerMetalPropertyChangeHandler = array of Arr1InnerMetalPropertyChangeHandler;
       Arr3InnerMetalPropertyChangeHandler = array of Arr2InnerMetalPropertyChangeHandler;
-      InnerBorderListener1 = class external 'javax.swing.plaf.metal' name 'BorderListener1' 
+      InnerBorderListener1 = class external 'javax.swing.plaf.metal' name 'BorderListener1'
       end;
 
-      InnerMetalPropertyChangeHandler = class external 'javax.swing.plaf.metal' name 'MetalPropertyChangeHandler' 
+      InnerMetalPropertyChangeHandler = class external 'javax.swing.plaf.metal' name 'MetalPropertyChangeHandler'
       end;
 
   strict protected
@@ -73895,7 +73895,7 @@
       Arr1InnerSynthListCellRenderer = array of InnerSynthListCellRenderer;
       Arr2InnerSynthListCellRenderer = array of Arr1InnerSynthListCellRenderer;
       Arr3InnerSynthListCellRenderer = array of Arr2InnerSynthListCellRenderer;
-      InnerSynthListCellRenderer = class external 'javax.swing.plaf.synth' name 'SynthListCellRenderer' 
+      InnerSynthListCellRenderer = class external 'javax.swing.plaf.synth' name 'SynthListCellRenderer'
       end;
 
   public
@@ -74051,10 +74051,10 @@
       Arr1InnerMouseInputHandler = array of InnerMouseInputHandler;
       Arr2InnerMouseInputHandler = array of Arr1InnerMouseInputHandler;
       Arr3InnerMouseInputHandler = array of Arr2InnerMouseInputHandler;
-      InnerMetalRootLayout = class external 'javax.swing.plaf.metal' name 'MetalRootLayout' 
+      InnerMetalRootLayout = class external 'javax.swing.plaf.metal' name 'MetalRootLayout'
       end;
 
-      InnerMouseInputHandler = class external 'javax.swing.plaf.metal' name 'MouseInputHandler' 
+      InnerMouseInputHandler = class external 'javax.swing.plaf.metal' name 'MouseInputHandler'
       end;
 
   public
@@ -74089,7 +74089,7 @@
       Arr1InnerScrollBarListener = array of InnerScrollBarListener;
       Arr2InnerScrollBarListener = array of Arr1InnerScrollBarListener;
       Arr3InnerScrollBarListener = array of Arr2InnerScrollBarListener;
-      InnerScrollBarListener = class external 'javax.swing.plaf.metal' name 'ScrollBarListener' 
+      InnerScrollBarListener = class external 'javax.swing.plaf.metal' name 'ScrollBarListener'
       end;
 
   strict protected
@@ -74178,10 +74178,10 @@
       Arr1InnerViewportViewFocusHandler = array of InnerViewportViewFocusHandler;
       Arr2InnerViewportViewFocusHandler = array of Arr1InnerViewportViewFocusHandler;
       Arr3InnerViewportViewFocusHandler = array of Arr2InnerViewportViewFocusHandler;
-      InnerViewportBorder = class external 'javax.swing.plaf.synth' name 'ViewportBorder' 
+      InnerViewportBorder = class external 'javax.swing.plaf.synth' name 'ViewportBorder'
       end;
 
-      InnerViewportViewFocusHandler = class external 'javax.swing.plaf.synth' name 'ViewportViewFocusHandler' 
+      InnerViewportViewFocusHandler = class external 'javax.swing.plaf.synth' name 'ViewportViewFocusHandler'
       end;
 
   public
@@ -74239,7 +74239,7 @@
       Arr1InnerMetalPropertyListener = array of InnerMetalPropertyListener;
       Arr2InnerMetalPropertyListener = array of Arr1InnerMetalPropertyListener;
       Arr3InnerMetalPropertyListener = array of Arr2InnerMetalPropertyListener;
-      InnerMetalPropertyListener = class external 'javax.swing.plaf.metal' name 'MetalPropertyListener' 
+      InnerMetalPropertyListener = class external 'javax.swing.plaf.metal' name 'MetalPropertyListener'
       end;
 
   strict protected
@@ -74292,7 +74292,7 @@
       Arr1InnerSynthTrackListener = array of InnerSynthTrackListener;
       Arr2InnerSynthTrackListener = array of Arr1InnerSynthTrackListener;
       Arr3InnerSynthTrackListener = array of Arr2InnerSynthTrackListener;
-      InnerSynthTrackListener = class external 'javax.swing.plaf.synth' name 'SynthTrackListener' 
+      InnerSynthTrackListener = class external 'javax.swing.plaf.synth' name 'SynthTrackListener'
       end;
 
   strict protected
@@ -74359,13 +74359,13 @@
       Arr1InnerSpinnerLayout = array of InnerSpinnerLayout;
       Arr2InnerSpinnerLayout = array of Arr1InnerSpinnerLayout;
       Arr3InnerSpinnerLayout = array of Arr2InnerSpinnerLayout;
-      InnerEditorFocusHandler = class external 'javax.swing.plaf.synth' name 'EditorFocusHandler' 
+      InnerEditorFocusHandler = class external 'javax.swing.plaf.synth' name 'EditorFocusHandler'
       end;
 
-      InnerSpinnerArrowButton = class external 'javax.swing.plaf.synth' name 'SpinnerArrowButton' 
+      InnerSpinnerArrowButton = class external 'javax.swing.plaf.synth' name 'SpinnerArrowButton'
       end;
 
-      InnerSpinnerLayout = class external 'javax.swing.plaf.synth' name 'SpinnerLayout' 
+      InnerSpinnerLayout = class external 'javax.swing.plaf.synth' name 'SpinnerLayout'
       end;
 
   public
@@ -74429,7 +74429,7 @@
       Arr1InnerTabbedPaneLayout = array of InnerTabbedPaneLayout;
       Arr2InnerTabbedPaneLayout = array of Arr1InnerTabbedPaneLayout;
       Arr3InnerTabbedPaneLayout = array of Arr2InnerTabbedPaneLayout;
-      InnerTabbedPaneLayout = class external 'javax.swing.plaf.metal' name 'TabbedPaneLayout' 
+      InnerTabbedPaneLayout = class external 'javax.swing.plaf.metal' name 'TabbedPaneLayout'
       end;
 
   strict protected
@@ -74481,7 +74481,7 @@
       Arr1InnerSynthScrollableTabButton = array of InnerSynthScrollableTabButton;
       Arr2InnerSynthScrollableTabButton = array of Arr1InnerSynthScrollableTabButton;
       Arr3InnerSynthScrollableTabButton = array of Arr2InnerSynthScrollableTabButton;
-      InnerSynthScrollableTabButton = class external 'javax.swing.plaf.synth' name 'SynthScrollableTabButton' 
+      InnerSynthScrollableTabButton = class external 'javax.swing.plaf.synth' name 'SynthScrollableTabButton'
       end;
 
   public
@@ -74536,7 +74536,7 @@
       Arr1InnerHeaderRenderer = array of InnerHeaderRenderer;
       Arr2InnerHeaderRenderer = array of Arr1InnerHeaderRenderer;
       Arr3InnerHeaderRenderer = array of Arr2InnerHeaderRenderer;
-      InnerHeaderRenderer = class external 'javax.swing.plaf.synth' name 'HeaderRenderer' 
+      InnerHeaderRenderer = class external 'javax.swing.plaf.synth' name 'HeaderRenderer'
       end;
 
   public
@@ -74570,10 +74570,10 @@
       Arr1InnerSynthTableCellRenderer = array of InnerSynthTableCellRenderer;
       Arr2InnerSynthTableCellRenderer = array of Arr1InnerSynthTableCellRenderer;
       Arr3InnerSynthTableCellRenderer = array of Arr2InnerSynthTableCellRenderer;
-      InnerSynthBooleanTableCellRenderer = class external 'javax.swing.plaf.synth' name 'SynthBooleanTableCellRenderer' 
+      InnerSynthBooleanTableCellRenderer = class external 'javax.swing.plaf.synth' name 'SynthBooleanTableCellRenderer'
       end;
 
-      InnerSynthTableCellRenderer = class external 'javax.swing.plaf.synth' name 'SynthTableCellRenderer' 
+      InnerSynthTableCellRenderer = class external 'javax.swing.plaf.synth' name 'SynthTableCellRenderer'
       end;
 
   public
@@ -74609,13 +74609,13 @@
       Arr1InnerMetalRolloverListener = array of InnerMetalRolloverListener;
       Arr2InnerMetalRolloverListener = array of Arr1InnerMetalRolloverListener;
       Arr3InnerMetalRolloverListener = array of Arr2InnerMetalRolloverListener;
-      InnerMetalContainerListener = class external 'javax.swing.plaf.metal' name 'MetalContainerListener' 
+      InnerMetalContainerListener = class external 'javax.swing.plaf.metal' name 'MetalContainerListener'
       end;
 
-      InnerMetalDockingListener = class external 'javax.swing.plaf.metal' name 'MetalDockingListener' 
+      InnerMetalDockingListener = class external 'javax.swing.plaf.metal' name 'MetalDockingListener'
       end;
 
-      InnerMetalRolloverListener = class external 'javax.swing.plaf.metal' name 'MetalRolloverListener' 
+      InnerMetalRolloverListener = class external 'javax.swing.plaf.metal' name 'MetalRolloverListener'
       end;
 
   strict protected
@@ -74648,7 +74648,7 @@
       Arr1InnerSynthToolBarLayoutManager = array of InnerSynthToolBarLayoutManager;
       Arr2InnerSynthToolBarLayoutManager = array of Arr1InnerSynthToolBarLayoutManager;
       Arr3InnerSynthToolBarLayoutManager = array of Arr2InnerSynthToolBarLayoutManager;
-      InnerSynthToolBarLayoutManager = class external 'javax.swing.plaf.synth' name 'SynthToolBarLayoutManager' 
+      InnerSynthToolBarLayoutManager = class external 'javax.swing.plaf.synth' name 'SynthToolBarLayoutManager'
       end;
 
   strict protected
@@ -74727,7 +74727,7 @@
       Arr1InnerLineListener = array of InnerLineListener;
       Arr2InnerLineListener = array of Arr1InnerLineListener;
       Arr3InnerLineListener = array of Arr2InnerLineListener;
-      InnerLineListener = class external 'javax.swing.plaf.metal' name 'LineListener' 
+      InnerLineListener = class external 'javax.swing.plaf.metal' name 'LineListener'
       end;
 
   public
@@ -74764,13 +74764,13 @@
       Arr1InnerSynthTreeCellRenderer = array of InnerSynthTreeCellRenderer;
       Arr2InnerSynthTreeCellRenderer = array of Arr1InnerSynthTreeCellRenderer;
       Arr3InnerSynthTreeCellRenderer = array of Arr2InnerSynthTreeCellRenderer;
-      InnerExpandedIconWrapper = class external 'javax.swing.plaf.synth' name 'ExpandedIconWrapper' 
+      InnerExpandedIconWrapper = class external 'javax.swing.plaf.synth' name 'ExpandedIconWrapper'
       end;
 
-      InnerSynthTreeCellEditor = class external 'javax.swing.plaf.synth' name 'SynthTreeCellEditor' 
+      InnerSynthTreeCellEditor = class external 'javax.swing.plaf.synth' name 'SynthTreeCellEditor'
       end;
 
-      InnerSynthTreeCellRenderer = class external 'javax.swing.plaf.synth' name 'SynthTreeCellRenderer' 
+      InnerSynthTreeCellRenderer = class external 'javax.swing.plaf.synth' name 'SynthTreeCellRenderer'
       end;
 
   public
@@ -74979,79 +74979,79 @@
       Arr1InnerWritableAction = array of InnerWritableAction;
       Arr2InnerWritableAction = array of Arr1InnerWritableAction;
       Arr3InnerWritableAction = array of Arr2InnerWritableAction;
-      InnerBeginAction = class external 'javax.swing.text' name 'BeginAction' 
+      InnerBeginAction = class external 'javax.swing.text' name 'BeginAction'
       end;
 
-      InnerBeginLineAction = class external 'javax.swing.text' name 'BeginLineAction' 
+      InnerBeginLineAction = class external 'javax.swing.text' name 'BeginLineAction'
       end;
 
-      InnerBeginParagraphAction = class external 'javax.swing.text' name 'BeginParagraphAction' 
+      InnerBeginParagraphAction = class external 'javax.swing.text' name 'BeginParagraphAction'
       end;
 
-      InnerBeginWordAction = class external 'javax.swing.text' name 'BeginWordAction' 
+      InnerBeginWordAction = class external 'javax.swing.text' name 'BeginWordAction'
       end;
 
-      InnerDeleteNextCharAction = class external 'javax.swing.text' name 'DeleteNextCharAction' 
+      InnerDeleteNextCharAction = class external 'javax.swing.text' name 'DeleteNextCharAction'
       end;
 
-      InnerDeletePrevCharAction = class external 'javax.swing.text' name 'DeletePrevCharAction' 
+      InnerDeletePrevCharAction = class external 'javax.swing.text' name 'DeletePrevCharAction'
       end;
 
-      InnerDeleteWordAction = class external 'javax.swing.text' name 'DeleteWordAction' 
+      InnerDeleteWordAction = class external 'javax.swing.text' name 'DeleteWordAction'
       end;
 
-      InnerDumpModelAction = class external 'javax.swing.text' name 'DumpModelAction' 
+      InnerDumpModelAction = class external 'javax.swing.text' name 'DumpModelAction'
       end;
 
-      InnerEndAction = class external 'javax.swing.text' name 'EndAction' 
+      InnerEndAction = class external 'javax.swing.text' name 'EndAction'
       end;
 
-      InnerEndLineAction = class external 'javax.swing.text' name 'EndLineAction' 
+      InnerEndLineAction = class external 'javax.swing.text' name 'EndLineAction'
       end;
 
-      InnerEndParagraphAction = class external 'javax.swing.text' name 'EndParagraphAction' 
+      InnerEndParagraphAction = class external 'javax.swing.text' name 'EndParagraphAction'
       end;
 
-      InnerEndWordAction = class external 'javax.swing.text' name 'EndWordAction' 
+      InnerEndWordAction = class external 'javax.swing.text' name 'EndWordAction'
       end;
 
-      InnerNextVisualPositionAction = class external 'javax.swing.text' name 'NextVisualPositionAction' 
+      InnerNextVisualPositionAction = class external 'javax.swing.text' name 'NextVisualPositionAction'
       end;
 
-      InnerNextWordAction = class external 'javax.swing.text' name 'NextWordAction' 
+      InnerNextWordAction = class external 'javax.swing.text' name 'NextWordAction'
       end;
 
-      InnerPageAction = class external 'javax.swing.text' name 'PageAction' 
+      InnerPageAction = class external 'javax.swing.text' name 'PageAction'
       end;
 
-      InnerPreviousWordAction = class external 'javax.swing.text' name 'PreviousWordAction' 
+      InnerPreviousWordAction = class external 'javax.swing.text' name 'PreviousWordAction'
       end;
 
-      InnerReadOnlyAction = class external 'javax.swing.text' name 'ReadOnlyAction' 
+      InnerReadOnlyAction = class external 'javax.swing.text' name 'ReadOnlyAction'
       end;
 
-      InnerSelectAllAction = class external 'javax.swing.text' name 'SelectAllAction' 
+      InnerSelectAllAction = class external 'javax.swing.text' name 'SelectAllAction'
       end;
 
-      InnerSelectLineAction = class external 'javax.swing.text' name 'SelectLineAction' 
+      InnerSelectLineAction = class external 'javax.swing.text' name 'SelectLineAction'
       end;
 
-      InnerSelectParagraphAction = class external 'javax.swing.text' name 'SelectParagraphAction' 
+      InnerSelectParagraphAction = class external 'javax.swing.text' name 'SelectParagraphAction'
       end;
 
-      InnerSelectWordAction = class external 'javax.swing.text' name 'SelectWordAction' 
+      InnerSelectWordAction = class external 'javax.swing.text' name 'SelectWordAction'
       end;
 
-      InnerToggleComponentOrientationAction = class external 'javax.swing.text' name 'ToggleComponentOrientationAction' 
+      InnerToggleComponentOrientationAction = class external 'javax.swing.text' name 'ToggleComponentOrientationAction'
       end;
 
-      InnerUnselectAction = class external 'javax.swing.text' name 'UnselectAction' 
+      InnerUnselectAction = class external 'javax.swing.text' name 'UnselectAction'
       end;
 
-      InnerVerticalPageAction = class external 'javax.swing.text' name 'VerticalPageAction' 
+      InnerVerticalPageAction = class external 'javax.swing.text' name 'VerticalPageAction'
       end;
 
-      InnerWritableAction = class external 'javax.swing.text' name 'WritableAction' 
+      InnerWritableAction = class external 'javax.swing.text' name 'WritableAction'
       end;
 
   public
@@ -75215,7 +75215,7 @@
       Arr1InnerBCSSServiceProvider = array of InnerBCSSServiceProvider;
       Arr2InnerBCSSServiceProvider = array of Arr1InnerBCSSServiceProvider;
       Arr3InnerBCSSServiceProvider = array of Arr2InnerBCSSServiceProvider;
-      InnerBCSSChild = class external 'java.beans.beancontext' name 'BCSSChild' 
+      InnerBCSSChild = class external 'java.beans.beancontext' name 'BCSSChild'
       public
         type
           InnerBCSSCServiceClassRef = class;
@@ -75226,15 +75226,15 @@
           Arr1InnerBCSSCServiceRef = array of InnerBCSSCServiceRef;
           Arr2InnerBCSSCServiceRef = array of Arr1InnerBCSSCServiceRef;
           Arr3InnerBCSSCServiceRef = array of Arr2InnerBCSSCServiceRef;
-          InnerBCSSCServiceClassRef = class external 'java.beans.beancontext' name 'BCSSCServiceClassRef' 
+          InnerBCSSCServiceClassRef = class external 'java.beans.beancontext' name 'BCSSCServiceClassRef'
           end;
 
-          InnerBCSSCServiceRef = class external 'java.beans.beancontext' name 'BCSSCServiceRef' 
+          InnerBCSSCServiceRef = class external 'java.beans.beancontext' name 'BCSSCServiceRef'
           end;
 
       end;
 
-      InnerBCSSProxyServiceProvider = class external 'java.beans.beancontext' name 'BCSSProxyServiceProvider' 
+      InnerBCSSProxyServiceProvider = class external 'java.beans.beancontext' name 'BCSSProxyServiceProvider'
       end;
 
       InnerBCSSServiceProvider = class external 'java.beans.beancontext' name 'BCSSServiceProvider' (JLObject, JISerializable)
@@ -75297,7 +75297,7 @@
       Arr1InnerCommentBorder = array of InnerCommentBorder;
       Arr2InnerCommentBorder = array of Arr1InnerCommentBorder;
       Arr3InnerCommentBorder = array of Arr2InnerCommentBorder;
-      InnerCommentBorder = class external 'javax.swing.text.html' name 'CommentBorder' 
+      InnerCommentBorder = class external 'javax.swing.text.html' name 'CommentBorder'
       end;
 
   strict protected
@@ -75311,7 +75311,7 @@
       Arr1InnerRow = array of InnerRow;
       Arr2InnerRow = array of Arr1InnerRow;
       Arr3InnerRow = array of Arr2InnerRow;
-      InnerRow = class external 'javax.swing.text' name 'Row' 
+      InnerRow = class external 'javax.swing.text' name 'Row'
       end;
 
   strict protected
@@ -75360,7 +75360,7 @@
       Arr1InnerAttributedSegment = array of InnerAttributedSegment;
       Arr2InnerAttributedSegment = array of Arr1InnerAttributedSegment;
       Arr3InnerAttributedSegment = array of Arr2InnerAttributedSegment;
-      InnerAttributedSegment = class external 'javax.swing.text' name 'AttributedSegment' 
+      InnerAttributedSegment = class external 'javax.swing.text' name 'AttributedSegment'
       end;
 
   public
@@ -75451,7 +75451,7 @@
       Arr1InnerStyleSheetUIResource = array of InnerStyleSheetUIResource;
       Arr2InnerStyleSheetUIResource = array of Arr1InnerStyleSheetUIResource;
       Arr3InnerStyleSheetUIResource = array of Arr2InnerStyleSheetUIResource;
-      InnerStyleSheetUIResource = class external 'javax.swing.plaf.basic' name 'StyleSheetUIResource' 
+      InnerStyleSheetUIResource = class external 'javax.swing.plaf.basic' name 'StyleSheetUIResource'
       end;
 
   public
@@ -75474,14 +75474,14 @@
       Arr1InnerPlainParagraph = array of InnerPlainParagraph;
       Arr2InnerPlainParagraph = array of Arr1InnerPlainParagraph;
       Arr3InnerPlainParagraph = array of Arr2InnerPlainParagraph;
-      InnerPlainParagraph = class external 'javax.swing.plaf.basic' name 'PlainParagraph' 
+      InnerPlainParagraph = class external 'javax.swing.plaf.basic' name 'PlainParagraph'
       public
         type
           InnerLogicalView = class;
           Arr1InnerLogicalView = array of InnerLogicalView;
           Arr2InnerLogicalView = array of Arr1InnerLogicalView;
           Arr3InnerLogicalView = array of Arr2InnerLogicalView;
-          InnerLogicalView = class external 'javax.swing.plaf.basic' name 'LogicalView' 
+          InnerLogicalView = class external 'javax.swing.plaf.basic' name 'LogicalView'
           end;
 
       end;
@@ -75508,7 +75508,7 @@
       Arr1InnerI18nFieldView = array of InnerI18nFieldView;
       Arr2InnerI18nFieldView = array of Arr1InnerI18nFieldView;
       Arr3InnerI18nFieldView = array of Arr2InnerI18nFieldView;
-      InnerI18nFieldView = class external 'javax.swing.plaf.basic' name 'I18nFieldView' 
+      InnerI18nFieldView = class external 'javax.swing.plaf.basic' name 'I18nFieldView'
       end;
 
   public
@@ -75574,7 +75574,7 @@
       Arr1InnerSynthArrowButtonUI = array of InnerSynthArrowButtonUI;
       Arr2InnerSynthArrowButtonUI = array of Arr1InnerSynthArrowButtonUI;
       Arr3InnerSynthArrowButtonUI = array of Arr2InnerSynthArrowButtonUI;
-      InnerSynthArrowButtonUI = class external 'javax.swing.plaf.synth' name 'SynthArrowButtonUI' 
+      InnerSynthArrowButtonUI = class external 'javax.swing.plaf.synth' name 'SynthArrowButtonUI'
       end;
 
   public
@@ -75593,7 +75593,7 @@
       Arr1InnerAccessibleJCheckBoxMenuItem = array of InnerAccessibleJCheckBoxMenuItem;
       Arr2InnerAccessibleJCheckBoxMenuItem = array of Arr1InnerAccessibleJCheckBoxMenuItem;
       Arr3InnerAccessibleJCheckBoxMenuItem = array of Arr2InnerAccessibleJCheckBoxMenuItem;
-      InnerAccessibleJCheckBoxMenuItem = class external 'javax.swing' name 'AccessibleJCheckBoxMenuItem' 
+      InnerAccessibleJCheckBoxMenuItem = class external 'javax.swing' name 'AccessibleJCheckBoxMenuItem'
       end;
 
   public
@@ -75621,7 +75621,7 @@
       Arr1InnerMenuChangeListener = array of InnerMenuChangeListener;
       Arr2InnerMenuChangeListener = array of Arr1InnerMenuChangeListener;
       Arr3InnerMenuChangeListener = array of Arr2InnerMenuChangeListener;
-      InnerMenuChangeListener = class external 'javax.swing' name 'MenuChangeListener' 
+      InnerMenuChangeListener = class external 'javax.swing' name 'MenuChangeListener'
       end;
 
   public
@@ -75634,10 +75634,10 @@
       Arr1InnerWinListener = array of InnerWinListener;
       Arr2InnerWinListener = array of Arr1InnerWinListener;
       Arr3InnerWinListener = array of Arr2InnerWinListener;
-      InnerAccessibleJMenu = class external 'javax.swing' name 'AccessibleJMenu' 
+      InnerAccessibleJMenu = class external 'javax.swing' name 'AccessibleJMenu'
       end;
 
-      InnerWinListener = class external 'javax.swing' name 'WinListener' 
+      InnerWinListener = class external 'javax.swing' name 'WinListener'
       end;
 
   strict protected
@@ -75720,7 +75720,7 @@
       Arr1InnerAccessibleJRadioButtonMenuItem = array of InnerAccessibleJRadioButtonMenuItem;
       Arr2InnerAccessibleJRadioButtonMenuItem = array of Arr1InnerAccessibleJRadioButtonMenuItem;
       Arr3InnerAccessibleJRadioButtonMenuItem = array of Arr2InnerAccessibleJRadioButtonMenuItem;
-      InnerAccessibleJRadioButtonMenuItem = class external 'javax.swing' name 'AccessibleJRadioButtonMenuItem' 
+      InnerAccessibleJRadioButtonMenuItem = class external 'javax.swing' name 'AccessibleJRadioButtonMenuItem'
       end;
 
   public
@@ -75746,7 +75746,7 @@
       Arr1InnerAccessibleJCheckBox = array of InnerAccessibleJCheckBox;
       Arr2InnerAccessibleJCheckBox = array of Arr1InnerAccessibleJCheckBox;
       Arr3InnerAccessibleJCheckBox = array of Arr2InnerAccessibleJCheckBox;
-      InnerAccessibleJCheckBox = class external 'javax.swing' name 'AccessibleJCheckBox' 
+      InnerAccessibleJCheckBox = class external 'javax.swing' name 'AccessibleJCheckBox'
       end;
 
   public
@@ -75778,7 +75778,7 @@
       Arr1InnerAccessibleJRadioButton = array of InnerAccessibleJRadioButton;
       Arr2InnerAccessibleJRadioButton = array of Arr1InnerAccessibleJRadioButton;
       Arr3InnerAccessibleJRadioButton = array of Arr2InnerAccessibleJRadioButton;
-      InnerAccessibleJRadioButton = class external 'javax.swing' name 'AccessibleJRadioButton' 
+      InnerAccessibleJRadioButton = class external 'javax.swing' name 'AccessibleJRadioButton'
       end;
 
   public
@@ -75805,7 +75805,7 @@
       Arr1InnerTitleListener = array of InnerTitleListener;
       Arr2InnerTitleListener = array of Arr1InnerTitleListener;
       Arr3InnerTitleListener = array of Arr2InnerTitleListener;
-      InnerTitleListener = class external 'javax.swing.plaf.metal' name 'TitleListener' 
+      InnerTitleListener = class external 'javax.swing.plaf.metal' name 'TitleListener'
       end;
 
   public
@@ -75855,10 +75855,10 @@
       Arr1InnerRadioButtonHandler = array of InnerRadioButtonHandler;
       Arr2InnerRadioButtonHandler = array of Arr1InnerRadioButtonHandler;
       Arr3InnerRadioButtonHandler = array of Arr2InnerRadioButtonHandler;
-      InnerHSBImage = class external 'javax.swing.colorchooser' name 'HSBImage' 
+      InnerHSBImage = class external 'javax.swing.colorchooser' name 'HSBImage'
       end;
 
-      InnerRadioButtonHandler = class external 'javax.swing.colorchooser' name 'RadioButtonHandler' 
+      InnerRadioButtonHandler = class external 'javax.swing.colorchooser' name 'RadioButtonHandler'
       end;
 
   public
@@ -75916,10 +75916,10 @@
       Arr1InnerRecentSwatchListener = array of InnerRecentSwatchListener;
       Arr2InnerRecentSwatchListener = array of Arr1InnerRecentSwatchListener;
       Arr3InnerRecentSwatchListener = array of Arr2InnerRecentSwatchListener;
-      InnerMainSwatchListener = class external 'javax.swing.colorchooser' name 'MainSwatchListener' 
+      InnerMainSwatchListener = class external 'javax.swing.colorchooser' name 'MainSwatchListener'
       end;
 
-      InnerRecentSwatchListener = class external 'javax.swing.colorchooser' name 'RecentSwatchListener' 
+      InnerRecentSwatchListener = class external 'javax.swing.colorchooser' name 'RecentSwatchListener'
       end;
 
   public
@@ -75966,13 +75966,13 @@
       Arr1InnerHandler = array of InnerHandler;
       Arr2InnerHandler = array of Arr1InnerHandler;
       Arr3InnerHandler = array of Arr2InnerHandler;
-      InnerAutoScrollActionHandler = class external 'javax.swing.plaf.basic' name 'AutoScrollActionHandler' 
+      InnerAutoScrollActionHandler = class external 'javax.swing.plaf.basic' name 'AutoScrollActionHandler'
       end;
 
-      InnerEmptyListModelClass = class external 'javax.swing.plaf.basic' name 'EmptyListModelClass' 
+      InnerEmptyListModelClass = class external 'javax.swing.plaf.basic' name 'EmptyListModelClass'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
   public
@@ -76013,31 +76013,31 @@
       Arr1InnerListSelectionHandler = array of InnerListSelectionHandler;
       Arr2InnerListSelectionHandler = array of Arr1InnerListSelectionHandler;
       Arr3InnerListSelectionHandler = array of Arr2InnerListSelectionHandler;
-      InnerItemHandler = class external 'javax.swing.plaf.basic' name 'ItemHandler' 
+      InnerItemHandler = class external 'javax.swing.plaf.basic' name 'ItemHandler'
       end;
 
-      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler' 
+      InnerPropertyChangeHandler = class external 'javax.swing.plaf.basic' name 'PropertyChangeHandler'
       end;
 
-      InnerInvocationKeyHandler = class external 'javax.swing.plaf.basic' name 'InvocationKeyHandler' 
+      InnerInvocationKeyHandler = class external 'javax.swing.plaf.basic' name 'InvocationKeyHandler'
       end;
 
-      InnerInvocationMouseHandler = class external 'javax.swing.plaf.basic' name 'InvocationMouseHandler' 
+      InnerInvocationMouseHandler = class external 'javax.swing.plaf.basic' name 'InvocationMouseHandler'
       end;
 
-      InnerListMouseHandler = class external 'javax.swing.plaf.basic' name 'ListMouseHandler' 
+      InnerListMouseHandler = class external 'javax.swing.plaf.basic' name 'ListMouseHandler'
       end;
 
-      InnerInvocationMouseMotionHandler = class external 'javax.swing.plaf.basic' name 'InvocationMouseMotionHandler' 
+      InnerInvocationMouseMotionHandler = class external 'javax.swing.plaf.basic' name 'InvocationMouseMotionHandler'
       end;
 
-      InnerListMouseMotionHandler = class external 'javax.swing.plaf.basic' name 'ListMouseMotionHandler' 
+      InnerListMouseMotionHandler = class external 'javax.swing.plaf.basic' name 'ListMouseMotionHandler'
       end;
 
-      InnerListDataHandler = class external 'javax.swing.plaf.basic' name 'ListDataHandler' 
+      InnerListDataHandler = class external 'javax.swing.plaf.basic' name 'ListDataHandler'
       end;
 
-      InnerListSelectionHandler = class external 'javax.swing.plaf.basic' name 'ListSelectionHandler' 
+      InnerListSelectionHandler = class external 'javax.swing.plaf.basic' name 'ListSelectionHandler'
       end;
 
   strict protected
@@ -76165,16 +76165,16 @@
       Arr1InnerFocusLostHandler = array of InnerFocusLostHandler;
       Arr2InnerFocusLostHandler = array of Arr1InnerFocusLostHandler;
       Arr3InnerFocusLostHandler = array of Arr2InnerFocusLostHandler;
-      InnerCancelAction = class external 'javax.swing' name 'CancelAction' 
+      InnerCancelAction = class external 'javax.swing' name 'CancelAction'
       end;
 
-      InnerCommitAction = class external 'javax.swing' name 'CommitAction' 
+      InnerCommitAction = class external 'javax.swing' name 'CommitAction'
       end;
 
-      InnerDocumentHandler = class external 'javax.swing' name 'DocumentHandler' 
+      InnerDocumentHandler = class external 'javax.swing' name 'DocumentHandler'
       end;
 
-      InnerFocusLostHandler = class external 'javax.swing' name 'FocusLostHandler' 
+      InnerFocusLostHandler = class external 'javax.swing' name 'FocusLostHandler'
       end;
 
   public
@@ -76252,7 +76252,7 @@
       Arr1InnerAccessibleJPasswordField = array of InnerAccessibleJPasswordField;
       Arr2InnerAccessibleJPasswordField = array of Arr1InnerAccessibleJPasswordField;
       Arr3InnerAccessibleJPasswordField = array of Arr2InnerAccessibleJPasswordField;
-      InnerAccessibleJPasswordField = class external 'javax.swing' name 'AccessibleJPasswordField' 
+      InnerAccessibleJPasswordField = class external 'javax.swing' name 'AccessibleJPasswordField'
       end;
 
   public
@@ -76288,10 +76288,10 @@
       Arr1InnerAudioAction = array of InnerAudioAction;
       Arr2InnerAudioAction = array of Arr1InnerAudioAction;
       Arr3InnerAudioAction = array of Arr2InnerAudioAction;
-      InnerAWTEventHelper = class external 'javax.swing.plaf.basic' name 'AWTEventHelper' 
+      InnerAWTEventHelper = class external 'javax.swing.plaf.basic' name 'AWTEventHelper'
       end;
 
-      InnerAudioAction = class external 'javax.swing.plaf.basic' name 'AudioAction' 
+      InnerAudioAction = class external 'javax.swing.plaf.basic' name 'AudioAction'
       end;
 
   public
@@ -76346,10 +76346,10 @@
       Arr1InnerHandler = array of InnerHandler;
       Arr2InnerHandler = array of Arr1InnerHandler;
       Arr3InnerHandler = array of Arr2InnerHandler;
-      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions' 
+      InnerActions = class external 'javax.swing.plaf.basic' name 'Actions'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.basic' name 'Handler'
       end;
 
   public
@@ -76362,10 +76362,10 @@
       Arr1InnerMouseInputHandler = array of InnerMouseInputHandler;
       Arr2InnerMouseInputHandler = array of Arr1InnerMouseInputHandler;
       Arr3InnerMouseInputHandler = array of Arr2InnerMouseInputHandler;
-      InnerChangeHandler = class external 'javax.swing.plaf.basic' name 'ChangeHandler' 
+      InnerChangeHandler = class external 'javax.swing.plaf.basic' name 'ChangeHandler'
       end;
 
-      InnerMouseInputHandler = class external 'javax.swing.plaf.basic' name 'MouseInputHandler' 
+      InnerMouseInputHandler = class external 'javax.swing.plaf.basic' name 'MouseInputHandler'
       end;
 
   strict protected
@@ -76597,13 +76597,13 @@
       Arr1InnerStyledViewFactory = array of InnerStyledViewFactory;
       Arr2InnerStyledViewFactory = array of Arr1InnerStyledViewFactory;
       Arr3InnerStyledViewFactory = array of Arr2InnerStyledViewFactory;
-      InnerStyledInsertBreakAction = class external 'javax.swing.text' name 'StyledInsertBreakAction' 
+      InnerStyledInsertBreakAction = class external 'javax.swing.text' name 'StyledInsertBreakAction'
       end;
 
-      InnerAttributeTracker = class external 'javax.swing.text' name 'AttributeTracker' 
+      InnerAttributeTracker = class external 'javax.swing.text' name 'AttributeTracker'
       end;
 
-      InnerStyledViewFactory = class external 'javax.swing.text' name 'StyledViewFactory' 
+      InnerStyledViewFactory = class external 'javax.swing.text' name 'StyledViewFactory'
       end;
 
   public
@@ -76857,13 +76857,13 @@
       Arr1InnerReplaceHolder = array of InnerReplaceHolder;
       Arr2InnerReplaceHolder = array of Arr1InnerReplaceHolder;
       Arr3InnerReplaceHolder = array of Arr2InnerReplaceHolder;
-      InnerDefaultDocumentFilter = class external 'javax.swing.text' name 'DefaultDocumentFilter' 
+      InnerDefaultDocumentFilter = class external 'javax.swing.text' name 'DefaultDocumentFilter'
       end;
 
-      InnerDefaultNavigationFilter = class external 'javax.swing.text' name 'DefaultNavigationFilter' 
+      InnerDefaultNavigationFilter = class external 'javax.swing.text' name 'DefaultNavigationFilter'
       end;
 
-      InnerReplaceHolder = class external 'javax.swing.text' name 'ReplaceHolder' 
+      InnerReplaceHolder = class external 'javax.swing.text' name 'ReplaceHolder'
       end;
 
   public
@@ -76923,16 +76923,16 @@
       Arr1InnerMetalLayoutStyle = array of InnerMetalLayoutStyle;
       Arr2InnerMetalLayoutStyle = array of Arr1InnerMetalLayoutStyle;
       Arr3InnerMetalLayoutStyle = array of Arr2InnerMetalLayoutStyle;
-      InnerAATextListener = class external 'javax.swing.plaf.metal' name 'AATextListener' 
+      InnerAATextListener = class external 'javax.swing.plaf.metal' name 'AATextListener'
       end;
 
-      InnerFontActiveValue = class external 'javax.swing.plaf.metal' name 'FontActiveValue' 
+      InnerFontActiveValue = class external 'javax.swing.plaf.metal' name 'FontActiveValue'
       end;
 
-      InnerMetalLazyValue = class external 'javax.swing.plaf.metal' name 'MetalLazyValue' 
+      InnerMetalLazyValue = class external 'javax.swing.plaf.metal' name 'MetalLazyValue'
       end;
 
-      InnerMetalLayoutStyle = class external 'javax.swing.plaf.metal' name 'MetalLayoutStyle' 
+      InnerMetalLayoutStyle = class external 'javax.swing.plaf.metal' name 'MetalLayoutStyle'
       end;
 
   public
@@ -77011,10 +77011,10 @@
       Arr1InnerHandler = array of InnerHandler;
       Arr2InnerHandler = array of Arr1InnerHandler;
       Arr3InnerHandler = array of Arr2InnerHandler;
-      InnerAATextListener = class external 'javax.swing.plaf.synth' name 'AATextListener' 
+      InnerAATextListener = class external 'javax.swing.plaf.synth' name 'AATextListener'
       end;
 
-      InnerHandler = class external 'javax.swing.plaf.synth' name 'Handler' 
+      InnerHandler = class external 'javax.swing.plaf.synth' name 'Handler'
       end;
 
   public
@@ -77143,23 +77143,23 @@
       Arr1InnerNavigateLinkAction = array of InnerNavigateLinkAction;
       Arr2InnerNavigateLinkAction = array of Arr1InnerNavigateLinkAction;
       Arr3InnerNavigateLinkAction = array of Arr2InnerNavigateLinkAction;
-      InnerActivateLinkAction = class external 'javax.swing.text.html' name 'ActivateLinkAction' 
+      InnerActivateLinkAction = class external 'javax.swing.text.html' name 'ActivateLinkAction'
       end;
 
-      InnerBeginAction = class external 'javax.swing.text.html' name 'BeginAction' 
+      InnerBeginAction = class external 'javax.swing.text.html' name 'BeginAction'
       end;
 
-      InnerInsertHRAction = class external 'javax.swing.text.html' name 'InsertHRAction' 
+      InnerInsertHRAction = class external 'javax.swing.text.html' name 'InsertHRAction'
       end;
 
-      InnerNavigateLinkAction = class external 'javax.swing.text.html' name 'NavigateLinkAction' 
+      InnerNavigateLinkAction = class external 'javax.swing.text.html' name 'NavigateLinkAction'
       public
         type
           InnerFocusHighlightPainter = class;
           Arr1InnerFocusHighlightPainter = array of InnerFocusHighlightPainter;
           Arr2InnerFocusHighlightPainter = array of Arr1InnerFocusHighlightPainter;
           Arr3InnerFocusHighlightPainter = array of Arr2InnerFocusHighlightPainter;
-          InnerFocusHighlightPainter = class external 'javax.swing.text.html' name 'FocusHighlightPainter' 
+          InnerFocusHighlightPainter = class external 'javax.swing.text.html' name 'FocusHighlightPainter'
           end;
 
       end;
@@ -77197,7 +77197,7 @@
           Arr1InnerBodyBlockView = array of InnerBodyBlockView;
           Arr2InnerBodyBlockView = array of Arr1InnerBodyBlockView;
           Arr3InnerBodyBlockView = array of Arr2InnerBodyBlockView;
-          InnerBodyBlockView = class external 'javax.swing.text.html' name 'BodyBlockView' 
+          InnerBodyBlockView = class external 'javax.swing.text.html' name 'BodyBlockView'
           end;
 
       public
@@ -77385,10 +77385,10 @@
       Arr1InnerIncrementAction = array of InnerIncrementAction;
       Arr2InnerIncrementAction = array of Arr1InnerIncrementAction;
       Arr3InnerIncrementAction = array of Arr2InnerIncrementAction;
-      InnerExtendedReplaceHolder = class external 'javax.swing.text' name 'ExtendedReplaceHolder' 
+      InnerExtendedReplaceHolder = class external 'javax.swing.text' name 'ExtendedReplaceHolder'
       end;
 
-      InnerIncrementAction = class external 'javax.swing.text' name 'IncrementAction' 
+      InnerIncrementAction = class external 'javax.swing.text' name 'IncrementAction'
       end;
 
   public
@@ -77444,28 +77444,28 @@
       Arr1InnerMaskCharacter = array of InnerMaskCharacter;
       Arr2InnerMaskCharacter = array of Arr1InnerMaskCharacter;
       Arr3InnerMaskCharacter = array of Arr2InnerMaskCharacter;
-      InnerAlphaNumericCharacter = class external 'javax.swing.text' name 'AlphaNumericCharacter' 
+      InnerAlphaNumericCharacter = class external 'javax.swing.text' name 'AlphaNumericCharacter'
       end;
 
-      InnerCharCharacter = class external 'javax.swing.text' name 'CharCharacter' 
+      InnerCharCharacter = class external 'javax.swing.text' name 'CharCharacter'
       end;
 
-      InnerDigitMaskCharacter = class external 'javax.swing.text' name 'DigitMaskCharacter' 
+      InnerDigitMaskCharacter = class external 'javax.swing.text' name 'DigitMaskCharacter'
       end;
 
-      InnerHexCharacter = class external 'javax.swing.text' name 'HexCharacter' 
+      InnerHexCharacter = class external 'javax.swing.text' name 'HexCharacter'
       end;
 
-      InnerLiteralCharacter = class external 'javax.swing.text' name 'LiteralCharacter' 
+      InnerLiteralCharacter = class external 'javax.swing.text' name 'LiteralCharacter'
       end;
 
-      InnerLowerCaseCharacter = class external 'javax.swing.text' name 'LowerCaseCharacter' 
+      InnerLowerCaseCharacter = class external 'javax.swing.text' name 'LowerCaseCharacter'
       end;
 
-      InnerUpperCaseCharacter = class external 'javax.swing.text' name 'UpperCaseCharacter' 
+      InnerUpperCaseCharacter = class external 'javax.swing.text' name 'UpperCaseCharacter'
       end;
 
-      InnerMaskCharacter = class external 'javax.swing.text' name 'MaskCharacter' 
+      InnerMaskCharacter = class external 'javax.swing.text' name 'MaskCharacter'
       end;
 
   public
@@ -77522,13 +77522,13 @@
       Arr1InnerTaggedAttributeSet = array of InnerTaggedAttributeSet;
       Arr2InnerTaggedAttributeSet = array of Arr1InnerTaggedAttributeSet;
       Arr3InnerTaggedAttributeSet = array of Arr2InnerTaggedAttributeSet;
-      InnerFixedLengthDocument = class external 'javax.swing.text.html' name 'FixedLengthDocument' 
+      InnerFixedLengthDocument = class external 'javax.swing.text.html' name 'FixedLengthDocument'
       end;
 
-      InnerLeafIterator = class external 'javax.swing.text.html' name 'LeafIterator' 
+      InnerLeafIterator = class external 'javax.swing.text.html' name 'LeafIterator'
       end;
 
-      InnerTaggedAttributeSet = class external 'javax.swing.text.html' name 'TaggedAttributeSet' 
+      InnerTaggedAttributeSet = class external 'javax.swing.text.html' name 'TaggedAttributeSet'
       end;
 
   public
@@ -77549,13 +77549,13 @@
       Arr1InnerIterator = array of InnerIterator;
       Arr2InnerIterator = array of Arr1InnerIterator;
       Arr3InnerIterator = array of Arr2InnerIterator;
-      InnerBlockElement = class external 'javax.swing.text.html' name 'BlockElement' 
+      InnerBlockElement = class external 'javax.swing.text.html' name 'BlockElement'
       end;
 
-      InnerRunElement = class external 'javax.swing.text.html' name 'RunElement' 
+      InnerRunElement = class external 'javax.swing.text.html' name 'RunElement'
       end;
 
-      InnerHTMLReader = class external 'javax.swing.text.html' name 'HTMLReader' 
+      InnerHTMLReader = class external 'javax.swing.text.html' name 'HTMLReader'
       public
         type
           InnerAnchorAction = class;
@@ -77606,40 +77606,40 @@
           Arr1InnerTitleAction = array of InnerTitleAction;
           Arr2InnerTitleAction = array of Arr1InnerTitleAction;
           Arr3InnerTitleAction = array of Arr2InnerTitleAction;
-          InnerAnchorAction = class external 'javax.swing.text.html' name 'AnchorAction' 
+          InnerAnchorAction = class external 'javax.swing.text.html' name 'AnchorAction'
           end;
 
-          InnerAreaAction = class external 'javax.swing.text.html' name 'AreaAction' 
+          InnerAreaAction = class external 'javax.swing.text.html' name 'AreaAction'
           end;
 
-          InnerBaseAction = class external 'javax.swing.text.html' name 'BaseAction' 
+          InnerBaseAction = class external 'javax.swing.text.html' name 'BaseAction'
           end;
 
-          InnerConvertAction = class external 'javax.swing.text.html' name 'ConvertAction' 
+          InnerConvertAction = class external 'javax.swing.text.html' name 'ConvertAction'
           end;
 
-          InnerFormTagAction = class external 'javax.swing.text.html' name 'FormTagAction' 
+          InnerFormTagAction = class external 'javax.swing.text.html' name 'FormTagAction'
           end;
 
-          InnerHeadAction = class external 'javax.swing.text.html' name 'HeadAction' 
+          InnerHeadAction = class external 'javax.swing.text.html' name 'HeadAction'
           end;
 
-          InnerLinkAction = class external 'javax.swing.text.html' name 'LinkAction' 
+          InnerLinkAction = class external 'javax.swing.text.html' name 'LinkAction'
           end;
 
-          InnerMapAction = class external 'javax.swing.text.html' name 'MapAction' 
+          InnerMapAction = class external 'javax.swing.text.html' name 'MapAction'
           end;
 
-          InnerMetaAction = class external 'javax.swing.text.html' name 'MetaAction' 
+          InnerMetaAction = class external 'javax.swing.text.html' name 'MetaAction'
           end;
 
-          InnerObjectAction = class external 'javax.swing.text.html' name 'ObjectAction' 
+          InnerObjectAction = class external 'javax.swing.text.html' name 'ObjectAction'
           end;
 
-          InnerStyleAction = class external 'javax.swing.text.html' name 'StyleAction' 
+          InnerStyleAction = class external 'javax.swing.text.html' name 'StyleAction'
           end;
 
-          InnerTitleAction = class external 'javax.swing.text.html' name 'TitleAction' 
+          InnerTitleAction = class external 'javax.swing.text.html' name 'TitleAction'
           end;
 
       public
@@ -77680,31 +77680,31 @@
           Arr1InnerTagAction = array of InnerTagAction;
           Arr2InnerTagAction = array of Arr1InnerTagAction;
           Arr3InnerTagAction = array of Arr2InnerTagAction;
-          InnerBlockAction = class external 'javax.swing.text.html' name 'BlockAction' 
+          InnerBlockAction = class external 'javax.swing.text.html' name 'BlockAction'
           end;
 
-          InnerCharacterAction = class external 'javax.swing.text.html' name 'CharacterAction' 
+          InnerCharacterAction = class external 'javax.swing.text.html' name 'CharacterAction'
           end;
 
-          InnerFormAction = class external 'javax.swing.text.html' name 'FormAction' 
+          InnerFormAction = class external 'javax.swing.text.html' name 'FormAction'
           end;
 
-          InnerHiddenAction = class external 'javax.swing.text.html' name 'HiddenAction' 
+          InnerHiddenAction = class external 'javax.swing.text.html' name 'HiddenAction'
           end;
 
-          InnerIsindexAction = class external 'javax.swing.text.html' name 'IsindexAction' 
+          InnerIsindexAction = class external 'javax.swing.text.html' name 'IsindexAction'
           end;
 
-          InnerParagraphAction = class external 'javax.swing.text.html' name 'ParagraphAction' 
+          InnerParagraphAction = class external 'javax.swing.text.html' name 'ParagraphAction'
           end;
 
-          InnerPreAction = class external 'javax.swing.text.html' name 'PreAction' 
+          InnerPreAction = class external 'javax.swing.text.html' name 'PreAction'
           end;
 
-          InnerSpecialAction = class external 'javax.swing.text.html' name 'SpecialAction' 
+          InnerSpecialAction = class external 'javax.swing.text.html' name 'SpecialAction'
           end;
 
-          InnerTagAction = class external 'javax.swing.text.html' name 'TagAction' 
+          InnerTagAction = class external 'javax.swing.text.html' name 'TagAction'
           end;
 
       end;

@@ -144,6 +144,10 @@ const
      moCloseOnGotoSource  = $00000002;
      moChangeDirOnOpen    = $00000004;
 
+     { Desktop Option constants }
+     dpClockView          = $00000001;
+     dpHeapMonitor        = $00000002;
+
      { Desktop Location constants }
      dlCurrentDir         = $00;
      dlConfigFileDir      = $01;
@@ -158,11 +162,12 @@ const
      hidConditionalDefines= 205;
      hidCompilerArgs      = 206;
      hidWatchDialog       = 207;
-     hidBreakpointDialogName = 208;
+     hidChDirDialog       = 208;
      hidRunDir            = 209;
      hidBreakpointDialogCond = 210;
      hidPrinterDevice      = 211;
      hidEvaluate           = 212;
+     hidBreakpointDialogName = 213;
 
      { Command constants }
      cmShowClipboard     = 201;
@@ -221,6 +226,7 @@ const
      }
 
      cmPrint             = 248;
+     cmSymPrevious       = 249; {previous symbol browser window}
 
      cmNotImplemented    = 1000;
      cmNewFromTemplate   = 1001;
@@ -308,6 +314,11 @@ const
      cmSymTrackSource    = 2702;
      cmSymOptions        = 2703;
      cmSymSaveAs         = 2704;
+     cmSymTabKeyPress    = 2705;
+     {cmSymPrevious       = 249;}
+
+     cmDropDownDeleteListBox = 2800;
+     cmMouseDownInEmptySpace = 2801;
 
      { Help constants }
      hcSourceWindow      = 8000;
@@ -394,6 +405,8 @@ const
      hcPasteWin          = hcShift+cmPasteWin;
      hcSelectAll         = hcShift+cmSelectAll;
      hcUnselect          = hcShift+cmUnselect;
+     hcCommentSel        = hcShift+cmCommentSel;
+     hcUnCommentSel      = hcShift+cmUnCommentSel;
 
      hcFindProcedure     = hcShift+cmFindProcedure;
      hcObjects           = hcShift+cmObjects;
@@ -436,6 +449,7 @@ const
      hcSymTrackSource    = hcShift+cmSymTrackSource;
      hcSymOptions        = hcShift+cmSymOptions;
      hcSymSaveAs         = hcShift+cmSymSaveAs;
+     hcSymPrevious       = hcShift+cmSymPrevious;
      hcGotoCursor        = hcShift+cmGotoCursor;
      hcNewBreakpoint     = hcShift+cmNewBreakpoint;
      hcEditBreakpoint    = hcShift+cmEditBreakpoint;
@@ -458,8 +472,6 @@ const
      hcEditorOptions     = hcShift+cmEditorOptions;
      hcBrowserOptions    = hcShift+cmBrowserOptions;
      hcDoReload          = hcShift+cmDoReload;
-     { History constants }
-     hisChDirDialog      = 2000;
 
      CIDEHelpDialog      =
         #128#129#130#131#132#133#134#135#136#137#138#139#140#141#142#143 +

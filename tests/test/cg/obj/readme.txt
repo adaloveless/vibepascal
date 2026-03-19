@@ -13,7 +13,7 @@ Win32 :  2.95.3-5 (cygwin special)
 Amiga :  GCC 2.91.66
  (long long/double support is buggy in this version of GCC, so it cannot be used)
 Linux-m68k :  GCC 2.95.4 and 3.0.4
-Linux-i386 : GCC 2.95.4 20011002 (Debian prerelease)
+Linux-i386 : GCC: (GNU) 4.4.1 to GCC: (Debian 12.2.0-14+deb12u1) 12.2.0
 
 NetBSD-m68k : GCC 2.95.3 on NetBSD elf 1.6
 
@@ -27,11 +27,11 @@ Solaris-x86_64 : gcc (GCC) 3.4.3 (csl-sol210-3_4-20050802) with -m64 option
 
 Freebsd-x86_64 : gcc (GCC) 4.2.1 20070719  [FreeBSD]
 
-OpenBSD-i386 : gcc (GCC) 4.2.1 20070719 
+OpenBSD-i386 : gcc (GCC) 4.2.1 20070719
 NetBSD-i386 : gcc (GCC) 4.1.3 20080704 prerelease (NetBSD nb2 20081120)
 FreeBSD-i386 : gcc (GCC) 4.2.1 20070719  [FreeBSD] 8.2-RELEASE
 Linux-sparc : gcc (Debian 4.3.2-1.1) 4.3.2
-OpenBSD-x86_64 : gcc (GCC) 4.2.1 20070719 
+OpenBSD-x86_64 : gcc (GCC) 4.2.1 20070719
 NetBSD-x86_64 : gcc (GCC) 4.1.3 20080704 prerelease (NetBSD nb2 20081120)
 Linux-arm-gnueabihf : gcc version 4.6.3 (Debian 4.6.3-8+rpi1)
 Linux-mipsel : gcc (Debian 4.4.5-8) 4.4.5
@@ -51,14 +51,14 @@ OS/2 (os2-i386): original EMX port of GCC (GCC 2.8.1) except for tcext6.c which
       cannot be compiled using version 2.8.1 and thus GCC 3.0.4 was used for
       compiling it (but FPC doesn't pass this test under OS/2 yet anyway)
 
-Data retieved from .comment or similar section:
+Data retrieved from .comment or similar section:
 beos-i386 : GCC: (GNU) 2.95v.3-beos-060710
 android-arm-eabi : GCC: (GNU) 4.7.A*
 solaris-sparc : GCC: (GNU) 5.5.0
 linux-arm : GCC: (GNU) 2.95.1 19990816 (release)
 linux-arm-eabi : GCC: (Debian 4.3.2-1) 4.3.2
-linux-powerpc : GCC: (GNU) 2.95.4 20011002 (Debian prerelease)
-linux-powerpc64 : GCC: (GNU) 3.3.3 (SuSE Linux)
+linux-powerpc : GCC: (GNU) 4.0.0 to (GNU) 4.8.5 20150623 (Red Hat 4.8.5-44)
+linux-powerpc64 : GCC: (GNU) 3.3.3 (SuSE Linux) to (GNU) 4.8.5 20150623 (Red Hat 4.8.5-44)
 linux-powerpc64-le : GCC: (Red Hat 4.9.2-1) 4.9.2 20141101
 linux-x86_64 : GCC: (GNU) 3.3.5 (Debian 1:3.3.5-8)
 Data retrieved from Dwarf producer information:

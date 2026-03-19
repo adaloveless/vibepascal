@@ -17,7 +17,7 @@
 {$mode objfpc}
 {$H+}
 {$IFNDEF FPC_DOTTEDUNITS}
-unit bufstream;
+unit BufStream;
 {$ENDIF FPC_DOTTEDUNITS}
 
 interface
@@ -409,7 +409,7 @@ begin
   // Are we already in a emergency write dirty pages ??
   if FEmergencyFlag then exit;
   FEmergencyFlag:=true;
-  // This procedure tries to save all dirty pages inconditional
+  // This procedure tries to save all dirty pages unconditional
   // because a write fail happens, so everything in cache will
   // be dumped to stream if possible, trying to save as much
   // information as possible.
@@ -506,8 +506,6 @@ var
   j: integer;
   pCache: PStreamCacheEntry=nil;
   lStreamPosition: int64;
-  lExpectedBytesToRead: integer;
-  lEffectiveRead: integer;
 begin
   // Find free page entry
   for j := 0 to Pred(FStreamCachePageMaxCount) do begin
@@ -526,23 +524,8 @@ begin
   end;
   lStreamPosition:=(FCacheStreamPosition div FStreamCachePageSize)*FStreamCachePageSize;
   inherited Seek(lStreamPosition,soBeginning);
-  if (lStreamPosition+FStreamCachePageSize) > FCacheStreamSize then begin
-    lExpectedBytesToRead:=FCacheStreamSize-lStreamPosition;
-  end else begin
-    lExpectedBytesToRead:=FStreamCachePageSize;
-  end;
   pCache^.PageBegin:=lStreamPosition;
   pCache^.PageRealSize:=inherited Read(pCache^.Buffer^,FStreamCachePageSize);
-  if pCache^.PageRealSize<>lExpectedBytesToRead then begin
-    lEffectiveRead:=pCache^.PageRealSize;
-    pCache^.IsDirty:=false;
-    pCache^.LastTick:=0;
-    pCache^.PageBegin:=0;
-    pCache^.PageRealSize:=0;
-    Freemem(pCache^.Buffer);
-    pCache^.Buffer:=nil;
-    Raise EStreamError.CreateFmt(SErrCacheUnableToReadExpected,[lExpectedBytesToRead,lEffectiveRead]);
-  end;
   pCache^.LastTick:=GetOpCounter;
   Result:=true;
 end;
@@ -682,7 +665,7 @@ begin
           // Update file size
           if FCacheStreamPosition>FCacheStreamSize then FCacheStreamSize:=FCacheStreamPosition;
 
-          Assert(pCache^.PageRealSize=FStreamCachePageSize,'This must not happend');
+          Assert(pCache^.PageRealSize=FStreamCachePageSize,'This must not happened');
           lNewBuffer:=PBYTE(@Buffer)+lAvailableInThisPage;
           Result:=lAvailableInThisPage+DoCacheWrite(lNewBuffer^,Count-lAvailableInThisPage);
           exit;
@@ -741,7 +724,7 @@ var
   pCache: PStreamCacheEntry;
 begin
   WriteDirtyPages;
-  inherited SetSize64(NewSize);
+  inherited SetSize(NewSize); // Call THandleStream.SetSize, will truncate
   FCacheStreamSize:=inherited Seek(0,soFromEnd);
   for j := 0 to Pred(FStreamCachePageMaxCount) do begin
     pCache:=FCachePages[j];
@@ -749,7 +732,6 @@ begin
       // This page is out of bounds the new file size
       // so discard it.
       FreePage(pCache,True);
-      break;
     end;
   end;
 end;

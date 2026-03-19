@@ -131,7 +131,7 @@ begin
   while assigned(HPath) do
    begin
     s:=HPath.Str;
-    s1 := Unix2AmigaPath(maybequoted(s)); 
+    s1 := Unix2AmigaPath(maybequoted(s));
     if trim(s1)<>'' then
      LinkRes.Add('SEARCH_DIR('+s1+')');
     HPath:=TCmdStrListItem(HPath.Next);
@@ -265,7 +265,7 @@ begin
 
   success:=MakeAROSExe;
 
-  { Remove ReponseFile }
+  { Remove ResponseFile }
   if (success) and not(cs_link_nolink in current_settings.globalswitches) then
     DeleteFile(outputexedir+Info.ResName);
 

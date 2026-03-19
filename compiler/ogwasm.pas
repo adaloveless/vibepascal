@@ -27,7 +27,7 @@ interface
 
     uses
       { common }
-      cclasses,globtype,
+      sysutils,cclasses,globtype,
       { target }
       systems,cpubase,
       { assembler }
@@ -106,6 +106,7 @@ interface
         constructor CreateTypeIndex(ADataOffset:TObjSectionOfs; ATypeIndex: Integer);
         constructor CreateFuncType(ADataOffset:TObjSectionOfs; AFuncType: TWasmFuncType);
         destructor Destroy;override;
+        function ToString:ansistring;override;
       end;
 
       { TWasmObjSymbolExtraData }
@@ -592,7 +593,7 @@ implementation
 {$define rangeon}
 {$R-}
 {$endif}
-        if (b and 64)<>0 then
+        if ((b and 64)<>0) and (Shift < 64) then
           result:=result or (high(uint64) shl shift);
       end;
 {$ifdef overflowon}
@@ -698,6 +699,7 @@ implementation
     destructor TWasmObjSymbolLinkingData.Destroy;
       begin
         FuncType.Free;
+        FuncType := nil;
         inherited Destroy;
       end;
 
@@ -734,7 +736,22 @@ implementation
     destructor TWasmObjRelocation.Destroy;
       begin
         FuncType.Free;
+        FuncType := nil;
         inherited Destroy;
+      end;
+
+    function TWasmObjRelocation.ToString: ansistring;
+      var
+        FuncTypeStr: ansistring;
+      begin
+        if Assigned(FuncType) then
+          FuncTypeStr:=FuncType.ToString
+        else
+          FuncTypeStr:='nil';
+        WriteStr(Result,'('+inherited+';TypeIndex:'+tostr(TypeIndex)+
+          ';Addend:'+tostr(Addend)+';FuncType:'+FuncTypeStr+
+          ';ExeTypeIndex:'+tostr(ExeTypeIndex)+
+          ';IsFunctionOffsetI32:',IsFunctionOffsetI32,')');
       end;
 
 {****************************************************************************
@@ -756,6 +773,7 @@ implementation
     destructor TWasmObjSymbol.Destroy;
       begin
         LinkingData.Free;
+        LinkingData := nil;
         inherited Destroy;
       end;
 
@@ -779,6 +797,7 @@ implementation
     destructor TWasmObjSymbolExtraData.Destroy;
       begin
         EncodedLocals.Free;
+        EncodedLocals := nil;
         inherited Destroy;
       end;
 
@@ -940,11 +959,11 @@ implementation
 { vtable for a class called Window:                                       }
 { .section .data.rel.ro._ZTV6Window,"awG",@progbits,_ZTV6Window,comdat    }
 { TODO: .data.ro not yet working}
-{$if defined(arm) or defined(riscv64) or defined(powerpc)}
+{$if defined(support_rodata)}
           '.rodata',
-{$else defined(arm) or defined(riscv64) or defined(powerpc)}
+{$else defined(support_rodata)}
           '.data',
-{$endif defined(arm) or defined(riscv64) or defined(powerpc)}
+{$endif defined(support_rodata)}
           '.rodata',
           '.bss',
           '.tbss',
@@ -1000,7 +1019,8 @@ implementation
           '.stack',
           '.heap',
           '.gcc_except_table',
-          '.ARM.attributes'
+          '.ARM.attributes',
+          '.note'
         );
       var
         sep     : string[3];
@@ -1026,7 +1046,7 @@ implementation
           (target_info.system in systems_all_windows+systems_nativent-[system_i8086_win16]) then
           secname:='.rodata';
 
-        { section type user gives the user full controll on the section name }
+        { section type user gives the user full control on the section name }
         if atype=sec_user then
           secname:=aname;
 
@@ -1060,7 +1080,9 @@ implementation
         i: Integer;
       begin
         FObjSymbolsExtraDataList.Free;
+        FObjSymbolsExtraDataList := nil;
         FFuncTypes.Free;
+        FFuncTypes := nil;
         inherited destroy;
       end;
 
@@ -1261,6 +1283,7 @@ implementation
         ft:=TWasmFuncType.Create([],tt.params);
         i:=FFuncTypes.AddOrGetFuncType(ft);
         ft.free;
+        ft := nil;
         ObjSymExtraData.ExceptionTagTypeIdx:=i;
       end;
 
@@ -2444,21 +2467,31 @@ implementation
         k: TWasmLinkingSubsectionType;
       begin
         for i in TWasmSectionID do
-          FWasmSections[i].Free;
+          FreeAndNil(FWasmSections[i]);
         for j in TWasmCustomSectionType do
-          FWasmCustomSections[j].Free;
+          FreeAndNil(FWasmCustomSections[j]);
         for k:=low(TWasmLinkingSubsectionType) to high(TWasmLinkingSubsectionType) do
-          FWasmLinkingSubsections[k].Free;
+          FreeAndNil(FWasmLinkingSubsections[k]);
         FWasmSymbolTable.Free;
+        FWasmSymbolTable := nil;
         FWasmRelocationCodeTable.Free;
+        FWasmRelocationCodeTable := nil;
         FWasmRelocationDataTable.Free;
+        FWasmRelocationDataTable := nil;
         FWasmRelocationDebugFrameTable.Free;
+        FWasmRelocationDebugFrameTable := nil;
         FWasmRelocationDebugInfoTable.Free;
+        FWasmRelocationDebugInfoTable := nil;
         FWasmRelocationDebugLineTable.Free;
+        FWasmRelocationDebugLineTable := nil;
         FWasmRelocationDebugAbbrevTable.Free;
+        FWasmRelocationDebugAbbrevTable := nil;
         FWasmRelocationDebugArangesTable.Free;
+        FWasmRelocationDebugArangesTable := nil;
         FWasmRelocationDebugRangesTable.Free;
+        FWasmRelocationDebugRangesTable := nil;
         FWasmRelocationDebugStrTable.Free;
+        FWasmRelocationDebugStrTable := nil;
         inherited destroy;
       end;
 
@@ -5520,6 +5553,10 @@ implementation
               end
             else
               internalerror(2024010110);
+{$ifdef EXTDEBUG_WASM}
+            if (FRelocationPass=2) and assigned(objsec.data) and (objsec.data.size<>objsec.size) then
+              internalerror(2025100101,'relocation increased section''s data size: '+objreloc.ToString);
+{$endif}
           end;
       end;
 
@@ -5551,12 +5588,13 @@ implementation
         k: TWasmNameSubsectionType;
       begin
         for i in TWasmSectionID do
-          FWasmSections[i].Free;
+          FreeAndNil(FWasmSections[i]);
         for j in TWasmCustomSectionType do
-          FWasmCustomSections[j].Free;
+          FreeAndNil(FWasmCustomSections[j]);
         for k:=low(FWasmNameSubsections) to high(FWasmNameSubsections) do
-          FWasmNameSubsections[k].Free;
+          FreeAndNil(FWasmNameSubsections[k]);
         FFuncTypes.Free;
+        FFuncTypes := nil;
         inherited destroy;
       end;
 

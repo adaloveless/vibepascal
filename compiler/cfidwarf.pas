@@ -271,11 +271,12 @@ implementation
     destructor TDwarfAsmCFILowLevel.destroy;
       begin
         FDwarfList.Free;
+        FDwarfList := nil;
       end;
 
 
 {$if defined(i386)}
-    { if more cpu dependend stuff is implemented, this needs more refactoring }
+    { if more cpu dependent stuff is implemented, this needs more refactoring }
     procedure TDwarfAsmCFILowLevel.generate_initial_instructions(list:TAsmList);
       begin
         list.concat(tai_const.create_8bit(DW_CFA_def_cfa));
@@ -323,7 +324,7 @@ implementation
         list.concat(tai_const.create_uleb128bit(0));
       end;
 {$else}
-    { if more cpu dependend stuff is implemented, this needs more refactoring }
+    { if more cpu dependent stuff is implemented, this needs more refactoring }
     procedure TDwarfAsmCFILowLevel.generate_initial_instructions(list:TAsmList);
       begin
         list.concat(tai_const.create_8bit(DW_CFA_def_cfa));

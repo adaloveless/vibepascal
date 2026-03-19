@@ -2,7 +2,7 @@ program tcpstr13;
 
 // check that copy operation converts from 866 to DefaultSystemCodePage encoding
 
-{$ifdef go32v2}
+{$if defined(go32v2) or defined(wasi)}
   {$define USE_INTERNAL_UNICODE}
 {$endif}
 
@@ -30,7 +30,7 @@ uses
   cpall,
  {$endif}
  { The unit strings is not really used here,
-   but simpifies the conditional construction
+   but simplifies the conditional construction
    for fpwidestring and unicodeducet use }
   strings;
 {$endif def USE_INTERNAL_UNICODE}

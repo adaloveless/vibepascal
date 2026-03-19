@@ -82,7 +82,7 @@ type
     a_insrwi_, a_rotlwi, a_rotlwi_, a_rotlw, a_rotlw_, a_slwi, a_slwi_,
     a_srwi, a_srwi_, a_clrlwi, a_clrlwi_, a_clrrwi, a_clrrwi_, a_clrslwi,
     a_clrslwi_, a_bf, a_bt, a_blr, a_bctr, a_blrl, a_bctrl, a_crset, a_crclr, a_crmove,
-    a_crnot, a_mt {move to special prupose reg}, a_mf
+    a_crnot, a_mt {move to special propose reg}, a_mf
       {move from special purpose reg},
     a_nop, a_li, a_lis, a_la, a_mr, a_mr_, a_not, a_mtcr, a_mtlr, a_mflr,
     a_mtctr, a_mfctr,
@@ -104,7 +104,8 @@ type
     A_MFXER,
     A_FCTID, A_FCTID_, A_FCTIDZ, A_FCTIDZ_,
     A_EXTRDI, A_EXTRDI_, A_INSRDI, A_INSRDI_,
-    A_LWSYNC);
+    A_LWSYNC,
+    A_YIELD);
 
   {# This should define the array of instructions as string }
   op2strtable = array[tasmop] of string[8];
@@ -365,7 +366,7 @@ const
   { the size of the "red zone" which must not be changed by asynchronous calls
    in the stack frame and can be used for storing temps }
   RED_ZONE_SIZE = 288;
-  
+
   { minimum size of the stack frame if one exists }
   MINIMUM_STACKFRAME_SIZE = 112;
   MINIMUM_STACKFRAME_SIZE_ELFV2 = 112 - 16;

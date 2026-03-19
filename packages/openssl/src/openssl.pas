@@ -49,7 +49,7 @@ unit openssl;
 |                                                                              |
 | 2010 - Felipe Monteiro de Carvalho - Added RAND functios                     |
 |==============================================================================|
-|  2010-08-24 add fuctions to hash strings based on rsa key PEM format         |
+|  2010-08-24 add functions to hash strings based on rsa key PEM format        |
 |             change some type declarationc on x509 type                       |
 |             work is not complete.                                            |
 |             Work made by Alberto Brito based on unit from                    |
@@ -75,7 +75,7 @@ Special thanks to Gregor Ibic <gregor.ibic@intelicom.si>
 {:@abstract(OpenSSL support)
 
 This unit is Pascal interface to OpenSSL library (used by @link(ssl_openssl) unit).
-OpenSSL is loaded dynamicly on-demand. If this library is not found in system,
+OpenSSL is loaded dynamically on-demand. If this library is not found in system,
 requested OpenSSL function just return errorcode.
 }
 
@@ -102,8 +102,13 @@ const
 // SSL and Crypto DLL arrays must have the same length and contain
 // matched pairs of DLL filenames. Place newer versions at the beginning.
 {$IF DEFINED(WIN64)}
-  SSL_DLL_Names:    array[1..4] of AnsiString = ('libssl-3-x64',    'libssl-1_1-x64',    'ssleay32', 'libssl32');
-  Crypto_DLL_Names: array[1..4] of AnsiString = ('libcrypto-3-x64', 'libcrypto-1_1-x64', 'libeay32', 'libeay32');
+  {$IFDEF CPUAARCH64}
+    SSL_DLL_Names:    array[1..1] of AnsiString = ('libssl-3-arm64');
+    Crypto_DLL_Names: array[1..1] of AnsiString = ('libcrypto-3-arm64');
+  {$ELSE}
+    SSL_DLL_Names:    array[1..4] of AnsiString = ('libssl-3-x64',    'libssl-1_1-x64',    'ssleay32', 'libssl32');
+    Crypto_DLL_Names: array[1..4] of AnsiString = ('libcrypto-3-x64', 'libcrypto-1_1-x64', 'libeay32', 'libeay32');
+  {$ENDIF}
 {$ELSEIF DEFINED(WINDOWS)}
   SSL_DLL_Names:    array[1..4] of AnsiString = ('libssl-3',    'libssl-1_1',    'ssleay32', 'libssl32');
   Crypto_DLL_Names: array[1..4] of AnsiString = ('libcrypto-3', 'libcrypto-1_1', 'libeay32', 'libeay32');
@@ -1411,11 +1416,11 @@ var
   function BIO_read_filename(b: PBIO; const name: PAnsiChar): cint;
 
   function BIO_push(b: PBIO; append: PBIO): PBIO;
-  function BIO_pop(b: PBIO): PBIO; 
+  function BIO_pop(b: PBIO): PBIO;
   function BIO_gets(b: PBIO; buf: PAnsiChar; size: cint): cint;
-  function BIO_puts(b: PBIO; const buf: PAnsiChar): cint; 
+  function BIO_puts(b: PBIO; const buf: PAnsiChar): cint;
   procedure BIO_set_mem_eof_return(b: PBIO; v: cint);
-  procedure BIO_set_mem_buf(b: PBIO; bm: pointer; c: cint); 
+  procedure BIO_set_mem_buf(b: PBIO; bm: pointer; c: cint);
   procedure BIO_get_mem_ptr(b: PBIO; var pp: pointer);
 
   function BIO_s_file: pBIO_METHOD;
@@ -1902,11 +1907,11 @@ type
   TBIO_ctrl = function(bp: PBIO; cmd: cint; larg: clong; parg: Pointer): clong; cdecl;
 
   TBIO_push = function(b: PBIO; append: PBIO): PBIO;cdecl;
-  TBIO_pop = function(b: PBIO): PBIO;cdecl; 
+  TBIO_pop = function(b: PBIO): PBIO;cdecl;
   TBIO_gets = function(b: PBIO; buf: PAnsiChar; size: cint): cint;cdecl;
   TBIO_puts = function(b: PBIO; const buf: PAnsiChar): cint;cdecl;
   TBIO_set_mem_eof_return = procedure(b: PBIO; v: cint);cdecl;
-  TBIO_set_mem_buf = procedure(b: PBIO; bm: pointer; c: cint);cdecl; 
+  TBIO_set_mem_buf = procedure(b: PBIO; bm: pointer; c: cint);cdecl;
   TBIO_get_mem_ptr = procedure (b: PBIO; var pp: pointer);cdecl;
 
   TBIO_s_file = function: pBIO_METHOD; cdecl;
@@ -3865,7 +3870,7 @@ begin
   else
     Result := nil;
 end;
-      
+
 function EVP_VerifyFinal(ctx: pEVP_MD_CTX; sigbuf: pointer;
     siglen: cardinal; pkey: pEVP_PKEY): integer;
 begin
@@ -3895,8 +3900,7 @@ end;
 //
 function EVP_CIPHER_CTX_new(): PEVP_CIPHER_CTX;
 begin
-  if InitSSLInterface then
-   if Assigned(_EVP_CIPHER_CTX_new) then
+  if InitSSLInterface and Assigned(_EVP_CIPHER_CTX_new) then
     Result := _EVP_CIPHER_CTX_new()
   else
     Result := nil;
@@ -3920,13 +3924,12 @@ end;
 
 function EVP_CIPHER_CTX_cleanup(a: PEVP_CIPHER_CTX): cint;
 begin
+  Result := -1;
   if InitSSLInterface then
    if  Assigned(_EVP_CIPHER_CTX_cleanup) then
     Result := _EVP_CIPHER_CTX_cleanup(a)
   else if  Assigned(_EVP_CIPHER_CTX_reset) then
-    Result := _EVP_CIPHER_CTX_reset(a)
-  else
-    Result := -1;
+    Result := _EVP_CIPHER_CTX_reset(a);
 end;
 
 function EVP_CIPHER_CTX_set_key_length(x: PEVP_CIPHER_CTX; keylen: cint): cint;
@@ -5314,7 +5317,7 @@ begin
   _SslWrite := GetProcAddr(SSLLibHandle, 'SSL_write');
   _SslPending := GetProcAddr(SSLLibHandle, 'SSL_pending');
   _SslGetPeerCertificate := GetProcAddr(SSLLibHandle, 'SSL_get_peer_certificate');
-  if not Assigned(_SslGetPeerCertificate) 
+  if not Assigned(_SslGetPeerCertificate)
   then _SslGetPeerCertificate := GetProcAddr(SSLLibHandle, 'SSL_get1_peer_certificate');
   _SslGetVersion := GetProcAddr(SSLLibHandle, 'SSL_get_version');
   _SslCtxSetVerify := GetProcAddr(SSLLibHandle, 'SSL_CTX_set_verify');

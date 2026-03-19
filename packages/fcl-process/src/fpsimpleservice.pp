@@ -1,8 +1,8 @@
 {
     This file is part of the Free Component Library (FCL)
     Copyright (c) 2025 by the Free Pascal development team
-      
-    Simple service application class for windows.  
+
+    Simple service application class for windows.
 
     See the file COPYING.FPC, included in this distribution,
     for details about the copyright.
@@ -12,14 +12,16 @@
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
  **********************************************************************}
+{$IFNDEF FPC_DOTTEDUNITS}
 unit fpsimpleservice;
+{$ENDIF FPC_DOTTEDUNITS}
 
 {
   Application checks following command-line options to determine behaviour:
   -r run service
   -i install service
   -u uninstall service.
-  
+
   When the service is run, a descendent of TFPServiceThread is created and executed.
   You must set the descendant class to use in Application.ServiceClass before calling initialize.
 }
@@ -28,8 +30,13 @@ unit fpsimpleservice;
 
 interface
 
+{$IFDEF FPC_DOTTEDUNITS}
+uses
+  System.Classes, System.SysUtils, Fcl.CustApp, Winapi.Windows, Fcl.EventLog, WinApi.Jedi.Winsvc;
+{$ELSE FPC_DOTTEDUNITS}
 uses
   Classes, SysUtils, custapp, windows, eventlog, jwawinsvc;
+{$ENDIF FPC_DOTTEDUNITS}
 
 Type
   { TFPServiceThread }
@@ -94,15 +101,15 @@ Type
     // Thread class to use when starting the service.
     Property ServiceClass : TFPServiceThreadClass Read FServiceClass Write FServiceClass;
     // Time before to generate an error. Default 20000 milliseconds
-    property Timeout : integer read FTimeout write FTimeout; 
+    property Timeout : integer read FTimeout write FTimeout;
     // Exit code to return to Service Manager
     property ExitCode : integer read FExitCode write FExitCode;
     // Parameter list passed when the service was started
-    property ServiceParamStr : string read FServiceParamStr; 
+    property ServiceParamStr : string read FServiceParamStr;
     // Number of parameters passed when the service was started
-    property ServiceParamCount : integer read FServiceParamCount; 
+    property ServiceParamCount : integer read FServiceParamCount;
     // Does the service accept pause/continue commands ?
-    Property AllowServicePause : Boolean Read FAllowServicePause Write FAllowServicePause; 
+    Property AllowServicePause : Boolean Read FAllowServicePause Write FAllowServicePause;
   end;
 
   EFPService = Class(Exception);
@@ -116,7 +123,7 @@ Resourcestring
   SErrNoServiceClass   = 'Cannot run: No service thread class registered.';
   SErrRunNeedsOverride = 'Cannot run: Runservice must be overridden';
   SErrRunningService   = 'Error running service: %s';
-  SControlCodeReceived = 'Service: Recived control code %d';
+  SControlCodeReceived = 'Service: Received control code %d';
   SServicePaused       = 'Service received pause command.';
   SServiceContinued    = 'Service received continue command.';
 
@@ -381,7 +388,7 @@ begin
   if (ArgV<>Nil) then
     FServiceParamStr := strpas(ArgV^);
   SetLastError(0);
-  FStatusHandle := RegisterServiceCtrlHandlerA(PChar(Name),@ServiceControllerEntry);
+  FStatusHandle := RegisterServiceCtrlHandlerA(PAnsiChar(Name),@ServiceControllerEntry);
   if FStatusHandle <> 0 then
     begin
     if ReportStartPending then

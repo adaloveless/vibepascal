@@ -37,7 +37,7 @@ uses
   FVConsts,
   Version,
 {$ifdef USE_EXTERNAL_COMPILER}
-   fpintf, { superseeds version_string of version unit }
+   fpintf, { supersedes version_string of version unit }
 {$endif USE_EXTERNAL_COMPILER}
   WConsts,WUtils,WINI,WViews,WEditor,WCEdit,FPSymbol,
   {$ifndef NODEBUG}FPDebug,{$endif}FPConst,FPVars,
@@ -45,6 +45,8 @@ uses
 
 const
   PrinterDevice : string = 'prn';
+
+var InitialHelpFileCount : Sw_Word;
 
 {$ifdef useresstrings}
 resourcestring
@@ -127,7 +129,7 @@ const
   ieBrowserSymbols   = 'SymbolFlags';
   ieBrowserDisplay   = 'DisplayFlags';
   ieBrowserSub       = 'SubBrowsing';
-  ieBrowserPane      = 'PreferrdPane';
+  ieBrowserPane      = 'PreferredPane';
   ieOpenExts         = 'OpenExts';
   ieHighlightExts    = 'Exts';
   ieTabsPattern      = 'NeedsTabs';
@@ -154,6 +156,7 @@ const
   ieAutoSave         = 'AutoSaveFlags';
   ieMiscOptions      = 'MiscOptions';
   ieDesktopLocation  = 'DesktopLocation';
+  ieDesktopPreferences= 'DesktopPreferences';
   ieDesktopFlags     = 'DesktopFileFlags';
   ieCenterDebuggerRow= 'CenterCurrentLineWhileDebugging';
   ieShowReadme       = 'ShowReadme';
@@ -478,6 +481,7 @@ begin
     inc(I);
     if S<>'' then HelpFiles^.Insert(NewStr(S));
   until S='';
+  InitialHelpFileCount:=I-2;
   { Editor }
   DefaultTabSize:=INIFile^.GetIntEntry(secEditor,ieDefaultTabSize,DefaultTabSize);
   DefaultIndentSize:=INIFile^.GetIntEntry(secEditor,ieDefaultIndentSize,DefaultIndentSize);
@@ -485,7 +489,7 @@ begin
   DefaultSaveExt:=INIFile^.GetEntry(secEditor,ieDefaultSaveExt,DefaultSaveExt);
   { Browser }
   DefaultSymbolFlags:=INIFile^.GetIntEntry(secBrowser,ieBrowserSymbols,DefaultSymbolFlags);
-  DefaultDispayFlags:=INIFile^.GetIntEntry(secBrowser,ieBrowserDisplay,DefaultDispayFlags);
+  DefaultDisplayFlags:=INIFile^.GetIntEntry(secBrowser,ieBrowserDisplay,DefaultDisplayFlags);
   DefaultBrowserSub:=INIFile^.GetIntEntry(secBrowser,ieBrowserSub,DefaultBrowserSub);
   DefaultBrowserPane:=INIFile^.GetIntEntry(secBrowser,ieBrowserPane,DefaultBrowserPane);
   { Highlight }
@@ -579,7 +583,7 @@ begin
         TryToOpenFile(@R,S1,X,Y,false)
       else
         TryToOpenFile(nil,S1,X,Y,false);
-      { remove it because otherwise we allways keep old files }
+      { remove it because otherwise we always keep old files }
       INIFile^.DeleteEntry(secFiles,ieOpenFile+IntToStr(I));
     end;
 *)
@@ -591,6 +595,7 @@ begin
   AutoSaveOptions:=INIFile^.GetIntEntry(secPreferences,ieAutoSave,AutoSaveOptions);
   MiscOptions:=INIFile^.GetIntEntry(secPreferences,ieMiscOptions,MiscOptions);
   DesktopLocation:=INIFile^.GetIntEntry(secPreferences,ieDesktopLocation,DesktopLocation);
+  DesktopPreferences:=INIFile^.GetIntEntry(secPreferences,ieDesktopPreferences,DesktopPreferences);
   { Misc }
   ShowReadme:=INIFile^.GetIntEntry(secMisc,ieShowReadme,{integer(ShowReadme)}1)<>0;
   Dispose(INIFile, Done);
@@ -703,6 +708,11 @@ begin
       S:=HelpFiles^.At(I-1)^;
       INIFile^.SetEntry(secHelp, ieHelpFile + IntToStr(I), EscapeIniText(S));
     end;
+  if InitialHelpFileCount>HelpFileCount then
+    for I:=HelpFileCount+1 to InitialHelpFileCount do
+      { Have to actively delete file entries that are not in use anymore. }
+      INIFile^.DeleteEntry(secHelp, ieHelpFile + IntToStr(I));
+  InitialHelpFileCount:=HelpFileCount;
   { Editor }
   INIFile^.SetIntEntry(secEditor,ieDefaultTabSize,DefaultTabSize);
   INIFile^.SetIntEntry(secEditor,ieDefaultIndentSize,DefaultIndentSize);
@@ -710,7 +720,7 @@ begin
   INIFile^.SetEntry(secEditor,ieDefaultSaveExt,DefaultSaveExt);
   { Browser }
   INIFile^.SetIntEntry(secBrowser,ieBrowserSymbols,DefaultSymbolFlags);
-  INIFile^.SetIntEntry(secBrowser,ieBrowserDisplay,DefaultDispayFlags);
+  INIFile^.SetIntEntry(secBrowser,ieBrowserDisplay,DefaultDisplayFlags);
   INIFile^.SetIntEntry(secBrowser,ieBrowserSub,DefaultBrowserSub);
   INIFile^.SetIntEntry(secBrowser,ieBrowserPane,DefaultBrowserPane);
   { Highlight }
@@ -768,6 +778,16 @@ begin
     INIFile^.SetEntry(secColors,iePalette+'_121_160',PaletteToStr(copy(S,121,40)));
     INIFile^.SetEntry(secColors,iePalette+'_161_200',PaletteToStr(copy(S,161,40)));
     INIFile^.SetEntry(secColors,iePalette+'_201_240',PaletteToStr(copy(S,201,40)));
+  end else
+  begin
+    { Actively delete color map entries if current palette match to default
+      palette. This eliminates "bug" reported in if branch above. (M) }
+    INIFile^.DeleteEntry(secColors,iePalette+'_1_40');
+    INIFile^.DeleteEntry(secColors,iePalette+'_41_80');
+    INIFile^.DeleteEntry(secColors,iePalette+'_81_120');
+    INIFile^.DeleteEntry(secColors,iePalette+'_121_160');
+    INIFile^.DeleteEntry(secColors,iePalette+'_161_200');
+    INIFile^.DeleteEntry(secColors,iePalette+'_201_240');
   end;
   { Desktop }
   INIFile^.SetIntEntry(secPreferences,ieDesktopFlags,DesktopFileFlags);
@@ -776,6 +796,7 @@ begin
   INIFile^.SetIntEntry(secPreferences,ieAutoSave,AutoSaveOptions);
   INIFile^.SetIntEntry(secPreferences,ieMiscOptions,MiscOptions);
   INIFile^.SetIntEntry(secPreferences,ieDesktopLocation,DesktopLocation);
+  INIFile^.SetIntEntry(secPreferences,ieDesktopPreferences,DesktopPreferences);
   { Misc }
   INIFile^.SetIntEntry(secMisc,ieShowReadme,integer(ShowReadme));
   OK:=INIFile^.Update;

@@ -12,8 +12,8 @@
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
  **********************************************************************}
- 
-{ 
+
+{
   Based on an implementation by Martin Schreiber, part of MSEIDE.
   Reworked all code so it conforms to FCL coding standards.
 
@@ -22,8 +22,8 @@
                                    https://www.sqlite.org/foreignkeys.html#fk_enable
                "journal_mode=..."  https://www.sqlite.org/pragma.html#pragma_journal_mode
 
-} 
- 
+}
+
 {$IFNDEF FPC_DOTTEDUNITS}
 unit SQLite3Conn;
 {$ENDIF FPC_DOTTEDUNITS}
@@ -42,13 +42,13 @@ uses
 
 const
   sqliteerrormax = 99;
- 
+
 type
   PDateTime = ^TDateTime;
-  
+
   TStringArray = Array of string;
   PStringArray = ^TStringArray;
- 
+
   TArrayStringArray = Array of TStringArray;
   PArrayStringArray = ^TArrayStringArray;
 
@@ -77,7 +77,9 @@ Type
     fhandle: psqlite3;
     FOpenFlags: TSQLiteOpenFlags;
     FVFS: String;
+    function GetAlwaysUseMemo: Boolean;
     function GetSQLiteOpenFlags: Integer;
+    procedure SetAlwaysUseMemo(const aValue: Boolean);
     procedure SetOpenFlags(AValue: TSQLiteOpenFlags);
     procedure SetVFS(const AValue: String);
   protected
@@ -89,14 +91,14 @@ Type
     Function AllocateCursorHandle : TSQLCursor; override;
     Procedure DeAllocateCursorHandle(var cursor : TSQLCursor); override;
     Function AllocateTransactionHandle : TSQLHandle; override;
- 
+
     function StrToStatementType(s : string) : TStatementType; override;
     procedure PrepareStatement(cursor: TSQLCursor; ATransaction : TSQLTransaction; buf: string; AParams : TParams); override;
     procedure Execute(cursor: TSQLCursor;atransaction:tSQLtransaction; AParams : TParams); override;
     function Fetch(cursor : TSQLCursor) : boolean; override;
     procedure AddFieldDefs(cursor: TSQLCursor; FieldDefs : TFieldDefs); override;
     procedure UnPrepareStatement(cursor : TSQLCursor); override;
- 
+
     procedure FreeFldBuffers(cursor : TSQLCursor); override;
     function LoadField(cursor : TSQLCursor; FieldDef : TFieldDef; buffer : pointer; out CreateBlob : boolean) : boolean; override;
     procedure LoadBlobIntoBuffer(FieldDef: TFieldDef; ABlobBuf: PBufBlobField; cursor: TSQLCursor; ATransaction : TSQLTransaction); override;
@@ -136,6 +138,7 @@ Type
     Property OpenFlags : TSQLiteOpenFlags Read FOpenFlags Write SetOpenFlags default DefaultOpenFlags;
     Property VFS : String Read FVFS Write SetVFS;
     Property AlwaysUseBigint : Boolean Read GetAlwaysUseBigint Write SetAlwaysUseBigint;
+    Property AlwaysUseMemo : Boolean Read GetAlwaysUseMemo Write SetAlwaysUseMemo stored true;
   end;
 
   { TSQLite3ConnectionDef }
@@ -149,10 +152,10 @@ Type
     class Function UnLoadFunction : TLibraryUnLoadFunction; override;
     class function LoadedLibraryName: string; override;
   end;
-  
+
 Var
   SQLiteLibraryName : String absolute {$IFDEF FPC_DOTTEDUNITS}Api.{$ENDIF}Sqlite3dyn.SQLiteDefaultLibrary deprecated 'use sqlite3dyn.SQLiteDefaultLibrary instead';
-   
+
 implementation
 
 {$IFDEF FPC_DOTTEDUNITS}
@@ -171,7 +174,7 @@ const
 type
 
  TStorageType = (stNone,stInteger,stFloat,stText,stBlob,stNull);
- 
+
  TSQLite3Cursor = class(tsqlcursor)
   private
    fhandle : psqlite3;
@@ -207,21 +210,21 @@ Procedure TSQLite3Cursor.bindparams(AParams : TParams);
     If (Result<>Nil) then
       StrPCopy(Result,S);
   end;
-  
+
 Var
   I : Integer;
   P : TParam;
   astr: AnsiString;
   ustr: UTF8String;
   wstr: WideString;
-  
+
 begin
   for I:=1 to high(fparambinding)+1 do
     begin
     P:=AParams[fparambinding[I-1]];
     if P.IsNull then
       checkerror(sqlite3_bind_null(fstatement,I))
-    else 
+    else
       case P.DataType of
         ftInteger,
         ftAutoInc,
@@ -255,7 +258,7 @@ begin
         ftBlob: begin
                 astr:= P.AsAnsiString;
                 checkerror(sqlite3_bind_blob(fstatement,I, PAllocStr(astr), length(astr), @freebindstring));
-                end; 
+                end;
         ftWideString,
         ftFixedWideChar,
         ftWideMemo:
@@ -263,10 +266,10 @@ begin
           wstr:=P.AsWideString;
           checkerror(sqlite3_bind_text16(fstatement,I, PWideChar(wstr), length(wstr)*sizeof(WideChar), sqlite3_destructor_type(SQLITE_TRANSIENT)));
         end
-      else 
+      else
         DatabaseErrorFmt(SUnsupportedParameter, [Fieldtypenames[P.DataType], Self]);
       end; { Case }
-    end;   
+    end;
 end;
 
 Procedure TSQLite3Cursor.Prepare(const Buf : String; AParams : TParams);
@@ -301,17 +304,17 @@ begin
   RowsAffected:=sqlite3_changes(fhandle);
   if (fstate=sqlite_row) then
     fstate:= sqliteerrormax; //first row
-end;  
+end;
 
 Function TSQLite3Cursor.Fetch : Boolean;
 
 begin
-  if (fstate=sqliteerrormax) then 
+  if (fstate=sqliteerrormax) then
     fstate:=sqlite_row //first row;
-  else if (fstate=sqlite_row) then 
+  else if (fstate=sqlite_row) then
     begin
     fstate:=sqlite3_step(fstatement);
-    if (fstate<=sqliteerrormax) then 
+    if (fstate<=sqliteerrormax) then
       checkerror(sqlite3_reset(fstatement));  //right error returned??
     end;
   result:=(fstate=sqlite_row);
@@ -329,27 +332,28 @@ end;
 
 Const
   SUseBigint = 'AlwaysUseBigint';
+  SUseMemo = 'AlwaysUseMemo';
 
-function TSQLite3Connection.GetAlwaysUseBigint : Boolean; 
+function TSQLite3Connection.GetAlwaysUseBigint : Boolean;
 
 begin
   Result:=Params.Values[SUseBigint]='1'
 end;
 
-Procedure TSQLite3Connection.SetAlwaysUseBigint(aValue : Boolean); 
+Procedure TSQLite3Connection.SetAlwaysUseBigint(aValue : Boolean);
 
 Var
   I : Integer;
 
 begin
-  if aValue then 
+  if aValue then
     Params.Values[SUseBigint]:='1'
   else
     begin
     I:=Params.IndexOfName(SUseBigint);
-    if I<>-1 then 
+    if I<>-1 then
       Params.Delete(I);
-    end;    
+    end;
 end;
 
 
@@ -437,7 +441,7 @@ Type
     N : AnsiString;
     T : TFieldType;
   end;
-  
+
 Const
   FieldMapCount = 28;
   FieldMap : Array [1..FieldMapCount] of TFieldMap = (
@@ -549,8 +553,13 @@ begin
         stInteger: FT:=ftLargeInt;
         stFloat:   FT:=ftFloat;
         stBlob:    FT:=ftBlob;
-        stText:    FT:=ftMemo; 
-      else       
+        stText:    begin
+        if AlwaysUseMemo then
+          FT:=ftMemo
+        else
+          FT:=ftString
+        end;
+      else
         FT:=ftString;
       end;
     // handle some specials.
@@ -559,7 +568,7 @@ begin
     case FT of
       ftInteger,
       ftSMallint,
-      ftWord: 
+      ftWord:
         If AlwaysUseBigint then
           ft:=ftLargeInt;
       ftString,
@@ -602,7 +611,7 @@ procedure TSQLite3Connection.Execute(cursor: TSQLCursor;
   atransaction: tSQLtransaction; AParams: TParams);
 var
  SC : TSQLite3Cursor;
-            
+
 begin
   SC:=TSQLite3Cursor(cursor);
   checkerror(sqlite3_reset(sc.fstatement));
@@ -620,7 +629,7 @@ Var
 
 begin
   P:=Pos(Sep,S);
-  If (P=0) then 
+  If (P=0) then
     P:=Length(S)+1;
   Result:=Copy(S,1,P-1);
   Delete(S,1,P);
@@ -691,7 +700,7 @@ begin
     Delete(TS,1,P);
     end
   else
-    begin  
+    begin
     If (Pos('-',S)<>0) then
       DS:=S
     else if (Pos(':',S)<>0) then
@@ -717,7 +726,7 @@ begin
   st1:= TStorageType(sqlite3_column_type(st,fnum));
   CreateBlob:=false;
   result:= st1 <> stnull;
-  if Not result then 
+  if Not result then
     Exit;
   case FieldDef.DataType of
     ftAutoInc,
@@ -731,7 +740,7 @@ begin
     ftCurrency : pdouble(buffer)^:= sqlite3_column_double(st,fnum);
     ftDateTime,
     ftDate,
-    ftTime:  if st1 = sttext then 
+    ftTime:  if st1 = sttext then
                begin { Stored as string }
                setlength(str1,sqlite3_column_bytes(st,fnum));
                move(sqlite3_column_text(st,fnum)^,str1[1],length(str1));
@@ -750,9 +759,9 @@ begin
     ftFixedChar,
     ftString: begin
               int1:= sqlite3_column_bytes(st,fnum);
-              if int1>FieldDef.Size*FieldDef.CharSize then 
+              if int1>FieldDef.Size*FieldDef.CharSize then
                 int1:=FieldDef.Size*FieldDef.CharSize;
-              if int1 > 0 then 
+              if int1 > 0 then
                  move(sqlite3_column_text(st,fnum)^,buffer^,int1);
               PAnsiChar(buffer + int1)^ := #0;
               end;
@@ -840,7 +849,7 @@ end;
 
 procedure TSQLite3Connection.CommitRetaining(trans: TSQLHandle);
 begin
-  commit(trans);  
+  commit(trans);
   execsql('BEGIN');
 end;
 
@@ -872,6 +881,22 @@ begin
   For F in TSQLiteOpenFlags do
     if F in FOpenFlags then
       Result:=Result or NativeFlags[F];
+end;
+
+function TSQLite3Connection.GetAlwaysUseMemo: Boolean;
+begin
+  {$IFDEF VER3_2}
+  // Must be set to 1 to take effect
+  Result:=Params.Values[SUseMemo]='1'
+  {$ELSE}
+  // Must be set to 0 to disable
+  Result:=Params.Values[SUseMemo]<>'0'
+  {$ENDIF}
+end;
+
+procedure TSQLite3Connection.SetAlwaysUseMemo(const aValue: Boolean);
+begin
+   Params.Values[SUseMemo]:=IntToStr(Ord(aValue));
 end;
 
 
@@ -920,12 +945,12 @@ procedure TSQLite3Connection.DoInternalDisconnect;
 
 begin
   Inherited;
-  if fhandle <> nil then 
+  if fhandle <> nil then
     begin
     checkerror(sqlite3_close(fhandle));
     fhandle:= nil;
     ReleaseSQLite;
-    end; 
+    end;
 end;
 
 function TSQLite3Connection.GetHandle: pointer;
@@ -945,7 +970,7 @@ Var
   ErrCode : integer;
 
 begin
- if (aerror<>sqlite_ok) then 
+ if (aerror<>sqlite_ok) then
    begin
    ErrMsg := strpas(sqlite3_errmsg(fhandle));
    ErrCode := sqlite3_extended_errcode(fhandle);
@@ -961,12 +986,12 @@ var
 begin
  err:= nil;
  Res := sqlite3_exec(fhandle,PAnsiChar(asql),nil,nil,@err);
- if err <> nil then 
+ if err <> nil then
    begin
    str1:= strpas(err);
    sqlite3_free(err);
    end;
- if (res<>sqlite_ok) then 
+ if (res<>sqlite_ok) then
    databaseerror(str1);
 end;
 
@@ -980,11 +1005,11 @@ function execcallback(adata: pointer; ncols: longint; //adata = PStringArray
 var
   P : PStringArray;
   i : integer;
-  
+
 begin
-  P:=PStringArray(adata); 
+  P:=PStringArray(adata);
   SetLength(P^,ncols);
-  for i:= 0 to ncols - 1 do 
+  for i:= 0 to ncols - 1 do
     P^[i]:= strPas(avalues[i]);
   result:= 0;
 end;
@@ -995,14 +1020,14 @@ var
  I,N : integer;
  PP : PArrayStringArray;
  p  : PStringArray;
- 
+
 begin
  PP:=PArrayStringArray(adata);
  N:=high(PP^); // Length-1;
  setlength(PP^,N+2); // increase with 1;
  p:= @(PP^[N+1]); // newly added array, fill with data.
- setlength(p^,ncols); 
- for i:= 0 to ncols - 1 do 
+ setlength(p^,ncols);
+ for i:= 0 to ncols - 1 do
    p^[i]:= strPas(avalues[i]);
  result:= 0;
 end;
@@ -1015,7 +1040,7 @@ end;
 
 function TSQLite3Connection.GetSchemaInfoSQL(SchemaType: TSchemaType;
   SchemaObjectName, SchemaPattern: string): string;
-  
+
 begin
   case SchemaType of
     stTables     : result := 'select name as table_name from sqlite_master where type = ''table'' order by 1';
@@ -1058,51 +1083,52 @@ begin
   PKFields.Delimiter:=';';
   IXFields:=TStringList.Create;
   IXFields.Delimiter:=';';
-
-  //check for multipart unquoted identifier: DatabaseName.TableName
-  if Pos('"',TableName) = 0 then
-    i := Pos('.',TableName)
-  else
-    i := 0;
-  if i>0 then
-    begin
-    DbName := Copy(TableName,1,i);
-    Delete(TableName,1,i);
-    end
-  else
-    DbName := '';
-
-  //primary key fields; 5th column "pk" is zero for columns that are not part of PK
-  artableinfo := stringsquery('PRAGMA '+DbName+'table_info('+TableName+');');
-  for ii:=low(artableinfo) to high(artableinfo) do
-    if (high(artableinfo[ii]) >= 5) and (artableinfo[ii][5] >= '1') then
-      PKFields.Add(artableinfo[ii][1]);
-
-  //list of all table indexes
-  arindexlist:=stringsquery('PRAGMA '+DbName+'index_list('+TableName+');');
-  for il:=low(arindexlist) to high(arindexlist) do
-    begin
-    IndexName:=arindexlist[il][1];
-    if arindexlist[il][2]='1' then
-      IndexOptions:=[ixUnique]
+  try
+    //check for multipart unquoted identifier: DatabaseName.TableName
+    if Pos('"',TableName) = 0 then
+      i := Pos('.',TableName)
     else
-      IndexOptions:=[];
-    //list of columns in given index
-    arindexinfo:=stringsquery('PRAGMA index_info('+IndexName+');');
-    IXFields.Clear;
-    for ii:=low(arindexinfo) to high(arindexinfo) do
-      IXFields.Add(arindexinfo[ii][2]);
+      i := 0;
+    if i>0 then
+      begin
+      DbName := Copy(TableName,1,i);
+      Delete(TableName,1,i);
+      end
+    else
+      DbName := '';
 
-    if CheckPKFields then IndexOptions:=IndexOptions+[ixPrimary];
+    //primary key fields; 5th column "pk" is zero for columns that are not part of PK
+    artableinfo := stringsquery('PRAGMA '+DbName+'table_info('+TableName+');');
+    for ii:=low(artableinfo) to high(artableinfo) do
+      if (high(artableinfo[ii]) >= 5) and (artableinfo[ii][5] >= '1') then
+        PKFields.Add(artableinfo[ii][1]);
 
-    IndexDefs.Add(IndexName, IXFields.DelimitedText, IndexOptions);
-    end;
+    //list of all table indexes
+    arindexlist:=stringsquery('PRAGMA '+DbName+'index_list('+TableName+');');
+    for il:=low(arindexlist) to high(arindexlist) do
+      begin
+      IndexName:=arindexlist[il][1];
+      if arindexlist[il][2]='1' then
+        IndexOptions:=[ixUnique]
+      else
+        IndexOptions:=[];
+      //list of columns in given index
+      arindexinfo:=stringsquery('PRAGMA index_info('+IndexName+');');
+      IXFields.Clear;
+      for ii:=low(arindexinfo) to high(arindexinfo) do
+        IXFields.Add(arindexinfo[ii][2]);
 
-  if PKFields.Count > 0 then //in special case for INTEGER PRIMARY KEY column, unique index is not created
-    IndexDefs.Add('$PRIMARY_KEY$', PKFields.DelimitedText, [ixPrimary,ixUnique]);
+      if CheckPKFields then IndexOptions:=IndexOptions+[ixPrimary];
 
-  PKFields.Free;
-  IXFields.Free;
+      IndexDefs.Add(IndexName, IXFields.DelimitedText, IndexOptions);
+      end;
+
+    if PKFields.Count > 0 then //in special case for INTEGER PRIMARY KEY column, unique index is not created
+      IndexDefs.Add('$PRIMARY_KEY$', PKFields.DelimitedText, [ixPrimary,ixUnique]);
+  finally
+    PKFields.Free;
+    IXFields.Free;
+  end;
 end;
 
 function TSQLite3Connection.RowsAffected(cursor: TSQLCursor): TRowsCount;
@@ -1202,8 +1228,8 @@ var
   LoadResult: integer;
 begin
   CheckConnected; //Apparently we need a connection before we can load extensions.
-  LoadResult:=SQLITE_ERROR; //Default to failed  
-  try    
+  LoadResult:=SQLITE_ERROR; //Default to failed
+  try
     LoadResult:=sqlite3_enable_load_extension(fhandle, 1); //Make sure we are allowed to load
     if LoadResult=SQLITE_OK then
       begin

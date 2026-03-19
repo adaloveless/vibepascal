@@ -10,7 +10,7 @@
 {                                                          }
 {****************[ THIS CODE IS FREEWARE ]*****************}
 {                                                          }
-{     This sourcecode is released for the purpose to       }
+{     This source code is released for the purpose to      }
 {   promote the pascal language on all platforms. You may  }
 {   redistribute it and/or modify with the following       }
 {   DISCLAIMER.                                            }
@@ -90,13 +90,17 @@ const
   idStringCollection = 51;
   idStringList = 52;
   idStrListMaker = 52;
-  idStrCollection = 69;
+  idStrCollection = 53;
 
   { Resource Unit }
-  idMemStringList = 52;
+  idMemStringList = 54;
 
   { Tabs Unit }
   idTab = 55;
+
+  { Gadgets Unit }
+  idHeap = 58;
+  idClock = 59;
 
   { StdDlg Unit }
   idFileInputLine = 60;
@@ -176,7 +180,7 @@ const
 {
  The FVConsts unit contains all command constants used in the FreeVision
  library. They have been extracted from their original units and placed here
- for easier maintainence and modification to remove conflicts, such as Borland
+ for easier maintenance and modification to remove conflicts, such as Borland
  created with the cmChangeDir constant in the StdDlg and App units.
 }
 

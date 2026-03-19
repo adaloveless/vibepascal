@@ -62,7 +62,7 @@ uses
 
 const
   VersionMajor = 3;
-  VersionMinor = 1;
+  VersionMinor = 3;
   VersionRelease = 1;
   VersionExtra = '';
   DefaultConfigFile = 'pas2js.cfg';
@@ -154,6 +154,7 @@ type
     coWriteDebugLog,
     coWriteMsgToStdErr,
     coPrecompile, // create precompile file
+    coCheckOnly, // Do not analyze or create code. Only parse and resolve.
     // optimizations
     coEnumValuesAsNumbers, // -O1
     coKeepNotUsedPrivates, // -O-
@@ -218,6 +219,7 @@ const
     'Write pas2jsdebug.log',
     'Write messages to StdErr',
     'Create precompiled units',
+    'Skip analyze and convert stages.',
     'Enum values as numbers',
     'Keep not used private declarations',
     'Keep not used declarations (WPO)',
@@ -282,7 +284,7 @@ type
     function IndexOf(const aName: string): integer;
     procedure Delete(Index: integer);
     function FindMacro(const aName: string): TPas2jsMacro;
-    procedure Substitute(var s: string; Sender: TObject = nil; Lvl: integer = 0);
+    procedure Substitute(var s: string; Sender: TObject = nil; Lvl: integer = 0; SkipUnknown : boolean = false);
     property Macros[Index: integer]: TPas2jsMacro read GetMacros; default;
     property MaxLevel: integer read FMaxLevel write FMaxLevel;
   end;
@@ -928,8 +930,7 @@ begin
     Result:=nil;
 end;
 
-procedure TPas2jsMacroEngine.Substitute(var s: string; Sender: TObject;
-  Lvl: integer);
+procedure TPas2jsMacroEngine.Substitute(var s: string; Sender: TObject; Lvl: integer; SkipUnknown: boolean);
 // Rules:
 //   $macro or $macro$
 // if Macro.OnSubstitute is set then optional brackets are allowed: $macro(params)
@@ -951,37 +952,44 @@ begin
       MacroName:=copy(s,StartP+1,p-StartP-1);
       Macro:=FindMacro(MacroName);
       if Macro=nil then
-        raise EPas2jsMacro.Create('macro not found "'+MacroName+'" in "'+s+'"');
-      NewValue:='';
-      if Macro.CanHaveParams and (p<=length(s)) and (s[p]='(') then
       begin
-        // read NewValue
-        inc(p);
-        ParamStartP:=p;
-        BracketLvl:=1;
-        repeat
-          if p>length(s) then
-            raise EPas2jsMacro.Create('missing closing bracket ) in "'+s+'"');
-          case s[p] of
-          '(': inc(BracketLvl);
-          ')':
-            if BracketLvl=1 then
-            begin
-              NewValue:=copy(s,ParamStartP,p-ParamStartP);
-              break;
-            end else begin
-              dec(BracketLvl);
+        if not SkipUnknown then
+          raise EPas2jsMacro.Create('macro not found "'+MacroName+'" in "'+s+'"')
+        else
+          NewValue:='$'+MacroName;
+      end
+      else
+      begin
+        if Macro.CanHaveParams and (p<=length(s)) and (s[p]='(') then
+        begin
+          // read NewValue
+          inc(p);
+          ParamStartP:=p;
+          BracketLvl:=1;
+          repeat
+            if p>length(s) then
+              raise EPas2jsMacro.Create('missing closing bracket ) in "'+s+'"');
+            case s[p] of
+            '(': inc(BracketLvl);
+            ')':
+              if BracketLvl=1 then
+              begin
+                NewValue:=copy(s,ParamStartP,p-ParamStartP);
+                break;
+              end else begin
+                dec(BracketLvl);
+              end;
             end;
-          end;
-        until false;
-      end else if (p<=length(s)) and (s[p]='$') then
-        inc(p);
-      if Assigned(Macro.OnSubstitute) then
-      begin
-        if not Macro.OnSubstitute(Sender,NewValue,Lvl+1) then
-          raise EPas2jsMacro.Create('macro "'+MacroName+'" failed in "'+s+'"');
-      end else
-        NewValue:=Macro.Value;
+          until false;
+        end else if (p<=length(s)) and (s[p]='$') then
+          inc(p);
+        if Assigned(Macro) and Assigned(Macro.OnSubstitute) then
+        begin
+          if not Macro.OnSubstitute(Sender,NewValue,Lvl+1) then
+            raise EPas2jsMacro.Create('macro "'+MacroName+'" failed in "'+s+'"');
+        end else
+          NewValue:=Macro.Value;
+      end;
       s:=LeftStr(s,StartP-1)+NewValue+copy(s,p,length(s));
       p:=StartP;
     end;
@@ -2081,9 +2089,13 @@ begin
     FMainFile.ReadUnit;
     ProcessQueue;
 
+    if coCheckOnly in Options then
+      exit;
+
     // whole program optimization
     if MainFile.PasModule is TPasProgram then
       OptimizeProgram(MainFile);
+
 
     // check what files need building
     Checked:=CreateSetOfCompilerFiles(kcFilename);
@@ -2443,6 +2455,7 @@ Var
   LibModuleName : String;
 begin
   Handled:=true;
+  if Sender=nil then ;
   if aLibOptions<>'' then
     ParamFatal('[20210919141030] linklib options not supported');
 
@@ -3046,8 +3059,8 @@ begin
         Exc:=Exception(TObject(obj));
         {$ifdef NodeJS}
         {AllowWriteln}
-        if Exc.NodeJSError<>nil then
-          writeln(Exc.NodeJSError.stack);
+        if Exc.JSError<>nil then
+          writeln(Exc.JSError.stack);
         {AllowWriteln-}
         {$endif}
         Log.Log(mtFatal,Msg+': ('+Exc.ClassName+') '+Exc.Message);
@@ -3763,7 +3776,7 @@ begin
   begin
     C:=aValue[P];
     case C of
-    'D': // wite compiler date
+    'D': // write compiler date
       AppendInfo(GetCompiledDate);
     'V': // write short version
       AppendInfo(GetVersion(true));
@@ -3903,7 +3916,7 @@ begin
       Log.LogMsgIgnoreFilter(nHandlingOption,[QuoteStr(Param)]);
   if Param='' then exit;
   FCurParam:=Param;
-  ParamMacros.Substitute(Param,Self);
+  ParamMacros.Substitute(Param,Self,0,True);
   if Param='' then exit;
 
   if Quick and ((Param='-h') or (Param='-?') or (Param='--help')) then
@@ -4104,6 +4117,7 @@ begin
       if MainSrcFile<>'' then
         ParamFatal('Only one Pascal file is supported, but got "'+MainSrcFile+'" and "'+Param+'".');
       MainSrcFile:=ExpandFileName(Param);
+      Writeln('Info: MainSrcFile ',Param,' -> ',MainSrcFile);
     end;
   end;
 end;
@@ -4150,12 +4164,13 @@ var
   Enabled, Disabled: string;
   i: Integer;
 begin
-  ReadSingleLetterOptions(Param,p,'orR',Enabled,Disabled);
+  ReadSingleLetterOptions(Param,p,'orRN',Enabled,Disabled);
   for i:=1 to length(Enabled) do begin
     case Enabled[i] of
     'o': Options:=Options+[coOverflowChecks];
     'r': Options:=Options+[coRangeChecks];
     'R': Options:=Options+[coObjectChecks];
+    'N': Options:=Options+[coCheckOnly];
     end;
   end;
   for i:=1 to length(Disabled) do begin
@@ -4163,6 +4178,7 @@ begin
     'o': Options:=Options-[coOverflowChecks];
     'r': Options:=Options-[coRangeChecks];
     'R': Options:=Options-[coObjectChecks];
+    'N': Options:=Options-[coCheckOnly];
     end;
   end;
 end;
@@ -4830,6 +4846,7 @@ begin
   w('    -iJ  : Write list of supported JavaScript identifiers -JoRTL-<x>');
   w('  -C<x>  : Code generation options. <x> is a combination of the following letters:');
   // -C3        Turn on ieee error checking for constants
+  w('    N    : Skip analysis and conversion. Only parse and resolve.');
   w('    o    : Overflow checking of integer operations');
   // -CO        Check for possible overflow of integer operations
   w('    r    : Range checking');

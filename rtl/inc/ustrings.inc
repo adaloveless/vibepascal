@@ -40,13 +40,13 @@ Type
     CodePage    : TSystemCodePage;
     ElementSize : Word;
 {$if not defined(VER3_2)}
-  {$ifdef CPU64}	
+  {$ifdef CPU64}
     Ref         : Longint;
   {$else}
     Ref         : SizeInt;
   {$endif}
 {$else}
-  {$ifdef CPU64}	
+  {$ifdef CPU64}
     { align fields  }
 	Dummy       : DWord;
   {$endif CPU64}
@@ -501,7 +501,7 @@ begin
       if not Assigned(p) then
         continue;
       if p=OldDestP then
-        { DestS occured among pieces in the ReallocMem case! Use the new pointer. Its header still conveniently contains old DestS length. }
+        { DestS occurred among pieces in the ReallocMem case! Use the new pointer. Its header still conveniently contains old DestS length. }
         p:=NewDestP;
       Size:=PUnicodeRec(p-UnicodeFirstOff)^.Len*sizeof(UnicodeChar);
       dec(pc,size);
@@ -997,13 +997,13 @@ begin
   Len:=Length(temp);
   // Only move when we have room.
   if (UnicodeStrLen>0) then
-    begin  
+    begin
     if UnicodeStrLen<=Len then
       Len:=UnicodeStrLen-1;
     move(temp[1],UnicodeStr^,Len*SizeOf(WideChar));
     UnicodeStr[Len]:=#0;
     end;
-  // Return length  
+  // Return length
   result:=len;
 end;
 {$endif ndef FPC_HAS_UNICODEFROMLOCALECHARS}
@@ -1124,27 +1124,33 @@ end;
 Function Fpc_UnicodeStr_Copy (Const S : UnicodeString; Index,Size : SizeInt) : UnicodeString;compilerproc;
 var
   Lim : SizeInt;
-  ResultAddress : Pointer;
+  ResultAddress,PhysResultAddress : Pointer;
 begin
-  ResultAddress:=Nil;
   if Index < 1 then
     Index := 1;
   dec(index);
   Lim:=Length(S)-Index; { Cannot overflow as both Length(S) and Index are non-negative. }
   if Size>Lim then
    Size:=Lim;
-  If Size>0 then
+  if (Size>0) and Assigned(Pointer(Result)) and (PUnicodeRec(Pointer(Result)-UnicodeFirstOff)^.Ref=1) then
    begin
+     PhysResultAddress:=Pointer(Result)-UnicodeFirstOff;
+     ResultAddress:=ReallocMem(PhysResultAddress,Size*sizeof(UnicodeChar)+(UnicodeFirstOff+sizeof(UnicodeChar)))+UnicodeFirstOff;
+   end
+  else
+   begin
+     fpc_unicodestr_decr_ref(Pointer(Result));
+     if Size<=0 then
+       exit;
      ResultAddress:=GetMem(Size*sizeof(UnicodeChar)+(UnicodeFirstOff+sizeof(UnicodeChar)))+UnicodeFirstOff;
-     PUnicodeRec(ResultAddress-UnicodeFirstOff)^.CodePage:=DefaultUnicodeCodePage;
-     PUnicodeRec(ResultAddress-UnicodeFirstOff)^.ElementSize:=sizeof(UnicodeChar);
-     PUnicodeRec(ResultAddress-UnicodeFirstOff)^.Ref:=1;
-     PUnicodeRec(ResultAddress-UnicodeFirstOff)^.Len:=Size;
-     Move (PUnicodeChar(Pointer(S))[Index],ResultAddress^,Size*sizeof(UnicodeChar));
-     PUnicodeChar(ResultAddress)[Size]:=#0;
    end;
-  fpc_unicodestr_decr_ref(Pointer(fpc_unicodestr_copy));
-  Pointer(fpc_unicodestr_Copy):=ResultAddress;
+  Pointer(Result):=ResultAddress;
+  PUnicodeRec(ResultAddress-UnicodeFirstOff)^.CodePage:=DefaultUnicodeCodePage;
+  PUnicodeRec(ResultAddress-UnicodeFirstOff)^.ElementSize:=sizeof(UnicodeChar);
+  PUnicodeRec(ResultAddress-UnicodeFirstOff)^.Ref:=1;
+  PUnicodeRec(ResultAddress-UnicodeFirstOff)^.Len:=Size;
+  Move(PUnicodeChar(Pointer(S))[Index],ResultAddress^,Size*sizeof(UnicodeChar));
+  PUnicodeChar(ResultAddress)[Size]:=#0;
 end;
 {$endif FPC_HAS_UNICODESTR_COPY}
 
@@ -1922,19 +1928,14 @@ function UTF8Encode(const s : RawByteString) : RawByteString; inline;
 {$define FPC_HAS_UTF8ENCODE_UNICODESTRING}
 function UTF8Encode(const s : UnicodeString) : RawByteString;
   var
-    i : SizeInt;
-    hs : UTF8String;
+    ns : SizeInt;
   begin
     result:='';
     if Length(s)=0 then
       exit;
-    SetLength(hs,length(s)*3);
-    i:=UnicodeToUtf8(pansichar(hs),length(hs)+1,PUnicodeChar(s),length(s));
-    if i>0 then
-      begin
-        SetLength(hs,i-1);
-        result:=hs;
-      end;
+    ns:=Length(s);
+    SetLength(utf8string(result),ns*3);
+    SetLength(utf8string(result),UnicodeToUtf8(pointer(result),ns*3+1,pointer(s),ns)-1); { SetLength(-1) is equivalent to SetLength(0). }
   end;
 {$endif FPC_HAS_UTF8ENCODE_UNICODESTRING}
 
@@ -1943,19 +1944,14 @@ function UTF8Encode(const s : UnicodeString) : RawByteString;
 {$define FPC_HAS_UTF8DECODE_UNICODESTRING}
 function UTF8Decode(const s : RawByteString): UnicodeString;
   var
-    i : SizeInt;
-    hs : UnicodeString;
+    ns : SizeInt;
   begin
     result:='';
     if Length(s)=0 then
       exit;
-    SetLength(hs,length(s));
-    i:=Utf8ToUnicode(PUnicodeChar(hs),length(hs)+1,pansichar(s),length(s));
-    if i>0 then
-      begin
-        SetLength(hs,i-1);
-        result:=hs;
-      end;
+    ns:=Length(s);
+    SetLength(result,ns);
+    SetLength(result,Utf8ToUnicode(pointer(result),ns+1,pointer(s),ns)-1);
   end;
 {$endif FPC_HAS_UTF8DECODE_UNICODESTRING}
 
@@ -2295,16 +2291,16 @@ begin
   Result:=(localename='UTF-8') or (localename='UTF8');
   if Result then
     CodePage:=CP_UTF8
-  else 
+  else
     begin
     Result:=(localename='UTF-7') or (localename='UTF7');
-    if Result then  
+    if Result then
       CodePage:=CP_UTF7
-    else 
+    else
       begin
       Result:=Assigned(LocaleNameToCodePageCallBack);
       If Result then
         LocaleNameToCodePageCallBack(LocaleName,CodePage,Result);
       end;
-    end;  
+    end;
 end;

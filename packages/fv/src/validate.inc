@@ -9,7 +9,7 @@
 {                                                          }
 {****************[ THIS CODE IS FREEWARE ]*****************}
 {                                                          }
-{     This sourcecode is released for the purpose to       }
+{     This source code is released for the purpose to      }
 {   promote the pascal language on all platforms. You may  }
 {   redistribute it and/or modify with the following       }
 {   DISCLAIMER.                                            }
@@ -106,7 +106,7 @@ USES
 {---------------------------------------------------------------------------}
 CONST
    vsOk     = 0;                                      { Validator ok }
-   vsSyntax = 1;                                      { Validator sytax err }
+   vsSyntax = 1;                                      { Validator syntax err }
 
 {---------------------------------------------------------------------------}
 {                           VALIDATOR OPTION MASKS                          }
@@ -186,7 +186,6 @@ TYPE
          ValidChars: CharSet;                         { Valid AnsiChar set }
       CONSTRUCTOR Init (AValidChars: CharSet);
       CONSTRUCTOR Load (Var S: TStream);
-      FUNCTION IsValid (CONST S: Sw_String): Boolean; Virtual;
       FUNCTION IsValidInput (Var S: Sw_String;
         SuppressFill: Boolean): Boolean; Virtual;
       PROCEDURE Error; Virtual;
@@ -859,25 +858,13 @@ BEGIN
 END;
 
 {--TFilterValidator---------------------------------------------------------}
-{  IsValid -> Platforms DOS/DPMI/WIN/NT/OS2 - Updated 18May98 LdB           }
-{---------------------------------------------------------------------------}
-FUNCTION TFilterValidator.IsValid (Const S: Sw_String): Boolean;
-VAR I: SmallInt;
-BEGIN
-   I := 1;                                            { Start at position 1 }
-   While S[I] In ValidChars Do Inc(I);                { Check each AnsiChar }
-   If (I > Length(S)) Then IsValid := True Else       { All characters valid }
-     IsValid := False;                                { Invalid characters }
-END;
-
-{--TFilterValidator---------------------------------------------------------}
 {  IsValidInput -> Platforms DOS/DPMI/WIN/NT/OS2 - Updated 18May98 LdB      }
 {---------------------------------------------------------------------------}
 FUNCTION TFilterValidator.IsValidInput (Var S: Sw_String; SuppressFill: Boolean): Boolean;
 VAR I: SmallInt;
 BEGIN
    I := 1;                                            { Start at position 1 }
-   While S[I] In ValidChars Do Inc(I);                { Check each AnsiChar }
+   While(Length(S)>=I)and(S[I]In ValidChars)Do Inc(I);{ Check each AnsiChar }
    If (I > Length(S)) Then IsValidInput := True       { All characters valid }
      Else IsValidInput := False;                      { Invalid characters }
 END;
@@ -946,7 +933,7 @@ END;
 FUNCTION TRangeValidator.Transfer (Var S: Sw_String; Buffer: Pointer; Flag: TVTransfer): Word;
 VAR Value: LongInt; Code: Sw_Integer;
 BEGIN
-   If (Options AND voTransfer <> 0) Then Begin        { Tranfer mask set }
+   If (Options AND voTransfer <> 0) Then Begin        { Transfer mask set }
      Transfer := SizeOf(Value);                       { Transfer a longint }
      Case Flag Of
        vtGetData: Begin
@@ -1020,7 +1007,7 @@ END;
 CONSTRUCTOR TStringLookUpValidator.Load (Var S: TStream);
 BEGIN
    Inherited Load(S);                                 { Call ancestor }
-   Strings := PStringCollection(S.Get);               { Fecth string list }
+   Strings := PStringCollection(S.Get);               { Fetch string list }
 END;
 
 {--TStringLookUpValidator---------------------------------------------------}
@@ -1028,7 +1015,7 @@ END;
 {---------------------------------------------------------------------------}
 DESTRUCTOR TStringLookUpValidator.Done;
 BEGIN
-   NewStringList(Nil);                                { Dispsoe string list }
+   NewStringList(Nil);                                { Dispose string list }
    Inherited Done;                                    { Call ancestor }
 END;
 

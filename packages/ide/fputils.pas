@@ -2,7 +2,7 @@
     This file is part of the Free Pascal Integrated Development Environment
     Copyright (c) 1998 by Berczi Gabor
 
-    Utilility routines used by the IDE
+    Utility routines used by the IDE
 
     See the file COPYING.FPC, included in this distribution,
     for details about the copyright.
@@ -72,6 +72,8 @@ function EraseFile(FileName: string): boolean;
 function GetStr(const P: PString): string;
 procedure ReplaceStr(var S: string; const What,NewS: string);
 procedure ReplaceStrI(var S: string; What: string; const NewS: string);
+function CalcMiddleDelta( Wi, Delta,  A, B : Sw_Integer):Sw_Integer;
+
 
 const ListSeparator      : AnsiChar = ';';
 
@@ -526,5 +528,24 @@ begin
   until I=0;
 end;
 
+function CalcMiddleDelta( Wi, Delta,  A, B : Sw_Integer):Sw_Integer;
+var  oWi, NewMid, Mid, DeltaWidth : Sw_Integer;
+begin
+  if Wi <= (B-A) then
+  begin
+    DeltaWidth:=-A;
+    CalcMiddleDelta:=DeltaWidth;
+    exit;
+  end;
+  oWi := Max(1,Wi-Delta);
+  Mid:=A+((B-A) div 2);
+  NewMid:= round((Wi*Mid) / oWi);
+  DeltaWidth:=(NewMid-(B-A) div 2)-A;
+  if (A+DeltaWidth) < 0 then
+    DeltaWidth:=-A;
+  if (A+DeltaWidth) >= (Wi-1) then
+    DeltaWidth:=Wi-A-1;
+  CalcMiddleDelta:=DeltaWidth;
+end;
 
 END.

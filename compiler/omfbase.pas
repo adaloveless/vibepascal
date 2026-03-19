@@ -27,6 +27,7 @@ unit omfbase;
 interface
 {$H+}
   uses
+    sysutils,
     cclasses,
     aasmbase,
     owbase;
@@ -88,7 +89,8 @@ interface
       'stack',
       'heap',
       'gcc_except_table',
-      'ARM_attributes'
+      'ARM_attributes',
+      'note'
     );
 
     { OMF record types }
@@ -2395,6 +2397,7 @@ implementation
   destructor TOmfSubRecord_LINNUM_MsLink_LineNumberList.Destroy;
     begin
       FLineNumbers.Free;
+      FLineNumbers := nil;
       inherited Destroy;
     end;
 
@@ -2514,8 +2517,8 @@ implementation
     begin
       for t in TOmfFixupThread do
         begin
-          FTargetThreads[t].Free;
-          FFrameThreads[t].Free;
+          FreeAndNil(FTargetThreads[t]);
+          FreeAndNil(FFrameThreads[t]);
         end;
       inherited Destroy;
     end;
@@ -2966,7 +2969,8 @@ implementation
         {stack} 'STACK',
         {heap} 'HEAP',
         {gcc_except_table} 'DATA',
-        {ARM_attributes} 'DATA'
+        {ARM_attributes} 'DATA',
+        {note} 'DATA'
       );
     begin
       result:=segclass[atype];

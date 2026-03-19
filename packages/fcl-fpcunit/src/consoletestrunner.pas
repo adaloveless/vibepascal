@@ -27,22 +27,22 @@ interface
 
 {$IFDEF FPC_DOTTEDUNITS}
 uses
-  Fcl.CustApp, System.Classes, System.SysUtils, FpcUnit.Test, FpcUnit.Registry, FpcUnit.Utils,
-  FpcUnit.Reports, FpcUnit.Reports.LaTeX, FpcUnit.Reports.XMLTest, FpcUnit.Reports.Plain,
-  FpcUnit.Reports.JUnit, Xml.Dom;
+  Fcl.CustApp, System.Classes, System.SysUtils, System.IniFiles, FpcUnit.Test,
+  FpcUnit.Registry, FpcUnit.Utils, FpcUnit.Reports, FpcUnit.Reports.LaTeX,
+  FpcUnit.Reports.XMLTest, FpcUnit.Reports.Plain, FpcUnit.Reports.JUnit, Xml.Dom;
 {$ELSE FPC_DOTTEDUNITS}
 uses
-  custapp, Classes, SysUtils, fpcunit, testregistry, testutils,
+  custapp, Classes, SysUtils, inifiles, fpcunit, testregistry, testutils,
   fpcunitreport, latextestreport, xmltestreport, plaintestreport,
   junittestreport, dom;
 {$ENDIF FPC_DOTTEDUNITS}
 
 const
-  Version = '0.3';
+  Version = '0.5';
 
 type
   TFormat = (fPlain, fLatex, fXML, fPlainNoTiming, fJUnit);
-  TRunMode = (rmUnknown,rmList,rmSuite,rmAll);
+  TRunMode = (rmUnknown,rmHelp,rmList,rmSuite,rmAll);
 
 var
   DefaultFormat : TFormat = fXML;
@@ -63,19 +63,27 @@ type
     FSkipAddressInfo : Boolean;
     FSuite: String;
     FRunMode : TRunMode;
+    FNoExitCodeOnError : boolean;
     procedure DoStatus(const msg: string);
   protected
+    const
+      CDefaultsFileNameConst = 'testdefaults.ini';
+      CDefaultsFileNameEnvVar = 'FPCUNITCONFIG';
+      CDefaultsFileIniSection = 'defaults';
+    function DefaultsFileName: String; virtual;
+    procedure ReadCustomDefaults(Ini: TMemIniFile; Section: string); virtual;
+    procedure ReadDefaults; virtual;
+  protected
     Class function StrToFormat(const S: String): TFormat;
-    function DefaultsFileName: String;
     procedure RunSuite; virtual;
     procedure ShowTestList; virtual;
-    procedure ReadDefaults; virtual;
     procedure Usage; virtual;
     property FileName: string read FFileName write FFileName;
     property LongOpts: TStrings read FLongOpts write FLongOpts;
     property ShowProgress: boolean read FShowProgress write FShowProgress;
     property StyleSheet: string read FStyleSheet write FStyleSheet;
     property FormatParam: TFormat read FFormatParam write FFormatParam;
+    property NoExitCodeOnError : boolean read FNoExitCodeOnError Write FNoExitCodeOnError;
     procedure DoRun; override;
     procedure DoTestRun(ATest: TTest); virtual;
     function GetShortOpts: string; virtual;
@@ -92,16 +100,65 @@ type
 implementation
 
 {$IFDEF FPC_DOTTEDUNITS}
-uses System.IniFiles, FpcUnit.Decorator;
+uses FpcUnit.Decorator;
 {$ELSE FPC_DOTTEDUNITS}
-uses inifiles, testdecorator;
+uses testdecorator;
 {$ENDIF FPC_DOTTEDUNITS}
 
 const
-  ShortOpts = 'alhpsyrnu';
-  DefaultLongOpts: array[1..12] of string =
-     ('all', 'list', 'progress', 'help', 'skiptiming',
-      'suite:', 'format:', 'file:', 'stylesheet:','sparse','no-addresses','status');
+  ArgHelp = 'help';
+  ArgList = 'list';
+  ArgAll = 'all';
+  ArgSuite = 'suite';
+  ArgFormat = 'format';
+  ArgSkipTiming = 'skiptiming';
+  ArgSparse = 'sparse';
+  ArgNoAddresses = 'no-addresses';
+  ArgStyleSheet = 'stylesheet';
+  ArgProgress = 'progress';
+  ArgStatus = 'status';
+  ArgNoExitCode = 'no-exitcode';
+  ArgFile = 'file';
+  ArgNoConfig = 'no-config';
+
+const
+  ShortOpts =
+    'h'+ // ArgHelp
+    'l'+ // ArgList
+    'a'+ // ArgAll
+    's:'+ // ArgSuite (requires value)
+    't'+ // ArgSkipTiming
+    'q'+ // ArgSparse
+    'd'+ // ArgNoAddresses
+    'y:'+ // ArgStyleSheet (requires value)
+    'p'+ // ArgProgress
+    'u'+ // ArgStatus
+    'x'+ // ArgNoExitCode
+    'f:'+ // ArgFile (requires value)
+    'n'; // ArgNoConfig
+  DefaultLongOpts: array[1..14] of string = (
+    ArgHelp,
+    ArgList,
+    ArgAll,
+    ArgSuite+':', // requires value
+    ArgFormat+':', // requires value
+    ArgSkipTiming,
+    ArgSparse,
+    ArgNoAddresses,
+    ArgStyleSheet+':', // requires value
+    ArgProgress,
+    ArgStatus,
+    ArgNoExitCode,
+    ArgFile+':', // requires value
+    ArgNoConfig
+  );
+
+const
+  ValXML = 'xml';
+  ValPlain = 'plain';
+  ValPlainNoTiming = 'plainnotiming';
+  ValLatex = 'latex';
+  ValJUnit = 'junit';
 
 Type
   TTestDecoratorClass = Class of TTestDecorator;
@@ -161,7 +218,7 @@ end;
 
 destructor TProgressWriter.Destroy;
 begin
-  // on descruction, just write the missing line ending
+  // on destruction, just write the missing line ending
   writeln;
   inherited Destroy;
 end;
@@ -235,6 +292,7 @@ begin
   FLongOpts := TStringList.Create;
   AppendLongOpts;
   StopOnException:=True;
+  NoExitCodeOnError:=false;
 end;
 
 destructor TTestRunner.Destroy;
@@ -249,14 +307,13 @@ begin
 end;
 
 class function TTestRunner.StrToFormat(const S: String): TFormat;
-
 begin
   Case lowercase(S) of
-    'latex': Result:=fLatex;
-    'plain': Result:=fPlain;
-    'plainnotiming': Result:=fPlainNoTiming;
-    'xml': Result:=fXML;
-    'junit': Result:=fJUnit;
+    ValXML:           Result := fXML;
+    ValPlain:         Result := fPlain;
+    ValPlainNoTiming: Result := fPlainNoTiming;
+    ValLatex:         Result := fLatex;
+    ValJUnit:         Result := fJUnit;
   else
     Raise EConvertError.CreateFmt('Not a valid output format : "%s"',[S]);
   end;
@@ -300,7 +357,7 @@ begin
     ATest.Run(TestResult);
     ResultsWriter.WriteResult(TestResult);
   finally
-    if Assigned(ProgressWriter) then
+    if Assigned(ProgressWriter) and not NoExitCodeOnError then
       ExitCode:=ProgressWriter.GetExitCode;
     TestResult.Free;
     ResultsWriter.Free;
@@ -332,71 +389,97 @@ begin
     writeln(Title);
     writeln(Version);
     writeln;
-    writeln('Usage: ');
-    writeln('  --format=FMT        Select output format. FMT is one of:');
-    writeln('    latex            output as latex');
-    writeln('    plain            output as plain ASCII source');
-    writeln('    plainnotiming    output as plain ASCII source, skip timings');
-    writeln('    xml              output as XML source (default)');
-    writeln('    junit            output as JUnit compatible XML source');
-    writeln('  --skiptiming              Do not output timings (useful for diffs of testruns)');
-    writeln('  -r or --sparse            Produce Less output (errors/failures only)');
-    writeln('  -n or --no-addresses      Do not display address info');
-    writeln('  -y or --stylesheet=<reference>   add stylesheet reference');
-    writeln('  --file=<filename>         output results to file');
+    writeln('Commands:');
+    writeln('  -h or --',ArgHelp,'              Show help and version');
+    writeln('  -l or --',ArgList,'              Show a list of registered tests');
+    writeln('  -a or --',ArgAll,'               Run all registered tests');
+    writeln('  -s or --',ArgSuite,'=<name>      Run a test suite with the specified name, or all test suites');
+    writeln(       '                            of the specified class (a descendant of the TTestCase)');
     writeln;
-    writeln('  -l or --list              show a list of registered tests');
-    writeln('  -a or --all               run all tests');
-    writeln('  -p or --progress          show progress');
-    writeln('  -u or --status            show status messages on stderr');
-    writeln('  -s or --suite=MyTestSuiteName   run single test suite class');
+    writeln('Options:');
+    writeln('  --',ArgFormat,'=<FMT>            Select output format, <FMT> is one of:');
+    writeln('    ',ValXML,'                       output as XML source (default)');
+    writeln('    ',ValPlain,'                     output as plain ASCII source');
+    writeln('    ',ValPlainNoTiming,'             output as plain ASCII source, skip timings');
+    writeln('    ',ValLatex,'                     output as latex');
+    writeln('    ',ValJUnit,'                     output as JUnit compatible XML source');
+    writeln('  -t or --',ArgSkipTiming,'        Do not output timings (useful for diffs of test runs)');
+    writeln('  -q or --',ArgSparse,'            Produce less output (errors/failures only)');
+    writeln('  -d or --',ArgNoAddresses, '      Do not display address info');
+    writeln('  -y or --',ArgStyleSheet,'=<ref>  Add stylesheet reference');
+    writeln('  -p or --',ArgProgress,'          Show progress');
+    writeln('  -u or --',ArgStatus,'            Show status messages on stderr');
+    writeln('  -x or --',ArgNoExitCode, '       Do not set exit code on errors');
+    writeln('  -f or --',ArgFile,'=<filename>   Output results to file');
+    writeln('  -n or --',ArgNoConfig, '         Do not read the configuration file');
     WriteCustomHelp;
     writeln;
-    Writeln('Defaults for long options will be read from ini file ',DefaultsFileName);
-    writeln('The results can be redirected to a file,');
-    writeln('for example: ', ParamStr(0),' --all > results.xml');
+    writeln('Configuration file:');
+    writeln('  Defaults for long options can be specified in the "',CDefaultsFileNameConst,'" file in the executable folder.');
+    writeln('  The path to this file can be overridden by the environment variable "',CDefaultsFileNameEnvVar,'".');
+    writeln('  All values must be located in "[',CDefaultsFileIniSection,']" section, the option names specified without the "--" sign.');
+    writeln('  The value of logical options indicated via "1"/"0". Example file contents:');
+    writeln('    [',CDefaultsFileIniSection,']');
+    writeln('    ',ArgAll,'=1');
+    writeln('    ',ArgFormat,'=',ValPlain);
+    writeln('    ',ArgSparse,'=1');
+    writeln('  Command line options take precedence and override the values in this file.');
 end;
 
 Function TTestRunner.DefaultsFileName : String;
 
 begin
-  Result:=GetEnvironmentVariable('FPCUNITCONFIG');
-  if (Result='') then
-    Result:=Location+'testdefaults.ini';
+  Result:=GetEnvironmentVariable(CDefaultsFileNameEnvVar);
+  if Result='' then
+    Result:=CDefaultsFileNameConst;
+  Result:=ExpandFileName(Result,Location);
+end;
+
+procedure TTestRunner.ReadCustomDefaults(Ini: TMemIniFile; Section: string);
+var
+  s: string;
+begin
+  // Determine runmode (ArgHelp option may be useful in the config due to DefaultRunAllTests)
+  FSuite:=Ini.ReadString(Section,ArgSuite,'');
+  if Ini.ReadBool(Section,ArgHelp,false) then
+    FRunMode:=rmHelp
+  else if FSuite<>'' then
+    FRunMode:=rmSuite
+  else if Ini.ReadBool(Section,ArgAll,false) then
+    FRunMode:=rmAll
+  else if Ini.ReadBool(Section,ArgList,false) then
+    FRunMode:=rmList;
+  // Other options
+  s:=Ini.ReadString(Section,ArgFormat,'');
+  if s<>'' then
+    FormatParam:=StrToFormat(s); // raise exception on error
+  FSkipTiming:=Ini.ReadBool(Section,ArgSkipTiming,FSKipTiming);
+  FSparse:=Ini.ReadBool(Section,ArgSparse,FSparse);
+  FSkipAddressInfo:=Ini.ReadBool(Section,ArgNoAddresses,FSkipAddressInfo);
+  StyleSheet:=Ini.ReadString(Section,ArgStyleSheet,StyleSheet);
+  ShowProgress:=Ini.ReadBool(Section,ArgProgress,ShowProgress);
+  if Ini.ReadBool(Section,ArgStatus,false) then
+    TAssert.StatusEvent:=@DoStatus;
+  NoExitCodeOnError:=Ini.ReadBool(Section,ArgNoExitCode,FNoExitCodeOnError);
+  FileName:=Ini.ReadString(Section,ArgFile,FileName);
+  // (there is no point in reading the ArgNoConfig option here)
 end;
 
 procedure TTestRunner.ReadDefaults;
-
-Const
-  S = 'defaults';
-
-Var
-  Ini : TMemIniFile;
-  FN,F : String;
-
+var
+  Ini: TMemIniFile;
+  FN: string;
 begin
   FN:=DefaultsFileName;
   if FileExists(FN) then
     begin
     Ini:=TMemIniFile.Create(FN);
     try
-      F:=Ini.ReadString(S,'format','');
-      if (F<>'') then
-        FormatParam:=StrToFormat(F);
-      FileName:=Ini.ReadString(S,'file',FileName);
-      StyleSheet:=Ini.ReadString(S,'stylesheet',StyleSheet);
-      ShowProgress:=Ini.ReadBool(S,'progress',ShowProgress);
-      FSkipTiming:=Ini.ReadBool(S,'skiptiming',FSKipTiming);
-      FSparse:=Ini.ReadBool(S,'sparse',FSparse);
-      FSkipAddressInfo:=Ini.ReadBool(S,'no-addresses',FSkipAddressInfo);
-      // Determine runmode
-      FSuite:=Ini.ReadString(S,'suite','');
-      if (FSuite<>'') then
-        FRunMode:=rmSuite
-      else if Ini.ReadBool(S,'all', false) then
-        FRunMode:=rmAll
-      else if Ini.ReadBool(S,'list',False) then
-        FRunMode:=rmList;
+      Ini.Options:=Ini.Options+[ifoStripQuotes];
+      Ini.SetBoolStringValues(true,['1','true','y','yes','on']);
+      Ini.SetBoolStringValues(false,['0','false','n','no','off']);
+
+      ReadCustomDefaults(Ini,CDefaultsFileIniSection);
     finally
       Ini.Free;
     end;
@@ -407,40 +490,43 @@ Function TTestRunner.ParseOptions : Boolean;
 
 begin
   Result:=True;
-  if HasOption('h', 'help') or ((ParamCount = 0) and (FRunMode<>rmAll)) then
-    begin
-    Usage;
-    if not HasOption('h','help') then
-      ExitCode:=1;
-    Exit(False);
-    end;
-  //get the format parameter
-  if HasOption('format') then
-    FormatParam:=StrToFormat(GetOptionValue('format'));
-  if HasOption('file') then
-    FileName:=GetOptionValue('file');
-  if HasOption('y','stylesheet') then
-    StyleSheet:=GetOptionValue('y','stylesheet');
-  if HasOption('p', 'progress') then
-    ShowProgress:=True;
-  if HasOption('skiptiming') then
-    FSkipTiming:=True;
-  if HasOption('r','sparse') then
-    FSparse:=True;
-  If HasOption('n','no-addresses') then
-    FSkipAddressInfo:=True;
-  If HasOption('u','status') then
-    TAssert.StatusEvent:=@DoStatus;
   // Determine runmode
-  if HasOption('s','suite') then
+  if HasOption('h', ArgHelp) then
+    FRunMode:=rmHelp
+  else if HasOption('s',ArgSuite) then
     begin
-    FSuite:=GetOptionValue('s','suite');
+    FSuite:=GetOptionValue('s',ArgSuite);
     FRunMode:=rmSuite;
     end
-  else If HasOption('a','all') then
+  else If HasOption('a',ArgAll) then
     FRunMode:=rmAll
-  else if HasOption('l','list') then
-    FRunMode:=rmList;
+  else if HasOption('l',ArgList) then
+    FRunMode:=rmList
+  else if FRunMode = rmUnknown then // FRunMode could have been set earlier in ReadDefaults or due DefaultRunAllTests
+    begin
+    Usage;
+    ExitCode:=1;
+    exit;
+    end;
+  // Other options
+  if HasOption(ArgFormat) then
+    FormatParam:=StrToFormat(GetOptionValue(ArgFormat));
+  if HasOption('t',ArgSkipTiming) then
+    FSkipTiming:=True;
+  if HasOption('q',ArgSparse) then
+    FSparse:=True;
+  If HasOption('d',ArgNoAddresses) then
+    FSkipAddressInfo:=True;
+  if HasOption('y',ArgStyleSheet) then
+    StyleSheet:=GetOptionValue('y',ArgStyleSheet);
+  if HasOption('p', ArgProgress) then
+    ShowProgress:=True;
+  If HasOption('u',ArgStatus) then
+    TAssert.StatusEvent:=@DoStatus;
+  if HasOption('x',ArgNoExitCode) then
+    NoExitCodeOnError:=True;
+  if HasOption('f',ArgFile) then
+    FileName:=GetOptionValue('f',ArgFile);
 end;
 
 procedure TTestRunner.ExtendXmlDocument(Doc: TXMLDocument);
@@ -528,18 +614,23 @@ begin
   if (S <> '') then
     begin
     Writeln(S);
-    Exit;
-    end;
-  ReadDefaults;
-  if Not ParseOptions then
+    ExitCode:=1;
     exit;
-  //get a list of all registed tests
+    end;
+  if not HasOption('n',ArgNoConfig) then
+    ReadDefaults;
+  if not ParseOptions then
+    begin
+    ExitCode:=1;
+    exit;
+    end;
   Case FRunMode of
+    rmHelp: Usage;
     rmList: ShowTestList;
     rmSuite: RunSuite;
     rmAll: DoTestRun(GetTestRegistry);
-  else
-    Usage
+  else // rmUnknown
+    // do not set the ExitCode here so as not to overwrite the code set in ParseOptions
   end;
 end;
 

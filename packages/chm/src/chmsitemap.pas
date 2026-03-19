@@ -112,6 +112,8 @@ type
     procedure AddURL(const URL:string);
     procedure AddType(const AType:string);
     procedure Sort(Compare: TListSortCompare);
+  public
+    property SubItem[ index :integer]:TChmSiteMapSubItem read getsubitem;
   published
     property Children: TChmSiteMapItems read FChildren write SetChildren;
     property Name: String read FName write FName;
@@ -126,7 +128,6 @@ type
     property FrameName: String read FFrameName write FFrameName;
     property WindowName: String read FWindowName write FWindowName;
     property Merge: String read FMerge write FMerge;
-    property SubItem[ index :integer]:TChmSiteMapSubItem read getsubitem;
     property SubItemcount  :integer read getsubitemcount;
   end;
 
@@ -158,17 +159,17 @@ type
     property InternalData: Dword read FInternalData write FInternalData;
     property ParentName : String read getparentname;
   end;
-  
+
 
   { TChmSiteMapTree }
   TSiteMapType = (stTOC, stIndex);
-  
+
   TSiteMapTag = (smtUnknown, smtNone, smtHTML, smtHEAD, smtBODY);
   TSiteMapTags = set of TSiteMapTag;
 
   TSiteMapBodyTag = (smbtUnknown, smbtNone, smbtUL, smbtLI, smbtOBJECT, smbtPARAM);
   TSiteMapBodyTags = set of TSiteMapBodyTag;
-  
+
   TLIObjectParamType = (ptName, ptLocal, ptKeyword);
 
   TChmSiteMap = class
@@ -626,7 +627,7 @@ begin
       WriteParam('Font', Font);
   Dec(Indent, 8);
   WriteString('</OBJECT>');
-  
+
   // And now the items
   if Items.Count > 0 then begin
     WriteString('<UL>');
@@ -636,9 +637,9 @@ begin
     Dec(Indent, 8);
     WriteString('</UL>');
   end;
-  
+
   WriteString('</BODY></HTML>');
-  
+
   AStream.Size := AStream.Position;
 end;
 

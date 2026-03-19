@@ -10,7 +10,7 @@
 {                                                          }
 {****************[ THIS CODE IS FREEWARE ]*****************}
 {                                                          }
-{     This sourcecode is released for the purpose to       }
+{     This source code is released for the purpose to      }
 {   promote the pascal language on all platforms. You may  }
 {   redistribute it and/or modify with the following       }
 {   DISCLAIMER.                                            }
@@ -63,7 +63,7 @@ USES
      OS2Api.os2def, OS2Api.doscalls, OS2Api.pmwin,
    {$ENDIF}
 
-   System.Objects, 
+   System.Objects,
    {$ifdef FV_UNICODE}
    FreeVision.Ufvcommon,FreeVision.Udrivers,
    System.Unicode.Graphemebreakproperty,
@@ -71,7 +71,7 @@ USES
    FreeVision.Fvcommon,
    FreeVision.Drivers,
    {$endif}
-   FreeVision.Fvconsts, 
+   FreeVision.Fvconsts,
    { GFV standard units }
    System.Console.Video;
 {$ELSE FPC_DOTTEDUNITS}
@@ -170,7 +170,7 @@ CONST
 {                        >> NEW << VIEW DRAW MASKS                          }
 {---------------------------------------------------------------------------}
 CONST
-   vdBackGnd = $01;                                   { Draw backgound }
+   vdBackGnd = $01;                                   { Draw background }
    vdInner   = $02;                                   { Draw inner detail }
    vdCursor  = $04;                                   { Draw cursor }
    vdBorder  = $08;                                   { Draw view border }
@@ -285,7 +285,11 @@ CONST
    MaxViewWidth = 1024;                                  { Max view width }
 {$else}
 {$ifdef windows}
-   MaxViewWidth = 255;                                  { Max view width }
+{$ifndef win16}
+   MaxViewWidth = 1024;                                  { Max view width }
+{$else}
+   MaxViewWidth = 255;                                   { Max view width }
+{$endif}
 {$else}
    MaxViewWidth = 255;                                   { Max view width }
 {$endif}
@@ -647,6 +651,7 @@ TYPE
       FUNCTION GetPalette: PPalette; Virtual;
       FUNCTION IsSelected (Item: Sw_Integer): Boolean; Virtual;
       FUNCTION GetText (Item: Sw_Integer; MaxLen: Sw_Integer): Sw_String; Virtual;
+      FUNCTION GetItemColor(Item: Sw_Integer; IsFocused, IsSelectedInner: Boolean): Word; virtual;
       PROCEDURE Draw; Virtual;
       PROCEDURE FocusItem (Item: Sw_Integer); Virtual;
       PROCEDURE SetTopItem (Item: Sw_Integer);
@@ -690,6 +695,7 @@ TYPE
       PROCEDURE Store (Var S: TStream);
       PROCEDURE HandleEvent (Var Event: TEvent); Virtual;
       PROCEDURE SizeLimits (Var Min, Max: TPoint); Virtual;
+      PROCEDURE CalcBounds (Var Bounds: TRect; Delta: TPoint); Virtual;
    END;
    PWindow = ^TWindow;
 
@@ -2389,7 +2395,7 @@ END;
 PROCEDURE TGroup.EndModal (Command: Word);
 BEGIN
    If (State AND sfModal <> 0) Then                   { This view is modal }
-     EndState := Command Else                         { Set endstate }
+     EndState := Command Else                         { Set end state }
      Inherited EndModal(Command);                     { Call ancestor }
 END;
 
@@ -3229,7 +3235,7 @@ END;
 {--TScrollBar---------------------------------------------------------------}
 {  Store -> Platforms DOS/DPMI/WIN/NT/OS2 - Updated 22May98 LdB             }
 {---------------------------------------------------------------------------}
-{  You can save data to the stream compatable with the old original TV by   }
+{  You can save data to the stream compatible with the old original TV by   }
 {  temporarily turning off the ofGrafVersion making the call to this store  }
 {  routine and resetting the ofGrafVersion flag after the call.             }
 {---------------------------------------------------------------------------}
@@ -3524,7 +3530,7 @@ END;
 {--TScroller----------------------------------------------------------------}
 {  Store -> Platforms DOS/DPMI/WIN/NT/OS2 - Updated 26Jul99 LdB             }
 {---------------------------------------------------------------------------}
-{  The scroller is saved to the stream compatable with the old TV object.   }
+{  The scroller is saved to the stream compatible with the old TV object.   }
 {---------------------------------------------------------------------------}
 PROCEDURE TScroller.Store (Var S: TStream);
 VAR i: SmallInt;
@@ -3621,6 +3627,16 @@ BEGIN
    S.Read(w, SizeOf(w)); Range:=w;                    { Read listview range }
 END;
 
+FUNCTION TListViewer.GetItemColor(Item: Sw_Integer; IsFocused, IsSelectedInner: Boolean): Word;
+begin
+  if (State AND (sfSelected + sfActive) = (sfSelected + sfActive)) AND IsFocused AND (Range > 0) then
+    Result := GetColor(3)
+  else if (Item < Range) AND IsSelectedInner then
+    Result := GetColor(4)
+  else
+    Result := GetColor(2); // Normal
+end;
+
 {--TListViewer--------------------------------------------------------------}
 {  GetPalette -> Platforms DOS/DPMI/WIN/NT/OS2 - Updated 28May98 LdB        }
 {---------------------------------------------------------------------------}
@@ -3663,20 +3679,18 @@ BEGIN
      For J := 0 To NumCols-1 Do Begin                 { For each column }
        Item := J*Size.Y + I + TopItem;                { Process this item }
        CurCol := J*ColWidth;                          { Current column }
-       If (State AND (sfSelected + sfActive) =
-       (sfSelected + sfActive)) AND (Focused = Item)  { Focused item }
-       AND (Range > 0) Then Begin
-         Color := GetColor(3);                        { Focused colour }
-         SetCursor(CurCol+1,I);                       { Set the cursor }
-         SCOff := 0;                                  { Zero colour offset }
-       End Else If (Item < Range) AND IsSelected(Item){ Selected item }
-       Then Begin
-         Color := GetColor(4);                        { Selected color }
-         SCOff := 2;                                  { Colour offset=2 }
-       End Else Begin
-         Color := GetColor(2);                        { Normal Color }
-         SCOff := 4;                                  { Colour offset=4 }
-       End;
+
+       Color := GetItemColor(Item, (Focused = Item), IsSelected(Item));
+       If (State AND (sfSelected + sfActive) = (sfSelected + sfActive)) AND (Focused = Item) AND (Range > 0) Then
+       begin
+         SetCursor(CurCol+1,I);
+         SCOff := 0;
+       end
+       else if (Item < Range) AND IsSelected(Item) then
+         SCOff := 2
+       else
+         SCOff := 4;
+
       MoveChar(B[CurCol], ' ', Color, ColWidth);      { Clear buffer }
        If (Item < Range) Then Begin                   { Within text range }
          Text := GetText(Item, ColWidth + Indent);    { Fetch text }
@@ -3733,7 +3747,7 @@ END;
 {---------------------------------------------------------------------------}
 PROCEDURE TListViewer.SetTopItem (Item: Sw_Integer);
 BEGIN
-   if Size.Y<> LastY then SetRange(Range);{ Reset range to ajdust to Size.Y}
+   if Size.Y<> LastY then SetRange(Range);{ Reset range to adjust to Size.Y}
    If (VScrollBar <> Nil) and (Item> VScrollBar^.Max) Then
        Item:=VScrollBar^.Max;           { Don't let overrun scrollbar limit }
    if Item>=Range then Item:=Range-1;             { Item has to be in range }
@@ -3867,10 +3881,10 @@ BEGIN
            Ni := Focused - Size.Y Else Exit;          { One column left }
          kbPgDn: Ni := Focused + Size.Y * NumCols;    { One page down }
          kbPgUp: Ni := Focused - Size.Y * NumCols;    { One page up }
-         kbHome: Ni := TopItem;                       { Move to top }
-         kbEnd: Ni := TopItem + (Size.Y*NumCols)-1;   { Move to bottom }
-         kbCtrlPgDn: Ni := Range - 1;                 { Move to last item }
-         kbCtrlPgUp: Ni := 0;                         { Move to first item }
+         kbHome: Ni := 0;                             { Move to first item }
+         kbEnd: Ni := Range - 1;                      { Move to last item }
+         kbCtrlPgDn: Ni := TopItem + (Size.Y*NumCols)-1;{ Move to bottom }
+         kbCtrlPgUp: Ni := TopItem;                   { Move to top }
          Else Exit;
        End;
        MoveFocus(Ni);                                 { Move the focus }
@@ -3989,7 +4003,7 @@ BEGIN
    Inherited Init(Bounds);                            { Call ancestor }
    State := State OR sfShadow;                        { View is shadowed }
    Options := Options OR (ofSelectable+ofTopSelect);  { Select options set }
-   GrowMode := gfGrowAll + gfGrowRel;                 { Set growmodes }
+   GrowMode := gfGrowAll + gfGrowRel;                 { Set growmode }
    Flags := wfMove + wfGrow + wfClose + wfZoom;       { Set flags }
 {$ifdef FV_UNICODE}
    Title := ATitle;                                   { Hold title }
@@ -4007,7 +4021,7 @@ END;
 {  Load -> Platforms DOS/DPMI/WIN/NT/OS2 - Updated 15Sep97 LdB              }
 {---------------------------------------------------------------------------}
 {   This load method will read old original TV data from a stream however   }
-{   although a frame view is read for compatability it is disposed of.      }
+{   although a frame view is read for compatibility it is disposed of.      }
 {---------------------------------------------------------------------------}
 CONSTRUCTOR TWindow.Load (Var S: TStream);
 VAR I: SmallInt;
@@ -4147,7 +4161,7 @@ END;
 {--TWindow------------------------------------------------------------------}
 {  Store -> Platforms DOS/DPMI/WIN/NT/OS2 - Updated 30Mar98 LdB             }
 {---------------------------------------------------------------------------}
-{  You can save data to the stream compatable with the old original TV by   }
+{  You can save data to the stream compatible with the old original TV by   }
 {  temporarily turning off the ofGrafVersion making the call to this store  }
 {  routine and resetting the ofGrafVersion flag after the call.             }
 {---------------------------------------------------------------------------}
@@ -4232,11 +4246,13 @@ BEGIN
        End;
      evKeyDown: Begin                                 { KEYDOWN EVENT }
        Case Event.KeyCode Of
-         kbTab: Begin                                 { TAB KEY }
+         kbDown, kbRight, kbTab:
+         Begin
            FocusNext(False);                          { Select next view }
            ClearEvent(Event);                         { Clear the event }
          End;
-         kbShiftTab: Begin                            { SHIFT TAB KEY }
+         kbUp, kbLeft, kbShiftTab:
+         Begin
            FocusNext(True);                           { Select prior view }
            ClearEvent(Event);                         { Clear the event }
          End;
@@ -4255,6 +4271,20 @@ BEGIN
    Min.Y := MinWinSize.Y;                             { Set min y size }
 END;
 
+{--TWindow------------------------------------------------------------------}
+{  CalcBounds -> Platforms DOS/DPMI/WIN/NT/OS2 - Updated 27jan2026 M        }
+{---------------------------------------------------------------------------}
+PROCEDURE TWindow.CalcBounds (Var Bounds: TRect; Delta: TPoint);
+VAR WinBounds : TRect;
+BEGIN
+  { Need to change ZoomRect as well. It is not great to assign new bounds
+    to ZoomRect directly in CalcBounds, but there is not much options. }
+  GetBounds(WinBounds);                   { Save current bounds }
+  SetBounds(ZoomRect);                    { Set ZoomRect as bounds }
+  inherited CalcBounds (ZoomRect,Delta);  { New bounds for ZoomRect }
+  SetBounds(WinBounds);                   { Restore bounds }
+  inherited CalcBounds (Bounds,Delta);    { Calc new bounds }
+END;
 
 
 {--TView--------------------------------------------------------------------}

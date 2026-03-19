@@ -37,7 +37,7 @@ uses
   System.SysUtils,
   System.StrUtils,
   System.Contnrs,
-  FpImage,
+  FpImage, FpImage.FpUnitOfMeasure,
   FpImage.Reader.JPEG, FpImage.Reader.PNG, FpImage.Reader.Bitmap, // these are required for auto image-handler functionality
   System.ZLib.Zstream,
   FpPdf.Ttf.Parser,
@@ -49,7 +49,7 @@ uses
   SysUtils,
   StrUtils,
   contnrs,
-  fpImage,
+  fpImage, FpUnitOfMeasure,
   FPReadJPEG, FPReadPNG, FPReadBMP, // these are required for auto image-handler functionality
   zstream,
   fpparsettf,
@@ -77,6 +77,13 @@ Const
   clLime    = $00FF00;
   clWaterMark = $F0F0F0;
 
+  //MaxM: since now TPDFUnitOfMeasure = FpUnitOfMeasure.TUnitOfMeasure we declare constants here so
+  //      packages using fcl-pdf will not have to add the FpUnitOfMeasure unit in the uses section
+  uomInches = {$IFDEF FPC_DOTTEDUNITS}FpImage.{$endif}FpUnitOfMeasure.uomInches;
+  uomMillimeters = {$IFDEF FPC_DOTTEDUNITS}FpImage.{$endif}FpUnitOfMeasure.uomMillimeters;
+  uomCentimeters = {$IFDEF FPC_DOTTEDUNITS}FpImage.{$endif}FpUnitOfMeasure.uomCentimeters;
+  uomPixels = {$IFDEF FPC_DOTTEDUNITS}FpImage.{$endif}FpUnitOfMeasure.uomPixels;
+
 type
   TPDFPaperType = (ptCustom, ptA4, ptA5, ptLetter, ptLegal, ptExecutive, ptComm10, ptMonarch, ptDL, ptC5, ptB5);
   TPDFPaperOrientation = (ppoPortrait,ppoLandscape);
@@ -84,7 +91,7 @@ type
   TPDFLineCapStyle = (plcsButtCap, plcsRoundCap, plcsProjectingSquareCap);
   TPDFLineJoinStyle = (pljsMiterJoin, pljsRoundJoin, pljsBevelJoin);
   TPDFPageLayout = (lSingle, lTwo, lContinuous);
-  TPDFUnitOfMeasure = (uomInches, uomMillimeters, uomCentimeters, uomPixels);
+  TPDFUnitOfMeasure = {$IFDEF FPC_DOTTEDUNITS}FpImage.{$endif}FpUnitOfMeasure.TUnitOfMeasure;
 
   TPDFOption = (poOutLine, poCompressText, poCompressFonts, poCompressImages, poUseRawJPEG, poNoEmbeddedFonts,
     poPageOriginAtTop, poSubsetFont, poMetadataEntry, poNoTrailerID, poUseImageTransparency,poUTF16info);
@@ -111,7 +118,7 @@ type
 
 
   TPDFPaper = record
-    H, W: integer;
+    H, W: TPDFFloat;
     Printable: TPDFDimensions;
   end;
 
@@ -254,6 +261,17 @@ type
     property Value: integer read FInt write FInt;
   end;
 
+  { TPDFFloatObject }
+
+  TPDFFloatObject = class(TPDFDocumentObject)
+  private
+    FValue: TPDFFloat;
+  protected
+    procedure Write(const AStream: TStream); override;
+  public
+    constructor Create(const ADocument : TPDFDocument; const AValue: TPDFFloat);overload;
+    property Value: TPDFFloat read FValue write FValue;
+  end;
 
   TPDFReference = class(TPDFDocumentObject)
   private
@@ -330,7 +348,7 @@ type
   TPDFUTF8String = class(TPDFAbstractString)
   private
     FValue: UTF8String;
-    { Remap each character to the equivalant dictionary character code }
+    { Remap each character to the equivalent dictionary character code }
     function RemapedText: AnsiString;
   protected
     procedure Write(const AStream: TStream); override;
@@ -803,7 +821,7 @@ type
     Procedure DrawImage(const APos: TPDFCoord; const AWidth, AHeight: TPDFFloat; const ANumber: integer; const ADegrees: single = 0.0); overload;
     { X, Y coordinates are the bottom-left coordinate of the boundry rectangle.
       The W and H parameters are in the UnitOfMeasure units. A negative AWidth will
-      cause the ellpise to draw to the left of the origin point. }
+      cause the ellipse to draw to the left of the origin point. }
     Procedure DrawEllipse(const APosX, APosY, AWidth, AHeight, ALineWidth: TPDFFloat; const AFill: Boolean = True; AStroke: Boolean = True; const ADegrees: single = 0.0); overload;
     Procedure DrawEllipse(const APos: TPDFCoord; const AWidth, AHeight, ALineWidth: TPDFFloat; const AFill: Boolean = True; AStroke: Boolean = True; const ADegrees: single = 0.0); overload;
     procedure DrawPolygon(const APoints: array of TPDFCoord; const ALineWidth: TPDFFloat);
@@ -1008,6 +1026,21 @@ type
   TPDFImageStreamOption = (isoCompressed,isoTransparent);
   TPDFImageStreamOptions = set of TPDFImageStreamOption;
 
+  TPDFColorSpace = (
+    csDeviceCMYK, //Device-dependent names
+    csDeviceGray,
+    csDeviceN,
+    csDeviceRGB,
+    csCalGray,     //Device-independent names
+    csCalRGB,
+    csLab,
+    csICCBased,
+    csIndexed,     //Special names
+    csPattern,
+    csSeparation);
+
+  { TPDFImageItem }
+
   TPDFImageItem = Class(TCollectionItem)
   private
     FImage: TFPCustomImage;
@@ -1017,6 +1050,9 @@ type
     FStreamedMask: TBytes;
     FCompressionMask: TPDFImageCompression;
     FWidth,FHeight : Integer;
+    FBitsPerComponent: Integer;
+    FColorSpace: TPDFColorSpace;
+
     function GetHasMask: Boolean;
     function GetHeight: Integer;
     function GetStreamed: TBytes;
@@ -1027,6 +1063,7 @@ type
   Protected
     Function WriteStream(const AStreamedData: TBytes; AStream: TStream): int64; virtual;
   Public
+    constructor Create(ACollection: TCollection); override;
     Destructor Destroy; override;
     Procedure CreateStreamedData(AUseCompression: Boolean); overload;
     Procedure CreateStreamedData(aOptions : TPDFImageStreamOptions); overload;
@@ -1035,6 +1072,7 @@ type
     Function WriteImageStream(AStream: TStream): int64;
     Function WriteMaskStream(AStream: TStream): int64;
     function Equals(AImage: TFPCustomImage): boolean; reintroduce;
+
     Property Image : TFPCustomImage Read FImage Write SetImage;
     Property StreamedData : TBytes Read GetStreamed Write SetStreamed;
     Property StreamedMask : TBytes Read GetStreamedMask;
@@ -1042,6 +1080,8 @@ type
     Property Width : Integer Read GetWidth;
     Property Height : Integer Read GetHeight;
     Property HasMask : Boolean read GetHasMask;
+    property ColorSpace: TPDFColorSpace read FColorSpace write FColorSpace;
+    property BitsPerComponent: Integer read FBitsPerComponent write FBitsPerComponent;
   end;
 
 
@@ -1231,6 +1271,7 @@ type
     Function CreateColor(AColor : TARGBColor; AStroke : Boolean) : TPDFColor;
     Function CreateBoolean(AValue : Boolean) : TPDFBoolean;
     Function CreateInteger(AValue : Integer) : TPDFInteger;
+    function CreateFloat(AValue: TPDFFloat): TPDFFloatObject;
     Function CreateReference(AValue : Integer) : TPDFReference;
     Function CreateLineStyle(APenStyle: TPDFPenStyle; const ALineWidth: TPDFFloat) : TPDFLineStyle;
     function CreateLineStyle(ADashArray: TDashArray; const ALineWidth: TPDFFloat): TPDFLineStyle;
@@ -1384,6 +1425,19 @@ const
 
   // see http://paste.lisp.org/display/1105
   BEZIER: single = 0.5522847498; // = 4/3 * (sqrt(2) - 1);
+
+  PDFColorSpace : array[TPDFColorSpace] of String = (
+      'DeviceCMYK', //Device-dependent names
+      'DeviceGray',
+      'DeviceN',
+      'DeviceRGB',
+      'CalGray',     //Device-independent names
+      'CalRGB',
+      'Lab',
+      'ICCBased',
+      'Indexed',     //Special names
+      'Pattern',
+      'Separation');
 
 Var
   PDFFormatSettings : TFormatSettings;
@@ -1670,7 +1724,7 @@ begin
   WriteString('</rdf:RDF>'+CRLF, AStream);
   WriteString('</x:xmpmeta>'+CRLF, AStream);
 
-  //Recomended whitespace padding for inplace editing
+  //Recommended whitespace padding for inplace editing
   for i := 1 to 21 do
     WriteString('                                                                                                   '+CRLF, AStream);
   WriteString('<?xpacket end="w"?>', AStream);
@@ -1766,6 +1820,21 @@ var
 begin
   if Assigned(FSubsetFont) then
     FreeAndNil(FSubSetFont);
+  // CFF (PostScript outline) fonts cannot be subset by the TrueType subsetter.
+  // Embed the entire font file instead.
+  if FTrueTypeFile.IsCFF then
+  begin
+    FSubSetFont := TMemoryStream.Create;
+    if FFontStream <> nil then
+    begin
+      FFontStream.Position := 0;
+      TMemoryStream(FSubSetFont).CopyFrom(FFontStream, FFontStream.Size);
+    end
+    else
+      TMemoryStream(FSubSetFont).LoadFromFile(FFontFilename);
+    FSubSetFont.Position := 0;
+    Exit;
+  end;
   f := TFontSubsetter.Create(FTrueTypeFile, FTextMappingList);
   try
     FSubSetFont := TMemoryStream.Create;
@@ -3339,6 +3408,14 @@ begin
   TPDFObject.WriteString('endstream', AStream);
 end;
 
+constructor TPDFImageItem.Create(ACollection: TCollection);
+begin
+  inherited Create(ACollection);
+
+  FColorSpace:= csDeviceRGB;
+  FBitsPerComponent:= 8;
+end;
+
 function TPDFImageItem.Equals(AImage: TFPCustomImage): boolean;
 var
   x, y: Integer;
@@ -3527,10 +3604,10 @@ end;
   DecimalSeparator causing float formatting problems in the generated PDF. }
 class function TPDFObject.FloatStr(F: TPDFFloat): String;
 begin
-  if ((Round(F*100) mod 100)=0) then
-    Str(F:4:0,Result)
+  if ((Round(F*1000) mod 1000)=0) then
+    Str(F:5:0,Result)
   else
-    Str(F:4:2,Result);
+    Str(F:5:3,Result);
   result := trim(Result);
 end;
 
@@ -3569,6 +3646,17 @@ begin
   FInt:=AValue;
 end;
 
+procedure TPDFFloatObject.Write(const AStream: TStream);
+begin
+  WriteString(FloatStr(FValue), AStream);
+end;
+
+constructor TPDFFloatObject.Create(const ADocument: TPDFDocument; const AValue: TPDFFloat);
+begin
+  inherited Create(ADocument);
+
+  FValue:= AValue;
+end;
 
 procedure TPDFReference.Write(const AStream: TStream);
 begin
@@ -4103,8 +4191,8 @@ begin
     if Degrees <> 0.0 then
     begin
       rad := DegToRad(-Degrees);
-      a1 := Cos(rad); b1 := -Sin(rad);
-      c1 := Sin(rad); d1 := a1;
+      SinCos(rad, c1, a1); b1 := -c1;
+      d1 := a1;
     end
     else
       WriteString(FloatStr(X)+' '+FloatStr(Y)+' TD'+CRLF, AStream);
@@ -4244,7 +4332,7 @@ var
   lUnderlinePos, lUnderlineSize, lStrikeOutPos, lStrikeOutSize: Single;
   a1, b1, c1, d1, a2, b2, c2, d2: Single;
   v : UTF8String;
-  
+
 begin
   inherited Write(AStream);
   WriteString('q' + CRLF, AStream);
@@ -4255,8 +4343,8 @@ begin
     if Degrees <> 0.0 then
     begin
       rad := DegToRad(-Degrees);
-      a1 := Cos(rad); b1 := -Sin(rad);
-      c1 := Sin(rad); d1 := a1;
+      SinCos(rad, c1, a1); b1 := -c1;
+      d1 := a1;
     end
     else
       WriteString(FloatStr(X)+' '+FloatStr(Y)+' TD'+CRLF, AStream);
@@ -5369,13 +5457,13 @@ var
   IDict: TPDFDictionary;
 
   Procedure DoEntry(aName, aValue : String; NoUnicode: boolean = false);
-  
+
   begin
     if aValue='' then exit;
     if UseUTF16 and not NoUnicode then
       IDict.AddString(aName,utf8decode(aValue))
     else
-      IDict.AddString(aName,aValue);  
+      IDict.AddString(aName,aValue);
   end;
 
 begin
@@ -5614,12 +5702,14 @@ begin
   ADict:=GlobalXRefs[Parent].Dict;
   (ADict.ValueByName('Count') as TPDFInteger).Inc;
   (ADict.ValueByName('Kids') as TPDFArray).AddItem(CreateReference(GlobalXRefCount-1));
+
   Arr:=CreateArray;
   Arr.AddItem(CreateInteger(0));
   Arr.AddItem(CreateInteger(0));
-  Arr.AddItem(CreateInteger(PP.Paper.W));
-  Arr.AddItem(CreateInteger(PP.Paper.H));
+  Arr.AddItem(CreateFloat(PP.Paper.W));
+  Arr.AddItem(CreateFloat(PP.Paper.H));
   PDict.AddElement('MediaBox',Arr);
+
   CreateAnnotEntries(PageNum, PDict);
   ADict:=CreateDictionary;
   PDict.AddElement('Resources',ADict);
@@ -5922,6 +6012,8 @@ var
   ADict: TPDFDictionary;
   i: integer;
   lXRef: integer;
+  curImg: TPDFImageItem;
+
 begin
   lXRef := GlobalXRefCount; // reference to be used later
 
@@ -5930,8 +6022,20 @@ begin
   ImageDict.AddName('Subtype','Image');
   ImageDict.AddInteger('Width',ImgWidth);
   ImageDict.AddInteger('Height',ImgHeight);
-  ImageDict.AddName('ColorSpace','DeviceRGB');
-  ImageDict.AddInteger('BitsPerComponent',8);
+
+  // add ColorSpace and BitsPerComponent default is DeviceRGB 8 bit
+  curImg:= Images[NumImg];
+  if (curImg <> nil) then
+  begin
+    ImageDict.AddName('ColorSpace', PDFColorSpace[curImg.FColorSpace]);
+    ImageDict.AddInteger('BitsPerComponent', curImg.FBitsPerComponent);
+  end
+  else
+  begin
+    ImageDict.AddName('ColorSpace','DeviceRGB');
+    ImageDict.AddInteger('BitsPerComponent',8);
+  end;
+
   N:=CreateName('I'+IntToStr(NumImg)); // Needed later
   ImageDict.AddElement('Name',N);
 
@@ -6494,6 +6598,11 @@ end;
 function TPDFDocument.CreateInteger(AValue: Integer): TPDFInteger;
 begin
   Result:=TPDFInteger.Create(Self,AValue);
+end;
+
+function TPDFDocument.CreateFloat(AValue: TPDFFloat): TPDFFloatObject;
+begin
+  Result:= TPDFFloatObject.Create(Self, AValue);
 end;
 
 function TPDFDocument.CreateReference(AValue: Integer): TPDFReference;

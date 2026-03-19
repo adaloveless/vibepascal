@@ -22,7 +22,7 @@ unit WEditor;
 interface
 {tes}
 uses
-  Dos,Objects,Drivers,Views,Dialogs,Menus,Stddlg,
+  Dos,Objects,Drivers,Views,Dialogs,Menus,
   FVConsts,
   WUtils,WViews;
 
@@ -96,6 +96,7 @@ const
       efKeepLineAttr        = $00020000;
       efOverwriteBlocks     = $00040000;
       efShowIndent          = $00080000;
+      efEnhWordRightLeft    = $00100000;
       efStoreContent        = $80000000;
 
       attrAsm       = 1;
@@ -198,15 +199,18 @@ const
       eaUpperCase         = 19;
       eaLowerCase         = 20;
       eaToggleCase        = 21;
-      eaDummy             = 22;
+      eaCommentSel        = 22;
+      eaUnCommentSel      = 23;
+      eaDummy             = 24;
       LastAction          = eaDummy;
 
-      ActionString : array [0..LastAction-1] of string[13] =
+      ActionString : array [0..LastAction-1] of string[14] =
         ('','Move','InsLine','InsText','DelLine','DelText',
          'SelChange','Cut','Paste','PasteWin','DelChar','Clear',
          'CopyBlock','MoveBlock','DelBlock',
          'ReadBlock','IndentBlock','UnindentBlock','Overwrite',
-         'UpperCase','LowerCase','ToggleCase');
+         'UpperCase','LowerCase','ToggleCase',
+         'CommentBlock','UnCommentBlock');
 
       CIndicator    = #2#3#1;
       CEditor       = #33#34#35#36#37#38#39#40#41#42#43#44#45#46#47#48#49#50;
@@ -270,6 +274,10 @@ type
 {$else}
       Format : Sw_AString;
 {$endif}
+      BeginsWithMultiLineStringSuffixLen,
+      EndsWithMultiLineStringSuffixLen : Sw_Word;
+      BeginsWithString,
+      EndsWithString : boolean;
       BeginsWithAsm,
       EndsWithAsm   : boolean;
       BeginsWithComment,
@@ -293,7 +301,7 @@ type
       function    GetMark(Index:Sw_integer):PEditorBookMark; virtual;
       procedure   AdjustMark(APosX,Adjustment:Sw_integer); virtual;
       { Syntax information is now generated separately for each editor instance.
-        This is not neccessary for a one-language IDE, but this unit contains
+        This is not necessary for a one-language IDE, but this unit contains
         a _generic_ editor object, which should be (and is) as flexible as
         possible.
         The overhead caused by generating the same syntax info for ex.
@@ -370,6 +378,7 @@ type
 
     TSpecSymbolClass =
       (ssCommentPrefix,ssCommentSingleLinePrefix,ssCommentSuffix,ssStringPrefix,ssStringSuffix,
+       ssStringMultiLinePrefix,ssStringMultiLineSuffix,
        ssDirectivePrefix{,ssDirectiveSuffix},ssAsmPrefix,ssAsmSuffix);
 
     TCompleteState = (csInactive,csOffering,csDenied);
@@ -559,6 +568,7 @@ type
       procedure   UnLock; virtual;
     public
       { Text & info storage abstraction }
+   {a}function    GetMaxDisplayLength: sw_integer; virtual; {Max display code points}
    {a}function    GetLineCount: sw_integer; virtual;
    {a}function    GetLine(LineNo: sw_integer): PCustomLine; virtual;
    {a}function    CharIdxToLinePos(Line,CharIdx: sw_integer): sw_integer; virtual;
@@ -603,6 +613,7 @@ type
       procedure   TabSizeChanged; virtual;
       procedure   SyntaxStateChanged; virtual;
       procedure   StoreUndoChanged; virtual;
+      procedure   ChangeCommands; virtual;
       procedure   SelectionChanged; virtual;
       procedure   HighlightChanged; virtual;
    {a}procedure   DoLimitsChanged; virtual;
@@ -678,6 +689,8 @@ type
     public
       { Editor primitives }
       procedure   SelectAll(Enable: boolean); virtual;
+      procedure   CommentSel; virtual;
+      procedure   UnCommentSel; virtual;
     public
       { Editor commands }
       SearchRunCount: integer;
@@ -772,18 +785,6 @@ type
 
     PSearchHelperDialog = ^TSearchHelperDialog;
 
-    PFPFileInputLine = ^TFPFileInputLine;
-    TFPFileInputLine = object(TFileInputLine)
-      constructor Init(var Bounds: TRect; AMaxLen: Sw_Integer);
-      procedure HandleEvent(var Event: TEvent); virtual;
-    end;
-
-    PFPFileDialog = ^TFPFileDialog;
-    TFPFileDialog = object(TFileDialog)
-      constructor Init(AWildCard: TWildStr; const ATitle,
-        InputName: String; AOptions: Word; HistoryId: Byte);
-    end;
-
 const
      { used for ShiftDel and ShiftIns to avoid
        GetShiftState to be considered for extending
@@ -799,7 +800,7 @@ const
      ToClipCmds         : TCommandSet = ([cmCut,cmCopy,cmCopyWin,
        { cmUnselect should because like cut, copy, copywin:
          if there is a selection, it is active, else it isn't }
-       cmUnselect]);
+       cmUnselect,cmCommentSel,cmUnCommentSel]);
      FromClipCmds       : TCommandSet = ([cmPaste]);
      NulClipCmds        : TCommandSet = ([cmClear]);
      UndoCmd            : TCommandSet = ([cmUndo]);
@@ -836,9 +837,9 @@ procedure RegisterWEditor;
 implementation
 
 uses
-  Strings,Video,MsgBox,App,Validate,
+  Strings,Video,MsgBox,App,Validate,Stddlg,
 {$ifdef WinClipSupported}
-  WinClip,
+  FvClip,
 {$endif WinClipSupported}
 {$ifdef TEST_REGEXP}
   {$ifdef USE_OLD_REGEXP}
@@ -977,7 +978,7 @@ function IsWordSeparator(C: AnsiChar): boolean;
 begin
   IsWordSeparator:=C in
       [' ',#0,#255,':','=','''','"',
-      '.',',','/',';','$','#',
+      '.',',','/',';','$','#',  { In Lazarus "$", "#"  are not word separators }
       '(',')','<','>','^','*',
       '+','-','?','&','[',']',
       '{','}','@','~','%','\',
@@ -2258,7 +2259,7 @@ begin
   AAttrs:=Attrs;
   if P^.Editor^.NestedCommentsChangeCheck(FromLine) then
     AAttrs:=Attrs or attrForceFull;
-  I:=DoUpdateAttrsRange(P^.Editor,FromLine,ToLine,Attrs);
+  I:=DoUpdateAttrsRange(P^.Editor,FromLine,ToLine,AAttrs);
   if (I<MinLine) or (MinLine=-1) then MinLine:=I;
 end;
 begin
@@ -2280,9 +2281,12 @@ var
   NestedComments,LookForNestedComments : boolean;
   CommentStartX,CommentStartY : sw_integer;
   FirstCC,LastCC: TCharClass;
-  InAsm,InComment,InSingleLineComment,InDirective,InString: boolean;
+  InAsm,InComment,InSingleLineComment,InDirective,InString,InStringMultiLine: boolean;
+  WhiteSpaceLine,OnlyStringSuffix,StringSuffixEnded : boolean;
   X,ClassStart: Sw_integer;
   SymbolConcat: string;  {this can be shortstring after all}
+  SymbolWord: string;  { shortstring }
+  MultiLineStringSuffixLen:Sw_Word;
   LineText,Format: sw_astring;
 
   function MatchSymbol(const What, S: sw_astring): boolean;
@@ -2381,7 +2385,7 @@ var
     tmpIs:=(MatchesAnySpecSymbol(ssCommentPrefix,pmLeft));
     if tmpIs
       and (CurrentCommentType=2) {bad, we are making assumption that this is comment opener (* }
-      and (LineText[X+1]=')') { looking into next char is bad aproach but it is working }
+      and (LineText[X+1]=')') { looking into next char is bad approach but it is working }
       then
         tmpIs:=false;  { in comment this "(*)" is not start of new nested comment but end }
     IsMatchingCommentPrefix:= tmpIs and (CurrentCommentType=SymbolIndex);
@@ -2412,6 +2416,16 @@ var
     IsStringSuffix:=MatchesAnySpecSymbol(ssStringSuffix,pmRight);
   end;
 
+  function IsStringMultiLinePrefix: boolean;
+  begin
+    IsStringMultiLinePrefix:=MatchesAnySpecSymbol(ssStringMultiLinePrefix,pmLeft);
+  end;
+
+  function IsStringMultiLineSuffix: boolean;
+  begin
+    IsStringMultiLineSuffix:=MatchesAnySpecSymbol(ssStringMultiLineSuffix,pmRight);
+  end;
+
   function IsDirectivePrefix: boolean;
   begin
     IsDirectivePrefix:=MatchesAnySpecSymbol(ssDirectivePrefix,pmLeft)
@@ -2440,6 +2454,30 @@ var
     {StoredMatchedSymbol:=MatchedSymbol;}
     IsAsmSuffix:=MatchesAsmSpecSymbol(WordS,ssAsmSuffix);
     {MatchedSymbol:=StoredMatchedSymbol;}
+  end;
+
+  function GetMultiLineStringSuffixLen:Sw_Word;
+  var k,i: longword;
+  begin
+    {get rid of white space at the end of string}
+    i:=0;
+    for k:=Length(SymbolWord) downto 1 do
+    begin
+      if not (SymbolWord[k] in [' ',#9,#0,#255]) then
+        break;
+      inc(i);
+    end;
+    if i>0 then
+      SetLength(SymbolWord,Length(SymbolWord)-i);
+    {length of "'" symbols}
+    I:=0;
+    for k:=Length(SymbolWord) downto 1 do
+    begin
+      if SymbolWord[k]<>'''' then
+        break;
+      inc(I);
+    end;
+    GetMultiLineStringSuffixLen:=I;
   end;
 
   function GetCharClass(C: AnsiChar): TCharClass;
@@ -2558,6 +2596,21 @@ var
       begin
         MatchedSymbol:=false;
         EX:=X-1;
+
+        if length(SymbolWord)>=High(SymbolWord) then
+          Delete(SymbolWord,1,1);
+        SymbolWord:=SymbolWord+C; { for variable length multi line string end detection }
+        if OnlyStringSuffix then
+        begin
+          OnlyStringSuffix:=(C='''');
+          if not OnlyStringSuffix then
+          begin
+            SetLength(SymbolWord,Length(SymbolWord)-1);
+            if (GetMultiLineStringSuffixLen>=MultiLineStringSuffixLen) then
+              StringSuffixEnded:=true;
+          end;
+        end;
+
         if (CC=ccSymbol) then
          begin
            if length(SymbolConcat)>=High(SymbolConcat) then
@@ -2565,10 +2618,26 @@ var
            SymbolConcat:=SymbolConcat+C;
            if  InComment and IsCommentSuffix then
               Inc(EX) else
-           if InString and IsStringSuffix  then
+           if InString and IsStringSuffix then
+              Inc(EX) else
+           if InString and (InStringMultiLine=true) and IsStringMultiLineSuffix then
               Inc(EX) {else
            if InDirective and IsDirectiveSuffix then
               Inc(EX)};
+         end;
+        if StringSuffixEnded then
+        begin
+          MultiLineStringSuffixLen:=0;
+          StringSuffixEnded:=false;
+          if (GetMultiLineStringSuffixLen and 1)= 1 then
+            InString:=false;
+          InStringMultiLine:=false;
+        end;
+        if (CC<>ccSymbol) then
+         begin
+           if (CC<>ccWhiteSpace) and (CC<>ccTab) then
+             SymbolWord:='';
+           OnlyStringSuffix:=false;
          end;
         if CC=ccRealNumber then
           Inc(EX);
@@ -2619,7 +2688,7 @@ var
                 begin
                   inc(CurrentCommentDepth);
                   if LookForNestedComments then
-                  begin  { once per every nested comment test IsNestedCommments }
+                  begin  { once per every nested comment test IsNestedComments }
                     LookForNestedComments:=false;
                     NestedComments:=Editor^.IsNestedComments(X,CurLineNr);
                   end;
@@ -2635,6 +2704,7 @@ var
                     CurrentCommentType:=0;
                     InDirective:=false; {not in comment then not in Directive}
                     InString:=false;
+                    InStringMultiLine:=false;
                   end;
                 end
               else if (InComment=false) and (InString=false) and IsStringPrefix then
@@ -2642,12 +2712,36 @@ var
                   InString:=true;
                   Dec(ClassStart,length(MatchingSymbol)-1);
                 end
-              else if (InComment=false) and (InString=true) and IsStringSuffix then
-               InString:=false;
+              else if (InComment=false) and (InString=false) and IsStringMultiLinePrefix then
+                begin
+                  InString:=true;
+                  InStringMultiLine:=true;
+                  Dec(ClassStart,length(MatchingSymbol)-1);
+                end
+              else if (InComment=false) and (InString=true) and (InStringMultiLine=false) and IsStringSuffix then
+                begin
+                  InString:=false;
+                end
+              else if (InComment=false) and (InString=true) and (InStringMultiLine=true) then
+                begin
+                  if MultiLineStringSuffixLen>2 then
+                  begin
+                    if WhiteSpaceLine and IsStringSuffix then
+                      OnlyStringSuffix:=true;
+                  end else
+                  if IsStringMultiLineSuffix then
+                  begin
+                    InString:=false;
+                    InStringMultiLine:=false;
+                  end;
+                end
+              else if (InAsm) and (C='@') then
+                CC:=ccAlpha;  { local labels in asm block will be normal words }
         end;
         if MatchedSymbol and (InComment=false) then
           SymbolConcat:='';
         LastCC:=CC;
+        WhiteSpaceLine:=WhiteSpaceLine and ((CC=ccWhiteSpace) or (CC=ccTab));
       end;
   end;
 
@@ -2682,7 +2776,7 @@ begin
     PrevLine:=GetLine(CurLineNr-1)
   else
     PrevLine:=nil;
-  CommentStartY:=CurLineNr-1; { use in detection for false positive commment: (*) }
+  CommentStartY:=CurLineNr-1; { use in detection for false positive comment: (*) }
   repeat
     Line:=GetLine(CurLineNr);
     if Assigned(PrevLine) then PrevLI:=PrevLine^.GetEditorInfo(Editor) else PrevLI:=nil;
@@ -2690,6 +2784,8 @@ begin
     InSingleLineComment:=false;
     if PrevLI<>nil then
      begin
+       InString:=PrevLI^.EndsWithString;
+       MultiLineStringSuffixLen:=PrevLI^.EndsWithMultiLineStringSuffixLen;
        InAsm:=PrevLI^.EndsWithAsm;
        InComment:=PrevLI^.EndsWithComment and not PrevLI^.EndsInSingleLineComment;
        CurrentCommentType:=PrevLI^.EndCommentType;
@@ -2700,6 +2796,8 @@ begin
      end
     else
      begin
+       InString:=false;
+       MultiLineStringSuffixLen:=0;
        InAsm:=false;
        InComment:=false;
        CurrentCommentType:=0;
@@ -2711,6 +2809,8 @@ begin
 {    OldLine:=Line;}
     if (not Editor^.IsFlagSet(efKeepLineAttr)) then
       begin
+        LI^.BeginsWithString:=InString;
+        LI^.BeginsWithMultiLineStringSuffixLen:=MultiLineStringSuffixLen;
         LI^.BeginsWithAsm:=InAsm;
         LI^.BeginsWithComment:=InComment;
         LI^.BeginsWithDirective:=InDirective;
@@ -2721,6 +2821,8 @@ begin
       end
     else
       begin
+        InString:=LI^.BeginsWithString;
+        MultiLineStringSuffixLen:=LI^.BeginsWithMultiLineStringSuffixLen;
         InAsm:=LI^.BeginsWithAsm;
         InComment:=LI^.BeginsWithComment;
         InDirective:=LI^.BeginsWithDirective;
@@ -2734,15 +2836,29 @@ begin
     LastCC:=ccWhiteSpace;
     ClassStart:=1;
     SymbolConcat:='';
-    InString:=false;
+    SymbolWord:='';
+    OnlyStringSuffix:=false;
+    StringSuffixEnded:=false;
+    InStringMultiLine:=InString;
+    WhiteSpaceLine:=true;
     if LineText<>'' then
      begin
        for X:=1 to length(LineText) do
          ProcessChar(LineText[X]);
        Inc(X);
        ProcessChar(' ');
+       if (not InString) and (MultiLineStringSuffixLen>0) then
+         MultiLineStringSuffixLen:=0;
+       if InString and not InStringMultiLine  then
+       begin
+         MultiLineStringSuffixLen:=GetMultiLineStringSuffixLen;
+         if MultiLineStringSuffixLen>2 then
+           InStringMultiLine:=true;
+       end;
      end;
     SetLineFormat(Editor,CurLineNr,Format);
+    LI^.EndsWithMultiLineStringSuffixLen:=MultiLineStringSuffixLen;
+    LI^.EndsWithString:=InStringMultiLine;
     LI^.EndsWithAsm:=InAsm;
     LI^.EndsWithComment:=InComment;
     LI^.EndsInSingleLineComment:=InSingleLineComment;
@@ -2768,6 +2884,8 @@ begin
 {$ifdef TEST_PARTIAL_SYNTAX}
          (CurLineNr>FromLine) and
 {$endif TEST_PARTIAL_SYNTAX}
+         (NextLI^.BeginsWithString=LI^.EndsWithString) and
+         (NextLI^.BeginsWithMultiLineStringSuffixLen=LI^.EndsWithMultiLineStringSuffixLen) and
          (NextLI^.BeginsWithAsm=LI^.EndsWithAsm) and
          (NextLI^.BeginsWithComment=LI^.EndsWithComment) and
          (NextLI^.BeginsWithDirective=LI^.EndsWithDirective) and
@@ -3042,6 +3160,12 @@ begin
   IsClipboard:=false;
 end;
 
+function TCustomCodeEditor.GetMaxDisplayLength: sw_integer;
+begin
+  Abstract;
+  GetMaxDisplayLength:=0;
+end;
+
 function TCustomCodeEditor.GetLineCount: sw_integer;
 begin
   Abstract;
@@ -3294,12 +3418,17 @@ begin
         LineStartX:=0;
 
       if (LineDelta=LineCount-1) or VerticalBlock then
-        LineEndX:=Editor^.SelEnd.X-1
+        begin
+          LineEndX:=Editor^.SelEnd.X-1;
+          CharIdxEnd:=Editor^.LinePosToCharIdx(Editor^.SelStart.Y+LineDelta,LineEndX);
+        end
       else
-        LineEndX:=Length(S);
+        begin
+          LineEndX:=Length(S);
+          CharIdxEnd:=LineEndX;
+        end;
 
       CharIdxStart:=Editor^.LinePosToCharIdx(Editor^.SelStart.Y+LineDelta,LineStartX);
-      CharIdxEnd:=Editor^.LinePosToCharIdx(Editor^.SelStart.Y+LineDelta,LineEndX);
       if LineEndX<LineStartX then
         S:=''
       else if VerticalBlock then
@@ -3622,8 +3751,11 @@ begin
 end;
 
 procedure TCustomCodeEditor.DoLimitsChanged;
+var DisplayLength : sw_integer;
 begin
-  SetLimit(MaxLineLength+1,EditorToViewLine(GetLineCount));
+  DisplayLength:=((GetMaxDisplayLength+128) shr 6) shl 6;
+  DisplayLength:=Min(DisplayLength,MaxLineLength+1);
+  SetLimit(DisplayLength,EditorToViewLine(GetLineCount));
 end;
 
 procedure TCustomCodeEditor.BindingsChanged;
@@ -3756,18 +3888,28 @@ begin
           PrevP.X:=-1; { first time previous point is different }
           repeat
             GetMousePos(P);
-            if (P.X<>PrevP.X) or (P.Y<>PrevP.Y) then
+            if ((P.X<>PrevP.X) or (P.Y<>PrevP.Y)) or (Event.What = evMouseWheel) then
             begin
               Lock;
+              if Event.What = evMouseWheel then
+              begin
+                E:=Event;
+                HandleEvent(Event); { do scrolling }
+                Event:=E;
+                GetMousePos(P); { new mouse position after scroll up/down }
+              end;
               SetCurPtr(P.X,P.Y);
               PrevP:=P;
               if PointOfs(P)<PointOfs(StartP)
                  then SetSelection(P,StartP)
-                 else SetSelection(StartP,P);
+              else if PointOfs(P)>PointOfs(StartP)
+                 then SetSelection(StartP,P)
+              else if PointOfs(SelStart)<>PointOfs(SelEnd) { if selected only then remove selection }
+                 then SetSelection(StartP,P);
               DrawView;
               UnLock;
             end;
-          until not MouseEvent(Event, evMouseMove+evMouseAuto);
+          until not MouseEvent(Event, evMouseMove+evMouseAuto+evMouseWheel);
           DrawView;
           ClearEvent(Event);
         end else
@@ -3919,6 +4061,8 @@ begin
 
           cmSelectAll   : SelectAll(true);
           cmUnselect    : SelectAll(false);
+          cmCommentSel  : CommentSel;
+          cmUnCommentSel: UnCommentSel;
 {$ifdef WinClipSupported}
           cmCopyWin     : ClipCopyWin;
           cmPasteWin    : ClipPasteWin;
@@ -4243,7 +4387,7 @@ begin
                 FreeFormat[X]:=false;
               end;
 
-            { redundant check, for loop condition is taking care of coorect range
+            { redundant check, for loop condition is taking care of correct range
             if (0<=LSX+X-1-Delta.X) and (LSX+X-1-Delta.X<MaxViewWidth) then  }
               MoveChar(B[LSX+X-1-Delta.X],C,Color,1);
           end; { for X:=1 to ... }
@@ -4271,7 +4415,7 @@ begin
       SetCursor(GetReservedColCount+CurPos.X-Delta.X,EditorToViewLine(CurPos.Y)-Delta.Y);
       InsertMode:=Overwrite;
       if IsFlagSet (efBlockInsCursor) then
-         InsertMode:=not InsertMode; {revers insert and overwrite mode cursor shapes}
+         InsertMode:=not InsertMode; {reverse insert and overwrite mode cursor shapes}
       SetState(sfCursorIns,InsertMode);
     end;
 end;
@@ -4450,31 +4594,64 @@ procedure TCustomCodeEditor.WordLeft;
 var X, Y: sw_integer;
     Line: sw_astring;
     GotIt,FoundNonSeparator: boolean;
+    N,orgX : sw_integer;
+    WhiteSpaceLen : sw_word;
+    EnhancedStops : boolean;
 begin
+  EnhancedStops:=IsFlagSet(efEnhWordRightLeft);
   X:=CurPos.X;
   Y:=CurPos.Y;
+  orgX:=X;
   GotIt:=false;
   FoundNonSeparator:=false;
   while (Y>=0) do
    begin
+     X:=length(GetDisplayText(Y));
      if Y=CurPos.Y then
-      begin
-   X:=length(GetDisplayText(Y));
-   if CurPos.X<X then
-     X:=CurPos.X; Dec(X);
-   if (X=-1) then
+       if CurPos.X<X then
+         X:=CurPos.X;
+     Dec(X);
+     if (X=-1) then {at very beginning of line, go to prev line}
      begin
-       Dec(Y);
-       if Y>=0 then
-        X:=length(GetDisplayText(Y));
-       Break;
+       while true do  { skip all empyt lines }
+       begin
+         Dec(Y);
+         if Y>=0 then
+           X:=length(GetDisplayText(Y));
+         if (X >0) or (Y<=0) then
+           Break;
+         if not EnhancedStops then
+           break; {stop even at empty lines (TP compatibility)}
+       end;
+       break;
      end;
-      end
-     else
-      X:=length(GetDisplayText(Y))-1;
      Line:=GetDisplayText(Y);
+     if Y<>CurPos.Y then
+       orgX:=X;
+     WhiteSpaceLen:=0; {Count leading white spaces}
+     if (Length(Line)>=X+1) then
+       while (X>=WhiteSpaceLen) do
+         begin
+           if not (Line[WhiteSpaceLen+1] in [' ',#9]) then
+             break;
+           inc(WhiteSpaceLen);
+         end;
+     if WhiteSpaceLen>X then
+       X:=-1; { moving to next line }
+
      while (X>=0) and (GotIt=false) do
       begin
+        if EnhancedStops and (WhiteSpaceLen=0) and (X=0) and (orgX>0) then
+        begin
+          GotIt:=true; {stop at very beginning of line, if no white space}
+          break;
+        end;
+        if EnhancedStops and (WhiteSpaceLen = X+1) then
+        begin
+          GotIt:=true; {stop before leading white space}
+          inc(X);
+          break;
+        end;
    if FoundNonSeparator then
     begin
       if IsWordSeparator(Line[X+1]) then
@@ -4486,7 +4663,62 @@ begin
     end
    else
     if not IsWordSeparator(Line[X+1]) then
-     FoundNonSeparator:=true;
+     FoundNonSeparator:=true
+    else if EnhancedStops then
+      begin
+        { stop on comment start, comment end }
+        if Line[X+1] in ['(','*',')','/','{','}'] then
+        begin
+          (* comment  } at end of line *)
+          if (Length(line)=X+1) and (X<orgX-1) then
+             if  (Line[X+1] = '}') then
+               begin
+                 GotIt:=true;
+                 inc(X,2);
+               end;
+          (* comment  { at end of line or right in front of cursor *)
+          if (Length(line)=X+1) and (X<=orgX-1) then
+             if  (Line[X+1] = '{') and ((X=0) or ((X>1) and (Line[X]<>'{'))) then
+               begin
+                 GotIt:=true;
+                 inc(X,1);
+               end;
+          if X<orgX then
+            if Length(line)>=X+2 then
+              if ((Line[X+1] = '/') and (Line[X+2] = '/'))
+                 or ((Line[X+1] = '(') and (Line[X+2] = '*'))
+                 or ((Line[X+1] = '*') and (Line[X+2] = ')'))
+                 or ((Line[X+1] = '{') and (Line[X+2] <> '{') and ((X=0) or ((X>0) and (Line[X] <> '{') )))
+                 or ((Line[X+1] = '}') and (Line[X+2] <> '}'))
+                 or ((Line[X+1] = '{') and (X>0) and (Line[X] <> '{'))
+                then
+              begin
+                GotIt:=true;
+                (* comment  } *)
+                if GotIt and  (Line[X+1] = '}') then
+                  if (X<orgX-1) then
+                    Inc(X,1)
+                  else
+                    GotIt:=false;
+                { comment *) }
+                if GotIt and (Line[X+1] = '*') then
+                  if (X<orgX-2) then
+                    Inc(X,2)
+                  else
+                    GotIt:=false;
+                { comment // }
+                if Line[X+1] = '/' then
+                  for N:=1 to X do
+                    if (Line[N] = '/') and (Line[N+1] = '/') then
+                    begin
+                      GotIt:=false;
+                      break;
+                    end;
+                if GotIt then
+                  Inc(X);
+              end;
+        end; { of comment stop }
+      end;
    Dec(X);
    if (X=0) and (IsWordSeparator(Line[1])=false) then
     begin
@@ -4499,10 +4731,14 @@ begin
      X:=0;
      Dec(Y);
      if Y>=0 then
-      begin
-   X:=length(GetDisplayText(Y));
-   Break;
-      end;
+     begin
+       X:=length(GetDisplayText(Y));
+       if X>0 then
+         Break;
+       if not EnhancedStops then
+         break; {stop even at empty lines (TP compatibility)}
+     end;
+     orgX:=X;
    end;
   if Y<0 then Y:=0; if X<0 then X:=0;
   SetCurPtr(X,Y);
@@ -4512,45 +4748,127 @@ procedure TCustomCodeEditor.WordRight;
 var X, Y: sw_integer;
     Line: sw_astring;
     GotIt: boolean;
+    N : sw_integer;
+    EnhancedStops : boolean;
 begin
+  EnhancedStops:=IsFlagSet(efEnhWordRightLeft);
   X:=CurPos.X; Y:=CurPos.Y; GotIt:=false;
   while (Y<GetLineCount) do
   begin
     if Y=CurPos.Y then
-       begin
-    X:=CurPos.X; Inc(X);
-    if (X>length(GetDisplayText(Y))-1) then
-       begin Inc(Y); X:=0; end;
-       end else X:=0;
-    Line:=GetDisplayText(Y);
-    while (X<=length(Line)+1) and (GotIt=false) and (Line<>'') do
-    begin
-      if X=length(Line)+1 then begin GotIt:=true; Dec(X); Break end;
-      if IsWordSeparator(Line[X]) then
-    begin
-      while (Y<GetLineCount) and
-       (X<=length(Line)) and (IsWordSeparator(Line[X])) do
-       begin
-         Inc(X);
-         if X>=length(Line) then
-            begin GotIt:=true; Dec(X); Break; end;
-       end;
-      if (GotIt=false) and (X<length(Line)) then
       begin
-        Dec(X);
-        GotIt:=true;
-        Break;
+        X:=CurPos.X; Inc(X);
+        if (X>length(GetDisplayText(Y))) then
+          begin
+            Inc(Y);
+            X:=0;
+          end;
+      end else X:=0;
+    Line:=GetDisplayText(Y);
+    N:=X;
+    if N<1 then N:=1;
+    if EnhancedStops and (N<=length(Line)) and (Line[N] = ' ') then {sepcial exception if line beginning contains only spaces then we stop at the beginning of word (not at end)}
+    begin
+      N:=1;
+      {count spaces in beginning of line}
+      while (Y<GetLineCount) and (N<=length(Line)) and (Line[N] = ' ') do
+      begin
+        if N>=length(Line) then
+          break;
+        inc(N);
+      end;
+      {if not IsWordSeparator(Line[N]) then }
+         if X<N then   {special case detected, stop at first non white space character}
+           begin X:=N; dec(X); GotIt:=true; break; end;
+    end;
+    if not EnhancedStops then { skip current word }
+    begin
+      if (X=0) and (Length(Line)>0) then
+        inc(X);
+      while (X<=length(Line)) and (GotIt=false) and (Line<>'') do
+      begin
+        if IsWordSeparator(Line[X]) then break;
+        Inc(X);
       end;
     end;
+    { find end of word (if EnhancedStops=false then beginning of word) }
+    while (X<=length(Line)+1) and (GotIt=false) and (Line<>'') do
+    begin
+      if X=length(Line)+1 then  {end of line found }
+        begin
+          GotIt:=true;
+          Dec(X);
+          Break
+        end;
+      if (X>0) and (not IsWordSeparator(Line[X])) then
+        begin
+          if not EnhancedStops then { stop at beginning of word }
+            begin GotIt:=true; Dec(X); Break; end;
+          while (Y<GetLineCount) and (X<=length(Line)) and not (IsWordSeparator(Line[X])) do
+          begin
+            Inc(X);
+            if X>length(Line) then
+              begin GotIt:=true; Dec(X); Break; end;
+          end;
+          if (GotIt=false) and (X<=length(Line)) then
+            begin Dec(X); GotIt:=true; Break; end;
+        end
+      else if EnhancedStops then
+        begin
+          { stop on comment start, comment end }
+          (* comment } *)
+          if (X>0) and (Line[X] = '}') then
+            if X<length(Line) then
+              if (Line[X+1] <> '}') then
+                GotIt:=true;
+          { comment  *)  cursor on ")"}
+          if ((X>1)and (Line[X-1] = '*') and (Line[X] = ')')) then
+            GotIt:=true;
+          if not GotIt and (Line[X+1] in ['(','*',')','/','{']) then
+          begin
+            (* comment "{" *)
+            if (Line[X+1] = '{') then
+            begin
+              if X>0 then
+                if (Line[X] <> '{') then
+                 GotIt:=true;
+              if X = 0 then
+                GotIt:=true;
+            end;
+            { comments  // (*  *) }
+            if (Length(Line)>=X+2) then
+              if ((Line[X+1] = '/') and (Line[X+2] = '/'))
+                or ((Line[X+1] = '(') and (Line[X+2] = '*'))
+                or ((Line[X+1] = '*') and (Line[X+2] = ')'))
+                or ((X>0)and (Line[X] = '*') and (Line[X+1] = ')')) then
+              begin
+                GotIt:=true;
+                if ((X>0)and (Line[X] = '*') and (Line[X+1] = ')')) then
+                  inc(X,1);
+                if ((Line[X+1] = '*') and (Line[X+2] = ')')) then
+                  inc(X,2);
+                if Line[X+1] = '/' then
+                  for N:=1 to X do
+                    if (Line[N] = '/') and (Line[N+1] = '/') then
+                      begin
+                        GotIt:=false; {there was line comment before }
+                        break;
+                      end;
+              end;
+          end; { of comment stop }
+        end;
+      if GotIt then Break;
       Inc(X);
     end;
     if GotIt then Break;
+    {next line}
     X:=0;
     Inc(Y);
     if (Y<GetLineCount) then
     begin
       Line:=GetDisplayText(Y);
-      if (Line<>'') and (IsWordSeparator(Line[1])=false) then Break;
+      if (Line<>'') and (IsWordSeparator(Line[1])=false) then
+        Break;
     end;
   end;
   if Y=GetLineCount then Y:=GetLineCount-1;
@@ -4693,7 +5011,7 @@ begin
   else
     SetCurPtr(CurPos.X,Delta.Y);
  end;
- 
+
  procedure TCustomCodeEditor.WindowEnd;
  begin
   if not NoSelect and ShouldExtend then
@@ -4749,7 +5067,7 @@ begin
     if Assigned(Line) then
       Line^.InsertMark(@Self,@Bookmarks[MarkIdx])
     else
-      Bookmarks[MarkIdx].Valid:=false; {this should not be ever reached, but safty first}
+      Bookmarks[MarkIdx].Valid:=false; {this should not be ever reached, but safety first}
   end;
 end;
 
@@ -5212,8 +5530,8 @@ begin
 {      SelBack:=length(S)-SelEnd.X;}
       SetLineText(CurPos.Y,RTrim(S,not IsFlagSet(efUseTabCharacters)));
     end;
-    SetLineText(CurPos.Y,copy(S,1,CI-1));
     CalcIndent(CurPos.Y);
+    SetLineText(CurPos.Y,copy(S,1,CI-1));
     S:=copy(S,CI,Length(S));
     i:=1;
     while (i<=length(s)) and (i<=length(IndentStr)) and (s[i]=' ') do
@@ -5639,14 +5957,14 @@ end;
 
 procedure TCustomCodeEditor.EndSelect;
 var P: TPoint;
-    LS: sw_integer;
+   { LS: sw_integer;}
 begin
   P:=CurPos;
-{  P.X:=Min(SelEnd.X,length(GetLineText(SelEnd.Y)));}
-  LS:=length(GetLineText(SelEnd.Y));
-  if LS<P.X then P.X:=LS;
-  CheckSels;
+  { don't try to jump to end of line, not for now
+  LS:=length(GetLineText(P.Y));
+  if LS<P.X then P.X:=LS; }
   SetSelection(SelStart,P);
+  CheckSels;
   DrawView;
 end;
 
@@ -5777,15 +6095,16 @@ var
   ey,i,Indlen : Sw_Integer;
   S,Ind : Sw_AString;
   Pos : Tpoint;
-  WasPersistentBlocks : boolean;
+  {WasPersistentBlocks : boolean;}
 begin
   if IsReadOnly then Exit;
   if (SelStart.X=SelEnd.X) and (SelStart.Y=SelEnd.Y) then Exit;
   Lock;
   AddGroupedAction(eaIndentBlock);
+  { as SetCurPtr commented out, no need take care of Persistent Blocks
   WasPersistentBlocks:=IsFlagSet(efPersistentBlocks);
   if not WasPersistentBlocks then
-    SetFlags(GetFlags or efPersistentBlocks);
+    SetFlags(GetFlags or efPersistentBlocks); }
   ey:=selend.y;
   if selend.x=0 then
    dec(ey);
@@ -5833,10 +6152,12 @@ begin
      Pos.X:=0;Pos.Y:=i;
      AddAction(eaInsertText,Pos,Pos,Ind,GetFlags);
    end;
-  SetCurPtr(CurPos.X,CurPos.Y);
+  { this removes selection if Shift is pressed as well and we do not change cursor position anyway
+  SetCurPtr(CurPos.X,CurPos.Y); }
   {after SetCurPtr return PersistentBlocks as it was before}
+  { as SetCurPtr commented out, no need take care of Persistent Blocks
   if not WasPersistentBlocks then
-    SetFlags(GetFlags and (not longword(efPersistentBlocks)));
+    SetFlags(GetFlags and (not longword(efPersistentBlocks))); }
   { must be added manually here PM }
   AddAction(eaMoveCursor,Pos,CurPos,'',GetFlags);
   UpdateAttrsRange(SelStart.Y,SelEnd.Y,attrAll);
@@ -5851,15 +6172,17 @@ var
   ey,i,j,k,indlen : Sw_integer;
   S : Sw_AString;
   Pos : TPoint;
-  WasPersistentBlocks : boolean;
+  {WasPersistentBlocks : boolean;}
 begin
   if IsReadOnly then Exit;
   if (SelStart.X=SelEnd.X) and (SelStart.Y=SelEnd.Y) then Exit;
   Lock;
   AddGroupedAction(eaUnindentBlock);
+  {  as SetCurPtr commented out, no need take care of Persistent Blocks
   WasPersistentBlocks:=IsFlagSet(efPersistentBlocks);
   if not WasPersistentBlocks then
     SetFlags(GetFlags or efPersistentBlocks);
+  }
   ey:=selend.y;
   if selend.x=0 then
    dec(ey);
@@ -5922,10 +6245,13 @@ begin
          AddAction(eaDeleteText,Pos,Pos,CharStr(' ',k),GetFlags);
        end;
    end;
-  SetCurPtr(CurPos.X,CurPos.Y);
+  { Removes selection if Shift is pressed as well and we do not change cursor position anyway
+  SetCurPtr(CurPos.X,CurPos.Y); }
   {after SetCurPtr return PersistentBlocks as it was before}
+  { as SetCurPtr commented out, no need take care of Persistent Blocks
   if not WasPersistentBlocks then
     SetFlags(GetFlags and (not longword(efPersistentBlocks)));
+  }
   UpdateAttrsRange(SelStart.Y,SelEnd.Y,attrAll);
   DrawLines(CurPos.Y);
   SetModified(true);
@@ -6050,8 +6376,6 @@ begin
   }
   if IsReadOnly then Exit;
 
-  Lock;
-
   CP.X:=-1; CP.Y:=-1;
   Line:=GetDisplayText(CurPos.Y);
   X:=CurPos.X; ShortCut:='';
@@ -6068,6 +6392,7 @@ begin
    if SelectCodeTemplate(ShortCut) then
      TranslateCodeTemplate(ShortCut,CodeLines);
 
+  Lock;
   if CodeLines^.Count>0 then
   begin
     LineIndent:=X;
@@ -6347,7 +6672,7 @@ begin
         OK:=false
       else
         OK:=GetTextWinClipBoardData(p,l);
-      if OK then
+      if OK and assigned(p) then
         begin
           PasteText(p,l);
           { we must free the allocated memory }
@@ -6529,7 +6854,7 @@ begin
   begin
     Lines:=GetLineCount;
     {Linecount can be 0, but in that case there still is a cursor blinking in top
-     of the window, which will become line 1 as soon as sometype hits a key.}
+     of the window, which will become line 1 as soon as someone hits a key.}
     if lines=0 then
       lines:=1;
     if EditorDialog(edGotoLine, @GotoRec) <> cmCancel then
@@ -7111,7 +7436,7 @@ begin
   Lock;
 
   { here should be some kind or "mark" or "break" inserted in the Undo
-    information, so activating it "undoes" only the completition first and
+    information, so activating it "undoes" only the completion first and
     doesn't delete the complete word at once... - Gabor }
 
   FragLen:=Length(GetCodeCompleteFrag);
@@ -7192,7 +7517,7 @@ begin
       else if (SelStart.Y < SelEnd.Y) and ( ((SelStart.Y=CurPos.Y) and (SelStart.X<=CurPos.X)) or ((SelEnd.Y=CurPos.Y) and (SelEnd.X>=CurPos.X))) then
         InSelectionArea:=true  {in first line or last line}
       else if (SelStart.Y > SelEnd.Y) and ( ((SelStart.Y=CurPos.Y) and (SelStart.X>=CurPos.X)) or ((SelEnd.Y=CurPos.Y) and (SelEnd.X<=CurPos.X))) then
-        InSelectionArea:=true; {in first line or last line (selection Start and End revers)}
+        InSelectionArea:=true; {in first line or last line (selection Start and End reverse)}
     end;
 end;
 
@@ -7260,21 +7585,160 @@ begin
   DrawView;
 end;
 
-procedure TCustomCodeEditor.SelectionChanged;
+procedure TCustomCodeEditor.CommentSel;
+var
+  ey,i : Sw_Integer;
+  S,Ind : Sw_AString;
+  Pos : Tpoint;
+  WasPersistentBlocks : boolean;
+  WhiteLen, k : Sw_Integer;
+  LLen : Sw_Integer; { length of longest line }
+begin
+  if IsReadOnly then Exit;
+  if (SelStart.X=SelEnd.X) and (SelStart.Y=SelEnd.Y) then Exit;
+  Lock;
+  ey:=SelEnd.Y;
+  if SelEnd.X=0 then
+   dec(ey);
+  S:='';
+  { Find shortest white space of beginning of line from all lines
+    for simplicity reason Tab is not recognized as white space in this regard }
+  LLen:=0;
+  WhiteLen:=-1;
+  WhiteLen:= WhiteLen shr 1; { logical SHR to get max sw_integer }
+  for i:=SelStart.Y to ey do
+    begin
+      S:=GetDisplayText(i);
+      LLen:=Max(LLen,Length(S));
+      S:=GetLineText(i);
+      LLen:=Max(LLen,Length(S)); {whatever is longer displayed text or actual line text }
+      WhiteLen:=Min(WhiteLen,Length(S));
+      if WhiteLen = 0 then
+        break; {string length is zero, no lower where to go }
+      k:=1;
+      while (k<=WhiteLen) and (S[k]=' ') do { Tab do not count in }
+        inc(k);
+      WhiteLen:=k-1;
+      if WhiteLen = 0 then
+        break; { we have done enough, no white spaces at all }
+    end;
+  if WhiteLen=(sw_integer(-1) shr 1) then
+    WhiteLen:=0; { eee, never can happen, but if ever then we will be safe }
+{$if sizeof(sw_astring)>8}
+  if LLen > 252 then { if lines are shortstrings and there is no room to add 2 chars }
+  begin
+    UnLock;
+    MessageBox('Lines too long!', nil, mfOKButton);
+    exit;
+  end;
+{$endif}
+  AddGroupedAction(eaCommentSel);
+  WasPersistentBlocks:=IsFlagSet(efPersistentBlocks);
+  if not WasPersistentBlocks then
+    SetFlags(GetFlags or efPersistentBlocks);
+  {selection Start and End move along}
+  if SelStart.X>WhiteLen then inc(SelStart.X,2);
+  if SelEnd.X>WhiteLen then inc(SelEnd.X,2);
+  { put line comment in front of every selected line }
+  Ind:='//';
+  for i:=SelStart.Y to ey do
+   begin
+     S:=GetLineText(i);
+     S:=copy(S,1,WhiteLen)+Ind+copy(S,WhiteLen+1,Length(S));
+     SetLineText(i,S);
+     Pos.X:=WhiteLen;Pos.Y:=i;
+     AddAction(eaInsertText,Pos,Pos,Ind,GetFlags);
+   end;
+  Pos:=CurPos;
+  { this removes selection if Shift is pressed as well }
+  if (CurPos.X > WhiteLen) and (SelStart.Y<=CurPos.Y) and (CurPos.Y<=ey) then
+    SetCurPtr(CurPos.X+2,CurPos.Y);
+  {after SetCurPtr return PersistentBlocks as it was before}
+  if not WasPersistentBlocks then
+    SetFlags(GetFlags and (not longword(efPersistentBlocks)));
+  { must be added manually here PM }
+  AddAction(eaMoveCursor,Pos,CurPos,'',GetFlags);
+  UpdateAttrsRange(SelStart.Y,SelEnd.Y,attrAll);
+  DrawLines(CurPos.Y);
+  SetModified(true);
+  CloseGroupedAction(eaCommentSel);
+  UnLock;
+end;
+
+procedure TCustomCodeEditor.UnCommentSel;
+var
+  ey,i : Sw_Integer;
+  S,Ind : Sw_AString;
+  Pos : Tpoint;
+  WasPersistentBlocks : boolean;
+  WhiteLen, k : Sw_Integer;
+  WasGroupAction : boolean;
+  NeedToMoveCursor:boolean;
+begin
+  if IsReadOnly then Exit;
+  if (SelStart.X=SelEnd.X) and (SelStart.Y=SelEnd.Y) then Exit;
+  Lock;
+  ey:=SelEnd.Y;
+  if SelEnd.X=0 then
+   dec(ey);
+  WasGroupAction:=false;
+  NeedToMoveCursor:=false;
+  { remove line comment from beginning of every selected line ( if there is any) }
+  Ind:='//';
+  for i:=SelStart.Y to ey do
+   begin
+     S:=GetLineText(i);
+     if Length(S)<2 then continue;
+     WhiteLen:=0;
+     for k:=1 to Length(S)-1 do
+       if not (S[k] in [' ',#9]) then
+         break; { white space is over }
+     if (S[k]<>'/') or (S[k+1]<>'/') then continue;  { continue if comment not found }
+     WhiteLen:=k-1;
+     if not WasGroupAction then
+     begin
+       {add group action only if there is at least one action
+        because empty group action throw segment fault when do Undo }
+       WasGroupAction:=true;
+       AddGroupedAction(eaUnCommentSel);
+     end;
+     S:=copy(S,1,WhiteLen)+copy(S,WhiteLen+1+2,Length(S)); { delete line comment string '//' }
+     SetLineText(i,S);
+     Pos.X:=WhiteLen;Pos.Y:=i;
+     AddAction(eaDeleteText,Pos,Pos,Ind,GetFlags);
+     {selection Start and End move along}
+     if i=SelStart.Y then
+       if (SelStart.X>1) and (SelStart.X>WhiteLen+1) then dec(SelStart.X,2);
+     if i=SelEnd.Y then
+       if (SelEnd.X>1) and (SelEnd.X>WhiteLen+1) then dec(SelEnd.X,2);
+     if i=CurPos.Y then
+       if (CurPos.X>1) and (CurPos.X>WhiteLen+1) then NeedToMoveCursor:=true;
+   end;
+  if WasGroupAction then
+  begin
+    WasPersistentBlocks:=IsFlagSet(efPersistentBlocks);
+    if not WasPersistentBlocks then
+      SetFlags(GetFlags or efPersistentBlocks);
+    Pos:=CurPos;
+    { this removes selection if Shift is pressed as well }
+    if NeedToMoveCursor then
+      SetCurPtr(CurPos.X-2,CurPos.Y);
+    {after SetCurPtr return PersistentBlocks as it was before}
+    if not WasPersistentBlocks then
+      SetFlags(GetFlags and (not longword(efPersistentBlocks)));
+    { must be added manually here PM }
+    AddAction(eaMoveCursor,Pos,CurPos,'',GetFlags);
+    UpdateAttrsRange(SelStart.Y,SelEnd.Y,attrAll);
+    DrawLines(CurPos.Y);
+    SetModified(true);
+    CloseGroupedAction(eaUnCommentSel);
+  end;
+  UnLock;
+end;
+
+procedure TCustomCodeEditor.ChangeCommands;
 var Enable,CanPaste: boolean;
 begin
-  if GetLineCount=0 then
-    begin
-      SelStart.X:=0; SelStart.Y:=0; SelEnd:=SelStart;
-    end
-  else
-    if SelEnd.Y>GetLineCount-1 then
-     if (SelEnd.Y<>GetLineCount) or (SelEnd.X<>0) then
-      begin
-        SelEnd.Y:=GetLineCount-1;
-        SelEnd.X:=length(GetDisplayText(SelEnd.Y));
-      end;
-
   { we change the CurCommandSet, but only if we are top view }
   if ((State and sfFocused)<>0) then
     begin
@@ -7286,8 +7750,33 @@ begin
       SetCmdState(FromClipCmds,CanPaste  and (Clipboard<>@Self));
       SetCmdState(UndoCmd,(GetUndoActionCount>0));
       SetCmdState(RedoCmd,(GetRedoActionCount>0));
-      Message(Application,evBroadcast,cmCommandSetChanged,nil);
+      //Message(Application,evBroadcast,cmCommandSetChanged,nil);
     end;
+end;
+
+procedure TCustomCodeEditor.SelectionChanged;
+begin
+  if GetLineCount=0 then
+    begin
+      SelStart.X:=0; SelStart.Y:=0; SelEnd:=SelStart;
+    end
+  else
+    begin
+      if SelStart.Y>GetLineCount-1 then
+       if (SelStart.Y<>GetLineCount) or (SelStart.X<>0) then
+        begin
+          SelStart.Y:=GetLineCount-1;
+          SelStart.X:=length(GetDisplayText(SelEnd.Y));
+          SelEnd:=SelStart;
+        end;
+      if SelEnd.Y>GetLineCount-1 then
+       if (SelEnd.Y<>GetLineCount) or (SelEnd.X<>0) then
+        begin
+          SelEnd.Y:=GetLineCount-1;
+          SelEnd.X:=length(GetDisplayText(SelEnd.Y));
+        end;
+    end;
+  ChangeCommands;
   DrawView;
 end;
 
@@ -7381,7 +7870,7 @@ begin
   while OK and (Line<=EndP.Y) and (Line<GetLineCount) do
   begin
     S:=GetLineText(Line);
-    { Remove all traling spaces PM }
+    { Remove all trailing spaces PM }
     if not Editor^.IsFlagSet(efKeepTrailingSpaces) then
       s:=RTrim(S,False); // removes trailing #0 too
     { if FlagSet(efUseTabCharacters) then
@@ -7577,119 +8066,6 @@ begin
        Inherited HandleEvent(Event);
   st:=getstr(data);
   Message(Owner,evBroadCast,cmInputLineLen,pointer(Length(st)));
-end;
-
-constructor TFPFileInputLine.Init(var Bounds: TRect; AMaxLen: Sw_Integer);
-begin
-  inherited Init(Bounds, AMaxLen);
-end;
-
-procedure TFPFileInputLine.HandleEvent(var Event: TEvent);
-var s : sw_astring;
-    i : sw_integer;
-    st: string;
-begin
-     If (Event.What=evKeyDown) then
-       begin
-           if ((Event.KeyCode=kbShiftIns) or (Event.KeyCode=paste_key))  and
-                 Assigned(weditor.Clipboard) and (weditor.Clipboard^.ValidBlock) then
-           { paste from clipboard }
-           begin
-             i:=Clipboard^.SelStart.Y;
-             s:=Clipboard^.GetDisplayText(i);
-             i:=Clipboard^.SelStart.X;
-             if i>0 then
-              s:=copy(s,i+1,length(s));
-             if (Clipboard^.SelStart.Y=Clipboard^.SelEnd.Y) then
-               begin
-                 i:=Clipboard^.SelEnd.X-i;
-                 s:=copy(s,1,i);
-               end;
-             for i:=1 to length(s) do
-               begin
-                 st:=Data^+s[i];
-                 If not assigned(validator) or
-                    Validator^.IsValidInput(st,False)  then
-                   Begin
-                     Event.What:=evKeyDown;
-                     Event.CharCode:=s[i];
-                     Event.Scancode:=0;
-                     Inherited HandleEvent(Event);
-                   End;
-               end;
-             ClearEvent(Event);
-           end
-         else if ((Event.KeyCode=kbCtrlIns) or (Event.KeyCode=copy_key))  and
-                 Assigned(Clipboard) then
-           { Copy to clipboard }
-           begin
-             s:=GetStr(Data);
-             s:=copy(s,selstart+1,selend-selstart);
-             Clipboard^.SelStart:=Clipboard^.CurPos;
-             Clipboard^.InsertText(s);
-             Clipboard^.SelEnd:=Clipboard^.CurPos;
-             ClearEvent(Event);
-           end
-         else if ((Event.KeyCode=kbShiftDel) or (Event.KeyCode=cut_key))  and
-                 Assigned(Clipboard) then
-           { Cut to clipboard }
-           begin
-             s:=GetStr(Data);
-             s:=copy(s,selstart+1,selend-selstart);
-             Clipboard^.SelStart:=Clipboard^.CurPos;
-             Clipboard^.InsertText(s);
-             Clipboard^.SelEnd:=Clipboard^.CurPos;
-             { now remove the selected part }
-             Event.keyCode:=kbDel;
-             inherited HandleEvent(Event);
-             ClearEvent(Event);
-           end
-         else if ((Event.KeyCode=kbCtrlDel)) then
-           { Cut & discard }
-           begin
-             { now remove the selected part }
-             Event.keyCode:=kbDel;
-             inherited HandleEvent(Event);
-             ClearEvent(Event);
-           end
-         else
-           Inherited HandleEvent(Event);
-       End
-     else
-       Inherited HandleEvent(Event);
-  //st:=getstr(data);
-  //Message(Owner,evBroadCast,cmInputLineLen,pointer(Length(st)));
-end;
-
-constructor TFPFileDialog.Init(AWildCard: TWildStr; const ATitle,
-        InputName: String; AOptions: Word; HistoryId: Byte);
-var R: TRect;
-  DInput  : PFPFileInputLine;
-  Control : PView;
-  History : PHistory;
-  S : String;
-begin
-  inherited init(AWildCard,ATitle,InputName,AOptions,HistoryId);
-  FileName^.getData(S);
-  R.Assign(3, 3, 31, 4);
-  DInput := New(PFPFileInputLine, Init(R, 79{FileNameLen+4}));
-  DInput^.SetData(S);
-  InsertBefore(DInput,FileName); {insert before to preserv order as it was}
-  Delete(FileName);
-  Dispose(FileName,done);
-  DInput^.GrowMode:=gfGrowHiX;
-  FileName:=DInput;
-  FileHistory^.Link:=DInput;
-  {resize}
-  if Desktop^.Size.Y > 26 then
-    GrowTo(Size.X,Desktop^.Size.Y-6);
-  if Desktop^.Size.X > 80 then
-    GrowTo(Min(Desktop^.Size.X-(80-Size.X),102),Size.Y);
-  FileList^.NumCols:= Max((FileList^.Size.X-(FileList^.Size.X div 14)) div 14,2);
-  { Adjust scrollbar step and page step }
-  FileList^.SetRange(FileList^.Range); {set again for scrollbar min max values}
-  {set focus on the new input line}
-  DInput^.Focus;
 end;
 
 

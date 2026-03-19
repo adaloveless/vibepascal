@@ -17,10 +17,6 @@ unit System;
 
 interface
 
-{$IFNDEF FPC_DISABLE_MONITOR}
-{$DEFINE SYSTEM_HAS_FEATURE_MONITOR}
-{$ENDIF}
-
 {$define FPC_IS_SYSTEM}
 { $define SYSTEMEXCEPTIONDEBUG}
 
@@ -43,6 +39,10 @@ interface
   {$define FPC_SYSTEM_HAS_RERAISE}
   {$define FPC_SYSTEM_HAS_CAPTUREBACKTRACE}
 {$endif SYSTEM_USE_WIN_SEH}
+
+{$ifdef VER3_2}
+  {$define FPC_ABI_WIN64}
+{$endif VER3_2}
 
 { include system-independent routine headers }
 {$I systemh.inc}
@@ -96,7 +96,7 @@ begin
     if DllInitState in [DLL_PROCESS_ATTACH,DLL_PROCESS_DETACH] then
       LongJmp(DLLBuf,1)
     else
-      MainThreadIDWin32:=0;
+      DllProcessAttachPerformed:=false;
   end;
   if not IsConsole then
    begin
@@ -428,7 +428,7 @@ initialization
   StackLength := CheckInitialStkLen($1000000);
   StackBottom := StackTop - StackLength;
   SetThreadStackGuaranteeTo(StackMargin);
-  
+
   { get some helpful informations }
   GetStartupInfo(@startupinfo);
   { some misc Win32 stuff }

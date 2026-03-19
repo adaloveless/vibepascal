@@ -63,8 +63,6 @@ Type
   TPropertyType = TPascalType;
   TPropertyTypes = TPascalTypes;
 
-  { TPascalProperty }
-
   { TPascalPropertyData }
 
   TPascalPropertyData = class(TObject)
@@ -211,11 +209,21 @@ Type
 
   TKeywordEscapeMode = (kemAmpersand,kemSuffix,kemPrefix);
 
+  // How to handle reserved type names that conflict with standard library types
+  TReservedTypeBehaviour = (
+    rtbEscape,   // Escape the type name (e.g., TTimeZone -> TTimeZone_)
+    rtbQualify   // Use fully qualified name in serializer references
+  );
+
   { TSchemaData }
 
   TSchemaData = class(TObject)
   private
     FKeywordEscapeMode: TKeywordEscapeMode;
+    FReservedTypeBehaviour: TReservedTypeBehaviour;
+    FReservedTypes: TStrings;
+    FTypeAliases: TStrings;
+    FMaxIdentifierLength: Integer;
     FTypeList : TPascalTypeDataList;
     FAliasList : TPascalTypeDataList;
     FTypeMap : TFPObjectHashTable;
@@ -227,6 +235,8 @@ Type
     FObjectTypeSuffix: string;
     FOnLog: TSchemaCodeGenLogEvent;
     FUseEnums: Boolean;
+    procedure SetReservedTypes(AValue: TStrings);
+    procedure SetTypeAliases(AValue: TStrings);
     function GetSchemaType(aIndex : Integer): TPascalTypeData;
     function GetSchemaTypeCount: Integer;
   protected
@@ -247,8 +257,12 @@ Type
     function GetSchemaTypeData(aType: TPascalTypeData; lSchema: TJSONSchema; AllowCreate: Boolean=False): TPascalTypeData;
     // Add a type to the alias list
     Procedure AddAliasType(aType : TPascalTypeData); virtual;
+    // Sanitize identifier
+    function Sanitize(const aName : string) : String;
     // Sort types in dependency order
     procedure SortTypes;
+    // Define default reserved type names.
+    procedure DefineDefaultReservedTypes; virtual;
   Public
     Constructor Create; virtual;
     Destructor Destroy; override;
@@ -256,8 +270,20 @@ Type
     procedure DefineStandardPascalTypes;
     // Is the word a pascal keyword ?
     class function IsKeyWord(const aWord : String) : Boolean;
+    // Is the type name a reserved type that conflicts with standard library types ?
+    function IsReservedTypeName(const aTypeName : String) : Boolean;
     // Escape the word if it is a pascal keyword ?
     function EscapeKeyWord(const aWord : string) : string;
+    // Handle reserved type name - escape or return as-is based on ReservedTypeBehaviour
+    function HandleReservedTypeName(const aTypeName : string) : string;
+    // Load type aliases from file (format: SchemaTypeName=AliasName per line)
+    procedure LoadTypeAliases(const aFileName : string);
+    // Apply type name shortening: first check aliases, then auto-shorten if too long
+    function ApplyTypeNameShortening(const aSchemaName : string) : string;
+    // Get qualified type name for serializer use (returns UnitName.TypeName for reserved types when rtbQualify)
+    function GetQualifiedTypeName(const aTypeName, aUnitName : string) : string;
+    // Ensure Pascal type name is unique (case-insensitive check), append suffix if needed
+    function EnsureUniquePascalName(const aPascalName : string) : string;
     // Get the pascal name based on schema name
     function GetTypeMap(const aName : string): String;
     // Return index of named schema type (name as in OpenApi). Return -1 if not found.
@@ -273,12 +299,12 @@ Type
     // Add a type to the list
     Procedure AddType(const aSchemaName: String; aType : TPascalTypeData); virtual;
     // Add a type definition to the type map.
-    procedure AddAliasToTypeMap(aType: TPascalType; const aAlias, aSchemaTypeName, aPascalTypeName: String; aSchema: TJSONSchema); overload;
+    function AddAliasToTypeMap(aType: TPascalType; const aAlias, aSchemaTypeName, aPascalTypeName: String; aSchema: TJSONSchema) : TPascalTypeData; overload;
     // Add a property to a type
     function AddTypeProperty(aType: TPascalTypeData; lProp: TJSONSchema; aName : string = ''; Recurse : Boolean = True): TPascalPropertyData;
     // Add properties to structured pascal type from aSchema. if aSchema = nil then use aType.Schema
     Procedure AddPropertiesToType(aType : TPascalTypeData; aSchema: TJSONSchema = Nil; Recurse : Boolean = True);
-    // For all types, fill the depency list: contains all structured types on which the type depends (recursively).
+    // For all types, fill the dependency list: contains all structured types on which the type depends (recursively).
     procedure CheckDependencies; virtual;
     // Number of types
     Property TypeCount : Integer Read GetSchemaTypeCount;
@@ -304,6 +330,14 @@ Type
     Property OnLog : TSchemaCodeGenLogEvent Read FOnLog Write FOnLog;
     // how to escape keywords
     Property KeywordEscapeMode : TKeywordEscapeMode Read FKeywordEscapeMode Write FKeywordEscapeMode;
+    // List of reserved type names that conflict with standard library types (one per line, without T prefix)
+    Property ReservedTypes : TStrings Read FReservedTypes Write SetReservedTypes;
+    // How to handle reserved type names: escape them or use qualified names
+    Property ReservedTypeBehaviour : TReservedTypeBehaviour Read FReservedTypeBehaviour Write FReservedTypeBehaviour;
+    // Type aliases for shortening long type names (format: SchemaTypeName=AliasName)
+    Property TypeAliases : TStrings Read FTypeAliases Write SetTypeAliases;
+    // Maximum identifier length (default 120, to leave room for Array suffix under FPC's 127 limit)
+    Property MaxIdentifierLength : Integer Read FMaxIdentifierLength Write FMaxIdentifierLength;
   end;
 
 implementation
@@ -325,7 +359,7 @@ function CompareProperties(Item1, Item2: Pointer): Integer;
 var
   lParam1 : TPascalPropertyData absolute Item1;
   lParam2 : TPascalPropertyData absolute Item2;
-  
+
 begin
   Result:=CompareText(lParam1.PascalName,lParam2.PascalName);
 end;
@@ -530,8 +564,6 @@ constructor TPascalTypeData.Create(aIndex: integer; aType: TPascalType; const aS
   );
 
 begin
-  if (aType=ptArray) and (Pos('Meeting',aSchemaName)>0) then
-    Writeln('ah');
   FIndex:=aIndex;
   FSchema:=ASchema;
   FSchemaName:=aSchemaName;
@@ -608,21 +640,37 @@ end;
 
 function TPascalTypeData.DependsOn(aData: TPascalTypeData; Recurse: Boolean): TDependencyType;
 
+  function DoCheck(aType: TPascalTypeData; aVisited: TFPObjectList): TDependencyType;
+  var
+    I: Integer;
+  begin
+    Result := dtNone;
+    if Not Assigned(aType.FDependencies) then
+      exit;
+    // Check if already visited to prevent infinite recursion on circular dependencies
+    if aVisited.IndexOf(aType) >= 0 then
+      exit;
+    aVisited.Add(aType);
+    For I := 0 to aType.DependencyCount-1 do
+      if (aType.Dependency[i] = aData) then
+        exit(dtDirect);
+    if not Recurse then
+      exit;
+    For I := 0 to aType.DependencyCount-1 do
+      if (DoCheck(aType.Dependency[i], aVisited) <> dtNone) then
+        Exit(dtIndirect);
+  end;
+
 var
-  I : Integer;
+  lVisited: TFPObjectList;
 
 begin
-  Result:=dtNone;
-  if Not Assigned(FDependencies) then
-    exit;
-  For I:=0 to DependencyCount-1 do
-    if (Dependency[i]=aData) then
-      exit(dtDirect);
-  if not Recurse then
-    exit;
-  For I:=0 to DependencyCount-1 do
-    if (Dependency[i].DependsOn(aData,True)<>dtNone) then
-      Exit(dtIndirect);
+  lVisited := TFPObjectList.Create(False);
+  try
+    Result := DoCheck(Self, lVisited);
+  finally
+    lVisited.Free;
+  end;
 end;
 
 
@@ -652,17 +700,21 @@ procedure TSchemaData.CheckDependencies;
         Case lPropData.Pascaltype of
         ptAnonStruct,ptSchemaStruct:
           begin
-          lTop.AddDependency(lPropData);
-          CheckProps(lTop,lPropData);
+          if lTop.DependsOn(lPropData, False) = dtNone then
+            begin
+            lTop.AddDependency(lPropData);
+            CheckProps(lTop,lPropData);
+            end;
           end;
         ptArray:
           begin
           lPropData:=lPropData.ElementTypeData;
           if assigned(lPropData) and (lPropData.PascalType in [ptAnonStruct,ptSchemaStruct]) then
-            begin
-            lTop.AddDependency(lPropData);
-            CheckProps(lTop,lPropData);
-            end;
+            if lTop.DependsOn(lPropData, False) = dtNone then
+              begin
+              lTop.AddDependency(lPropData);
+              CheckProps(lTop,lPropData);
+              end;
           end
         else
           ;
@@ -674,12 +726,27 @@ procedure TSchemaData.CheckDependencies;
 var
   I : Integer;
   lData : TPascalTypeData;
+  lName : string;
 
 begin
   For I:=0 to TypeCount-1 do
     begin
     lData:=Types[I];
-    CheckProps(lData,lData);
+    Case lData.Pascaltype of
+      ptAnonStruct,
+      ptSchemaStruct:
+        CheckProps(lData,lData) ;
+      ptArray:
+        begin
+        // Resolve element type ref
+        if (lData.Schema.Items.Count=1) then
+          begin
+          lName:=lData.Schema.Items[0].Ref;
+          if lName<>'' then
+            lData.ElementTypeData:=GetPascalTypeDataFromRef(lName);
+          end;
+        end;
+    end;
     end;
 end;
 
@@ -805,6 +872,19 @@ begin
   FAliasList.Add(aType);
 end;
 
+function TSchemaData.Sanitize(const aName: string): String;
+var
+  i : integer;
+  lRes : string;
+begin
+  lRes:=aName;
+  UniqueString(lRes);
+  For I:=1 to Length(lRes) do
+    if not (lRes[i] in ['a'..'z','A'..'Z','0'..'9','_']) then
+      lRes[i]:='_';
+  Result:=lRes;
+end;
+
 
 // Determine the PascalType and pascal type name of the given schema
 
@@ -827,7 +907,7 @@ begin
     end;
 end;
 
-Procedure TSchemaData.FinishAutoCreatedType(aName : string; aType: TPascalTypeData; lElementTypeData: TPascalTypeData);
+procedure TSchemaData.FinishAutoCreatedType(aName: string; aType: TPascalTypeData; lElementTypeData: TPascalTypeData);
 
 begin
   AddType(aName,aType);
@@ -845,6 +925,7 @@ var
   lType : TSchemaSimpleType;
   lName,lBaseName,lPascalName : string;
   lFormat : String;
+  lTmp : TJSONSchema;
   lElTypeData : TPascalTypeData;
 
 begin
@@ -898,12 +979,8 @@ begin
         end;
       sstArray:
         begin
-        lElTypeData:=GetSchemaTypeData(Nil,lSchema.Items[0]);
-//        if
-//         Data.FindSchemaTypeData('Array of string')
-        lPascalName:=ArrayTypePrefix+lElTypeData.PascalName+ArrayTypeSuffix;
-        if lElTypeData.SchemaName='MeetingOption' then
-          Writeln('Ah');
+        lElTypeData:=GetSchemaTypeData(Nil,lSchema.Items[0],True);
+        lPascalName:=EnsureUniquePascalName(Sanitize(ArrayTypePrefix+lElTypeData.PascalName+ArrayTypeSuffix));
         lName:='['+lElTypeData.SchemaName;
         if lSchema.Items[0].Validations.HasKeywordData(jskformat) then
           lName:=lName+'--'+lSchema.Items[0].Validations.Format;
@@ -913,8 +990,6 @@ begin
           lName:='';
         if (Result=Nil) and AllowCreate then
           begin
-          if (lName='[MeetingOption]') then
-            Writeln('ah');
           Result:=CreatePascalType(-1,ptArray,lName,lPascalName,lSchema);
           FinishAutoCreatedType(lName,Result,lElTypeData);
           lName:='';
@@ -929,9 +1004,20 @@ begin
           if assigned(aType) then
             lBaseName:=aType.GetTypeName(ntSchema)+'_'+lSchema.Name
           else
-            lBaseName:='Nested_'+lSchema.Name;
+            begin
+            lBaseName:=lSchema.Name;
+            lTmp:=lSchema.Parent;
+            While lTmp<>Nil do
+              begin
+              if lTmp.Name<>'' then
+                lBaseName:=lTmp.Name+'_'+lBaseName
+              else
+                lBaseName:='Nested_'+lBaseName;
+              lTmp:=lTmp.Parent;
+              end;
+            end;
           lName:='{'+lBaseName+'}';
-          lPascalName:='T'+lBaseName;
+          lPascalName:=HandleReservedTypeName(ObjectTypePrefix+Sanitize(lBaseName));
           Result:=FindSchemaTypeData(lName);
           if (Result=Nil) and AllowCreate then
             begin
@@ -963,8 +1049,8 @@ var
 begin
   lName:=aName;
   if lName='' then
-    lName:=EscapeKeyWord(lProp.Name);
-  Writeln('Adding property name ',lName,' to ',aType.PascalName);
+    lName:=EscapeKeyWord(Sanitize(lProp.Name));
+  DoLog(etInfo,'Adding property name %s to %s',[lName,aType.PascalName]);
   if lProp.Validations.TypesCount>1 then
     Raise ESchemaData.CreateFmt('Creating property for schema with multiple types ("%s") is not supported',[lName]);
   if (lProp.Validations.GetFirstType=sstArray) then
@@ -1027,7 +1113,8 @@ begin
 end;
 
 
-procedure TSchemaData.AddAliasToTypeMap(aType : TPascalType; const aAlias,aSchemaTypeName, aPascalTypeName: String; aSchema: TJSONSchema);
+function TSchemaData.AddAliasToTypeMap(aType: TPascalType; const aAlias, aSchemaTypeName, aPascalTypeName: String;
+  aSchema: TJSONSchema): TPascalTypeData;
 
 var
   lType : TPascalTypeData;
@@ -1038,21 +1125,54 @@ begin
     lType.InterfaceName:=aPascalTypeName;
   AddToTypeMap(aAlias,lType);
   AddAliasType(lType);
+  Result:=lType;
 end;
 
+procedure TSchemaData.DefineDefaultReservedTypes;
+begin
+  With FReservedTypes do
+    begin
+    // Default reserved types that conflict with FPC/Delphi standard library
+    Add('TimeStamp');     // DateUtils.TTimeStamp
+    Add('TimeZone');      // DateUtils.TTimeZone
+    Add('Date');          // Common type name
+    Add('Time');          // Common type name
+    Add('DateTime');      // SysUtils.TDateTime
+    Add('Stream');        // Classes.TStream
+    Add('List');          // Contnrs/Generics.TList
+    Add('StringList');    // Classes.TStringList
+    Add('Strings');       // Classes.TStrings
+    Add('Thread');        // Classes.TThread
+    Add('Component');     // Classes.TComponent
+    Add('Collection');    // Classes.TCollection
+    Add('Object');        // System.TObject
+    Add('Word');          // SysUtils.TWordArray conflicts
+    Add('JsonObject');    // fpJson.TJSONObject conflicts
+    Add('EventType');     // SysUtils.TEventType conflicts
+    end;
+end;
 
+ 
 constructor TSchemaData.Create;
 
 begin
   FTypeMap:=TFPObjectHashTable.Create(False);
   FTypeList:=TPascalTypeDataList.Create(True);
   FAliasList:=TPascalTypeDataList.Create(True);
+  FReservedTypes:=TStringList.Create;
+  DefineDefaultReservedTypes;
+  TStringList(FReservedTypes).Duplicates:=dupIgnore;
+  TStringList(FReservedTypes).Sorted:=True;
+  FTypeAliases:=TStringList.Create;
+  TStringList(FTypeAliases).Duplicates:=dupIgnore;
+  FMaxIdentifierLength:=120;
   FObjectTypePrefix:='T';
   FObjectTypeSuffix:='';
   FInterfaceTypePrefix:='I';
   FArrayTypeSuffix:='Array';
   FArrayTypePrefix:='';
   FKeywordEscapeMode:=kemSuffix;
+  FReservedTypeBehaviour:=rtbEscape;
 end;
 
 
@@ -1062,28 +1182,56 @@ begin
   FreeAndNil(FTypeList);
   FreeAndNil(FAliasList);
   FreeAndNil(FTypeMap);
+  FreeAndNil(FReservedTypes);
+  FreeAndNil(FTypeAliases);
   inherited Destroy;
 end;
 
 procedure TSchemaData.DefineStandardPascalTypes;
+var
+  lArr,lElem : TPascalTypeData;
+
 begin
   // typename--format
-  AddAliasToTypeMap(ptInteger,'integer','integer','integer',Nil);
+  lElem:=AddAliasToTypeMap(ptInteger,'integer','integer','integer',Nil);
+  lArr:=AddAliasToTypeMap(ptArray,'[integer]','[integer]','TIntegerDynArray',Nil);
+  lArr.ElementTypeData:=lElem;
+
   AddAliasToTypeMap(ptInteger,'integer--int32','integer','integer',Nil);
-  AddAliasToTypeMap(ptInt64,'integer--int64','integer','int64',Nil);
-  AddAliasToTypeMap(ptString,'string','string','string',Nil);
+
+  lElem:=AddAliasToTypeMap(ptInt64,'integer--int64','integer','int64',Nil);
+  lArr:=AddAliasToTypeMap(ptArray,'[integer--int64]','[integer--int64]','TInt64DynArray',Nil);
+  lArr.ElementTypeData:=lElem;
+
+  // Google Discovery uint32/uint64 formats
+  AddAliasToTypeMap(ptInteger,'integer--uint32','integer','Cardinal',Nil);
+  lElem:=AddAliasToTypeMap(ptInt64,'integer--uint64','integer','QWord',Nil);
+  lArr:=AddAliasToTypeMap(ptArray,'[integer--uint64]','[integer--uint64]','TQWordDynArray',Nil);
+  lArr.ElementTypeData:=lElem;
+
+  lElem:=AddAliasToTypeMap(ptString,'string','string','string',Nil);
+  lArr:=AddAliasToTypeMap(ptArray,'[string]','[string]','TStringDynArray',Nil);
+  lArr.ElementTypeData:=lElem;
+
   AddAliasToTypeMap(ptDateTime,'string--date','string','TDateTime',Nil);
   AddAliasToTypeMap(ptDateTime,'string--time','string','TDateTime',Nil);
   AddAliasToTypeMap(ptDateTime,'string--date-time','string','TDateTime',Nil);
-  AddAliasToTypeMap(ptBoolean,'boolean','boolean','boolean',Nil);
-  AddAliasToTypeMap(ptFloat64,'number','number','double',Nil);
+
+  // Google Discovery uses strings for large integers (JSON/JavaScript limitation)
+  AddAliasToTypeMap(ptString,'string--int64','string','string',Nil);
+  AddAliasToTypeMap(ptString,'string--uint64','string','string',Nil);
+
+  lElem:=AddAliasToTypeMap(ptFloat64,'number','number','double',Nil);
+  lArr:=AddAliasToTypeMap(ptArray,'[number]','[number]','TDoubleDynArray',Nil);
+  lArr.ElementTypeData:=lElem;
+
   AddAliasToTypeMap(ptJSON,'JSON','object','string',Nil);
   AddAliasToTypeMap(ptJSON,'any','object','string',Nil);
-  AddAliasToTypeMap(ptArray,'[string]','[string]','TStringDynArray',Nil);
-  AddAliasToTypeMap(ptArray,'[integer]','[integer]','TIntegerDynArray',Nil);
-  AddAliasToTypeMap(ptArray,'[integer--int64]','[integer--int64]','TInt64DynArray',Nil);
-  AddAliasToTypeMap(ptArray,'[number]','[number]','TDoubleDynArray',Nil);
-  AddAliasToTypeMap(ptArray,'[boolean]','[boolean]','TBooleanDynArray',Nil);
+
+  lElem:=AddAliasToTypeMap(ptBoolean,'boolean','boolean','boolean',Nil);
+  lArr:=AddAliasToTypeMap(ptArray,'[boolean]','[boolean]','TBooleanDynArray',Nil);
+  lArr.ElementTypeData:=lElem;
+
 end;
 
 
@@ -1097,7 +1245,8 @@ Const
       'to;type;unit;until;uses;var;while;with;xor;dispose;exit;false;new;true;'+
       'as;class;dispinterface;except;exports;finalization;finally;initialization;'+
       'inline;is;library;on;out;packed;property;raise;resourcestring;threadvar;try;'+
-      'private;published;length;setlength;';
+      'private;published;length;setlength;result;create;destroy;free;methodname;'+
+      'default;classname;strict;instancesize;classtype;';
 
 begin
   Result:=Pos(';'+lowercase(aWord)+';',KW)<>0;
@@ -1114,6 +1263,159 @@ begin
       kemPrefix : Result:='_'+Result;
       kemAmpersand : Result:='&'+Result;
     end;
+end;
+
+
+procedure TSchemaData.SetReservedTypes(AValue: TStrings);
+
+begin
+  if FReservedTypes = AValue then Exit;
+  FReservedTypes.Clear;
+  FReservedTypes.AddStrings(AValue);
+end;
+
+
+procedure TSchemaData.SetTypeAliases(AValue: TStrings);
+
+begin
+  if FTypeAliases = AValue then Exit;
+  FTypeAliases.Clear;
+  FTypeAliases.AddStrings(AValue);
+end;
+
+
+procedure TSchemaData.LoadTypeAliases(const aFileName: string);
+
+begin
+  if FileExists(aFileName) then
+    FTypeAliases.LoadFromFile(aFileName);
+end;
+
+
+function TSchemaData.ApplyTypeNameShortening(const aSchemaName: string): string;
+
+var
+  lIdx: Integer;
+  lFullName: string;
+  lHash: Cardinal;
+  lHashStr: string;
+  lMaxNameLen: Integer;
+
+  function SimpleHash(const S: string): Cardinal;
+  var
+    I: Integer;
+  begin
+    Result := 0;
+    for I := 1 to Length(S) do
+      Result := ((Result shl 5) + Result) + Ord(S[I]);
+  end;
+
+begin
+  // Tier 1: Check user-defined aliases first
+  lIdx := FTypeAliases.IndexOfName(aSchemaName);
+  if lIdx >= 0 then
+  begin
+    Result := FTypeAliases.ValueFromIndex[lIdx];
+    DoLog(etInfo, 'Using alias for type %s -> %s', [aSchemaName, Result]);
+    Exit;
+  end;
+
+  // Tier 2: Check if shortening is needed
+  lFullName := ObjectTypePrefix + Sanitize(aSchemaName) + ObjectTypeSuffix;
+
+  if Length(lFullName) <= FMaxIdentifierLength then
+  begin
+    Result := aSchemaName;
+    Exit;
+  end;
+
+  // Fallback: truncate and add hash to ensure uniqueness
+  lHash := SimpleHash(aSchemaName);
+  lHashStr := '_' + IntToHex(lHash, 4);
+  // Calculate max name length excluding prefix, suffix, and hash
+  lMaxNameLen := FMaxIdentifierLength - Length(ObjectTypePrefix) - Length(ObjectTypeSuffix) - Length(lHashStr);
+  Result := Copy(aSchemaName, 1, lMaxNameLen) + lHashStr;
+  DoLog(etWarning, 'Type name too long, truncated with hash: %s -> %s', [aSchemaName, Result]);
+end;
+
+
+function TSchemaData.IsReservedTypeName(const aTypeName: String): Boolean;
+
+var
+  lName: string;
+  I: Integer;
+
+begin
+  Result := False;
+  // Check if the type name (without prefix) matches any reserved type
+  lName := aTypeName;
+  // Remove common prefixes for comparison
+  if (Length(lName) > 1) and (lName[1] = 'T') then
+    lName := Copy(lName, 2, Length(lName) - 1);
+  for I := 0 to FReservedTypes.Count - 1 do
+    if SameText(lName, FReservedTypes[I]) then
+      Exit(True);
+end;
+
+
+function TSchemaData.HandleReservedTypeName(const aTypeName: string): string;
+
+begin
+  Result := aTypeName;
+  if not IsReservedTypeName(aTypeName) then
+    Exit;
+  case ReservedTypeBehaviour of
+    rtbEscape:
+      // Escape by adding suffix (consistent with keyword escaping)
+      case KeywordEscapeMode of
+        kemSuffix : Result := Result + '_';
+        kemPrefix : Result := '_' + Result;
+        kemAmpersand : Result := '&' + Result;
+      end;
+    rtbQualify:
+      { For rtbQualify, do not modify the name here - the code generator
+        will use the fully qualified name when using the type using 
+        GetQualifiedTypeName}
+      ;
+  end;
+end;
+
+
+function TSchemaData.GetQualifiedTypeName(const aTypeName, aUnitName: string): string;
+
+begin
+  Result := aTypeName;
+  // Only qualify if rtbQualify is set and type is reserved
+  if (ReservedTypeBehaviour = rtbQualify) and IsReservedTypeName(aTypeName) and (aUnitName <> '') then
+    Result := aUnitName + '.' + aTypeName;
+end;
+
+
+function TSchemaData.EnsureUniquePascalName(const aPascalName: string): string;
+
+var
+  I, Suffix: Integer;
+  Found: Boolean;
+
+begin
+  Result := aPascalName;
+  Suffix := 2;
+
+  // Check if any existing type has the same Pascal name (case-insensitive)
+  repeat
+    Found := False;
+    for I := 0 to FTypeList.Count - 1 do
+    begin
+      if SameText(TPascalTypeData(FTypeList[I]).PascalName, Result) then
+      begin
+        Found := True;
+        Result := aPascalName + '_' + IntToStr(Suffix);
+        Inc(Suffix);
+        DoLog(etWarning, 'Type name conflict (case-insensitive): %s renamed to %s', [aPascalName, Result]);
+        Break;
+      end;
+    end;
+  until not Found;
 end;
 
 
@@ -1188,10 +1490,10 @@ procedure TSchemaData.SortTypes;
   begin
     if aType.Sorted then
       exit;
+    aType.Sorted:=True;  // Mark before recursing to prevent infinite recursion on circular dependencies
     for I:=0 to aType.DependencyCount-1 do
       AddToList(aList,aType.Dependency[i]);
     aList.Add(aType);
-    aType.Sorted:=True;
   end;
 
 var

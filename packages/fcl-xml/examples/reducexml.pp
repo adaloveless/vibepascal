@@ -3,14 +3,18 @@ program reducexml;
 {$mode objfpc}
 {$h+}
 
-uses cwstring,SysUtils,classes,DOM,xmlutils,xmlread,xmlwrite;
+uses
+  {$IFDEF UNIX}
+  cwstring,
+  {$ENDIF}
+  SysUtils, classes, DOM, xmlutils, xmlread, xmlwrite;
 
 Var
   D : TXMLDocument;
   S : TFileStream;
   W : TDOMWriter;
   FN : String;
- 
+
 
 begin
   if paramCount=0 then
@@ -22,7 +26,7 @@ begin
   FN:=ParamStr(2);
   if FN='' then
     FN:=ChangeFileExt(ParamStr(1),'-new.xml');
-  W:=nil;  
+  W:=nil;
   S:=TFileStream.Create(FN,fmCreate);
   try
     W:=TDOMWriter.Create(S,D);

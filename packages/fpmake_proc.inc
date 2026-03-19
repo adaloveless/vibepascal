@@ -144,6 +144,18 @@ begin
 {$include fcl-json/fpmake.pp}
 end;
 
+procedure add_fcl_syntax(const ADirectory: string);
+begin
+  with Installer do
+{$include fcl-syntax/fpmake.pp}
+end;
+
+procedure add_fcl_md(const ADirectory: string);
+begin
+  with Installer do
+{$include fcl-md/fpmake.pp}
+end;
+
 procedure add_fcl_net(const ADirectory: string);
 begin
   with Installer do
@@ -858,7 +870,7 @@ begin
 {$include qlunits/fpmake.pp}
 end;
 
-procedure add_mustache(const ADirectory: string);
+procedure add_fcl_mustache(const ADirectory: string);
 begin
   with Installer do
 {$include fcl-mustache/fpmake.pp}
@@ -918,6 +930,18 @@ begin
 {$include fcl-openapi/fpmake.pp}
 end;
 
+procedure add_fcl_wit(const ADirectory: string);
+begin
+  with Installer do
+{$include fcl-wit/fpmake.pp}
+end;
+
+procedure add_fcl_ebnf(const ADirectory: string);
+begin
+  with Installer do
+{$include fcl-ebnf/fpmake.pp}
+end;
+
 procedure add_fcl_yaml(const ADirectory: string);
 begin
   with Installer do
@@ -942,4 +966,16 @@ procedure add_libsndfile(const ADirectory: string);
 begin
   with Installer do
 {$include libsndfile/fpmake.pp}
+end;
+
+procedure add_redis(const ADirectory: string);
+begin
+  with Installer do
+{$include redis/fpmake.pp}
+end;
+
+procedure add_fpalsa(const ADirectory: string);
+begin
+  with Installer do
+{$include fpalsa/fpmake.pp}
 end;

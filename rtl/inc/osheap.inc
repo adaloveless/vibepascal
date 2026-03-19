@@ -13,9 +13,9 @@
 
  **********************************************************************}
 
-{ 
+{
   The OS heap manager is a small heap manager for smaller targets with an
-  operating system. It's similar in comcept to the "cmem" memory manager
+  operating system. It's similar in concept to the "cmem" memory manager
   for systems with libc support, but it aims systems that have a direct
   heap management API (Sinclair QL, AmigaOS, MacOS Classic, some
   embedded systems, etc), but not necessarily libc. It's also designed
@@ -23,7 +23,7 @@
 
   The main advantage is that it's much smaller than the regular heap
   manager, and it's a thinner layer towards the OS as well, therefore it
-  can be slightly faster on resource constrained systems. 
+  can be slightly faster on resource constrained systems.
 
   The disadvantage is that it may not be well suited for bigger Pascal
   programs that rely heavily on consistent heap performance, as the
@@ -69,11 +69,6 @@
       begin
         Dec(p,sizeof(ptruint));
         result:=pptruint(p)[0]-sizeof(ptruint);
-      end;
-
-    function SysTryResizeMem(var p: pointer; size: ptruint) : boolean;
-      begin
-        result := false;
       end;
 
     function SysAllocMem(size: ptruint): pointer;

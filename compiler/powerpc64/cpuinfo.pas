@@ -34,7 +34,11 @@ type
 
   { possible supported processors for this target }
   tcputype = (cpu_none,
-    cpu_ppc970
+    cpu_power4,
+    cpu_ppc970,
+    cpu_power5,
+    cpu_power6,
+    cpu_power7
     );
 
   tfputype =
@@ -83,7 +87,11 @@ Const
     ];
 
   cputypestr: array[tcputype] of string[10] = ('',
-    '970'
+    'POWER4',
+    '970',
+    'POWER5',
+    'POWER6',
+    'POWER7'
     );
 
   fputypestr: array[tfputype] of string[8] = (
@@ -102,7 +110,7 @@ Const
                                   cs_opt_tailrecursion,cs_opt_reorder_fields,cs_opt_fastmath];
 
    level1optimizerswitches = genericlevel1optimizerswitches;
-   level2optimizerswitches = genericlevel2optimizerswitches + level1optimizerswitches + 
+   level2optimizerswitches = genericlevel2optimizerswitches + level1optimizerswitches +
      [{$ifndef llvm}cs_opt_regvar,{$endif}cs_opt_stackframe,cs_opt_nodecse,cs_opt_tailrecursion];
    level3optimizerswitches = genericlevel3optimizerswitches + level2optimizerswitches;
    level4optimizerswitches = genericlevel4optimizerswitches + level3optimizerswitches + [];

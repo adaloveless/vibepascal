@@ -1058,7 +1058,7 @@ Implementation
             (lastfileinfo.fileindex<>hp.fileinfo.fileindex) then
           begin
             { in case of a generic the module can be different }
-            if current_module.unit_index=hp.fileinfo.moduleindex then
+            if current_module.moduleid=hp.fileinfo.moduleindex then
               module:=current_module
             else
               module:=get_module(hp.fileinfo.moduleindex);
@@ -1403,7 +1403,7 @@ Implementation
     destructor TExternalAssembler.Destroy;
       begin
         if ffreewriter then
-          writer.Free;
+          writer.Free; // no nil needed
         inherited;
       end;
 
@@ -1428,8 +1428,10 @@ Implementation
       begin
         if assigned(ObjData) then
           ObjData.free;
+          ObjData := nil;
         if assigned(ObjOutput) then
           ObjOutput.free;
+          ObjOutput := nil;
       end;
 
 
@@ -1538,7 +1540,7 @@ Implementation
                       have_second_symbol:=true;
                       if not have_first_symbol then
                         internalerror(2007032202);
-                      { second symbol should substracted to first }
+                      { second symbol should subtracted to first }
                       if not dosub then
                         internalerror(2007032203);
                       if (relocsym.objsection<>sym.objsection) then
@@ -1985,7 +1987,7 @@ Implementation
                      Tai_align_abstract(hp).fillsize:=align(ObjData.CurrObjSec.Size,Tai_align_abstract(hp).aligntype)-
                        ObjData.CurrObjSec.Size;
 
-                     { maximum number of bytes for alignment exeeded? }
+                     { maximum number of bytes for alignment exceeded? }
                      if (Tai_align_abstract(hp).aligntype<>Tai_align_abstract(hp).maxbytes) and
                        (Tai_align_abstract(hp).fillsize>Tai_align_abstract(hp).maxbytes) then
                        Tai_align_abstract(hp).fillsize:=align(ObjData.CurrObjSec.Size,Byte(Tai_align_abstract(hp).aligntype div 2))-
@@ -2766,6 +2768,7 @@ Implementation
         ObjData.free;
         ObjData:=nil;
         ObjWriter.free;
+        ObjWriter := nil;
       end;
 
 
@@ -2881,6 +2884,7 @@ Implementation
         ObjData.free;
         ObjData:=nil;
         ObjWriter.free;
+        ObjWriter := nil;
       end;
 
 
@@ -2926,6 +2930,7 @@ Implementation
         a:=CAssembler[target_asm.id].Create(@target_asm,smart);
         a.MakeObject;
         a.Free;
+        a := nil;
       end;
 
 

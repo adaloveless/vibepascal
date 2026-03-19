@@ -21,12 +21,10 @@ interface
 
 {$linklib app_update,static}
 {$linklib bootloader_support,static}
-{$linklib coexist,static}
 {$linklib core,static}
 {$linklib driver,static}
 {$linklib efuse,static}
 {$linklib esp_app_format,static}
-{$linklib esp_coex,static}
 {$linklib esp_common,static}
 {$linklib esp_hw_support,static}
 {$linklib esp_mm,static}

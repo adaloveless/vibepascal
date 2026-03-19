@@ -53,7 +53,7 @@ interface
       end;
 
 
-{ convenince routine to build the VMT for an objectdef
+{ convenience routine to build the VMT for an objectdef
   Note: also ensures that the procdefs of the objectdef have their hidden
   parameters inserted }
 procedure build_vmt(def:tobjectdef);
@@ -91,7 +91,16 @@ implementation
           descendent Objective-C class }
         if not allowoverridingmethod and
            (po_overridingmethod in pd.procoptions) then
-          MessagePos1(pd.fileinfo,parser_e_nothing_to_be_overridden,pd.fullprocname(false));
+          begin
+            MessagePos1(pd.fileinfo,parser_e_nothing_to_be_overridden,pd.fullprocname(true));
+            for i:=0 to _class.vmtentries.count-1 do
+              begin
+                vmtentry:=pvmtentry(_class.vmtentries[i]);
+                vmtpd:=tprocdef(vmtentry^.procdef);
+                if (upper(vmtpd.procsym.realname)=upper(pd.procsym.realname)) then
+                  MessagePos1(vmtpd.fileinfo,sym_h_param_list,vmtpd.fullprocname(true));
+	      end;
+          end;
 
         { check that all methods have overload directive }
         if not(m_fpc in current_settings.modeswitches) then
@@ -254,7 +263,7 @@ implementation
                   { if the mangled names are different, the inheritance trees
                     are different too in Java; exception: when the parent method
                     is a virtual class method or virtual constructor, because
-                    those are looked up dynamicall by name }
+                    those are looked up dynamical by name }
                   javanewtreeok:=
                     is_java_class_or_interface(_class) and
                     (tcpuprocdef(pd).jvmmangledbasename(false)<>tcpuprocdef(vmtpd).jvmmangledbasename(false)) and
@@ -348,7 +357,7 @@ implementation
               if hasequalpara and
                  compatible_childmethod_resultdef(vmtpd.returndef,pd.returndef) then
                 begin
-                  { inherite calling convention when it was explicit and the
+                  { inherit calling convention when it was explicit and the
                     current definition has none explicit set }
                   if (po_hascallingconvention in vmtpd.procoptions) and
                      not(po_hascallingconvention in pd.procoptions) then
@@ -424,7 +433,7 @@ implementation
               { different parameters }
               else
                begin
-                 { when we got an override directive then can search futher for
+                 { when we got an override directive then can search further for
                    the procedure to override.
                    If we are starting a new virtual tree then hide the old tree }
                  if not(po_overridingmethod in pd.procoptions) and
@@ -968,6 +977,7 @@ implementation
                       prot_get_procdefs_recursive(ImplIntf,ImplIntf.IntfDef);
                     end;
                   handledprotocols.free;
+                  handledprotocols := nil;
                 end
               else
                 internalerror(2009091801);
@@ -983,6 +993,7 @@ implementation
         vmtbuilder:=TVMTBuilder.create(def);
         vmtbuilder.build;
         vmtbuilder.free;
+        vmtbuilder := nil;
       end;
 
 end.

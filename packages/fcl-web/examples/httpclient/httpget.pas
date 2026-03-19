@@ -88,7 +88,7 @@ procedure TTestApp.ShowRedirect(ASender: TObject; const ASrc: String;
 
 begin
   Writeln('Following redirect from ',ASrc,'  ==> ',ADest);
-end;  
+end;
 
 
 procedure TTestApp.Run;
@@ -101,6 +101,7 @@ begin
     end;
   With TFPHTTPClient.Create(Nil) do
     try
+      RequestCookies.Add.Name:='me';
       AllowRedirect:=True;
       OnRedirect:=@ShowRedirect;
       OnPassword:=@DoPassword;

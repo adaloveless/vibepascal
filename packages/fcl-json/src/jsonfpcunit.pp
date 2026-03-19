@@ -13,7 +13,7 @@
 
  **********************************************************************}
 {$IFNDEF FPC_DOTTEDUNITS}
-unit jsonfpcunit;
+unit JsonFpcUnit;
 {$ENDIF}
 
 {$mode objfpc}
@@ -25,7 +25,7 @@ interface
 uses
 {$IFDEF FPC_DOTTEDUNITS}
   System.Classes, System.SysUtils, FpJson.Data, FpcUnit.Test;
-{$ELSE}  
+{$ELSE}
   Classes, SysUtils, fpjson, fpcunit;
 {$ENDIF}
 

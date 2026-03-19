@@ -1097,7 +1097,7 @@ unit cgx86;
         dirref:=ref;
 
         { this could probably done in a more optimized way, but for now this
-          is sufficent }
+          is sufficient }
         make_direct_ref(list,dirref);
 
         with dirref do
@@ -1105,7 +1105,7 @@ unit cgx86;
 {$ifdef i386}
             if refaddr=addr_ntpoff then
               begin
-                { Convert thread local address to a process global addres
+                { Convert thread local address to a process global address
                   as we cannot handle far pointers.}
                 case target_info.system of
                   system_i386_linux,system_i386_android:
@@ -1137,7 +1137,7 @@ unit cgx86;
 {$ifdef x86_64}
             if refaddr=addr_tpoff then
               begin
-                { Convert thread local address to a process global addres
+                { Convert thread local address to a process global address
                   as we cannot handle far pointers.}
                 case target_info.system of
                   system_x86_64_linux:
@@ -2016,7 +2016,7 @@ unit cgx86;
           end
         else if (op=OP_ADD) and
           ((size in [OS_32,OS_S32]) or
-           { lea supports only 32 bit signed displacments }
+           { lea supports only 32 bit signed displacements }
            ((size=OS_64) and (a>=0) and (a<=maxLongint)) or
            ((size=OS_S64) and (a>=-maxLongint) and (a<=maxLongint))
           ) and
@@ -2041,7 +2041,7 @@ unit cgx86;
           end
         else if (op=OP_SUB) and
           ((size in [OS_32,OS_S32]) or
-           { lea supports only 32 bit signed displacments }
+           { lea supports only 32 bit signed displacements }
            ((size=OS_64) and (a>=0) and (a<=maxLongint)) or
            ((size=OS_S64) and (a>=-maxLongint) and (a<=maxLongint))
           ) and
@@ -2316,8 +2316,8 @@ unit cgx86;
     procedure tcgx86.a_op_reg_reg(list : TAsmList; Op: TOpCG; size: TCGSize; src, dst: TRegister);
       const
 {$if defined(cpu64bitalu)}
-        REGCX=NR_RCX;
-        REGCX_Size = OS_64;
+        REGCX=NR_CL;
+        REGCX_Size = OS_8;
 {$elseif defined(cpu32bitalu)}
         REGCX=NR_ECX;
         REGCX_Size = OS_32;
@@ -2351,8 +2351,11 @@ unit cgx86;
               { Use ecx to load the value, that allows better coalescing }
               getcpuregister(list,REGCX);
               a_load_reg_reg(list,reg_cgsize(src),REGCX_Size,src,REGCX);
-              list.concat(taicpu.op_reg_reg(Topcg2asmop[op],tcgsize2opsize[size],NR_CL,dst));
+              { Deallocate right before the instruction - it will be corrected
+                later by the register allocator (not correcting it will cause
+                it to be deallocated one instruction too late) }
               ungetcpuregister(list,REGCX);
+              list.concat(taicpu.op_reg_reg(Topcg2asmop[op],tcgsize2opsize[size],NR_CL,dst));
             end;
           else
             begin
@@ -2406,8 +2409,8 @@ unit cgx86;
     procedure tcgx86.a_op_reg_ref(list : TAsmList; Op: TOpCG; size: TCGSize;reg: TRegister; const ref: TReference);
       const
 {$if defined(cpu64bitalu)}
-        REGCX=NR_RCX;
-        REGCX_Size = OS_64;
+        REGCX=NR_CL;
+        REGCX_Size = OS_8;
 {$elseif defined(cpu32bitalu)}
         REGCX=NR_ECX;
         REGCX_Size = OS_32;
@@ -2443,8 +2446,11 @@ unit cgx86;
               { Use ecx to load the value, that allows better coalescing }
               getcpuregister(list,REGCX);
               a_load_reg_reg(list,reg_cgsize(reg),REGCX_Size,reg,REGCX);
-              list.concat(taicpu.op_reg_ref(TOpCG2AsmOp[op],tcgsize2opsize[size],NR_CL,tmpref));
+              { Deallocate right before the instruction - it will be corrected
+                later by the register allocator (not correcting it will cause
+                it to be deallocated one instruction too late) }
               ungetcpuregister(list,REGCX);
+              list.concat(taicpu.op_reg_ref(TOpCG2AsmOp[op],tcgsize2opsize[size],NR_CL,tmpref));
             end;
           OP_IMUL:
             begin
@@ -2536,7 +2542,7 @@ unit cgx86;
          a_load_reg_reg(list,srcsize,dstsize,tmpreg,dst);
      end;
 
-{*************** compare instructructions ****************}
+{*************** compare instructions ****************}
 
     procedure tcgx86.a_cmp_const_reg_label(list : TAsmList;size : tcgsize;cmp_op : topcmp;a : tcgint;reg : tregister;
       l : tasmlabel);
@@ -3513,7 +3519,7 @@ unit cgx86;
               begin
                 { in the tiny memory model, we can't use dgroup, because that
                   adds a relocation entry to the .exe and we can't produce a
-                  .com file (because they don't support relactions), so instead
+                  .com file (because they don't support relocations), so instead
                   we initialize DS from CS. }
                 if cs_opt_size in current_settings.optimizerswitches then
                   begin

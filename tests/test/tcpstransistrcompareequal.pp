@@ -1,4 +1,4 @@
-{$ifdef go32v2}
+{$if defined(go32v2) or defined(wasi)}
   {$define USE_INTERNAL_UNICODE}
 {$endif}
 
@@ -21,7 +21,7 @@ uses
   cpall,
  {$endif}
   sysutils;
-   
+
 type
   ts1253 = type AnsiString(1253);
   ts1251 = type AnsiString(1251);

@@ -203,7 +203,7 @@ unit raatt;
         srsym : tsym;
         srsymtable : TSymtable;
       begin
-        c:=scanner.c;
+        c:=current_scanner.c;
         { save old token and reset new token }
         prevasmtoken:=actasmtoken;
         actasmtoken:=AS_NONE;
@@ -394,7 +394,7 @@ unit raatt;
         { Here we must handle all possible cases }
          begin
            case c of
-             '.' :  { possiblities : - local label reference , such as in jmp @local1 }
+             '.' :  { possibilities: - local label reference , such as in jmp @local1 }
                     {               - field of object/record                         }
                     {               - directive.                                     }
                begin

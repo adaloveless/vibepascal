@@ -228,6 +228,7 @@ type
     class function GetRingtonesPath: string; static;
     class function GetSharedRingtonesPath: string; static;
     class function GetTemplatesPath: string;
+    class function Exists(const aPath: string; aFollowLink: Boolean = True): Boolean; static;
     class function GetAttributes(const aPath: string; aFollowLink: Boolean = True): TFileAttributes; static;
     class procedure SetAttributes(const aPath: string; const aAttributes: TFileAttributes); static;
     class function HasExtension(const aPath: string): Boolean; static;
@@ -818,7 +819,7 @@ Var
                 if (i<=LenPat) then
                   begin
                     repeat
-                      {find a letter (not only first !) which maches pattern[i]}
+                      {find a letter (not only first !) which matches pattern[i]}
                       if UTF8 then
                         begin
                           while (j<=LenName) and
@@ -1513,6 +1514,11 @@ begin
 
 end;
 
+class function TPath.Exists(const aPath: string; aFollowLink: Boolean): Boolean;
+begin
+  Result:=TDirectory.Exists(aPath, aFollowLink) or TFile.Exists(aPath, aFollowLink);
+end;
+
 class function TPath.GetAttributes(const aPath: string; aFollowLink: Boolean
   ): TFileAttributes;
 begin
@@ -1966,7 +1972,7 @@ begin
     Result:=TFileStream.Create(aPath, {$IFDEF FPC_DOTTEDUNITS}System.{$ENDIF}Classes.fmCreate or sMode);
   TFileMode.fmOpen:
     begin
-    if Exists(aPath) then
+    if not Exists(aPath) then
       Raise EInOutError.CreateFmt(SErrFileNotFound,[aPath]);
     Result:=TFileStream.Create(aPath,fMode);
     end;
@@ -2006,11 +2012,11 @@ class function TFile.OpenText(const aPath: string): TStreamReader;
 
 var
   F : TFileStream;
-  
+
 begin
   Result:=Nil;
   F:=TFilestream.Create(aPath,fmOpenRead or fmShareDenyWrite);
-  try  
+  try
     Result := TStreamReader.Create(F,BUFFER_SIZE,True);
   except
     F.Free;
@@ -2180,6 +2186,8 @@ class function TDirectory.GetFilesAndDirectories(const aPath,
   aSearchPattern: string; const aSearchOption: TSearchOption;
   const SearchAttributes: TFileAttributes;
   const aPredicate: TFilterPredicateLocal): TStringDynArray;
+const
+   lfaDirectory = {$IFDEF FPC_DOTTEDUNITS}System.{$ENDIF}SysUtils.faDirectory;
 
   function FilterPredicate(const aPath: string; const SearchRec: TSearchRec): Boolean;
   begin
@@ -2194,14 +2202,23 @@ begin
   IntPath     :=IncludeTrailingPathDelimiter(aPath);
   Result      :=[];
   if (FindFirst(IntPath + aSearchPattern, TFile.FileAttributesToInteger(SearchAttributes), SearchRec) = 0) then
-    repeat
-      if (aSearchOption = TSearchOption.soAllDirectories) and ((SearchRec.Attr and {$IFDEF FPC_DOTTEDUNITS}System.{$ENDIF}SysUtils.faDirectory) <> 0)
-         and (SearchRec.Name <> '.') and (SearchRec.Name <> '..') then
-        Result:=Result + GetFilesAndDirectories(IntPath + SearchRec.Name, aSearchPattern, aSearchOption, SearchAttributes, aPredicate)
-      else if FilterPredicate(aPath, SearchRec) then
-        Result:=Result + [IntPath + SearchRec.Name];
-    until FindNext(SearchRec) <> 0;
-  {$IFDEF FPC_DOTTEDUNITS}System.{$ENDIF}SysUtils.FindClose(SearchRec);
+    try
+      repeat
+        if FilterPredicate(aPath, SearchRec) then
+          Result:=Result + [IntPath + SearchRec.Name];
+      until FindNext(SearchRec) <> 0;
+    finally
+      {$IFDEF FPC_DOTTEDUNITS}System.{$ENDIF}SysUtils.FindClose(SearchRec);
+    end;
+  if (aSearchOption=TSearchOption.soAllDirectories) and (FindFirst(IntPath + AllFilesMask, lfaDirectory, SearchRec) = 0) then
+    try
+      repeat
+        if SearchRec.IsDirectory and not SearchRec.IsCurrentOrParentDir then
+           Result:=Result + GetFilesAndDirectories(IntPath + SearchRec.Name, aSearchPattern, aSearchOption, SearchAttributes, aPredicate)
+      until FindNext(SearchRec) <> 0;
+   Finally
+     {$IFDEF FPC_DOTTEDUNITS}System.{$ENDIF}SysUtils.FindClose(SearchRec);
+   end;
 end;
 
 class procedure TDirectory.Copy(const SourceDirName, DestDirName: string);

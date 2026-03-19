@@ -25,10 +25,6 @@ Unit System;
                                     interface
 {*****************************************************************************}
 
-{$IFNDEF FPC_DISABLE_MONITOR}
-{$DEFINE SYSTEM_HAS_FEATURE_MONITOR}
-{$ENDIF}
-
 {$define FPC_IS_SYSTEM}
 {$define HAS_CMDLINE}
 {$define USE_NOTHREADMANAGER}
@@ -245,7 +241,7 @@ procedure InitTLS; [public,alias:'FPC_INITTLS'];
     inc(auxp);
     phdr:=nil;
     phnum:=0;
-    { now we are at the auxillary vector }
+    { now we are at the auxiliary vector }
     while assigned(auxp^) do
       begin
         case plongint(auxp)^ of
@@ -449,7 +445,7 @@ end;
 
 function paramstr(l: longint) : shortstring;
  begin
-   { stricly conforming POSIX applications  }
+   { strictly conforming POSIX applications }
    { have the executing filename as argv[0] }
    if l=0 then
      begin

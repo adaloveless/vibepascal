@@ -34,7 +34,7 @@ const
   bit_alignment     = -2;
   mac68k_alignment  = -3;
 
-  { if you change one of the following contants, }
+  { if you change one of the following constants, }
   { you have also to change the typinfo unit}
   { and the rtl/i386,template/rttip.inc files    }
   tkUnknown  = 0;
@@ -428,7 +428,7 @@ type
     po_far,
     { near/far call model is specified explicitly (x86 only) }
     po_hasnearfarcallmodel,
-    { the procedure never returns, this information is usefull for dfa }
+    { the procedure never returns, this information is useful for dfa }
     po_noreturn,
     { procvar is a function reference }
     po_is_function_ref,
@@ -714,7 +714,7 @@ type
     sto_has_operator,     { contains at least one operator overload }
     sto_needs_init_final, { the symtable needs initialization and/or
                             finalization of variables/constants }
-    sto_has_non_trivial_init { contains at least on managed type that is not
+    sto_has_non_trivial_init { contains at least one managed type that is not
                                initialized to zero (e.g. a record with management
                                operators }
   );
@@ -939,7 +939,7 @@ inherited_objectoptions : tobjectoptions = [oo_has_virtual,oo_has_private,oo_has
        '$1byte$',
        '$emptyrec',
        '$llvmstruct$',
-       '$vmt_TStringMesssageTable$',
+       '$vmt_TStringMessageTable$',
        '$vmt_msgint_table_entries$',
        '$vmt_tmethod_name_table$',
        '$vmt_intern_msgint_table$',
@@ -1048,7 +1048,7 @@ inherited_objectoptions : tobjectoptions = [oo_has_virtual,oo_has_private,oo_has
       { suffix for indirect symbols (AB_INDIRECT) }
       suffix_indirect = '$indirect';
 
-    { TProcTypeOption string identifiers for error messsages }
+    { TProcTypeOption string identifiers for error messages }
     ProcTypeOptionKeywords: array[tproctypeoption] of ShortString = (
       'potype_none',        {potype_none}
       'program initialization',{potype_proginit}

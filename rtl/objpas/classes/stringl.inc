@@ -45,7 +45,7 @@ end;
 
 Function QuoteString (Const S : String; Const Quote : String) : String;
 Var
-  I,J : Integer;
+  I,J : SizeInt;
 begin
   J:=0;
   Result:=S;
@@ -250,7 +250,7 @@ begin
       Result:=Result+QuoteString(S,QuoteChar)
     else
       Result:=Result+S;
-    if I<Count-1 then 
+    if I<Count-1 then
       Result:=Result+Delimiter;
     end;
   // Quote empty string:
@@ -260,7 +260,7 @@ end;
 
 procedure TStrings.GetNameValue(Index : Integer; Out AName,AValue : String);
 
-Var L : longint;
+Var L : SizeInt;
 
 begin
   aName:='';
@@ -289,7 +289,7 @@ end;
 
 function TStrings.ExtractName(const s:String):String;
 var
-  L: Longint;
+  L: SizeInt;
 begin
   CheckSpecialChars;
   L:=Pos(FNameValueSeparator,S);
@@ -422,11 +422,38 @@ end;
 Procedure TStrings.Reverse(aList : TStrings);
 
 Var
-  I : Integer;
+  I,J : Integer;
 
 begin
-  for I:=Count-1 downto 0 do
-    aList.Add(Strings[i]);
+  if aList=self then
+    begin
+    I:=0;
+    J:=Count-1;
+    beginUpdate;
+    try
+      while I<J do
+        begin
+        Exchange(I, J);
+        Inc(I);
+        Dec(J);
+        end;
+    finally
+      EndUpdate;
+    end;
+    end
+  else
+    begin
+    aList.BeginUpdate;
+    try
+      aList.Clear;
+      if aList.Capacity<Self.Count then
+        aList.Capacity:=Self.Count;
+      for I:=Count-1 downto 0 do
+        aList.AddObject(Strings[i],Objects[i]);
+    finally
+      aList.EndUpdate;
+    end;
+    end;
 end;
 
 
@@ -498,7 +525,7 @@ end;
 Function TStrings.GetValue(const Name: string): string;
 
 Var
-  L : longint;
+  L : Longint;
   N : String;
 
 begin
@@ -898,7 +925,7 @@ Function TStrings.GetNextLineBreak (Const Value : String; Var S : String; Var P 
 
 var
   StartPos, FuturePos: SizeInt;
-  
+
 begin
   StartPos := P;
   if (StartPos <= 0) or (StartPos > Length(Value)) then // True for Length <= 0
@@ -1299,6 +1326,18 @@ Function TStrings.DoCompareText(const s1,s2 : string) : PtrInt;
   end;
 
 
+Function TStrings.Contains(const S: string): Boolean;
+
+begin
+  Result:=Indexof(S)<>-1;
+end;
+
+Function TStrings.ContainsObject(const AObject: TObject): Boolean;
+
+begin
+  Result:=IndexOfObject(AObject)<>-1;
+end;
+
 Function TStrings.IndexOf(const S: string): Integer;
 begin
   Result:=0;
@@ -1319,10 +1358,16 @@ begin
   if Result=Count then Result:=-1;
 end;
 
+Function TStrings.ContainsName(const Name: string): Boolean;
+
+begin
+  Result:=IndexOfName(Name)<>-1;
+end;
+
 
 Function TStrings.IndexOfName(const Name: string): Integer;
 Var
-  len : longint;
+  len : SizeInt;
   S : String;
 begin
   CheckSpecialChars;
@@ -1513,7 +1558,7 @@ Var
   Obj : TObject;
   Str : String;
 begin
-  if (CurIndex=NewIndex) then 
+  if (CurIndex=NewIndex) then
     Exit;
   BeginUpdate;
   Try
@@ -1684,7 +1729,7 @@ begin
     S:=StrPas(TheText)
   else
     S:='';
-  SetTextStr(S);  
+  SetTextStr(S);
 end;
 
 
@@ -1933,13 +1978,13 @@ end;
 
 Constructor TStringList.Create;
 begin
-  inherited Create;  
+  inherited Create;
 end;
 
 Constructor TStringList.Create(anOwnsObjects : Boolean);
 begin
   inherited Create;
-  FOwnsObjects:=anOwnsObjects; 
+  FOwnsObjects:=anOwnsObjects;
 end;
 
 destructor TStringList.Destroy;
@@ -1962,8 +2007,8 @@ begin
       end;
    BeginUpdate;
    try
-     InsertItem (Result,S);  
-     if (aObject<>Nil) then 
+     InsertItem (Result,S);
+     if (aObject<>Nil) then
       Objects[Result]:=AObject;
    finally
      EndUpdate;
@@ -2170,7 +2215,7 @@ begin
     Context.ListStartPtr := FList;
     Context.CompareFn := CompareFn;
 
-    //if ExchangeItems is overriden call that, else call (faster) ItemListSorter_ContextComparer
+    //if ExchangeItems is overridden call that, else call (faster) ItemListSorter_ContextComparer
     if TMethod(@Self.ExchangeItems).Code = CodePointer(@TStringList.ExchangeItems) then
       SortingAlgorithm^.ItemListSorter_ContextComparer(
         FList, FCount, SizeOf(TStringItem), @TStringList_CustomSort_Comparer,

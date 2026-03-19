@@ -158,11 +158,11 @@ end;
   {$i osutil.inc}
 
     {$IFDEF CPULLVM}
-    // LLVM does not like the constref construction. 
+    // LLVM does not like the constref construction.
     // So when LLVM is used, we keep the untyped version.
     // This allows users of other platforms to enjoy the type safety of FreeAndNil.
     procedure FreeAndNil(var obj);
-      var 
+      var
         temp: tobject;
       begin
         temp:=tobject(obj);
@@ -453,6 +453,7 @@ var
   E: Exception;
   HS: PResStringRec;
   Entry: PExceptMapEntry;
+  CastFrom,CastTo : ShortString;
 begin
   Case Errno of
    1,203 : E:=OutOfMemory;
@@ -460,7 +461,14 @@ begin
   else
     Entry:=FindExceptMapEntry(ErrNo);
     if Assigned(Entry) then
-      E:=Entry^.cls.CreateRes(Entry^.msg)
+    begin
+      E:=Entry^.cls.CreateRes(Entry^.msg);
+      if (ErrNo=219) then
+        begin
+        TObject.GetLastCastErrorInfo(CastFrom,CastTo);
+        E.Message:=E.Message+Format(SInstanceIsNotA,[CastFrom,CastTo]);
+        end;
+    end
     else
     begin
      HS:=nil;

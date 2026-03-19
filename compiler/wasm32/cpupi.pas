@@ -26,7 +26,7 @@ unit cpupi;
 interface
 
   uses
-    cutils,globtype,aasmdata,aasmcpu,aasmtai,
+    sysutils,cutils,globtype,aasmdata,aasmcpu,aasmtai,
     procinfo,cpubase,cpuinfo, symtype,aasmbase,cgbase,
     psub, cclasses;
 
@@ -122,59 +122,14 @@ implementation
       end;
 
 {*****************************************************************************
-                     twasmexceptionstatehandler_jsexceptions
-*****************************************************************************}
-
-    type
-      twasmexceptionstatehandler_jsexceptions = class(tcgexceptionstatehandler)
-        class procedure get_exception_temps(list:TAsmList;var t:texceptiontemps); override;
-        class procedure unget_exception_temps(list:TAsmList;const t:texceptiontemps); override;
-        class procedure new_exception(list:TAsmList;const t:texceptiontemps; const exceptframekind: texceptframekind; out exceptstate: texceptionstate); override;
-        class procedure free_exception(list: TAsmList; const t: texceptiontemps; const s: texceptionstate; a: aint; endexceptlabel: tasmlabel; onlyfree:boolean); override;
-        class procedure handle_nested_exception(list:TAsmList;var t:texceptiontemps;var entrystate: texceptionstate); override;
-      end;
-
-    class procedure twasmexceptionstatehandler_jsexceptions.get_exception_temps(list:TAsmList;var t:texceptiontemps);
-      begin
-        if not assigned(exceptionreasontype) then
-          exceptionreasontype:=search_system_proc('fpc_setjmp').returndef;
-        reference_reset(t.envbuf,0,[]);
-        reference_reset(t.jmpbuf,0,[]);
-        tg.gethltemp(list,exceptionreasontype,exceptionreasontype.size,tt_persistent,t.reasonbuf);
-      end;
-
-    class procedure twasmexceptionstatehandler_jsexceptions.unget_exception_temps(list:TAsmList;const t:texceptiontemps);
-      begin
-        tg.ungettemp(list,t.reasonbuf);
-      end;
-
-    class procedure twasmexceptionstatehandler_jsexceptions.new_exception(list:TAsmList;const t:texceptiontemps; const exceptframekind: texceptframekind; out exceptstate: texceptionstate);
-      begin
-        exceptstate.exceptionlabel:=nil;
-        exceptstate.oldflowcontrol:=flowcontrol;
-        exceptstate.finallycodelabel:=nil;
-
-        flowcontrol:=[fc_inflowcontrol,fc_catching_exceptions];
-      end;
-
-    class procedure twasmexceptionstatehandler_jsexceptions.free_exception(list: TAsmList; const t: texceptiontemps; const s: texceptionstate; a: aint; endexceptlabel: tasmlabel; onlyfree:boolean);
-      begin
-      end;
-
-    class procedure twasmexceptionstatehandler_jsexceptions.handle_nested_exception(list:TAsmList;var t:texceptiontemps;var entrystate: texceptionstate);
-      begin
-        list.Concat(tai_comment.Create(strpnew('TODO: handle_nested_exception')));
-      end;
-
-{*****************************************************************************
-                     twasmexceptionstatehandler_nativeexceptions
+              twasmexceptionstatehandler_nativeexnrefexceptions
 *****************************************************************************}
 
     type
 
-      { twasmexceptionstatehandler_nativeexceptions }
+      { twasmexceptionstatehandler_nativeexnrefexceptions }
 
-      twasmexceptionstatehandler_nativeexceptions = class(tcgexceptionstatehandler)
+      twasmexceptionstatehandler_nativeexnrefexceptions = class(tcgexceptionstatehandler)
         class procedure new_exception(list:TAsmList;const t:texceptiontemps; const exceptframekind: texceptframekind; out exceptstate: texceptionstate); override;
         class procedure free_exception(list: TAsmList; const t: texceptiontemps; const s: texceptionstate; a: aint; endexceptlabel: tasmlabel; onlyfree:boolean); override;
         class procedure handle_nested_exception(list:TAsmList;var t:texceptiontemps;var entrystate: texceptionstate); override;
@@ -184,7 +139,7 @@ implementation
         class procedure end_catch(list: TAsmList); override;
       end;
 
-    class procedure twasmexceptionstatehandler_nativeexceptions.new_exception(list:TAsmList;const t:texceptiontemps; const exceptframekind: texceptframekind; out exceptstate: texceptionstate);
+    class procedure twasmexceptionstatehandler_nativeexnrefexceptions.new_exception(list:TAsmList;const t:texceptiontemps; const exceptframekind: texceptframekind; out exceptstate: texceptionstate);
       begin
         exceptstate.exceptionlabel:=nil;
         exceptstate.oldflowcontrol:=flowcontrol;
@@ -193,16 +148,16 @@ implementation
         flowcontrol:=[fc_inflowcontrol,fc_catching_exceptions];
       end;
 
-    class procedure twasmexceptionstatehandler_nativeexceptions.free_exception(list: TAsmList; const t: texceptiontemps; const s: texceptionstate; a: aint; endexceptlabel: tasmlabel; onlyfree:boolean);
+    class procedure twasmexceptionstatehandler_nativeexnrefexceptions.free_exception(list: TAsmList; const t: texceptiontemps; const s: texceptionstate; a: aint; endexceptlabel: tasmlabel; onlyfree:boolean);
       begin
       end;
 
-    class procedure twasmexceptionstatehandler_nativeexceptions.handle_nested_exception(list:TAsmList;var t:texceptiontemps;var entrystate: texceptionstate);
+    class procedure twasmexceptionstatehandler_nativeexnrefexceptions.handle_nested_exception(list:TAsmList;var t:texceptiontemps;var entrystate: texceptionstate);
       begin
         Message1(parser_f_unsupported_feature,'nested exception');
       end;
 
-    class procedure twasmexceptionstatehandler_nativeexceptions.begin_catch(list: TAsmList; excepttype: tobjectdef; nextonlabel: tasmlabel; out exceptlocdef: tdef; out exceptlocreg: tregister);
+    class procedure twasmexceptionstatehandler_nativeexnrefexceptions.begin_catch(list: TAsmList; excepttype: tobjectdef; nextonlabel: tasmlabel; out exceptlocdef: tdef; out exceptlocreg: tregister);
       var
         pd: tprocdef;
         href2: treference;
@@ -244,7 +199,91 @@ implementation
         exceptlocreg:=exceptloc.register;
       end;
 
-    class procedure twasmexceptionstatehandler_nativeexceptions.end_catch(list: TAsmList);
+    class procedure twasmexceptionstatehandler_nativeexnrefexceptions.end_catch(list: TAsmList);
+      begin
+        current_asmdata.CurrAsmList.concat(taicpu.op_none(a_end_if));
+      end;
+
+
+{*****************************************************************************
+              twasmexceptionstatehandler_nativelegacyexceptions
+*****************************************************************************}
+
+    type
+
+      { twasmexceptionstatehandler_nativelegacyexceptions }
+
+      twasmexceptionstatehandler_nativelegacyexceptions = class(tcgexceptionstatehandler)
+        class procedure new_exception(list:TAsmList;const t:texceptiontemps; const exceptframekind: texceptframekind; out exceptstate: texceptionstate); override;
+        class procedure free_exception(list: TAsmList; const t: texceptiontemps; const s: texceptionstate; a: aint; endexceptlabel: tasmlabel; onlyfree:boolean); override;
+        class procedure handle_nested_exception(list:TAsmList;var t:texceptiontemps;var entrystate: texceptionstate); override;
+        { start of an "on" (catch) block }
+        class procedure begin_catch(list: TAsmList; excepttype: tobjectdef; nextonlabel: tasmlabel; out exceptlocdef: tdef; out exceptlocreg: tregister); override;
+        { end of an "on" (catch) block }
+        class procedure end_catch(list: TAsmList); override;
+      end;
+
+    class procedure twasmexceptionstatehandler_nativelegacyexceptions.new_exception(list:TAsmList;const t:texceptiontemps; const exceptframekind: texceptframekind; out exceptstate: texceptionstate);
+      begin
+        exceptstate.exceptionlabel:=nil;
+        exceptstate.oldflowcontrol:=flowcontrol;
+        exceptstate.finallycodelabel:=nil;
+
+        flowcontrol:=[fc_inflowcontrol,fc_catching_exceptions];
+      end;
+
+    class procedure twasmexceptionstatehandler_nativelegacyexceptions.free_exception(list: TAsmList; const t: texceptiontemps; const s: texceptionstate; a: aint; endexceptlabel: tasmlabel; onlyfree:boolean);
+      begin
+      end;
+
+    class procedure twasmexceptionstatehandler_nativelegacyexceptions.handle_nested_exception(list:TAsmList;var t:texceptiontemps;var entrystate: texceptionstate);
+      begin
+        Message1(parser_f_unsupported_feature,'nested exception');
+      end;
+
+    class procedure twasmexceptionstatehandler_nativelegacyexceptions.begin_catch(list: TAsmList; excepttype: tobjectdef; nextonlabel: tasmlabel; out exceptlocdef: tdef; out exceptlocreg: tregister);
+      var
+        pd: tprocdef;
+        href2: treference;
+        fpc_catches_res,
+        paraloc1: tcgpara;
+        exceptloc: tlocation;
+        indirect: boolean;
+        otherunit: boolean;
+      begin
+        paraloc1.init;
+        otherunit:=findunitsymtable(excepttype.owner).moduleid<>findunitsymtable(current_procinfo.procdef.owner).moduleid;
+        indirect:=(tf_supports_packages in target_info.flags) and
+                    (target_info.system in systems_indirect_var_imports) and
+                    (cs_imported_data in current_settings.localswitches) and
+                    otherunit;
+
+        { send the vmt parameter }
+        pd:=search_system_proc('fpc_catches');
+        reference_reset_symbol(href2, current_asmdata.RefAsmSymbol(excepttype.vmt_mangledname, AT_DATA, indirect), 0, sizeof(pint), []);
+        if otherunit then
+          current_module.add_extern_asmsym(excepttype.vmt_mangledname, AB_EXTERNAL, AT_DATA);
+        paramanager.getcgtempparaloc(list, pd, 1, paraloc1);
+        hlcg.a_loadaddr_ref_cgpara(list, excepttype.vmt_def, href2, paraloc1);
+        paramanager.freecgpara(list, paraloc1);
+        fpc_catches_res:=hlcg.g_call_system_proc(list, pd, [@paraloc1], nil);
+        location_reset(exceptloc, LOC_REGISTER, def_cgsize(fpc_catches_res.def));
+        exceptloc.register:=hlcg.getaddressregister(list, fpc_catches_res.def);
+        hlcg.gen_load_cgpara_loc(list, fpc_catches_res.def, fpc_catches_res, exceptloc, true);
+
+        { is it this catch? }
+        thlcgwasm(hlcg).a_cmp_const_reg_stack(list, fpc_catches_res.def, OC_NE, 0, exceptloc.register);
+
+        current_asmdata.CurrAsmList.concat(taicpu.op_none(a_if));
+        thlcgwasm(hlcg).decstack(current_asmdata.CurrAsmList,1);
+
+        paraloc1.done;
+
+        exceptlocdef:=fpc_catches_res.def;
+        exceptlocreg:=exceptloc.register;
+      end;
+
+    class procedure twasmexceptionstatehandler_nativelegacyexceptions.end_catch(list: TAsmList);
       begin
         current_asmdata.CurrAsmList.concat(taicpu.op_none(a_end_if));
       end;
@@ -372,20 +411,33 @@ implementation
         instr: taicpu;
         bl: taicpu_wasm_structured_instruction;
         l: TAsmLabel;
+        lblopidx: Integer;
       begin
         result.typ:=amfrtNoChange;
         if ai.typ<>ait_instruction then
           exit;
         instr:=taicpu(ai);
-        if not (instr.opcode in [a_br,a_br_if]) then
+        case instr.opcode of
+          a_br,a_br_if,a_catch_all,a_catch_all_ref:
+            begin
+              if instr.ops<>1 then
+                internalerror(2023101601);
+              lblopidx:=0;
+            end;
+          a_catch,a_catch_ref:
+            begin
+              if instr.ops<>2 then
+                internalerror(2023101601);
+              lblopidx:=1;
+            end;
+          else
+            exit;
+        end;
+        if instr.oper[lblopidx]^.typ<>top_const then
           exit;
-        if instr.ops<>1 then
-          internalerror(2023101601);
-        if instr.oper[0]^.typ<>top_const then
-          exit;
-        bl:=blockstack[instr.oper[0]^.val];
+        bl:=blockstack[instr.oper[lblopidx]^.val];
         l:=bl.getlabel;
-        instr.loadsymbol(0,l,0);
+        instr.loadsymbol(lblopidx,l,0);
       end;
 
     function tcpuprocinfo.ConvertIfToBrIf(ai: tai; blockstack: twasmstruc_stack): TAsmMapFuncResult;
@@ -449,7 +501,7 @@ implementation
 
     destructor tcpuprocinfo.destroy;
       begin
-        FGotoTargets.Free;
+        FreeAndNil(FGotoTargets);
         inherited destroy;
       end;
 
@@ -461,10 +513,10 @@ implementation
 
     procedure tcpuprocinfo.setup_eh;
       begin
-        if ts_wasm_native_exceptions in current_settings.targetswitches then
-          cexceptionstatehandler:=twasmexceptionstatehandler_nativeexceptions
-        else if ts_wasm_js_exceptions in current_settings.targetswitches then
-          cexceptionstatehandler:=twasmexceptionstatehandler_jsexceptions
+        if ts_wasm_native_exnref_exceptions in current_settings.targetswitches then
+          cexceptionstatehandler:=twasmexceptionstatehandler_nativeexnrefexceptions
+        else if ts_wasm_native_legacy_exceptions in current_settings.targetswitches then
+          cexceptionstatehandler:=twasmexceptionstatehandler_nativelegacyexceptions
         else if ts_wasm_no_exceptions in current_settings.targetswitches then
           cexceptionstatehandler:=twasmexceptionstatehandler_noexceptions
         else if ts_wasm_bf_exceptions in current_settings.targetswitches then
@@ -558,7 +610,8 @@ implementation
                       a_block,
                       a_loop,
                       a_if,
-                      a_try:
+                      a_try_table,
+                      a_legacy_try:
                         begin
                           blockstack.Concat(twasmblockitem.create(lastinstr));
                           inc(cur_nesting_depth);
@@ -577,7 +630,8 @@ implementation
                       a_end_block,
                       a_end_loop,
                       a_end_if,
-                      a_end_try:
+                      a_end_try_table,
+                      a_end_legacy_try:
                         begin
                           dec(cur_nesting_depth);
                           if cur_nesting_depth<0 then
@@ -587,9 +641,10 @@ implementation
                              ((cblock.blockstart.opcode=a_block) and (lastinstr.opcode<>a_end_block)) or
                              ((cblock.blockstart.opcode=a_loop) and (lastinstr.opcode<>a_end_loop)) or
                              ((cblock.blockstart.opcode=a_if) and (lastinstr.opcode<>a_end_if)) or
-                             ((cblock.blockstart.opcode=a_try) and (lastinstr.opcode<>a_end_try)) then
+                             ((cblock.blockstart.opcode=a_try_table) and (lastinstr.opcode<>a_end_try_table)) or
+                             ((cblock.blockstart.opcode=a_legacy_try) and (lastinstr.opcode<>a_end_legacy_try)) then
                             Message1(parser_f_unsupported_feature,'incompatible nesting level');
-                          cblock.free;
+                          FreeAndNil(cblock);
                         end;
 
                       else
@@ -602,11 +657,11 @@ implementation
                     lbl.labsym.nestingdepth:=-1;
                     nextinstr:=FindNextInstruction(hp);
 
-                    if assigned(nextinstr) and (nextinstr.opcode in [a_end_block,a_end_try,a_end_if]) then
+                    if assigned(nextinstr) and (nextinstr.opcode in [a_end_block,a_end_legacy_try,a_end_try_table,a_end_if]) then
                       lbl.labsym.nestingdepth:=cur_nesting_depth
                     else if assigned(lastinstr) and (lastinstr.opcode=a_loop) then
                       lbl.labsym.nestingdepth:=cur_nesting_depth
-                    else if assigned(lastinstr) and (lastinstr.opcode in [a_end_block,a_end_try,a_end_if]) then
+                    else if assigned(lastinstr) and (lastinstr.opcode in [a_end_block,a_end_legacy_try,a_end_try_table,a_end_if]) then
                       lbl.labsym.nestingdepth:=cur_nesting_depth+1
                     else if assigned(nextinstr) and (nextinstr.opcode=a_loop) then
                       lbl.labsym.nestingdepth:=cur_nesting_depth+1;
@@ -618,13 +673,13 @@ implementation
             end;
           if cur_nesting_depth<>0 then
             Message1(parser_f_unsupported_feature,'unbalanced nesting level');
-          blockstack.free;
+          FreeAndNil(blockstack);
         end;
 
       function resolve_labels_pass2(asmlist: TAsmList): Boolean;
         var
           hp: tai;
-          instr: taicpu;
+          instr, catchinstr: taicpu;
           hlabel: tasmsymbol;
           cur_nesting_depth: longint;
         begin
@@ -640,13 +695,76 @@ implementation
                     a_block,
                     a_loop,
                     a_if,
-                    a_try:
+                    a_legacy_try:
                       inc(cur_nesting_depth);
+
+                    a_try_table:
+                      begin
+                        catchinstr:=taicpu(instr.try_table_catch_clauses.First);
+                        while assigned(catchinstr) do
+                          begin
+                            case catchinstr.opcode of
+                              a_catch,
+                              a_catch_ref:
+                                begin
+                                  if catchinstr.ops<>2 then
+                                    Message1(parser_f_unsupported_feature,'a_catch or a_catch_ref with wrong operand count');
+                                  if catchinstr.oper[1]^.typ=top_ref then
+                                    begin
+                                      if not assigned(catchinstr.oper[1]^.ref^.symbol) then
+                                        Message1(parser_f_unsupported_feature,'a_catch or a_catch_ref with wrong ref operand');
+                                      if (catchinstr.oper[1]^.ref^.base<>NR_NO) or
+                                         (catchinstr.oper[1]^.ref^.index<>NR_NO) or
+                                         (catchinstr.oper[1]^.ref^.offset<>0) then
+                                        Message1(parser_f_unsupported_feature,'a_catch or a_catch_ref with wrong ref type');
+                                      if (catchinstr.oper[1]^.ref^.symbol.nestingdepth<>-1) and
+                                         (cur_nesting_depth>=catchinstr.oper[1]^.ref^.symbol.nestingdepth) then
+                                        catchinstr.loadconst(0,cur_nesting_depth-catchinstr.oper[1]^.ref^.symbol.nestingdepth)
+                                      else
+                                        begin
+                                          result:=false;
+                                          hlabel:=tasmsymbol(catchinstr.oper[1]^.ref^.symbol);
+                                          asmlist.insertafter(tai_comment.create(strpnew('Unable to find destination of label '+hlabel.name)),hp);
+                                        end;
+                                    end;
+                                end;
+                              a_catch_all,
+                              a_catch_all_ref:
+                                begin
+                                  if catchinstr.ops<>1 then
+                                    Message1(parser_f_unsupported_feature,'a_catch_all or a_catch_all_ref with wrong operand count');
+                                  if catchinstr.oper[0]^.typ=top_ref then
+                                    begin
+                                      if not assigned(catchinstr.oper[0]^.ref^.symbol) then
+                                        Message1(parser_f_unsupported_feature,'a_catch_all or a_catch_all_ref with wrong ref operand');
+                                      if (catchinstr.oper[0]^.ref^.base<>NR_NO) or
+                                         (catchinstr.oper[0]^.ref^.index<>NR_NO) or
+                                         (catchinstr.oper[0]^.ref^.offset<>0) then
+                                        Message1(parser_f_unsupported_feature,'a_catch_all or a_catch_all_ref with wrong ref type');
+                                      if (catchinstr.oper[0]^.ref^.symbol.nestingdepth<>-1) and
+                                         (cur_nesting_depth>=catchinstr.oper[0]^.ref^.symbol.nestingdepth) then
+                                        catchinstr.loadconst(0,cur_nesting_depth-catchinstr.oper[0]^.ref^.symbol.nestingdepth)
+                                      else
+                                        begin
+                                          result:=false;
+                                          hlabel:=tasmsymbol(catchinstr.oper[0]^.ref^.symbol);
+                                          asmlist.insertafter(tai_comment.create(strpnew('Unable to find destination of label '+hlabel.name)),hp);
+                                        end;
+                                    end;
+                                end;
+                              else
+                                internalerror(2025100515);
+                            end;
+                            catchinstr:=taicpu(catchinstr.Next);
+                          end;
+                        inc(cur_nesting_depth);
+                      end;
 
                     a_end_block,
                     a_end_loop,
                     a_end_if,
-                    a_end_try:
+                    a_end_legacy_try,
+                    a_end_try_table:
                       begin
                         dec(cur_nesting_depth);
                         if cur_nesting_depth<0 then
@@ -701,8 +819,9 @@ implementation
           blocks: TFPHashObjectList;
           curr_block, tmplist: TAsmList;
           hp, hpnext: tai;
-          block_nr, machine_state, target_block_index: Integer;
+          block_nr, machine_state, target_block_index, catch_nr: Integer;
           state_machine_loop_start_label, state_machine_exit: TAsmLabel;
+          catchinstr: taicpu;
         begin
           blocks:=TFPHashObjectList.Create;
           curr_block:=TAsmList.Create;
@@ -779,6 +898,67 @@ implementation
                           curr_block.insertListAfter(hp,tmplist);
                           curr_block.Remove(hp);
                         end;
+                    end
+                  else if (hp.typ=ait_wasm_structured_instruction) and
+                          (taicpu_wasm_structured_instruction(hp).wstyp=aitws_try_table) and
+                          (tai_wasmstruc_try_table(hp).try_table_instr.try_table_catch_clauses.Count>0) then
+                    begin
+                      {
+                        block            ;; Count
+                          block          ;; Count-1
+                            ...
+                            block        ;; 1
+                              block      ;; 0
+                                try_table (catch 0) (catch 1) (catch 2) ... (catch Count-1)
+                                  ;; code inside try
+                                end_try_table
+                                br Count
+                              end_block  ;; 0
+                              br catch_0_label
+                            end_block
+                            br catch_1_label
+                            ...
+                          end_block      ;; Count-1
+                          br catch_Count-1_label
+                        end_block        ;; Count
+                      }
+                      for catch_nr:=0 to tai_wasmstruc_try_table(hp).try_table_instr.try_table_catch_clauses.Count do
+                        curr_block.InsertBefore(taicpu.op_none(a_block),hp);
+                      tmplist.Clear;
+                      tmplist.Concat(taicpu.op_const(a_br,tai_wasmstruc_try_table(hp).try_table_instr.try_table_catch_clauses.Count));
+                      catchinstr:=taicpu(tai_wasmstruc_try_table(hp).try_table_instr.try_table_catch_clauses.Last);
+                      for catch_nr:=tai_wasmstruc_try_table(hp).try_table_instr.try_table_catch_clauses.Count-1 downto 0 do
+                        begin
+                          case catchinstr.opcode of
+                            a_catch,a_catch_ref:
+                              begin
+                                if (catchinstr.ops<>2) or
+                                   (catchinstr.oper[1]^.typ<>top_ref) or
+                                   not assigned(catchinstr.oper[1]^.ref^.symbol) then
+                                  internalerror(2025100517);
+                                target_block_index:=blocks.FindIndexOf(catchinstr.oper[1]^.ref^.symbol.Name);
+                                catchinstr.loadconst(1,catch_nr);
+                              end;
+                            a_catch_all,a_catch_all_ref:
+                              begin
+                                if (catchinstr.ops<>1) or
+                                   (catchinstr.oper[0]^.typ<>top_ref) or
+                                   not assigned(catchinstr.oper[0]^.ref^.symbol) then
+                                  internalerror(2025100518);
+                                target_block_index:=blocks.FindIndexOf(catchinstr.oper[0]^.ref^.symbol.Name);
+                                catchinstr.loadconst(0,catch_nr);
+                              end;
+                            else
+                              internalerror(2025100516);
+                          end;
+                          tmplist.Concat(taicpu.op_none(a_end_block));
+                          tmplist.Concat(taicpu.op_const(a_i32_const,target_block_index));
+                          tmplist.Concat(taicpu.op_const(a_local_set,machine_state));
+                          tmplist.Concat(taicpu.op_sym(a_br,state_machine_loop_start_label));
+                          catchinstr:=taicpu(catchinstr.Previous);
+                        end;
+                      tmplist.Concat(taicpu.op_none(a_end_block));
+                      curr_block.insertListAfter(hp,tmplist);
                     end;
                   hp:=hpnext;
                 end;
@@ -792,7 +972,7 @@ implementation
                 curr_block.Concat(taicpu.op_sym(a_br,state_machine_exit));
               asmlist.concatList(curr_block);
             end;
-          tmplist.Free;
+          FreeAndNil(tmplist);
           asmlist.Concat(taicpu.op_none(a_end_loop));
           asmlist.Concat(taicpu.op_none(a_end_block));
           asmlist.concat(tai_label.create(state_machine_exit));
@@ -844,20 +1024,27 @@ implementation
             begin
               if hp.typ=ait_wasm_structured_instruction then
                 begin
-                  if not (taicpu_wasm_structured_instruction(hp).wstyp in [aitws_try_catch,aitws_try_delegate]) then
-                    internalerror(2023102201);
-                  resolve_labels_of_asmlist_with_try_blocks_recursive(tai_wasmstruc_try(hp).try_asmlist);
-                  if taicpu_wasm_structured_instruction(hp).wstyp=aitws_try_catch then
-                    with tai_wasmstruc_try_catch(hp) do
-                      begin
-                        for i:=low(catch_list) to high(catch_list) do
-                          resolve_labels_of_asmlist_with_try_blocks_recursive(catch_list[i].asmlist);
-                        resolve_labels_of_asmlist_with_try_blocks_recursive(catch_all_asmlist);
-                      end
-                  else if taicpu_wasm_structured_instruction(hp).wstyp=aitws_try_delegate then
-                    {nothing}
+                  if taicpu_wasm_structured_instruction(hp).wstyp=aitws_try_table then
+                    begin
+                      resolve_labels_of_asmlist_with_try_blocks_recursive(tai_wasmstruc_try_table(hp).inner_asmlist);
+                    end
                   else
-                    internalerror(2023102202);
+                    begin
+                      if not (taicpu_wasm_structured_instruction(hp).wstyp in [aitws_legacy_try_catch,aitws_legacy_try_delegate]) then
+                        internalerror(2023102201);
+                      resolve_labels_of_asmlist_with_try_blocks_recursive(tai_wasmstruc_legacy_try(hp).try_asmlist);
+                      if taicpu_wasm_structured_instruction(hp).wstyp=aitws_legacy_try_catch then
+                        with tai_wasmstruc_legacy_try_catch(hp) do
+                          begin
+                            for i:=low(catch_list) to high(catch_list) do
+                              resolve_labels_of_asmlist_with_try_blocks_recursive(catch_list[i].asmlist);
+                            resolve_labels_of_asmlist_with_try_blocks_recursive(catch_all_asmlist);
+                          end
+                      else if taicpu_wasm_structured_instruction(hp).wstyp=aitws_legacy_try_delegate then
+                        {nothing}
+                      else
+                        internalerror(2023102202);
+                    end;
                 end;
               hp:=tai(hp.next);
             end;
@@ -890,9 +1077,9 @@ implementation
           wasm_convert_to_flat_asmlist(asmlist);
 
           asmlist.insertList(entry_code);
-          entry_code.free;
+          FreeAndNil(entry_code);
           asmlist.concatList(exit_code);
-          exit_code.free;
+          FreeAndNil(exit_code);
 
           if not resolve_labels_simple(asmlist) then
             internalerror(2023102101);
@@ -974,7 +1161,7 @@ implementation
                   vs.Validate(taicpu(hp));
                 hp:=tai(hp.next);
               end;
-            vs.Free;
+            FreeAndNil(vs);
           end;
 
         procedure postprocess_code_assembler;
@@ -1008,7 +1195,7 @@ implementation
 
         add_extra_allocated_locals(localslist);
         insert_localslist(aktproccode,localslist);
-        localslist.Free;
+        FreeAndNil(localslist);
 
 {$ifdef DEBUG_WASM_VALIDATION}
         validate_code;

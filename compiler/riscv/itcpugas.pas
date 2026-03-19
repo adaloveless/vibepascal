@@ -148,9 +148,24 @@ unit itcpugas;
         'fcvt.d.l','fcvt.d.lu','fmv.d.x',
 {$endif RISCV64}
 
+        { Zfa extension }
+        'fli.s','fli.d','fli.q','fli.h',
+        'fminm.s','fmaxm.s','fminm.d','fmaxm.d','fminm.h','fmaxm.h','fminm.q','fmaxm.q',
+        'fround.s','froundnx.s','fround.d','froundnx.d','fround.h','froundnx.h','fround.q','froundnx.q',
+        'fcvtmod.w.d',
+        'fmvh.x.d,','fmvp.d.x','fmvh.x.q','fmvp.q.x',
+        'fleq.s,','fltq.s',
+        'fleq.d,','fltq.d',
+        'fleq.h,','fltq.h',
+        'fleq.q,','fltq.q',
+
         { q-extension }
         'flq','fsq',
         'fmax.q','fmax.q',
+        'feq.q','flt.q','fle.q','fclass.q',
+
+        { Zihintpause }
+        'pause',
 
         { Machine mode }
         'mret','hret','sret','uret',
@@ -159,7 +174,7 @@ unit itcpugas;
         { Supervisor mode }
         'sfence.vm',
 
-        { pseudo instructions for accessiong control and status registers }
+        { pseudo instructions for accessing control and status registers }
         'rdinstret','rdinstreth','rdcycle','rdcycleh','rdtime','rdtimeh','csrr','csrw','csrs','csrc','csrwi',
         'csrsi','csrci'
         );

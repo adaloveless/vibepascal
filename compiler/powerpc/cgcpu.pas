@@ -602,7 +602,7 @@ const
                tmpreg := getintregister(list, OS_INT);
                list.concat(taicpu.op_reg_reg(A_NEG, tmpreg, src1));
                list.concat(taicpu.op_reg_reg_reg_const_const(A_RLWNM, dst, src2, tmpreg, 0, 31));
-             end;       
+             end;
            else
              list.concat(taicpu.op_reg_reg_reg(op_reg_reg_opcg2asmop[op],dst,src2,src1));
          end;
@@ -610,7 +610,7 @@ const
        end;
 
 
-{*************** compare instructructions ****************}
+{*************** compare instructions ****************}
 
       procedure tcgppc.a_cmp_const_reg_label(list : TAsmList;size : tcgsize;cmp_op : topcmp;a : tcgint;reg : tregister;
         l : tasmlabel);
@@ -1136,7 +1136,7 @@ const
             reference_reset_base(href, NR_STACK_POINTER_REG, offset, ctempposinvalid, 8, []);
             list.concat(taicpu.op_reg_ref(A_STFD, tregister(regcounter), href));
           end;
-        (* Optimiztion in the future:  a_call_name(list,'_savefXX'); *)
+        (* Optimization in the future:  a_call_name(list,'_savefXX'); *)
 
       { save gprs in gpr save area }
       if usesgpr then
@@ -1222,7 +1222,7 @@ const
             reference_reset_base(href, NR_STACK_POINTER_REG, offset, ctempposinvalid, 8, []);
             list.concat(taicpu.op_reg_ref(A_LFD, newreg(R_FPUREGISTER,regcounter,R_SUBWHOLE), href));
           end;
-        (* Optimiztion in the future: a_call_name(list,'_restfXX'); *)
+        (* Optimization in the future: a_call_name(list,'_restfXX'); *)
 
       { restore gprs }
       if usesgpr then

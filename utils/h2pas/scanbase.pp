@@ -212,7 +212,7 @@ begin
     begin
     Skip_until_eol;
     exit;
-    end;  
+    end;
   if not stripcomment then
     write(outfile,aktspace,'{');
   repeat
@@ -324,7 +324,7 @@ begin
   until false;
   flush(outfile);
 end;
-  
+
 Procedure CheckLongString;
 
 begin
@@ -398,7 +398,7 @@ begin
   else
     skip_until_eol;
 end;
- 
+
 Procedure HandlePreProcIfDef;
 
 begin
@@ -636,9 +636,9 @@ Procedure HandlePreProcStripConditional(isEnd : Boolean);
 begin
   if not stripinfo then
     if isEnd then
-      writeln(outfile,'{ C++ end of extern C conditionnal removed }')
+      writeln(outfile,'{ C++ end of extern C conditional removed }')
     else
-      writeln(outfile,'{ C++ extern C conditionnal removed }');
+      writeln(outfile,'{ C++ extern C conditional removed }');
 end;
 
 Procedure HandleIdentifier;

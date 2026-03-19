@@ -20,9 +20,10 @@ interface
 
 const
      MinDesktopVersion  = $000A;
-     DesktopVersion     = $000A; { <- if you change any Load&Store methods,
+     DesktopVersion     = $000B; { <- if you change any Load&Store methods,
                                       default object properties (Options,State)
                                       then you should also change this }
+     ResVersion         = 'VERSION';
      ResDesktopFlags    = 'FLAGS';
      ResVideo           = 'VIDEOMODE';
      ResHistory         = 'HISTORY';
@@ -97,6 +98,7 @@ const
       msg_readingsymbolinformation = 'Reading symbol information...';
       msg_storingsymbolinformation = 'Storing symbol information...';
       msg_failedtoreplacedesktopfile = 'Failed to replace desktop file.';
+      msg_errorstoringversion = 'Error storing desktop file version';
       msg_errorloadinghistory = 'Error loading history';
       msg_errorstoringhistory = 'Error storing history';
       msg_errorloadingkeys = 'Error loading custom keys';
@@ -145,6 +147,35 @@ end;
 
 procedure DoneDesktopFile;
 begin
+end;
+
+function WriteVersion(F: PResourceFile): boolean;
+var
+    OK: boolean;
+    DVersion : Longword;
+begin
+  F^.CreateResource(resVersion,rcBinary,0);
+  DVersion:=DesktopVersion;
+  OK:=F^.AddResourceEntry(resVersion,langDefault,0,DVersion,
+    SizeOf(Longword));
+  if OK=false then
+    ErrorBox(msg_errorstoringversion,nil);
+  WriteVersion:=OK;
+end;
+
+function ReadVersion(F: PResourceFile;var Version : Longword): boolean;
+var
+  OK,test : boolean;
+  DVersion : Longword;
+begin
+  DVersion:=0;
+  test:=F^.ReadResourceEntry(resVersion,langDefault,DVersion,
+    sizeof(Longword));
+  if (not test) or (DVersion=0) then
+    DVersion:=$000A; { last version not recorded }
+  Version:=DVersion; { return version }
+  OK:=true; { always true, getting version should not fail }
+  ReadVersion:=OK;
 end;
 
 function ReadHistory(F: PResourceFile): boolean;
@@ -368,7 +399,8 @@ begin
   DeskUseSyntaxHighlight:=b;
 end;
 
-function ReadOpenWindows(F: PResourceFile): boolean;
+
+function ReadOpenWindows(F: PResourceFile; const VM : TVideoMode): boolean;
 var S: PMemoryStream;
     OK: boolean;
     DV: word;
@@ -397,6 +429,7 @@ var W: PWindow;
     Z: TRect;
     Len : Byte;
     BM: TEditorBookMark;
+    ZoomRect: TRect;
 begin
   XDataOfs:=0;
   Desktop^.Lock;
@@ -530,11 +563,32 @@ begin
            end;
       end;
   end;
+  GetData(ZoomRect,sizeof(ZoomRect));
   if W=nil then
     begin
       Desktop^.Unlock;
       Exit;
     end;
+  {calculate new location and size of window}
+  if (VM.col > 0) and (ScreenWidth<>VM.col) then
+  begin
+    WI.Bounds.A.X:=round(WI.Bounds.A.X*ScreenWidth/VM.col);
+    if (W^.Flags and wfGrow)<>0 then
+      WI.Bounds.B.X:=Max(16,round(WI.Bounds.B.X*ScreenWidth/VM.col));
+    ZoomRect.A.X:=round(ZoomRect.A.X*ScreenWidth/VM.col);
+    if (W^.Flags and wfGrow)<>0 then
+      ZoomRect.B.X:=Max(16,round(ZoomRect.B.X*ScreenWidth/VM.col));
+  end;
+  if (VM.row > 2) and (ScreenHeight<>VM.row) then
+  begin
+    WI.Bounds.A.Y:=round(WI.Bounds.A.Y*(ScreenHeight-2)/(VM.row-2));
+    if (W^.Flags and wfGrow)<>0 then
+      WI.Bounds.B.Y:=Max(5,round(WI.Bounds.B.Y*(ScreenHeight-2)/(VM.row-2)));
+    ZoomRect.A.Y:=round(ZoomRect.A.Y*(ScreenHeight-2)/(VM.row-2));
+    if (W^.Flags and wfGrow)<>0 then
+      ZoomRect.B.Y:=Max(5,round(ZoomRect.B.Y*(ScreenHeight-2)/(VM.row-2)));
+  end;
+  {relocate and resize window as needed}
   W^.GetBounds(R);
   if (R.A.X<>WI.Bounds.A.X) or (R.A.Y<>WI.Bounds.A.Y) then
     R.Move(WI.Bounds.A.X-R.A.X,WI.Bounds.A.Y-R.A.Y);
@@ -552,6 +606,7 @@ begin
       end
     else
       W^.Hide;
+  {check if window is out of screen bounds and bring it back if so}
   ZZ:=0;
   Desktop^.GetExtent(Z);
   if R.A.Y>Z.B.Y-7 then
@@ -576,6 +631,7 @@ begin
     end;
   if ZZ<>0 then W^.MoveTo(R.A.X,R.A.Y);
   W^.Number:=WI.WinNb;
+  W^.ZoomRect:=ZoomRect;
   Desktop^.Unlock;
 end;
 begin
@@ -654,6 +710,7 @@ var W: PWindow;
     Ch: AnsiChar;
     TP: TPoint;
     BM: TEditorBookMark;
+    ZoomRect: TRect;
     L: longint;
 procedure AddData(const B; Size: word);
 begin
@@ -713,6 +770,7 @@ begin
         AddData(ch,sizeof(AnsiChar));
       end;
   end;
+  ZoomRect:=W^.ZoomRect; AddData(ZoomRect,sizeof(ZoomRect));
 
   WI.TitleLen:=length(Title);
   WI.ExtraDataSize:=XDataOfs;
@@ -878,7 +936,7 @@ begin
       Setlength(Dir,Size);
       S^.Read(Dir[1], Size);                           { Read the directory }
       {$i-}ChDir(Dir);{$i+}
-      IOResult; {eat io result so it does not affect leater operations}
+      IOResult; {eat io result so it does not affect later operations}
       GetDir(0,StartUpDir);
     end;
   end;
@@ -1006,6 +1064,7 @@ function LoadDesktop: boolean;
 var OK,VOK: boolean;
     F: PResourceFile;
     VM : TVideoMode;
+    DesktopFileVersion: Longword; { Version desktop file was saved with }
 begin
   PushStatus(msg_readingdesktopfile);
   New(F, LoadFile(DesktopPath));
@@ -1014,14 +1073,21 @@ begin
 
   if Assigned(F) then
   begin
+    OK:=ReadVersion(F,DesktopFileVersion);
     OK:=ReadFlags(F);
     VOK:=ReadVideoMode(F,VM);
     if VOK and ((VM.Col<>ScreenMode.Col) or
        (VM.Row<>ScreenMode.Row) or (VM.Color<>ScreenMode.Color)) then
       begin
+        {$ifndef windows}
         if Assigned(Application) then
           Application^.SetScreenVideoMode(VM);
+        {$endif windows}
       end;
+    if not VOK then
+     begin
+       VM.row:=0; VM.col:=0; {safety measure}
+     end;
     if ((DesktopFileFlags and dfHistoryLists)<>0) then
       OK:=ReadHistory(F) and OK;
     if ((DesktopFileFlags and dfWatches)<>0) then
@@ -1029,7 +1095,7 @@ begin
     if ((DesktopFileFlags and dfBreakpoints)<>0) then
       OK:=ReadBreakpoints(F) and OK;
     if ((DesktopFileFlags and dfOpenWindows)<>0) then
-      OK:=ReadOpenWindows(F) and OK;
+      OK:=ReadOpenWindows(F,VM) and OK;
     { no errors if no browser info available PM }
     if ((DesktopFileFlags and dfSymbolInformation)<>0) then
       OK:=ReadSymbols(F) and OK;
@@ -1072,7 +1138,8 @@ begin
 
   if Assigned(F) then
     begin
-      OK:=WriteFlags(F);
+      OK:=WriteVersion(F);
+      OK:=OK and WriteFlags(F);
       OK:=OK and WriteVideoMode(F);
       if ((DesktopFileFlags and dfHistoryLists)<>0) then
         OK:=OK and WriteHistory(F);

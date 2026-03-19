@@ -21,39 +21,28 @@ Interface
   uses
     globtype;
 
+{$I ../riscv/cpuinfo.inc}
+
 Type
-   bestreal = double;
-   bestrealrec = TDoubleRec;
-   ts32real = single;
-   ts64real = double;
-   ts80real = extended;
-   ts128real = extended;
-   ts64comp = comp;
-
-   pbestreal=^bestreal;
-
    { possible supported processors for this target }
    tcputype =
       (cpu_none,
        cpu_rv32imac,
+       cpu_rv32imac_csr_fence,
        cpu_rv32ima,
        cpu_rv32im,
        cpu_rv32i,
        cpu_rv32e,
        cpu_rv32imc,
+       cpu_rv32imc_csr_fence,
        cpu_rv32imafdc,
+       cpu_rv32imaf,
+       cpu_rv32imafc,
        cpu_rv32imafd,
        cpu_rv32ec,
        cpu_rv32gc,
        cpu_rv32gcb
       );
-
-   tfputype =
-     (fpu_none,  
-      fpu_libgcc,
-      fpu_soft,
-      fpu_fd
-     );
 
    tcontrollertype =
      (ct_none,
@@ -115,12 +104,12 @@ Const
    embedded_controllers : array [tcontrollertype] of tcontrollerdatatype =
    (
       (controllertypestr:''            ; controllerunitstr:''; cputype:cpu_none; fputype:fpu_none; flashbase:0; flashsize:0; srambase:0; sramsize:0),
-      (controllertypestr:'FE310G000'   ; controllerunitstr:'FE310G000';   cputype:cpu_rv32imac; fputype:fpu_none; flashbase:$20400000; flashsize:$01000000; srambase:$80000000; sramsize:$00004000),
-      (controllertypestr:'FE310G002'   ; controllerunitstr:'FE310G002';   cputype:cpu_rv32imac; fputype:fpu_none; flashbase:$20010000; flashsize:$00400000; srambase:$80000000; sramsize:$00004000),
-      (controllertypestr:'HIFIVE1'     ; controllerunitstr:'FE310G000';   cputype:cpu_rv32imac; fputype:fpu_none; flashbase:$20400000; flashsize:$01000000; srambase:$80000000; sramsize:$00004000),
-      (controllertypestr:'HIFIVE1REVB' ; controllerunitstr:'FE310G002';   cputype:cpu_rv32imac; fputype:fpu_none; flashbase:$20010000; flashsize:$00400000; srambase:$80000000; sramsize:$00004000),
-      (controllertypestr:'REDFIVE'     ; controllerunitstr:'FE310G002';   cputype:cpu_rv32imac; fputype:fpu_none; flashbase:$20010000; flashsize:$00400000; srambase:$80000000; sramsize:$00004000),
-      (controllertypestr:'REDFIVETHING'; controllerunitstr:'FE310G002';   cputype:cpu_rv32imac; fputype:fpu_none; flashbase:$20010000; flashsize:$02400000; srambase:$80000000; sramsize:$00004000),
+      (controllertypestr:'FE310G000'   ; controllerunitstr:'FE310G000';   cputype:cpu_rv32imac_csr_fence; fputype:fpu_none; flashbase:$20400000; flashsize:$01000000; srambase:$80000000; sramsize:$00004000),
+      (controllertypestr:'FE310G002'   ; controllerunitstr:'FE310G002';   cputype:cpu_rv32imac_csr_fence; fputype:fpu_none; flashbase:$20010000; flashsize:$00400000; srambase:$80000000; sramsize:$00004000),
+      (controllertypestr:'HIFIVE1'     ; controllerunitstr:'FE310G000';   cputype:cpu_rv32imac_csr_fence; fputype:fpu_none; flashbase:$20400000; flashsize:$01000000; srambase:$80000000; sramsize:$00004000),
+      (controllertypestr:'HIFIVE1REVB' ; controllerunitstr:'FE310G002';   cputype:cpu_rv32imac_csr_fence; fputype:fpu_none; flashbase:$20010000; flashsize:$00400000; srambase:$80000000; sramsize:$00004000),
+      (controllertypestr:'REDFIVE'     ; controllerunitstr:'FE310G002';   cputype:cpu_rv32imac_csr_fence; fputype:fpu_none; flashbase:$20010000; flashsize:$00400000; srambase:$80000000; sramsize:$00004000),
+      (controllertypestr:'REDFIVETHING'; controllerunitstr:'FE310G002';   cputype:cpu_rv32imac_csr_fence; fputype:fpu_none; flashbase:$20010000; flashsize:$02400000; srambase:$80000000; sramsize:$00004000),
 
       (controllertypestr:'GD32VF103C4' ; controllerunitstr:'GD32VF103XX'; cputype:cpu_rv32imac; fputype:fpu_none; flashbase:$08000000; flashsize:$00004000; srambase:$20000000; sramsize:$00001800),
       (controllertypestr:'GD32VF103C6' ; controllerunitstr:'GD32VF103XX'; cputype:cpu_rv32imac; fputype:fpu_none; flashbase:$08000000; flashsize:$00008000; srambase:$20000000; sramsize:$00002800),
@@ -145,9 +134,9 @@ Const
       (controllertypestr:'CH32V307RC'; controllerunitstr:'CH32V307';    cputype:cpu_rv32imac; fputype:fpu_fd; flashbase:$00000000; flashsize:$00040000; srambase:$20000000; sramsize:$00010000),
       (controllertypestr:'CH32V307WC'; controllerunitstr:'CH32V307';    cputype:cpu_rv32imac; fputype:fpu_fd; flashbase:$00000000; flashsize:$00040000; srambase:$20000000; sramsize:$00010000),
       (controllertypestr:'CH32V307VC'; controllerunitstr:'CH32V307';    cputype:cpu_rv32imac; fputype:fpu_fd; flashbase:$00000000; flashsize:$00040000; srambase:$20000000; sramsize:$00010000),
-      (controllertypestr:'ESP32C2'; controllerunitstr:'ESP32C2';    cputype:cpu_rv32imc;  fputype:fpu_none; flashbase:$00000000; flashsize:4*1024*1024; srambase:$20000000; sramsize:272*1024),
-      (controllertypestr:'ESP32C3'; controllerunitstr:'ESP32C3';    cputype:cpu_rv32imc;  fputype:fpu_none; flashbase:$00000000; flashsize:4*1024*1024; srambase:$20000000; sramsize:400*1024),
-      (controllertypestr:'ESP32C6'; controllerunitstr:'ESP32C6';    cputype:cpu_rv32imac; fputype:fpu_none; flashbase:$00000000; flashsize:4*1024*1024; srambase:$20000000; sramsize:512*1024),
+      (controllertypestr:'ESP32C2'; controllerunitstr:'ESP32C2';    cputype:cpu_rv32imc_csr_fence;  fputype:fpu_none; flashbase:$00000000; flashsize:4*1024*1024; srambase:$20000000; sramsize:272*1024),
+      (controllertypestr:'ESP32C3'; controllerunitstr:'ESP32C3';    cputype:cpu_rv32imc_csr_fence;  fputype:fpu_none; flashbase:$00000000; flashsize:4*1024*1024; srambase:$20000000; sramsize:400*1024),
+      (controllertypestr:'ESP32C6'; controllerunitstr:'ESP32C6';    cputype:cpu_rv32imac_csr_fence; fputype:fpu_none; flashbase:$00000000; flashsize:4*1024*1024; srambase:$20000000; sramsize:512*1024),
       (controllertypestr:'CH32V0X' ; controllerunitstr:'CH32VxBootstrap';   cputype:cpu_rv32e; fputype:fpu_none; flashbase:$00000000; flashsize:$00004000; srambase:$20000000; sramsize:$00000800; eeprombase:0; eepromsize:0;BootBase:$1FFFF000; BootSize:1920),
       (controllertypestr:'CH32VXXXX6' ; controllerunitstr:'CH32VxBootstrap';   cputype:cpu_rv32imac; fputype:fpu_none; flashbase:$00000000; flashsize:$00008000; srambase:$20000000; sramsize:$00002800),
       (controllertypestr:'CH32VXXXX8' ; controllerunitstr:'CH32VxBootstrap';   cputype:cpu_rv32imac; fputype:fpu_none; flashbase:$00000000; flashsize:$00010000; srambase:$20000000; sramsize:$00008000),
@@ -169,25 +158,22 @@ Const
      pocall_mwpascal
    ];
 
-   cputypestr : array[tcputype] of string[10] = ('',
+   cputypestr : array[tcputype] of string[24] = ('',
      'RV32IMAC',
+     'RV32IMAC_ZICSR_ZIFENCEI',
      'RV32IMA',
      'RV32IM',
      'RV32I',
      'RV32E',
      'RV32IMC',
+     'RV32IMC_ZICSR_ZIFENCEI',
      'RV32IMAFDC',
+     'RV32IMAF',
+     'RV32IMAFC',
      'RV32IMAFD',
      'RV32EC',
      'RV32GC',
      'RV32GCB'
-   );
-
-   fputypestr : array[tfputype] of string[8] = (         
-     'LIBGCC',
-     'NONE',
-     'SOFT',
-     'FD'
    );
 
    { Supported optimizations, only used for information }
@@ -203,51 +189,26 @@ Const
    level1optimizerswitches = genericlevel1optimizerswitches;
    level2optimizerswitches = genericlevel2optimizerswitches + level1optimizerswitches + [{$ifndef llvm}cs_opt_regvar,{$endif}cs_opt_nodecse,cs_opt_tailrecursion,cs_opt_consts];
    level3optimizerswitches = genericlevel3optimizerswitches + level2optimizerswitches;
-   level4optimizerswitches = genericlevel4optimizerswitches + level3optimizerswitches + [cs_opt_stackframe]; 
-
- type
-   tcpuflags =
-      (CPURV_HAS_MUL,
-       CPURV_HAS_ATOMIC,
-       CPURV_HAS_COMPACT,
-       CPURV_HAS_16REGISTERS,
-       CPURV_HAS_ZBA,
-       CPURV_HAS_ZBB,
-       CPURV_HAS_ZBC,
-       CPURV_HAS_ZBS,
-       CPURV_HAS_ZBKB,
-       CPURV_HAS_ZBKC,
-       CPURV_HAS_ZBKX,
-       CPURV_HAS_CSR_INSTRUCTIONS,   { extension Zicsr    }
-       CPURV_HAS_FETCH_FENCE,        { extension Zifencei }
-       CPURV_HAS_F,
-       CPURV_HAS_D,
-       CPURV_HAS_Q,
-       CPURV_HAS_ZFH,
-       CPURV_HAS_ZFHMIN,
-       CPURV_HAS_ZFA,
-       CPURV_HAS_ZFINX,
-       CPURV_HAS_ZDINX,
-       CPURV_HAS_ZHINX,
-       CPURV_HAS_ZHINXMIN,
-       CPURV_HAS_ZICOND,
-       CPURV_HAS_ZMMUL
-      );
+   level4optimizerswitches = genericlevel4optimizerswitches + level3optimizerswitches + [cs_opt_stackframe];
 
  const
    cpu_capabilities : array[tcputype] of set of tcpuflags =
      ( { cpu_none      } [],
        { cpu_rv32imac  } [CPURV_HAS_MUL,CPURV_HAS_ATOMIC,CPURV_HAS_COMPACT],
+       { cpu_rv32imac_csr_fence } [CPURV_HAS_MUL,CPURV_HAS_ATOMIC,CPURV_HAS_COMPACT,CPURV_HAS_CSR_INSTRUCTIONS,CPURV_HAS_FETCH_FENCE],
        { cpu_rv32ima   } [CPURV_HAS_MUL,CPURV_HAS_ATOMIC],
        { cpu_rv32im    } [CPURV_HAS_MUL],
        { cpu_rv32i     } [],
        { cpu_rv32e     } [CPURV_HAS_16REGISTERS],
        { cpu_rv32imc   } [CPURV_HAS_MUL,CPURV_HAS_COMPACT],
+       { cpu_rv32imc_csr_fence } [CPURV_HAS_MUL,CPURV_HAS_COMPACT,CPURV_HAS_CSR_INSTRUCTIONS,CPURV_HAS_FETCH_FENCE],
        { cpu_rv32imafdc} [CPURV_HAS_MUL,CPURV_HAS_ATOMIC,CPURV_HAS_COMPACT,CPURV_HAS_F,CPURV_HAS_D],
+       { cpu_rv32imaf  } [CPURV_HAS_MUL,CPURV_HAS_ATOMIC,CPURV_HAS_F],
+       { cpu_rv32imafc } [CPURV_HAS_MUL,CPURV_HAS_ATOMIC,CPURV_HAS_F,CPURV_HAS_COMPACT],
        { cpu_rv32imafd } [CPURV_HAS_MUL,CPURV_HAS_ATOMIC,CPURV_HAS_F,CPURV_HAS_D],
        { cpu_rv32ec    } [CPURV_HAS_16REGISTERS,CPURV_HAS_COMPACT],
-       { cpu_rv32gc    } [CPURV_HAS_MUL,CPURV_HAS_ATOMIC,CPURV_HAS_COMPACT,CPURV_HAS_F,CPURV_HAS_D],
-       { cpu_rv32gc    } [CPURV_HAS_MUL,CPURV_HAS_ATOMIC,CPURV_HAS_COMPACT,CPURV_HAS_F,CPURV_HAS_D,CPURV_HAS_ZBA,CPURV_HAS_ZBB,CPURV_HAS_ZBS]
+       { cpu_rv32gc    } [CPURV_HAS_MUL,CPURV_HAS_ATOMIC,CPURV_HAS_COMPACT,CPURV_HAS_F,CPURV_HAS_D,CPURV_HAS_CSR_INSTRUCTIONS,CPURV_HAS_FETCH_FENCE],
+       { cpu_rv32gcb   } [CPURV_HAS_MUL,CPURV_HAS_ATOMIC,CPURV_HAS_COMPACT,CPURV_HAS_F,CPURV_HAS_D,CPURV_HAS_ZBA,CPURV_HAS_ZBB,CPURV_HAS_ZBS,CPURV_HAS_CSR_INSTRUCTIONS,CPURV_HAS_FETCH_FENCE]
      );
 
 Implementation

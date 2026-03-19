@@ -90,10 +90,10 @@ implementation
            hpname:='';
            options:=[];
            index:=0;
-           if token=_ID then
+           if current_scanner.token=_ID then
              begin
                 consume_sym_orgid(srsym,srsymtable,orgs);
-                { orgpattern is still valid here }
+                { current_scanner.orgpattern is still valid here }
                 InternalProcName:='';
                 case srsym.typ of
                   staticvarsym :
@@ -153,6 +153,7 @@ implementation
                         end;
                        include(options,eo_index);
                        pt.free;
+                       pt := nil;
                        if target_info.system in [system_i386_win32,system_i386_wdosx,system_arm_wince,system_i386_wince] then
                         DefString:=srsym.realname+'='+InternalProcName+' @ '+tostr(index)
                        else
@@ -169,6 +170,7 @@ implementation
                          message(type_e_string_expr_expected);
                        include(options,eo_name);
                        pt.free;
+                       pt := nil;
                        DefString:=hpname+'='+InternalProcName;
                      end;
                     if try_to_consume(_RESIDENT) then

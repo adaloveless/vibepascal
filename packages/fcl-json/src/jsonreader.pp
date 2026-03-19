@@ -13,7 +13,7 @@
 
  **********************************************************************}
 {$IFNDEF FPC_DOTTEDUNITS}
-unit jsonreader;
+unit JsonReader;
 {$ENDIF FPC_DOTTEDUNITS}
 
 {$I fcl-json.inc}
@@ -27,7 +27,7 @@ uses
 uses
   Classes, SysUtils, fpJSON, jsonscanner;
 {$ENDIF FPC_DOTTEDUNITS}
-  
+
 Type
 
   { TBaseJSONReader }
@@ -174,7 +174,7 @@ Type
   end;
 
   EJSONParser = Class(EParserError);
-  
+
 implementation
 
 Resourcestring
@@ -231,10 +231,15 @@ begin
 end;
 
 procedure TBaseJSONReader.DoParse(AtCurrent, AllowEOF: Boolean);
-
+  procedure ParseString;
+  begin
+    if ((joUTF8 in Options) or (DefaultSystemCodePage<>CP_UTF8)) and (TypeInfo(TJSONStringType) <> TypeInfo(UTF8String)) then
+      StringValue(TJSONStringType(UTF8Decode(CurrentTokenString)))
+    else
+      StringValue(CurrentTokenString);
+  end;
 var
   T : TJSONToken;
-  
 begin
   If not AtCurrent then
     T:=GetNextToken
@@ -246,10 +251,7 @@ begin
     tkNull  : NullValue;
     tkTrue,
     tkFalse : BooleanValue(t=tkTrue);
-    tkString : if (joUTF8 in Options) and (DefaultSystemCodePage<>CP_UTF8) then
-                 StringValue(TJSONStringType(UTF8Decode(CurrentTokenString)))
-               else
-                 StringValue(CurrentTokenString);
+    tkString : ParseString;
     tkCurlyBraceOpen :
         ParseObject;
     tkCurlyBraceClose :
@@ -278,7 +280,7 @@ Var
   I64 : Int64;
   QW  : QWord;
   F : TJSONFloat;
-  S : String;
+  S : RawByteString;
 
 begin
   S:=CurrentTokenString;

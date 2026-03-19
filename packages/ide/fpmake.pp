@@ -15,7 +15,39 @@ const
   LLVM_Disabled: boolean = false;
   GDBMI_DEFAULT_OSes = [aix, darwin, freebsd, haiku, linux, netbsd, openbsd, solaris, win32, win64];
 
+const
+  CompilerGitDate : ansistring = '';
+
 procedure ide_check_gdb_availability(Sender: TObject);
+
+  procedure GetCompilerGitDate;
+    var
+     Cmd : string;
+      Opts : TStringList;
+    begin
+      Cmd:=ExeSearch(AddProgramExtension('git',Defaults.SourceOS),{$IFDEF FPC_DOTTEDUNITS}System.{$ENDIF}SysUtils.GetEnvironmentVariable('PATH'));
+      if Cmd <> '' then
+        begin
+          Opts:=TStringList.Create;
+          try
+            try
+              Opts.Add('log');
+              Opts.Add('-1');
+              Opts.Add('--pretty=%cd');
+              Opts.Add('--date=format:%Y/%m/%d');
+              CompilerGitDate:=Installer.BuildEngine.GetExecuteCommandOutput(Cmd,Opts);
+              while (length(CompilerGitDate)>0) and (CompilerGitDate[length(CompilerGitDate)] in [#10,#13]) do
+                SetLength(CompilerGitDate,length(CompilerGitDate)-1);
+            except
+              CompilerGitDate:={$IFDEF FPC_DOTTEDUNITS}System.{$ENDIF}SysUtils.GetEnvironmentVariable('COMPDATESTR');
+	    end;
+          finally
+            Opts.Free;
+          end;
+        end
+      else
+        CompilerGitDate:={$IFDEF FPC_DOTTEDUNITS}System.{$ENDIF}SysUtils.GetEnvironmentVariable('COMPDATESTR');
+    end;
 
   function DetectLibGDBDir: string;
 
@@ -185,6 +217,9 @@ begin
       P.Options.Add('-dNODEBUG');
       end;
     end;
+  GetCompilerGitDate;
+  if (CompilerGitDate<>'') then
+    P.Options.Add('-DD'+CompilerGitDate);
 end;
 
 
@@ -213,9 +248,9 @@ Var
 begin
   if SameText(Defaults.SubTarget,'unicodertl') then
     exit;
-  if Defaults.Namespaces then 
+  if Defaults.Namespaces then
     exit;
-     
+
   With Installer do
     begin
     s := GetCustomFpmakeCommandlineOptionValue('NoIDE');
@@ -302,7 +337,7 @@ begin
         P.Options.Add('-dGDB');
         if CompilerTarget=wasm32 then
           P.Options.Add('-dNOOPT');
-        
+
         CompilerDir:=P.Directory +'../../compiler';
 
         P.Options.Add('-d'+CPUToString(CompilerTarget));
@@ -312,10 +347,10 @@ begin
         P.Options.Add('-Fu'+CompilerDir+'/systems');
         P.Options.Add('-Fi'+CompilerDir+'/'+CPUToString(CompilerTarget));
         P.Options.Add('-Fi'+CompilerDir);
-        
+
         if CompilerTarget in [x86_64, i386, i8086] then
           P.Options.Add('-Fu'+CompilerDir+'/x86');
-        
+
         if CompilerTarget in [powerpc, powerpc64] then
           P.Options.Add('-Fu'+CompilerDir+'/ppcgen');
 
@@ -331,7 +366,7 @@ begin
           begin
               P.Options.Add('-Fu'+CompilerDir+'/riscv');
           end;
-        
+
         if CompilerTarget = mipsel then
           P.Options.Add('-Fu'+CompilerDir+'/mips');
 
@@ -347,12 +382,12 @@ begin
         { powerpc64-aix compiled IDE needs -CTsmalltoc option }
         if (Defaults.OS=aix) and (Defaults.CPU=powerpc64) then
         P.Options.Add('-CTsmalltoc');
-        
+
         { Handle SPECIALLINK environment variable if available }
         s:=GetEnvironmentVariable('SPECIALLINK');
         if s<>'' then
           P.Options.Add(s);
-        
+
         P.Options.Add('-Sg');
         P.IncludePath.Add('compiler');
 

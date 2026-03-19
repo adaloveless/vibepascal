@@ -130,7 +130,7 @@ const
 
   Fixed os chunks can be converted to variable os chunks and back
   (if not too big). To prevent repeated conversion overhead in case
-  of user freeing/allocing same or a small set of sizes, we only do
+  of user freeing/allocating same or a small set of sizes, we only do
   the conversion to the new fixed os chunk size format after we
   reuse the os chunk for another fixed size, or variable. Note that
   while the fixed size os chunk is on the freelists.oslist, it is also
@@ -578,7 +578,7 @@ procedure append_to_oslist_var(pmc: pmemchunk_var);
 var
   poc: poschunk;
 begin
-  // block eligable for freeing
+  // block eligible for freeing
   poc := pointer(pmc)-varfirstoffset;
   remove_from_list_var(pmc);
   append_to_oslist(poc);
@@ -923,7 +923,7 @@ begin
           if loc_freelists^.locgrowheapsizesmall < maxgrowheapsizesmall then
             inc(loc_freelists^.locgrowheapsizesmall, loc_freelists^.locgrowheapsizesmall);
           { also set to zero in case we did not grow the blocksize to
-            prevent oveflows of this counter in case the rtl is compiled
+            prevent overflows of this counter in case the rtl is compiled
             range/overflow checking }
           loc_freelists^.fixedallocated := 0;
         end;
@@ -1435,10 +1435,10 @@ begin
               if assigned(loc_freelists^.oslist_all) then
                 loc_freelists^.oslist_all^.prev_any := poc;
               loc_freelists^.oslist_all := poc;
-              
+
               { setup new block location }
               p:=pointer(poc)+varfirstoffset+sizeof(tmemchunk_var_hdr);
-              
+
               { setup the block data }
               pmcv:=pmemchunk_var(p-sizeof(tmemchunk_var_hdr));
               pmcv^.size:=(ptruint(newsize-varfirstoffset) and sizemask) or (firstblockflag or lastblockflag);
@@ -1578,12 +1578,11 @@ procedure InitHeapThread;
 var
   loc_freelists: pfreelists;
 begin
-  if heap_lock_use > 0 then
-  begin
-    EnterCriticalSection(heap_lock);
-    inc(heap_lock_use);
-    LeaveCriticalSection(heap_lock);
-  end;
+  if heap_lock_use = 0 then
+    InitCriticalSection(heap_lock);
+  EnterCriticalSection(heap_lock);
+  inc(heap_lock_use);
+  LeaveCriticalSection(heap_lock);
   loc_freelists := @freelists;
   fillchar(loc_freelists^,sizeof(tfreelists),0);
   { initialise the local blocksize for allocating oschunks for fixed
@@ -1600,17 +1599,12 @@ procedure InitHeap; public name '_FPC_InitHeap';
 var
   loc_freelists: pfreelists;
 begin
-{$ifdef FPC_HAS_FEATURE_THREADING}
   { we cannot initialize the locks here yet, thread support is
     not loaded yet }
-  heap_lock_use := 0;
-{$endif}
   loc_freelists := @freelists;
-  fillchar(loc_freelists^,sizeof(tfreelists),0);
   { initialise the local blocksize for allocating oschunks for fixed
     freelists with the default starting value }
   loc_freelists^.locgrowheapsizesmall:=growheapsizesmall;
-  fillchar(orphaned_freelists,sizeof(orphaned_freelists),0);
 end;
 
 procedure RelocateHeap;

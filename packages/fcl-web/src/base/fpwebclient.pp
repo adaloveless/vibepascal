@@ -1,12 +1,12 @@
 { **********************************************************************
   This file is part of the Free Component Library (FCL)
   Copyright (c) 2015 by the Free Pascal development team
-        
+
   FPWebclient - abstraction for client execution of HTTP requests.
-            
+
   See the file COPYING.FPC, included in this distribution,
   for details about the copyright.
-                   
+
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
@@ -32,9 +32,9 @@ uses
 Type
 
   { TRequestResponse }
-  
+
   // Some IIS servers react badly to svAny. So we set up a system where you can set a min/max SSL version.
-  
+
   TSSLVersion = (svNone,svAny,svSSLv2,svSSLv3,svTLSv1,svTLSv11,svTLSv12,svTLSv13);
   TSSLVersions = Set of TSSLVersion;
   TSSLVersionArray = Array of TSSLVersion;
@@ -50,6 +50,7 @@ Type
   Protected
     function GetHeaders: TStrings;virtual;
     function GetStream: TStream;virtual;
+    procedure SetStream(aValue : TStream); virtual;
     property IsAsync : Boolean read FIsAsync;
   Public
     constructor create(aASync : Boolean; const aRequestID : String = '');
@@ -61,7 +62,9 @@ Type
     // Request headers or response headers
     Property Headers : TStrings Read GetHeaders;
     // Request content or response content
-    Property Content: TStream Read GetStream;
+    Property Content: TStream Read GetStream Write SetStream;
+    // Request/Response own the stream, i.e. free the stream when destroyed.
+    Property OwnsStream : Boolean Read FOwnsStream Write FOwnsStream;
     // SSLVersion : Which version to use
     Property SSLVersion : TSSLVersion Read FSSLVersion Write FSSLVersion;
   end;
@@ -133,7 +136,7 @@ Type
   end;
 
   TAsyncResponseCallback = reference to procedure (aResponse : TWebClientResponseResult);
-   
+
   TAbstractWebClient = Class(TComponent)
   private
     FExaminer: TAbstractResponseExaminer;
@@ -372,7 +375,7 @@ var
 begin
   LNextID:=InterlockedIncrement(FRequestID);
 end;
- 
+
 procedure TAbstractWebClient.GetVersionLimits(out PMin, PMax: TSSLVersion);
 
 begin
@@ -390,7 +393,7 @@ end;
 
 function TAbstractWebClient.ExecuteRequest(const AMethod, AURL: String;
   ARequest: TWebClientRequest): TWebClientResponse;
-  
+
 Var
   P,PMax,PMin : TSSLVersion;
   S: String;
@@ -502,6 +505,15 @@ begin
     FOwnsStream:=True;
     end;
   Result:=FStream;
+end;
+
+procedure TRequestResponse.SetStream(aValue : TStream);
+begin
+  if aValue=FStream then
+    exit;
+  if FOwnsStream then
+    FreeAndNil(FStream);
+  FStream:=aValue;
 end;
 
 constructor TRequestResponse.Create(aAsync: Boolean; const aRequestID : String);

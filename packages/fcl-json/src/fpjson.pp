@@ -13,7 +13,7 @@
 
  **********************************************************************}
 {$IFNDEF FPC_DOTTEDUNITS}
-unit fpjson;
+unit fpJson;
 {$ENDIF FPC_DOTTEDUNITS}
 
 {$i fcl-json.inc}
@@ -721,8 +721,8 @@ Type
     procedure Iterate(Iterator : TJSONObjectIterator; Data: TObject);
     function IndexOf(Item: TJSONData): Integer;
     Function IndexOfName(const AName: TJSONStringType; CaseInsensitive : Boolean = False): Integer;
-    Function Find(Const AName : String) : TJSONData; overload;
-    Function Find(Const AName : String; AType : TJSONType) : TJSONData; overload;
+    Function Find(Const AName : TJSONStringType) : TJSONData; overload;
+    Function Find(Const AName : TJSONStringType; AType : TJSONType) : TJSONData; overload;
     function Find(const key: TJSONStringType; out AValue: TJSONData): boolean;
     function Find(const key: TJSONStringType; out AValue: TJSONObject): boolean;
     function Find(const key: TJSONStringType; out AValue: TJSONArray): boolean;
@@ -822,7 +822,8 @@ Function CreateJSON(const Data : TJSONStringType) : TJSONString;
 Function CreateJSON(const Data : TJSONUnicodeStringType) : TJSONString;
 {$ENDIF}
 Function CreateJSONArray(const Data : Array of {$IFDEF PAS2JS}jsvalue{$else}Const{$ENDIF}) : TJSONArray;
-Function CreateJSONObject(const Data : Array of {$IFDEF PAS2JS}jsvalue{$else}Const{$ENDIF}) : TJSONObject;
+Function CreateJSONObject : TJSONObject; overload;
+Function CreateJSONObject(const Data : Array of {$IFDEF PAS2JS}jsvalue{$else}Const{$ENDIF}) : TJSONObject; overload;
 
 // These functions rely on a callback. If the callback is not set, they will raise an error.
 // When the jsonparser unit is included in the project, the callback is automatically set.
@@ -1236,6 +1237,11 @@ end;
 function CreateJSONArray(const Data: array of {$IFDEF PAS2JS}jsvalue{$else}Const{$ENDIF}): TJSONArray;
 begin
   Result:=TJSONArrayCLass(DefaultJSONInstanceTypes[jitArray]).Create(Data);
+end;
+
+function CreateJSONObject: TJSONObject;
+begin
+  Result:=TJSONObjectClass(DefaultJSONInstanceTypes[jitObject]).Create;
 end;
 
 function CreateJSONObject(const Data: array of {$IFDEF PAS2JS}jsvalue{$else}Const{$ENDIF}): TJSONObject;
@@ -1740,6 +1746,7 @@ end;
 procedure TJSONData.DoFormatJSON(var Ctx: TFormatJSONContext; CurrentIndent : SizeInt);
 
 begin
+  if CurrentIndent=0 then ;
   Ctx.Append(AsJSON);
 end;
 
@@ -2252,9 +2259,8 @@ begin
     Ctx.Append(TJSONStringType(FloatToStr(FValue,JSONFormatSettings)))
   else
     Ctx.Append(AsJSON);
+  if CurrentIndent=0 then ;
 end;
-
-
 
 constructor TJSONFloatNumber.Create(AValue: TJSONFloat);
 begin
@@ -3726,6 +3732,7 @@ begin
         vtPChar      : AName:=TJSONUnicodeStringType(StrPas(VPChar));
       else
         DoError(SErrNameMustBeString,[I+1]);
+        AName:='';
       end;
     {$ENDIF}
     If (AName='') then
@@ -3900,6 +3907,12 @@ begin
 end;
 
 function TJSONObject.IndexOfName(const AName: TJSONStringType; CaseInsensitive : Boolean = False): Integer;
+  function IndexOfNameCaseInsensetive: Integer;
+  begin
+    Result:=Count-1;
+    while (Result>=0) and (CompareText(Names[Result],AName)<>0) do
+      Dec(Result);
+  end;
 begin
   {$IFDEF PAS2JS}
   if FNames=nil then
@@ -3909,11 +3922,7 @@ begin
   Result:=FHash.FindIndexOf(AName);
   {$ENDIF}
   if (Result<0) and CaseInsensitive then
-    begin
-    Result:=Count-1;
-    While (Result>=0) and (CompareText(Names[Result],AName)<>0) do
-      Dec(Result);
-    end;
+    Result:=IndexOfNameCaseInsensetive;
 end;
 
 procedure TJSONObject.Clear;
@@ -4221,7 +4230,7 @@ begin
     Result:=ADefault;
 end;
 
-function TJSONObject.Find(const AName: String): TJSONData;
+function TJSONObject.Find(const AName: TJSONStringType): TJSONData;
 {$IFDEF PAS2JS}
 begin
   if FHash.hasOwnProperty('%'+AName) then
@@ -4242,7 +4251,7 @@ begin
 end;
 {$ENDIF}
 
-function TJSONObject.Find(const AName: String; AType: TJSONType): TJSONData;
+function TJSONObject.Find(const AName: TJSONStringType; AType: TJSONType): TJSONData;
 begin
   Result:=Find(AName);
   If Assigned(Result) and (Result.JSONType<>AType) then

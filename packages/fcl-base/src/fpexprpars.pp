@@ -16,7 +16,7 @@
 {$mode objfpc}
 {$h+}
 {$IFNDEF FPC_DOTTEDUNITS}
-unit fpexprpars;
+unit fpExprPars;
 {$ENDIF FPC_DOTTEDUNITS}
 
 interface
@@ -654,7 +654,7 @@ Type
   { TAggregateMin }
 
   TAggregateMin = Class(TAggregateExpr)
-  Public
+  Protected
     FFirst: Boolean;
   Public
     Procedure InitAggregate; override;
@@ -664,7 +664,7 @@ Type
   { TAggregateMax }
 
   TAggregateMax = Class(TAggregateExpr)
-  Public
+  Protected
     FFirst: Boolean;
   Public
     Procedure InitAggregate; override;

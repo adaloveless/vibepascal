@@ -117,7 +117,7 @@ Begin
   pflags^:=pflags^ + i;
   unmasked_flags := pflags^ - softfloat_exception_mask;
   { before we raise the exception, we mark it as handled,
-    this behaviour is similiar to the hardware handler in SignalToRunerror }
+    this behaviour is similar to the hardware handler in SignalToRunerror }
   SysResetFPU;
   if (float_flag_invalid in unmasked_flags) then
      HandleError(207)
@@ -352,22 +352,44 @@ end;
     {*  frexp() extracts the exponent from x.  It returns an integer     *}
     {*  power of two to expnt and the significand between 0.5 and 1      *}
     {*  to y.  Thus  x = y * 2**expn.                                    *}
+  var
+    M: uint64;
+    E, ExtraE: int32;
+  begin
+    Mantissa := X;
+    E := {$ifndef jvm} TDoubleRec(X).Exp {$else} float64high(X) shr 20 and (1 shl 11 - 1) {$endif};
+    if (E > 0) and (E < 2 * TDoubleRec.Bias + 1) then
     begin
-      exponent:=0;
-      if (abs(x)<0.5) then
-       While (abs(x)<0.5) do
-       begin
-         x := x*2;
-         Dec(exponent);
-       end
-      else
-       While (abs(x)>1) do
-       begin
-         x := x/2;
-         Inc(exponent);
-       end;
-      Mantissa := x;
+      // Normal.
+    {$ifndef jvm}
+      TDoubleRec(Mantissa).Exp := TDoubleRec.Bias - 1;
+    {$else}
+      float64sethigh(Mantissa, float64high(Mantissa) and not ((1 shl 11 - 1) shl 20) + (TDoubleRec.Bias - 1) shl 20);
+    {$endif}
+      Exponent := E - (TDoubleRec.Bias - 1);
+      exit;
     end;
+    if E = 0 then
+    begin
+      M := {$ifndef jvm} TDoubleRec(X).Frac {$else} uint64(uint32(float64high(X)) and (1 shl 20 - 1)) shl 32 or uint32(float64low(X)) {$endif};
+      if M <> 0 then
+      begin
+        // Subnormal.
+        ExtraE := 52 - BsrQWord(M);
+      {$ifndef jvm}
+        TDoubleRec(Mantissa).Frac := M shl ExtraE; // "and (1 shl 52 - 1)" required to remove starting 1, but .SetFrac already does it.
+        TDoubleRec(Mantissa).Exp  := TDoubleRec.Bias - 1;
+      {$else}
+        float64sethigh(Mantissa, uint32(float64high(Mantissa)) and (1 shl 31) + (TDoubleRec.Bias - 1 - 1 {extra -1 removes starting 1 from M}) shl 20 + uint32(uint64(M shl ExtraE) shr 32));
+        float64setlow(Mantissa, uint32(M shl ExtraE));
+      {$endif}
+        Exponent := -TDoubleRec.Bias + 2 - ExtraE;
+        exit;
+      end;
+    end;
+    // ±0, ±Inf, NaN.
+    Exponent := 0;
+  end;
 {$endif not SYSTEM_HAS_FREXP}
 
 
@@ -492,7 +514,7 @@ end;
     *                      64-bit  precision       2
     *                      113-bit precision       3
     *              The actual value is the sum of them. Thus for 113-bit
-    *              precison, one may have to do something like:
+    *              precision, one may have to do something like:
     *
     *              long double t,w,r_head, r_tail;
     *              t = (long double)y[2] + (long double)y[1];
@@ -621,7 +643,7 @@ end;
       jz := jk;
 
       repeat
-        {distill q[] into iq[] reversingly}
+        {distill q[] into iq[] reversely}
         i := 0;
         z := q[jz];
         for j:=jz downto 1 do

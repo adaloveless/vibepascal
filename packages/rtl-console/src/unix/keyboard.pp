@@ -19,6 +19,14 @@ unit keyboard;
 
 {$inline on}
 
+{$ifdef BSD}
+  {$ifndef DARWIN}
+    { For unknown reason in BSD (tested GostBSD) terminal emulators mouse
+      wheel buttons are crocked. Disable mouse scroll. }
+    {$define DISABLE_MOUSE_SCROLL}
+  {$endif}
+{$endif}
+
 {*****************************************************************************}
                                   interface
 {*****************************************************************************}
@@ -29,6 +37,21 @@ const
   AltPrefix : byte = 0;
   ShiftPrefix : byte = 0;
   CtrlPrefix : byte = 0;
+  // Constants for win32-input-mode
+  const
+    RIGHT_ALT_PRESSED       = $0001;
+    LEFT_ALT_PRESSED        = $0002;
+    RIGHT_CTRL_PRESSED      = $0004;
+    LEFT_CTRL_PRESSED       = $0008;
+    SHIFT_PRESSED           = $0010;
+    NUMLOCK_ON              = $0020;
+    SCROLLLOCK_ON           = $0040;
+    CAPSLOCK_ON             = $0080;
+    ENHANCED_KEY            = $0100;
+    kbBack        = $0E08;
+    kbTab         = $0F09;
+    kbEnter       = $1C0D;
+    kbSpaceBar    = $3920;
 
 type
   Tprocedure = procedure;
@@ -62,12 +85,12 @@ function AddSpecialSequence(const St : Shortstring;Proc : Tprocedure) : PTreeEle
 uses
   System.Console.Mouse,  System.Strings,System.Console.Unixkvmbase,
   UnixApi.TermIO,UnixApi.Base
-  {$ifdef Linux},LinuxApi.Vcs{$endif};
+  {$ifdef Linux},LinuxApi.Vcs{$endif},System.Console.Video,System.CharSet;
 {$ELSE FPC_DOTTEDUNITS}
 uses
   Mouse,  Strings,unixkvmbase,
   termio,baseUnix
-  {$ifdef linux},linuxvcs{$endif};
+  {$ifdef linux},linuxvcs{$endif},video,charset;
 {$ENDIF FPC_DOTTEDUNITS}
 
 {$i keyboard.inc}
@@ -124,6 +147,33 @@ const
     );
 
 {$endif Unused}
+
+function UnicodeToSingleByte(CodePoint: Cardinal): AnsiChar;
+var
+  UStr: UnicodeString;
+  TempStr: RawByteString;
+begin
+  if CodePoint > $FFFF then
+  begin
+    UnicodeToSingleByte := '?';
+    Exit;
+  end;
+  UStr := UnicodeString(WideChar(CodePoint));
+
+  TempStr := UTF8Encode(UStr);
+
+  SetCodePage(TempStr, GetLegacyCodePage, True);
+
+  if Length(TempStr) = 1 then
+  begin
+    if (TempStr[1] = '?') and (CodePoint <> ord('?')) then
+      UnicodeToSingleByte := '?'
+    else
+      UnicodeToSingleByte := TempStr[1];
+  end
+  else
+    UnicodeToSingleByte := '?';
+end;
 
 procedure SetRawMode(b:boolean);
 
@@ -186,7 +236,7 @@ const
   kbdchange:array[0..35] of chgentry=(
     {This prevents the alt+function keys from switching consoles.
      We code the F1..F12 sequences into ALT+F1..ALT+F12, we check
-     the shiftstates separetely anyway.}
+     the shiftstates separately anyway.}
     (tab:8; idx:$3b; oldtab:0; oldidx:$3b; oldval:0; newval:0),
     (tab:8; idx:$3c; oldtab:0; oldidx:$3c; oldval:0; newval:0),
     (tab:8; idx:$3d; oldtab:0; oldidx:$3d; oldval:0; newval:0),
@@ -507,7 +557,7 @@ const
   begin
     MouseEvent.action := MouseActionUp;
     MouseEvent.buttons := 0;
-    { fake event is to decive LastMouseEvent
+    { fake event is to deceive LastMouseEvent
     PutMouseEvent(MouseEvent); do not make real event }
   end;
 
@@ -650,6 +700,10 @@ const
          MouseEvent.Action:=MouseActionUp;
        end;
 *)
+{$ifdef DISABLE_MOUSE_SCROLL}
+     if (MouseEvent.buttons and (MouseButton4 or MouseButton5)) <> 0 then
+       exit; { ignore this event }
+{$endif}
      PutMouseEvent(MouseEvent);
      if (MouseEvent.buttons and (MouseButton4 or MouseButton5)) <> 0 then
        GenFakeReleaseEvent(MouseEvent);
@@ -741,6 +795,10 @@ const
       exit;
     if (Y<(Low(MouseEvent.Y)+1)) or (Y>(High(MouseEvent.Y)+1)) then
       exit;
+{$ifdef DISABLE_MOUSE_SCROLL}
+     if buttonval>=64 then
+       exit; { ignore this event }
+{$endif}
     case buttonval and (67 or 128) of
       0 : {left button press}
         ButtonMask:=MouseLeftButton;
@@ -782,8 +840,8 @@ const
     PutMouseEvent(MouseEvent);
     if (ButtonMask and (MouseButton4 or MouseButton5)) <> 0 then
     begin
-      MouseEvent.Action:=MouseActionUp; {to trick LastMouseEvent pretend that we have MouseActionUp event }
-      MouseEvent.Buttons:=LastMouseEvent.Buttons and not ButtonMask;
+      MouseEvent.Action:=MouseActionUp; {to trick LastMouseEvent that we have MouseActionUp event }
+      MouseEvent.Buttons:=LastMouseEvent.Buttons and not (MouseButton4 or MouseButton5);
       {PutMouseEvent(MouseEvent); do not put actual event }
     end;
     LastMouseEvent:=MouseEvent;
@@ -878,14 +936,14 @@ begin
       { maybe we should claim }
       with CurPTree^ do
         begin
-{$ifdef DEBUG}
+{$ifdef DEBUG1}
           if (ScanValue<>AScan) or (CharValue<>AChar) then
             Writeln(system.stderr,'key "',st,'" changed value');
           if (ScanValue<>AScan) then
             Writeln(system.stderr,'Scan was ',ScanValue,' now ',AScan);
           if (CharValue<>AChar) then
             Writeln(system.stderr,'AnsiChar was ',chr(CharValue),' now ',chr(AChar));
-{$endif DEBUG}
+{$endif DEBUG1}
           ScanValue:=AScan;
           CharValue:=AChar;
           ShiftValue:=AShift;
@@ -941,7 +999,7 @@ begin
   if St='' then
     exit;
   p:=1;
-  {This is a distusting hack for certain even more disgusting xterms: Some of
+  {This is a distrusting hack for certain even more disgusting xterms: Some of
    them send two escapes for an alt-key. If we wouldn't do this, we would need
    to put a lot of entries twice in the table.}
   if double_esc_hack_enabled and (st[1]=#27) and (st[2]='#27') and
@@ -973,7 +1031,7 @@ type  key_sequence=packed record
         st:string[10];
       end;
 
-const key_sequences:array[0..425] of key_sequence=(
+const key_sequences:array[0..435] of key_sequence=(
        (AnsiChar:0;scan:$39;shift:[essCtrl];st:#0),         { xterm, Ctrl+Space }
        (AnsiChar:0;scan:kbAltA;shift:[essAlt];st:#27'A'),
        (AnsiChar:0;scan:kbAltA;shift:[essAlt];st:#27'a'),
@@ -1307,6 +1365,10 @@ const key_sequences:array[0..425] of key_sequence=(
        (AnsiChar:0;scan:kbDown;shift:[essShift];st:#27'[1;2B'),  {xterm}
        (AnsiChar:0;scan:kbRight;shift:[essShift];st:#27'[1;2C'), {xterm}
        (AnsiChar:0;scan:kbLeft;shift:[essShift];st:#27'[1;2D'),  {xterm}
+       (AnsiChar:0;scan:kbUp;shift:[essShift];st:#27'O2A'),      {haiku-xterm}
+       (AnsiChar:0;scan:kbDown;shift:[essShift];st:#27'O2B'),    {haiku-xterm}
+       (AnsiChar:0;scan:kbRight;shift:[essShift];st:#27'O2C'),   {haiku-xterm}
+       (AnsiChar:0;scan:kbLeft;shift:[essShift];st:#27'O2D'),    {haiku-xterm}
        (AnsiChar:0;scan:kbCenter;shift:[essShift];st:#27'[1;2E'),{xterm}
        (AnsiChar:0;scan:kbPgUp;shift:[essShift];st:#27'[5;2~'),  {fpterm, xterm-compatible sequence (but xterm uses shift+pgup/pgdn for scrollback)}
        (AnsiChar:0;scan:kbPgDn;shift:[essShift];st:#27'[6;2~'),  {fpterm, xterm-compatible sequence (but xterm uses shift+pgup/pgdn for scrollback)}
@@ -1315,8 +1377,10 @@ const key_sequences:array[0..425] of key_sequence=(
        (AnsiChar:0;scan:kbRight;shift:[essShift];st:#27'[c'),    {rxvt}
        (AnsiChar:0;scan:kbLeft;shift:[essShift];st:#27'[d'),     {rxvt}
        (AnsiChar:0;scan:kbEnd;shift:[essShift];st:#27'[1;2F'),   {xterm}
+       (AnsiChar:0;scan:kbEnd;shift:[essShift];st:#27'O2F'),     {haiku-xterm}
        (AnsiChar:0;scan:kbEnd;shift:[essShift];st:#27'[8$'),     {rxvt}
        (AnsiChar:0;scan:kbHome;shift:[essShift];st:#27'[1;2H'),  {xterm}
+       (AnsiChar:0;scan:kbHome;shift:[essShift];st:#27'O2H'),    {haiku-xterm}
        (AnsiChar:0;scan:kbHome;shift:[essShift];st:#27'[7$'),    {rxvt}
        (AnsiChar:0;scan:kbShiftIns;shift:[essShift];st:#27'Op'), {rxvt - on numpad}
        (AnsiChar:0;scan:kbShiftDel;shift:[essShift];st:#27'On'), {rxvt - on numpad}
@@ -1339,6 +1403,10 @@ const key_sequences:array[0..425] of key_sequence=(
        (AnsiChar:0;scan:kbCtrlDown;shift:[essCtrl];st:#27'[1;5B'),    {xterm}
        (AnsiChar:0;scan:kbCtrlRight;shift:[essCtrl];st:#27'[1;5C'),   {xterm}
        (AnsiChar:0;scan:kbCtrlLeft;shift:[essCtrl];st:#27'[1;5D'),    {xterm}
+       (AnsiChar:0;scan:kbCtrlUp;shift:[essCtrl];st:#27'O5A'),        {haiku-xterm}
+       (AnsiChar:0;scan:kbCtrlDown;shift:[essCtrl];st:#27'O5B'),      {haiku-xterm}
+       (AnsiChar:0;scan:kbCtrlRight;shift:[essCtrl];st:#27'O5C'),     {haiku-xterm}
+       (AnsiChar:0;scan:kbCtrlLeft;shift:[essCtrl];st:#27'O5D'),      {haiku-xterm}
        (AnsiChar:0;scan:kbCtrlCenter;shift:[essCtrl];st:#27'[1;5E'),  {xterm}
        (AnsiChar:0;scan:kbCtrlUp;shift:[essCtrl];st:#27'[Oa'),        {rxvt}
        (AnsiChar:0;scan:kbCtrlDown;shift:[essCtrl];st:#27'[Ob'),      {rxvt}
@@ -1658,10 +1726,11 @@ const           {lookup tables: nKey, modifier -> ScanCode, KeyChar }
        $19, $10, $13, $1f, $14, $16, $2f, $11, $2d, $15, $2c, $1a, $2b, $1b, $29, $0e);
 
 
-procedure buildKeyEvent(modifier:dword; nKey:dword);
+procedure BuildKeyEvent(modifier:dword; nKey, nShortCutKey :dword);
 var k : TEnhancedKeyEvent;
     SState: TEnhancedShiftState;
     ScanValue : byte;
+    Key  : dword;
 begin
   k:=NilEnhancedKeyEvent;
   AltPrefix := 0;
@@ -1678,76 +1747,62 @@ begin
   if (modifier and 4)>0 then SState:=SState+[essCtrl];
   k.ShiftState:=SState;
 
-  if nKey < 128 then
+  Key:=nShortCutKey;
+  if Key < 128 then
   begin
     if essAlt in SState then
-       k.AsciiChar:=cAltAscii[nKey]
+       k.AsciiChar:=cAltAscii[Key]
     else if essCtrl in SState then
-       k.AsciiChar:=cCtrlAscii[nKey]
+       k.AsciiChar:=cCtrlAscii[Key]
     else if essShift in SState then
-      k.AsciiChar:=cShiftAscii[nKey]
+      k.AsciiChar:=cShiftAscii[Key]
     else
-      k.AsciiChar:=cAscii[nKey];
+      k.AsciiChar:=cAscii[Key];
 
     if essAlt in SState then
-       ScanValue :=cAltScanValue[nKey]
+       ScanValue :=cAltScanValue[Key]
     else if essCtrl in SState then
-       ScanValue :=cCtrlScanValue[nKey]
+       ScanValue :=cCtrlScanValue[Key]
     else if essShift in SState then
-      ScanValue :=cShiftScanValue[nKey]
+      ScanValue :=cShiftScanValue[Key]
     else
-      ScanValue :=cScanValue[nKey];
+      ScanValue :=cScanValue[Key];
 
-    k.UnicodeChar := WideChar(k.AsciiChar);
+    if essCtrl in SState then
+      begin
+        // For modern protocols (kitty, modifyOtherKeys), Ctrl+<letter> should
+        // generate the letter itself, not a C0 control character.
+        // Therefore, we do not overwrite nKey (which becomes UnicodeChar)
+        // with the control character's code if a letter was pressed.
+        if not (((Key >= $41) and (Key <= $5A)) or ((Key >= $61) and (Key <= $7A))) then
+          nKey := Ord(k.AsciiChar);
+      end;
+
     k.VirtualScanCode := (ScanValue shl 8) or Ord(k.AsciiChar);
 
-    PushKey(k);
-    if byte(k.AsciiChar) = 27 then PushKey(k);
+    // This is a dirty hack. Unfortunately, our hotkey mapping code
+    // (everywhere except for the recently fixed code for the top menu)
+    // for some reason (this is to be debugged) cannot handle events
+    // with nonzero _character_ codes. So until all those code paths are fixed,
+    // we zero out the character codes here to make Alt hotkeys work properly.
+    // However, we do this only for Latin hotkeys, so that non-Latin ones
+    // can continue working with the new top menu code. Latin hotkeys,
+    // on the other hand, will be recognized by their _key_ codes.
+    if (essAlt in SState) and (nKey < 128) then nKey := 0;
+
+    if nKey <= $FFFF then
+      begin
+        k.UnicodeChar := WideChar(nKey);
+        PushKey(k);
+      end
+    else
+      PushUnicodeKey (k,nKey,char(k.AsciiChar));
+
+    // This line caused duplicate ESC key press events in kitty mode
+    // if byte(k.AsciiChar) = 27 then PushKey(k);
   end else
-    PushUnicodeKey (k,nKey,'?');
+    PushUnicodeKey (k,nKey,UnicodeToSingleByte(nKey));
 end;
-
-procedure xterm_ModifyOtherKeys;
-{ format: CSI 27 ; modifier ; number ~ }
-var ch : AnsiChar;
-    fdsin : tfdSet;
-    st: string[31];
-    modifier : dword;
-    nKey : dword;
-    nr : byte;
-    i : dword;
-begin
-  fpFD_ZERO(fdsin);
-  fpFD_SET(StdInputHandle,fdsin);
-
-  nr:=0;
-  modifier:=1;
-  nKey:=0;
-  st:='0';
-  repeat
-     if inhead=intail then
-       fpSelect(StdInputHandle+1,@fdsin,nil,nil,10);
-     ch:=ttyRecvChar;
-     if ch in [';','~'] then
-     begin
-       if nr = 0 then val(st,modifier,i);
-       if nr = 1 then val(st,nKey,i);
-       inc(nr);
-       st:='0';
-     end else
-     begin
-       if not (ch in ['0'..'9']) then break;
-       st:=st+ch;
-     end;
-  until ch='~';
-
-  {test for validity}
-  if ch<>'~' then exit;
-  if nr<> 2  then exit;
-
-  buildKeyEvent(modifier,nKey);
-end;
-
 
 procedure LoadDefaultSequences;
 
@@ -1756,8 +1811,8 @@ var i:cardinal;
 begin
   AddSpecialSequence(#27'[M',@GenMouseEvent);
   AddSpecialSequence(#27'[<',@GenMouseEvent_ExtendedSGR1006);
-  if not isKittyKeys then
-    AddSpecialSequence(#27'[27;',@xterm_ModifyOtherKeys);
+  AddSpecialSequence(#27#27'[M',@GenMouseEvent);
+  AddSpecialSequence(#27#27'[<',@GenMouseEvent_ExtendedSGR1006);
 
   {Unix backspace/delete hell... Is #127 a backspace or delete?}
   if copy(fpgetenv('TERM'),1,4)='cons' then
@@ -1782,6 +1837,12 @@ begin
       DoAddSequence(st,AnsiChar,scan,shift);
   end;
   sunKeySquences;
+  if fpgetenv('TERM')='xterm-kitty' then {special exception for kitty keys only for Kitty terminal emulator}
+  begin
+    DoAddSequence(#27'[P',0,kbF1,[]);
+    DoAddSequence(#27'[Q',0,kbF2,[]);
+    DoAddSequence(#27'[S',0,kbF4,[]);
+  end;
 end;
 
 function RawReadKey:AnsiChar;
@@ -1975,7 +2036,7 @@ const  cKeysUnicodePrivateBase = 57344; { unicode private area starts here}
       kDel = 82;
       kMiddle = 83;
 
-      {modifyers}
+      {modifiers}
       kShiftLeft = 97;
       kCtrlLeft = 98;
       kAltLeft = 99;
@@ -2052,7 +2113,7 @@ const cKP_AltScanVal : array [kDecimal..kMiddle] of byte = (
       { kDel = 82;       } $93,
       { kMiddle = 83;    } $8f);
 
-procedure buildKeyPadEvent(modifier:dword; nKey:dword; ch : AnsiChar);
+procedure BuildKeyPadEvent(modifier:dword; nKey:dword; ch : AnsiChar);
 var k : TEnhancedKeyEvent;
     SState: TEnhancedShiftState;
     ScanValue : byte;
@@ -2135,7 +2196,7 @@ begin
     if essRightShift in LastShiftState then
       inc(state,kbRightShift);
     if (essShift in LastShiftState) and (not ((essRightShift in LastShiftState) or (essLeftShift in LastShiftState))) then
-      inc(state,kbShift); {this for super rare case when shift state key press was not recived (maybe that is impossible)}
+      inc(state,kbShift); {this for super rare case when shift state key press was not received (maybe that is impossible)}
   end else
   if essShift in LastShiftState then
     inc(state,kbShift);
@@ -2192,14 +2253,144 @@ begin
   end else if (essCtrl in CurrentShiftState) then CurrentShiftState:=CurrentShiftState-[essRightCtrl,essCtrl,essLeftCtrl];
 end;
 
-
 function ReadKey:TEnhancedKeyEvent;
-const
-  ReplacementAsciiChar='?';
 var
   store    : array [0..31] of AnsiChar;
   arrayind : byte;
   SState: TEnhancedShiftState;
+
+    procedure DecodeAndPushWin32Key(const store: array of AnsiChar; arrayind: byte);
+
+      function VKToScanCode(vk: Word): Word;
+      begin
+        case vk of
+          // Standard keys
+          $41..$5A : VKToScanCode := cScanValue[vk]; // 'A'..'Z'
+          $30..$39 : VKToScanCode := cScanValue[vk]; // '0'..'9'
+          $08: VKToScanCode := kbBack;
+          $09: VKToScanCode := kbTab;
+          $0D: VKToScanCode := kbEnter;
+          $1B: VKToScanCode := kbEsc;
+          $20: VKToScanCode := kbSpaceBar;
+          // Function keys
+          $70..$79: VKToScanCode := vk - $70 + kbF1; // F1-F10
+          $7A..$7B: VKToScanCode := vk - $7A + kbF11; // F11-F12
+          // Navigation keys
+          $2D: VKToScanCode := kbIns;
+          $2E: VKToScanCode := kbDel;
+          $24: VKToScanCode := kbHome;
+          $23: VKToScanCode := kbEnd;
+          $21: VKToScanCode := kbPgUp;
+          $22: VKToScanCode := kbPgDn;
+          $26: VKToScanCode := kbUp;
+          $28: VKToScanCode := kbDown;
+          $25: VKToScanCode := kbLeft;
+          $27: VKToScanCode := kbRight;
+          // Modifier keys (scancodes for L/R versions)
+          $10: VKToScanCode := $2A; // VK_SHIFT -> Left shift
+          $11: VKToScanCode := $1D; // VK_CONTROL -> Left control
+          $12: VKToScanCode := $38; // VK_MENU -> Left alt
+          // Lock keys
+          $14: VKToScanCode := $3A; // VK_CAPITAL
+          $90: VKToScanCode := $45; // VK_NUMLOCK
+          $91: VKToScanCode := $46; // VK_SCROLL
+          // OEM Keys
+          $BA: VKToScanCode := $27; // VK_OEM_1 (;)
+          $BB: VKToScanCode := $0D; // VK_OEM_PLUS (=)
+          $BC: VKToScanCode := $33; // VK_OEM_COMMA (,)
+          $BD: VKToScanCode := $0C; // VK_OEM_MINUS (-)
+          $BE: VKToScanCode := $34; // VK_OEM_PERIOD (.)
+          $BF: VKToScanCode := $35; // VK_OEM_2 (/)
+          $C0: VKToScanCode := $29; // VK_OEM_3 (`)
+          $DB: VKToScanCode := $1A; // VK_OEM_4 ([)
+          $DC: VKToScanCode := $2B; // VK_OEM_5 (\)
+          $DD: VKToScanCode := $1B; // VK_OEM_6 (])
+          $DE: VKToScanCode := $28; // VK_OEM_7 (')
+        else
+          VKToScanCode := 0;
+        end;
+      end;
+
+    var
+      params: array[0..5] of LongInt; // Vk, Sc, Uc, Kd, Cs, Rc
+      i, p_idx, code: Integer;
+      st: string;
+      ch: AnsiChar;
+      ScanCode: Word;
+      k: TEnhancedKeyEvent;
+    begin
+      // 1. Parse the parameters: Vk;Sc;Uc;Kd;Cs;Rc
+      for i := 0 to 5 do params[i] := 0; // Clear params
+      params[5] := 1; // Default repeat count is 1
+
+      p_idx := 0;
+      st := '';
+      // Start from after the CSI: ^[[
+      for i := 2 to arrayind - 2 do
+      begin
+        ch := store[i];
+        if ch = ';' then
+        begin
+          if st <> '' then Val(st, params[p_idx], code);
+          st := '';
+          Inc(p_idx);
+          if p_idx > 5 then Break;
+        end
+        else if ch in ['0'..'9'] then
+          st := st + ch;
+      end;
+      // Last parameter
+      if (p_idx <= 5) and (st <> '') then
+        Val(st, params[p_idx], code);
+
+      // For non-printable command keys, we must ignore any character code provided
+      // by the terminal (like #127 for Del) and force it to 0. This ensures the
+      // application interprets the key event as a command (via its scancode)
+      // rather than as a character to be printed.
+      case params[0] of // Check Virtual Key Code (wVirtualKeyCode)
+        // Function keys F1-F12
+        $70..$7B,
+        // Arrow keys (Left, Up, Right, Down)
+        $25..$28,
+        // Navigation keys (PgUp, PgDn, End, Home, Ins, Del)
+        $21..$24, $2D, $2E:
+          params[2] := 0; // Force UnicodeChar to be 0
+      end;
+
+      // 2. Process only key down and repeat events (param[3] must be non-zero)
+      if params[3] = 0 then exit; // Ignore key up events completely for now.
+                                  // The sequence is considered "handled".
+
+      // 3. Create a new key event
+      k := NilEnhancedKeyEvent;
+
+      // 4. Map ControlKeyState (Cs) to ShiftState
+      if (params[4] and SHIFT_PRESSED) <> 0 then Include(k.ShiftState, essShift);
+      if (params[4] and LEFT_CTRL_PRESSED) <> 0 then Include(k.ShiftState, essLeftCtrl);
+      if (params[4] and RIGHT_CTRL_PRESSED) <> 0 then Include(k.ShiftState, essRightCtrl);
+      if (params[4] and (LEFT_CTRL_PRESSED or RIGHT_CTRL_PRESSED)) <> 0 then Include(k.ShiftState, essCtrl);
+      if (params[4] and LEFT_ALT_PRESSED) <> 0 then Include(k.ShiftState, essLeftAlt);
+      if (params[4] and RIGHT_ALT_PRESSED) <> 0 then Include(k.ShiftState, essRightAlt);
+      if (params[4] and (LEFT_ALT_PRESSED or RIGHT_ALT_PRESSED)) <> 0 then Include(k.ShiftState, essAlt);
+
+      // 5. Map Uc, Sc, and Vk
+      k.UnicodeChar := WideChar(params[2]);
+      if params[2] <= 127 then
+        k.AsciiChar := AnsiChar(params[2])
+      else
+        k.AsciiChar := UnicodeToSingleByte(params[2]);
+
+      ScanCode := params[1]; // wVirtualScanCode
+      if ScanCode = 0 then
+        ScanCode := VKToScanCode(params[0]); // wVirtualKeyCode
+
+      // If we have a char but no special scancode, use the char's scancode
+      if (ScanCode = 0) and (Ord(k.AsciiChar) > 0) and (Ord(k.AsciiChar) < 128) then
+        ScanCode := cScanValue[Ord(k.AsciiChar)];
+
+      k.VirtualScanCode := (ScanCode shl 8) or Ord(k.AsciiChar);
+      PushKey(k);
+    end;
 
     procedure DecodeKittyKey(var k :TEnhancedKeyEvent; var NPT : PTreeElement);
     var i : dword;
@@ -2218,6 +2409,7 @@ var
         kbDown : byte;
         nKey : longint;
         modifier: longint;
+        shortCutKey: LongInt;
     begin   {
          if arrayind>0 then
          for i:= 0 to arrayind-1 do
@@ -2297,7 +2489,11 @@ var
                      begin
                        str(modifier,st);
                        escStr:=escStr+'1;'+st;
-                     end;
+                     end else
+                     begin
+                       if ch in ['P','Q','S'] then { F1, F2, F4 }
+                         escStr:='_O';
+                      end;
                      escStr:=escStr+ch;
                      for i:=2 to length(escStr) do
                      begin
@@ -2332,7 +2528,7 @@ var
                if nKey = 60 then nKey:= kMiddle; {KP_5 -> KP_BEGIN}
                if nKey in [kDecimal..kMiddle] then
                begin
-                 buildKeyPadEvent(modifier,nKey,#0);
+                 BuildKeyPadEvent(modifier,nKey,#0);
                  exit;
                end else exit;
              end else
@@ -2342,13 +2538,75 @@ var
 
            if kbDown =3 then exit; {key up... ignored}
 
-           nKey:=unicodeCodePoint;
+           if (modifier > 2) and (enh[2]>=0) and (unicodeCodePoint>=0) then
+           begin
+             { ctrl, alt, shift + key combinations generate shortcut keys not tide to localized keyboard layout }
+             if (enh[1]>=0) then
+               nKey:=enh[1];
+             BuildKeyEvent(modifier,nKey,enh[2]);
+           end else
+           if unicodeCodePoint>-1 then
+           begin
+              nKey:=unicodeCodePoint;
+              if (enh[1]>=0) then
+                nKey:=enh[1];
 
-           if nKey>-1 then
-              buildKeyEvent(modifier,nKey);
+              shortCutKey := enh[2];
+              if shortCutKey < 0 then
+                shortCutKey := nKey;
+
+              if nKey=34 then
+                shortCutKey:=nKey; { exception for " }
+
+              BuildKeyEvent(modifier, nKey, shortCutKey);
+           end;
            arrayind:=0;
         end;
     end;
+
+    procedure DecodeXtermModifyOtherKeys;
+    { format: CSI 2 7 ; modifier ; number ~ }
+    var ch : AnsiChar;
+        fdsin : tfdSet;
+        st: string[31];
+        modifier : dword;
+        nKey : dword;
+        nr : byte;
+        i,n : dword;
+        //asIs: string[31];
+    begin
+      nr:=0;
+      modifier:=1;
+      nKey:=0;
+      st:='0';
+      //asIs:='';
+      if arrayind > 5 then
+      for i:= 5 to arrayind-1 do
+      begin
+         ch:=store[i];
+         //asIs:=asIs+ch;
+         if ch in [';','~'] then
+         begin
+           if nr = 0 then val(st,modifier,n);
+           if nr = 1 then val(st,nKey,n);
+           inc(nr);
+           st:='0';
+         end else
+         begin
+           if not (ch in ['0'..'9']) then break;
+           st:=st+ch;
+         end;
+      end;
+
+      {test for validity}
+      if ch<>'~' then exit;
+      if nr<> 2  then exit;
+
+      BuildKeyEvent(modifier,nKey,nKey);
+
+      arrayind:=0; { assume we have exactly full escape sequence and we have consumed it all }
+    end;
+
 
     procedure RestoreArray;
       var
@@ -2428,6 +2686,10 @@ var
   k: TEnhancedKeyEvent;
   UnicodeCodePoint: LongInt;
   i : dword;
+  // Variables for Alt+UTF8 sequence handling
+  ch1: AnsiChar;
+  utf8_bytes_to_read, loop_idx: Integer;
+  full_sequence_ok: boolean;
 begin
 {Check Buffer first}
   if KeySend<>KeyPut then
@@ -2459,7 +2721,7 @@ begin
       if Utf8KeyboardInputEnabled then
         begin
           UnicodeCodePoint:=ReadUtf8(ch);
-          PushUnicodeKey(k,UnicodeCodePoint,ReplacementAsciiChar);
+          PushUnicodeKey(k,UnicodeCodePoint,UnicodeToSingleByte(UnicodeCodePoint));
         end
       else
         PushKey(k);
@@ -2500,7 +2762,7 @@ begin
           store[arrayind]:=ch;
           inc(arrayind);
           if arrayind >= 31 then break;
-          {check tree for maching sequence}
+          {check tree for matching sequence}
           if assigned(NPT) then
             NNPT:=FindChild(ord(ch),NPT);
           if assigned(NNPT) then
@@ -2515,7 +2777,7 @@ begin
             End
           else
             NPT:=nil;  {not found and not looking for anymore, but don't let hope fade... read sequence till the end}
-          {check sequnce end conditions}
+          {check sequence end conditions}
           if (arrayind>2) and  (ch < #32) then
           begin
             {if two short escape sequences are back to back}
@@ -2523,12 +2785,19 @@ begin
             dec(arrayind);
             break;
           end;
-          if (arrayind>3) and not (ch in [';',':','0'..'9']) then break; {end of escape sequence}
+          if (arrayind>3) and not (ch in [';',':','0'..'9']) and (ch <> '_') and (ch <> '~') then break; {end of escape sequence}
         end;
 
+        ch := store[arrayind-1];
+
+        if (ch = '_') and (arrayind > 2) and (store[0]=#27) and (store[1]='[') then
+        begin
+          DecodeAndPushWin32Key(store, arrayind);
+          exit;
+        end else
         if (arrayind>3) then
           if (ch = 'u'  )   { for sure kitty keys  or }
-              or ( isKittyKeys and  not assigned(FoundNPT) ) {probally kitty keys}
+              or ( isKittyKeys and  not assigned(FoundNPT) ) {probably kitty keys}
               then
             begin
               if not (assigned(FoundNPT) and  assigned(FoundNPT^.SpecialHandler)) then
@@ -2536,31 +2805,74 @@ begin
                   FoundNPT:=RootNPT;
                   DecodeKittyKey(k,FoundNPT);
                 end;
-            end;
+            end else
+          if (ch='~') and (arrayind>5) then
+            if (store[0]=#27) and (store[1]='[')and (store[2]='2')and (store[3]='7')and (store[4]=';') then
+              DecodeXtermModifyOtherKeys;
 
-       NPT:=FoundNPT;
-       if assigned(NPT) and NPT^.CanBeTerminal then
+        if not assigned(FoundNPT) then
         begin
-          if assigned(NPT^.SpecialHandler) then
+          // This handles the case for non-kitty terminals sending ESC + UTF-8 bytes for Alt+key
+          if (arrayind > 1) and (store[0] = #27) and not isKittyKeys then
+          begin
+            ch1 := store[1];
+            utf8_bytes_to_read := DetectUtf8ByteSequenceStart(ch1) - 1;
+            full_sequence_ok := (arrayind - 1) = (utf8_bytes_to_read + 1);
+
+            if full_sequence_ok then
             begin
-              NPT^.SpecialHandler;
-              k.AsciiChar := #0;
-              k.UnicodeChar := WideChar(#0);
-              k.VirtualScanCode := 0;
-              PushKey(k);
-            end
-          else if (NPT^.CharValue<>0) or (NPT^.ScanValue<>0) then
-            begin
-              k.AsciiChar := chr(NPT^.CharValue);
-              k.UnicodeChar := WideChar(NPT^.CharValue);
-              k.VirtualScanCode := (NPT^.ScanValue shl 8) or Ord(k.AsciiChar);
-              k.ShiftState:=k.ShiftState+NPT^.ShiftValue;
-              PushKey(k);
+              // Push continuation bytes back to be re-read by ReadUtf8
+              for loop_idx := arrayind - 1 downto 2 do
+                PutBackIntoInBuf(store[loop_idx]);
+
+              UnicodeCodePoint := ReadUtf8(ch1);
+
+              if UnicodeCodePoint > 0 then
+              begin
+                k.ShiftState := [essAlt];
+                k.VirtualScanCode := 0;
+
+                PushUnicodeKey(k, UnicodeCodePoint, UnicodeToSingleByte(UnicodeCodePoint));
+                ReadKey := PopKey;
+                exit;
+              end
+              else
+              begin
+                // Failed to parse, push everything back as-is
+                PutBackIntoInBuf(ch1);
+                for loop_idx := 2 to arrayind - 1 do
+                  PutBackIntoInBuf(store[loop_idx]);
+              end;
             end;
+          end;
+          // This line caused duplicate ESC key press events in legacy mode
+          // RestoreArray;
         end
-      else
-        RestoreArray;
-   end;
+        else
+          NPT:=FoundNPT;
+
+        if assigned(NPT) and NPT^.CanBeTerminal then
+         begin
+           if assigned(NPT^.SpecialHandler) then
+             begin
+               NPT^.SpecialHandler;
+               k.AsciiChar := #0;
+               k.UnicodeChar := WideChar(#0);
+               k.VirtualScanCode := 0;
+               PushKey(k);
+             end
+           else if (NPT^.CharValue<>0) or (NPT^.ScanValue<>0) then
+             begin
+               k.AsciiChar := chr(NPT^.CharValue);
+               k.UnicodeChar := WideChar(NPT^.CharValue);
+               k.VirtualScanCode := (NPT^.ScanValue shl 8) or Ord(k.AsciiChar);
+               k.ShiftState:=k.ShiftState+NPT^.ShiftValue;
+               PushKey(k);
+             end;
+         end
+       else
+         RestoreArray;
+    end;
 {$ifdef logging}
        writeln(f);
 {$endif logging}
@@ -2614,12 +2926,14 @@ begin
   timewait.tv_nsec := 100000000; {few nano seconds to wait}
   ree:=fpNanoSleep(@timewait,@finalparsec);
   st:='';
-  if syskeypressed then st:=RawReadString; {empty key buffer (key realeas might be pending)}
+  if syskeypressed then st:=RawReadString; {empty key buffer (key release might be pending)}
 end;
 
 { Exported functions }
 
 procedure SysInitKeyboard;
+var
+  envInput: string;
 begin
   isKittyKeys:=false;
   CurrentShiftState:=[];
@@ -2639,9 +2953,6 @@ begin
   else
     begin
 {$endif}
-      { default for Shift prefix is ^ A}
-      if ShiftPrefix = 0 then
-        ShiftPrefix:=1;
       {default for Alt prefix is ^Z }
       if AltPrefix=0 then
         AltPrefix:=26;
@@ -2657,11 +2968,34 @@ begin
         end;
       {kitty_keys_no:=true;}
       isKittyKeys:=kitty_keys_yes;
-      if kitty_keys_yes or (kitty_keys_yes=kitty_keys_no) then
-         write(#27'[>31u'); { try to set up kitty keys }
-      KittyKeyAvailability;
-      if not isKittyKeys then
-        write(#27'[>4;2m'); { xterm ->  modifyOtherKeys }
+
+      envInput := LowerCase(fpgetenv('TV_INPUT'));
+      if envInput = 'win32' then
+        begin
+          write(#27'[?9001h');
+        end
+      else if envInput = 'kitty' then
+        begin
+{$ifndef HAIKU} { Haiku does not cope well with following escape strings }
+          write(#27'[>31u');
+          KittyKeyAvailability;
+{$endif HAIKU}
+        end
+      else if envInput = 'legacy' then
+        begin
+          // Do nothing
+        end
+      else // TV_INPUT not set or incorrect, use default logic
+        begin
+{$ifndef HAIKU} { Haiku does not cope well with following escape strings }
+          if kitty_keys_yes or (kitty_keys_yes=kitty_keys_no) then
+             write(#27'[>31u'); { try to set up kitty keys }
+          KittyKeyAvailability;
+          if not isKittyKeys then
+            write(#27'[>4;2m'); { xterm ->  modifyOtherKeys }
+{$endif HAIKU}
+          write(#27'[?9001h'); // Try to enable win32-input-mode
+        end;
 {$ifdef linux}
     end;
 {$endif}
@@ -2676,6 +3010,8 @@ begin
   if is_console then
   unpatchkeyboard;
 {$endif linux}
+  write(#27'[?9001l'); // Disable win32-input-mode
+{$ifndef HAIKU} { Haiku does not cope well with following escape strings }
   if not isKittyKeys then
     write(#27'[>4m'); { xterm -> reset to default modifyOtherKeys }
   if kitty_keys_yes then
@@ -2684,6 +3020,7 @@ begin
     waitAndReadAfterArtifacts;
     isKittyKeys:=false;
   end;
+{$endif HAIKU}
 
   if copy(fpgetenv('TERM'),1,5)='xterm' then
      {Restore the old alt key behaviour.}
@@ -2713,7 +3050,7 @@ function SysGetEnhancedKeyEvent: TEnhancedKeyEvent;
       $19, $10, $13, $1F, $14, $16, $2F, $11,
       $2D, $15, $2C, $1A, $2B, $1B, $29, $0C);
   begin
-    if (b and $E0)=$20  { digits / leters } then
+    if (b and $E0)=$20  { digits / letters } then
      EvalScan:=DScan[b and $1F]
     else
      case b of
@@ -2756,6 +3093,7 @@ var
   MyKey: TEnhancedKeyEvent;
   EscUsed,AltPrefixUsed,CtrlPrefixUsed,ShiftPrefixUsed,Again : boolean;
   SState: TEnhancedShiftState;
+  i: integer;
 
 begin {main}
   if PendingEnhancedKeyEvent<>NilEnhancedKeyEvent then
@@ -2767,6 +3105,15 @@ begin {main}
     end;
   SysGetEnhancedKeyEvent:=NilEnhancedKeyEvent;
   MyKey:=ReadKey;
+
+  // FAST PATH for pre-constructed events from ReadKey's Alt+UTF8 logic
+  if (MyKey.ShiftState <> []) and (Ord(MyKey.UnicodeChar) > 0) and (Ord(MyKey.UnicodeChar) <> Ord(MyKey.AsciiChar)) then
+  begin
+    SysGetEnhancedKeyEvent := MyKey;
+    LastShiftState := MyKey.ShiftState;
+    exit;
+  end;
+
   MyChar:=MyKey.AsciiChar;
   MyUniChar:=MyKey.UnicodeChar;
   MyScan:=MyKey.VirtualScanCode shr 8;
@@ -2822,17 +3169,6 @@ begin {main}
         LastShiftState:=SysGetEnhancedKeyEvent.ShiftState; {to fake shift state later}
         exit;
       end
-    else if MyChar=#27 then
-      begin
-        if EscUsed then
-          SState:=SState-[essAlt,essLeftAlt,essRightAlt]
-        else
-          begin
-            Include(SState,essAlt);
-            Again:=true;
-            EscUsed:=true;
-          end;
-      end
     else if (AltPrefix<>0) and (MyChar=chr(AltPrefix)) then
       begin { ^Z - replace Alt for Linux OS }
         if AltPrefixUsed then
@@ -2876,6 +3212,34 @@ begin {main}
   until not Again;
   if MyScan = 0 then
       MyScan:=EvalScan(ord(MyChar));
+  // Legacy mode fix: interpret single-byte C0 control characters. This logic
+  // applies only when a raw character was read, not a pre-parsed sequence.
+  if (MyKey.VirtualScanCode and $FF00 = 0) and (Ord(MyChar) >= 1) and (Ord(MyChar) <= 31) and not (essCtrl in SState) then
+  begin
+    case Ord(MyChar) of
+      8, 9, 10, 13, 27: // Backspace, Tab, LF, CR, Esc are their own keys
+        begin
+          // Do not treat these as Ctrl+<key> combinations in this context.
+        end;
+      else // This is a Ctrl+<key> combination (e.g., Ctrl+A = #1).
+      begin
+        Include(SState, essCtrl);
+        // The application expects the actual character ('A'), not the control
+        // code (#1). We must find the original character based on the scan code
+        // to mimic the behavior of the win32 input mode.
+        // Search for the corresponding character in the scan code table.
+        for i := Ord('A') to Ord('Z') do
+        begin
+          if (cScanValue[i] = MyScan) then
+          begin
+            MyChar := AnsiChar(i);
+            MyUniChar := WideChar(i);
+            break;
+          end;
+        end;
+      end;
+    end;
+  end;
   if (essCtrl in SState) and (not (essAlt in SState)) then
     begin
       if (MyChar=#9) and (MyScan <> $17) then
@@ -2913,7 +3277,15 @@ begin {main}
       SysGetEnhancedKeyEvent.AsciiChar:=MyChar;
       SysGetEnhancedKeyEvent.UnicodeChar:=MyUniChar;
       SysGetEnhancedKeyEvent.ShiftState:=SState;
-      SysGetEnhancedKeyEvent.VirtualScanCode:=(MyScan shl 8) or Ord(MyChar);
+
+      // For Ctrl+<letter>, KeyCode must be 1..26 for A..Z.
+      // This ensures backward compatibility with older code.
+      // We check for Ctrl without Alt to avoid interfering with AltGr.
+      if (essCtrl in SState) and not (essAlt in SState) and (UpCase(MyChar) in ['A'..'Z']) then
+        SysGetEnhancedKeyEvent.VirtualScanCode := Ord(UpCase(MyChar)) - Ord('A') + 1
+      else
+        // Default behavior for all other key combinations.
+        SysGetEnhancedKeyEvent.VirtualScanCode := (MyScan shl 8) or Ord(MyChar);
     end;
   LastShiftState:=SysGetEnhancedKeyEvent.ShiftState; {to fake shift state later}
 end;

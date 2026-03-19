@@ -308,7 +308,6 @@ begin
           defdynlinker:=defdynlinker_soft_float;
         abi_riscv_ilp32f:
           defdynlinker:=defdynlinker_single_float;
-        abi_riscv_hf,
         abi_riscv_ilp32d:
           defdynlinker:=defdynlinker_double_float;
       else
@@ -324,7 +323,6 @@ begin
           defdynlinker:=defdynlinker_soft_float;
         abi_riscv_lp64f:
           defdynlinker:=defdynlinker_single_float;
-        abi_riscv_hf,
         abi_riscv_lp64d:
           defdynlinker:=defdynlinker_double_float;
       else
@@ -386,7 +384,7 @@ begin
     The former contains library names qualified with prefix and suffix (coming from
     "external 'c' name 'foo' declarations), the latter contains raw names (from "$linklib c"
     directives). }
-  hp:=tmodule(loaded_units.first);  
+  hp:=tmodule(loaded_units.first);
   while assigned(hp) do
     begin
       result:=Assigned(hp.ImportLibraryList.find(target_info.sharedClibprefix+'c'+target_info.sharedClibext));
@@ -623,7 +621,7 @@ begin
        end;
 
       { force local symbol resolution (i.e., inside the shared }
-      { library itself) for all non-exorted symbols, otherwise }
+      { library itself) for all non-exported symbols, otherwise}
       { several RTL symbols of FPC-compiled shared libraries   }
       { will be bound to those of a single shared library or   }
       { to the main program                                    }
@@ -809,7 +807,7 @@ begin
           end;
        end;
 
-      { Entry point. Only needed for executables, as for shared lubraries we use
+      { Entry point. Only needed for executables, as for shared libraries we use
         the -init command line option instead
 
        The "ENTRY" linkerscript command does not have any effect when augmenting
@@ -961,7 +959,7 @@ begin
         end;
     end;
 
-  { Remove ReponseFile }
+  { Remove ResponseFile }
   if (success) and not(cs_link_nolink in current_settings.globalswitches) then
    DeleteFile(outputexedir+Info.ResName);
 
@@ -1050,7 +1048,7 @@ begin
      success:=DoExec(FindUtil(utilsprefix+binstr),cmdstr,true,false);
    end;
 
-{ Remove ReponseFile }
+{ Remove ResponseFile }
   if (success) and not(cs_link_nolink in current_settings.globalswitches) then
    DeleteFile(outputexedir+Info.ResName);
 

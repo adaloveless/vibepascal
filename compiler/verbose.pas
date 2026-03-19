@@ -65,6 +65,7 @@ interface
     procedure SetErrorFlags(const s:string);
     procedure GenerateError;
     procedure Internalerror(i:longint);noreturn;
+    procedure Internalerror(i:longint; const s : ansistring);noreturn;
     procedure Comment(l:longint;s:ansistring);
     function  MessageStr(w:longint):TMsgStr;
     procedure Message(w:longint;onqueue:tmsgqueueevent=nil);
@@ -173,6 +174,7 @@ implementation
       end;
 
     procedure RestoreLocalVerbosity(pstate : pmessagestaterecord);
+      { apply the whole stack of message/verbosity changes }
       var
         msgset : thashset;
         msgfound : boolean;
@@ -181,6 +183,10 @@ implementation
         msgset:=thashset.create(10,false,false);
         while assigned(pstate) do
           begin
+            {$IFDEF DEBUG_MESSAGESTATE}
+            if assigned(pstate^.owner) and (pstate^.owner<>current_module) then
+              Internalerror(2026030702);
+            {$ENDIF}
             msgfound:=false;
             { only apply the newest message state }
             if not assigned(msgset.findoradd(@pstate^.value,sizeof(pstate^.value),msgfound)) or
@@ -189,6 +195,7 @@ implementation
             pstate:=pstate^.next;
           end;
         msgset.free;
+        msgset := nil;
       end;
 
     procedure FreeLocalVerbosity(var fstate : pmessagestaterecord);
@@ -198,6 +205,10 @@ implementation
         while assigned(pstate) do
           begin
             unaligned(fstate):=pstate^.next;
+            {$IFDEF DEBUG_MESSAGESTATE}
+            if assigned(pstate^.owner) and (pstate^.owner<>current_module) then
+              Internalerror(2026030703);
+            {$ENDIF}
             dispose(pstate);
             pstate:=unaligned(fstate);
           end;
@@ -470,7 +481,7 @@ implementation
               else
                 lastfileidx:=0;
 
-              lastmoduleidx:=module.unit_index;
+              lastmoduleidx:=module.moduleid;
             end;
         end;
       end;
@@ -572,13 +583,18 @@ implementation
 
 
     procedure internalerror(i : longint);noreturn;
+    begin
+      InternalError(i,'');
+    end;
+
+    procedure InternalError(i:longint; const s : ansistring);noreturn;
       procedure doraise;
         begin
           raise ECompilerAbort.Create;
         end;
       begin
         UpdateStatus;
-        do_internalerror(i);
+        do_internalerrorex(i,s);
         GenerateError;
         doraise;
       end;

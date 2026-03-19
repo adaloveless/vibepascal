@@ -26,7 +26,7 @@ unit htypechk;
 interface
 
     uses
-      cclasses,cmsgs,tokens,
+      sysutils,cclasses,cmsgs,tokens,
       node,globtype,compinnr,
       symconst,symtype,symdef,symsym,symbase,
       pgentype;
@@ -528,7 +528,8 @@ implementation
                  { <dyn. array> + <dyn. array> is handled by the compiler }
                  if (m_array_operators in current_settings.modeswitches) and
                      (treetyp=addn) and
-                     (is_dynamic_array(ld) or is_dynamic_array(rd)) then
+                     (is_dynamic_array(ld) or is_array_constructor(ld)) and
+                     (is_dynamic_array(rd) or is_array_constructor(rd)) then
                     begin
                       allowed:=false;
                       exit;
@@ -806,6 +807,7 @@ implementation
           begin
             candidates.done;
             ppn.free;
+            ppn := nil;
             if not (ocf_check_only in ocf) then
               begin
                 CGMessage2(parser_e_operator_not_overloaded_2,ld.typename,arraytokeninfo[optoken].str);
@@ -827,6 +829,7 @@ implementation
           begin
             candidates.done;
             ppn.free;
+            ppn := nil;
             if not (ocf_check_only in ocf) then
               begin
                 CGMessage2(parser_e_operator_not_overloaded_2,ld.typename,arraytokeninfo[optoken].str);
@@ -852,6 +855,7 @@ implementation
         if ocf_check_only in ocf then
           begin
             ppn.free;
+            ppn := nil;
             result:=true;
             exit;
           end;
@@ -968,7 +972,7 @@ implementation
           exit;
 
         { operator overload is possible }
-        { if we only check for the existance of the overload, then we assume that
+        { if we only check for the existence of the overload, then we assume that
           it is not overloaded }
         result:=not (ocf_check_only in ocf);
 
@@ -1004,6 +1008,7 @@ implementation
         if (cand_cnt=0) then
           begin
             ppn.free;
+            ppn := nil;
             if not (ocf_check_only in ocf) then
               t:=cnothingnode.create;
             exit;
@@ -1012,6 +1017,7 @@ implementation
         if ocf_check_only in ocf then
           begin
             ppn.free;
+            ppn := nil;
             result:=true;
             exit;
           end;
@@ -1430,6 +1436,7 @@ implementation
                   for i:=0 to typeconvs.Count-1 do
                     ttypeconvnode(typeconvs[i]).assignment_side:=false;
                 typeconvs.free;
+                typeconvs := nil;
               end;
           end;
 
@@ -1484,7 +1491,7 @@ implementation
                                typecasted to this type, and then we "assign" to
                                this typecasted function result) -> always
                                disallow, since property accessors should be
-                               transparantly changeable to functions at all
+                               transparently changeable to functions at all
                                times
                        }
                        not(gottypeconv) and
@@ -2208,6 +2215,7 @@ implementation
         sym : tsym;
       begin
         FIgnoredCandidateProcs.free;
+        FIgnoredCandidateProcs := nil;
         { free any symbols for anonymous parameter types that we're used for
           specialization when no specialization was picked }
         TFPList.FreeAndNilObjects(FParaAnonSyms);
@@ -2228,7 +2236,7 @@ implementation
                        break;
                      end;
                  end;
-               hp^.data.free;
+               FreeAndNil(hp^.data);
              end;
            dispose(hp);
            hp:=hpnext;
@@ -2477,7 +2485,7 @@ implementation
                 if assigned(srsym) and
                    (srsym.typ=procsym) and
                    (
-                     (tprocsym(srsym).procdeflist.count>0) or 
+                     (tprocsym(srsym).procdeflist.count>0) or
                      (sp_generic_dummy in srsym.symoptions)
                    ) then
                   begin
@@ -2674,6 +2682,7 @@ implementation
                 if tprocsym(pd.procsym).procdeflist.extract(pd)<>pd then
                   internalerror(20150828);
                 pd.free;
+                pd := nil;
               end;
           end;
 {$ifndef DISABLE_FAST_OVERLOAD_PATCH}
@@ -2688,6 +2697,7 @@ implementation
         calc_distance(st,flags);
 
         ProcdefOverloadList.Free;
+        ProcdefOverloadList := nil;
       end;
 
 
@@ -2920,9 +2930,12 @@ implementation
            while (paraidx>=0) and (vo_is_hidden_para in tparavarsym(hp^.data.paras[paraidx]).varoptions) do
              dec(paraidx);
            pt:=tcallparanode(FParaNode);
-           while assigned(pt) and (paraidx>=0) do
+           while assigned(pt) and ((paraidx>=0) or (po_varargs in hp^.data.procoptions)) do
             begin
-              currpara:=tparavarsym(hp^.data.paras[paraidx]);
+              if paraidx<0 then
+                currpara:=nil
+              else
+                currpara:=tparavarsym(hp^.data.paras[paraidx]);
               { currpt can be changed from loadn to calln when a procvar
                 is passed. This is to prevent that the change is permanent }
               currpt:=pt;
@@ -2932,7 +2945,10 @@ implementation
               { retrieve current parameter definitions to compares }
               eq:=te_incompatible;
               def_from:=currpt.resultdef;
-              def_to:=currpara.vardef;
+              if assigned(currpara) then
+                def_to:=currpara.vardef
+              else
+                def_to:=nil;
               if not(assigned(def_from)) then
                internalerror(200212091);
               if not(
@@ -2943,7 +2959,8 @@ implementation
                internalerror(200212092);
 
               { Convert tp procvars when not expecting a procvar }
-             if (currpt.left.resultdef.typ=procvardef) and
+             if assigned(def_to) and
+                (currpt.left.resultdef.typ=procvardef) and
                 not(def_to.typ in [procvardef,formaldef]) and
                 { if it doesn't require any parameters }
                 (tprocvardef(currpt.left.resultdef).minparacount=0) and
@@ -2967,7 +2984,8 @@ implementation
                returns a procdef we need to find the correct overloaded
                procdef that matches the expected procvar. The loadnode
                temporary returned the first procdef (PFV) }
-             if (
+             if assigned(def_to) and
+                (
                    (def_to.typ=procvardef) or
                    is_funcref(def_to)
                 ) and
@@ -2988,7 +3006,8 @@ implementation
 
              { same as above, but for the case that we have a proc-2-procvar
                conversion together with a load }
-             if (
+             if assigned(def_to) and
+                (
                    (def_to.typ=procvardef) or
                    is_funcref(def_to)
                 ) and
@@ -3025,7 +3044,8 @@ implementation
               else
               { for value and const parameters check if a integer is constant or
                 included in other integer -> equal and calc ordinal_distance }
-               if not(currpara.varspez in [vs_var,vs_out]) and
+               if assigned(currpara) and
+                  not(currpara.varspez in [vs_var,vs_out]) and
                   is_integer(def_from) and
                   is_integer(def_to) and
                   is_in_limit(def_from,def_to) then
@@ -3034,7 +3054,7 @@ implementation
                    { is_in_limit(def_from, def_to) means that def_from.low >= def_to.low and def_from.high <= def_to.high. }
                    hp^.increment_ordinal_distance(torddef(def_from).low-torddef(def_to).low);
                    hp^.increment_ordinal_distance(torddef(def_to).high-torddef(def_from).high);
-                   { Give wrong sign a small penalty, this is need to get a diffrence
+                   { Give wrong sign a small penalty, this is need to get a difference
                      from word->[longword,longint] }
                    if (is_signed(def_from)<>is_signed(def_to)) then
                      inc(hp^.ordinal_distance_secondary);
@@ -3042,7 +3062,8 @@ implementation
               else
               { for value and const parameters check precision of real, give
                 penalty for loosing of precision. var and out parameters must match exactly }
-               if not(currpara.varspez in [vs_var,vs_out]) and
+               if assigned(currpara) and
+                  not(currpara.varspez in [vs_var,vs_out]) and
                   is_real_or_cextended(def_from) and
                   is_real_or_cextended(def_to) then
                  begin
@@ -3056,7 +3077,9 @@ implementation
               else
               { related object parameters also need to determine the distance between the current
                 object and the object we are comparing with. var and out parameters must match exactly }
-               if not(currpara.varspez in [vs_var,vs_out]) and
+               if assigned(currpara) and
+                  assigned(def_to) and
+                  not(currpara.varspez in [vs_var,vs_out]) and
                   (def_from.typ=objectdef) and
                   (def_to.typ=objectdef) and
                   (tobjectdef(def_from).objecttype=tobjectdef(def_to).objecttype) and
@@ -3076,16 +3099,17 @@ implementation
                      end;
                  end
                { compare_defs_ext compares sets and array constructors very poorly because
-                 it has too little information. So we do explicitly a detailed comparisation,
+                 it has too little information. So we do explicitly a detailed comparison,
                  see also bug #11288 (FK)
                }
-               else if (def_to.typ=setdef) and is_array_constructor(currpt.left.resultdef) then
+               else if assigned(def_to) and (def_to.typ=setdef) and is_array_constructor(currpt.left.resultdef) then
                  begin
                    n:=currpt.left.getcopy;
                    arrayconstructor_to_set(n);
                    eq:=compare_defs_ext(n.resultdef,def_to,n.nodetype,convtype,pdoper,cdoptions);
                    check_valid_var:=false;
                    n.free;
+                   n := nil;
                  end
               else if is_open_array(def_to) and
                       is_class_or_interface_or_dispinterface_or_objc_or_java(tarraydef(def_to).elementdef) and
@@ -3113,7 +3137,7 @@ implementation
                   check_valid_var:=false;
                 end
               else
-              { generic type comparision }
+              { generic type comparison }
                begin
                  if (hp^.data.procoptions*[po_rtlproc,po_compilerproc]=[]) and
                     is_ansistring(def_from) and
@@ -3159,8 +3183,8 @@ implementation
               if (pt<>currpt) and (eq=te_exact) then
                 eq:=te_equal;
               { if var or out parameter type but paranode not is_valid_for_var }
-              if check_valid_var and (currpara.varspez in [vs_var,vs_out]) and not valid_for_var(currpt.left,false)
-                 and (def_to.typ<>formaldef) and not is_open_array(def_to) then
+              if check_valid_var and assigned(currpara) and (currpara.varspez in [vs_var,vs_out]) and not valid_for_var(currpt.left,false)
+                 and assigned(def_to) and (def_to.typ<>formaldef) and not is_open_array(def_to) then
                 eq:=te_incompatible;
 
               { increase correct counter }
@@ -3181,12 +3205,16 @@ implementation
 
 {$ifdef EXTDEBUG}
               { store equal in node tree for dump }
-              currpara.eqval:=eq;
+              if assigned(currpara) then
+                currpara.eqval:=eq;
 {$endif EXTDEBUG}
 
               { maybe release temp currpt }
               if releasecurrpt then
-                currpt.free;
+               begin
+                 currpt.free;
+                 currpt := nil;
+               end;
 
               { next parameter in the call tree }
               pt:=tcallparanode(pt.right);
@@ -3735,7 +3763,7 @@ implementation
           deeper down the next chain
         }
 
-        { for the intial implementation, let's first do some more consistency checking}
+        { for the initial implementation, let's first do some more consistency checking}
         res := 0;
         hp := FCandidateProcs;
         while assigned(hp) do
@@ -3847,9 +3875,11 @@ implementation
                 FullTypeName(wrongpara.vardef,pt.left.resultdef))
           end
         else
-          CGMessagePos3(pt.left.fileinfo,type_e_wrong_parameter_type,tostr(hp^.wrongparanr),
-            FullTypeName(pt.left.resultdef,wrongpara.vardef),
-            FullTypeName(wrongpara.vardef,pt.left.resultdef));
+          begin
+            CGMessagePos3(pt.left.fileinfo,type_e_wrong_parameter_type,tostr(hp^.wrongparanr),
+              FullTypeName(pt.left.resultdef,wrongpara.vardef),
+              FullTypeName(wrongpara.vardef,pt.left.resultdef));
+          end;
       end;
 
 

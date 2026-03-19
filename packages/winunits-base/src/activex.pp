@@ -65,7 +65,7 @@ type
    DATE	               = DOUBLE;
    BSTR	               = POLESTR;
    TOleDate	       = DATE;
-   POleDate	       = ^TOleDate;	
+   POleDate	       = ^TOleDate;
    TOleBool	       = wordbool;
    OLE_HANDLE	       = UINT;
    OLE_XSIZE_HIMETRIC = LONG;
@@ -99,6 +99,7 @@ type
    POleColor           = LPOle_Color;
    HHandle             = UINT_PTR;
 
+{$PUSH}{$WRITABLECONST OFF}
 CONST
    GUID_NULL  : TGUID =  '{00000000-0000-0000-0000-000000000000}';
    IID_IPrint : TGUID = '{B722BCC9-4E68-101B-A2BC-00AA00404770}';
@@ -186,7 +187,7 @@ CONST
    IID_IOleCache2 : TGUID = '{00000128-0000-0000-C000-000000000046}';
    IID_IOleCacheControl : TGUID = '{00000129-0000-0000-C000-000000000046}';
    IID_IOleItemContainer : TGUID = '{0000011C-0000-0000-C000-000000000046}';
-
+{$POP}
 
      // bit flags for IExternalConnection
 CONST
@@ -274,7 +275,7 @@ CONST
 
     CALLTYPE_TOPLEVEL           = 1;      // toplevel call - no outgoing call
     CALLTYPE_NESTED             = 2;      // callback on behalf of previous outgoing call - should always handle
-    CALLTYPE_ASYNC              = 3;      // aysnchronous call - can NOT be rejected
+    CALLTYPE_ASYNC              = 3;      // asynchronous call - can NOT be rejected
     CALLTYPE_TOPLEVEL_CALLPENDING = 4;  // new toplevel call with new LID
     CALLTYPE_ASYNC_CALLPENDING  = 5;   // async call - can NOT be rejected
 
@@ -684,7 +685,7 @@ Const
 
 // The range -500 through -999 is reserved for Controls
 // The range 0x80010000 through 0x8001FFFF is reserved for Controls
-// The range -5000 through -5499 is reserved for ActiveX Accessability
+// The range -5000 through -5499 is reserved for ActiveX Accessibility
 // The range -2000 through -2499 is reserved for VB5
 // The range -3900 through -3999 is reserved for Forms
 // The range -5500 through -5550 is reserved for Forms
@@ -762,7 +763,7 @@ Const
     VARFLAG_FIMMEDIATEBIND      = $1000;
 
     FADF_AUTO                   = USHORT($0001);  // array is allocated on the stack
-    FADF_STATIC                 = USHORT($0002);  // array is staticly allocated
+    FADF_STATIC                 = USHORT($0002);  // array is statically allocated
     FADF_EMBEDDED               = USHORT($0004);  // array is embedded in a structure
     FADF_FIXEDSIZE              = USHORT($0010);  // may not be resized or reallocated
     FADF_RECORD                 = USHORT($0020);  // an array of records
@@ -2069,7 +2070,7 @@ TYPE
                   ulKind : ULONG ;
                   case boolean of
                     false : ( propid:propid);
-                    true  :  (lpwstr: LPOLEStr);	
+                    true  :  (lpwstr: LPOLEStr);
                     end;
 
   PROPSPEC= tagPROPSPEC;
@@ -2416,7 +2417,7 @@ TYPE
                   pElems : PLongWord;
                  end;
 
-// Unknwn.idl
+// Unknown.idl
 
 // IUnknown is in classesh.inc
 
@@ -2461,13 +2462,13 @@ TYPE
 
      IMarshal = Interface(IUnknown)
         ['{00000003-0000-0000-C000-000000000046}']
-        Function GetUnmarshalClass ( Const riid: TIID; pv:Pointer; Const dwDestContext:DWord;
+        Function GetUnmarshalClass ( Constref riid: TIID; pv:Pointer; Const dwDestContext:DWord;
                     pvDestContext:Pointer; Const mshlflags:DWORD;out LCid : TCLSID ):HResult;Stdcall;
-        Function GetMarshalSizeMax ( Const Riid: TIID; {in, unique} pv:Pointer; Const dwDestContext : DWord;
-                   {in, unique} pvDestContext:Pointer; Const mshlflags : DWord; out pSize : PDWord ): HResult;Stdcall;
-        Function MarshalInterface ( Const {in, unique} pStm: IStream; Const riid: TIID; {in, unique} pv:Pointer;
+        Function GetMarshalSizeMax ( Constref Riid: TIID; {in, unique} pv:Pointer; Const dwDestContext : DWord;
+                   {in, unique} pvDestContext:Pointer; Const mshlflags : DWord; out pSize : DWord ): HResult;Stdcall;
+        Function MarshalInterface ( Const {in, unique} pStm: IStream; Constref riid: TIID; {in, unique} pv:Pointer;
                    Const dwDestContext:DWord; {in, unique} pvDestContext:Pointer; Const mshlflags:DWord ): HRESULT;Stdcall;
-        Function UnmarshalInterface ( {[in, unique]} Const pStm:IStream; Const riid: TIID;
+        Function UnmarshalInterface ( {[in, unique]} Const pStm:IStream; Constref riid: TIID;
                    out ppv ): HResult;Stdcall;
         Function ReleaseMarshalData ( {[in, unique]} Const Strm: IStream ):HResult;Stdcall;
         Function DisconnectObject ( Const dwReserved:DWord ):HRESULT;Stdcall;
@@ -2491,7 +2492,7 @@ TYPE
      IMallocSpy = Interface(IUnknown)
         ['{0000001d-0000-0000-C000-000000000046}']
 
-        Function  PreAlloc(cbrequest:Size_t):Longint; StdCall;
+        Function  PreAlloc(cbrequest:Size_t):Size_t; StdCall;
         function  PostAlloc(Pactual:Pointer):Pointer;StdCall;
         Function  PreFree(pRequest:Pointer;fSpyed:bool):pointer;StdCall;
         Procedure PostFree(fspyed:Bool);Stdcall;
@@ -2540,7 +2541,7 @@ TYPE
 //    HRESULT RemoteNext(        [in] ULONG celt,        [out, size_is(celt), length_is( *pceltFetched)]        IUnknown **rgelt,        [out] ULONG *pceltFetched);
      Function Skip(Celt:Ulong):HResult;StdCall;
      Function Reset():HResult; stdcall;
-     Function Close(Out ppenum: IEnumUnknown):HResult; stdcall;
+     Function Clone(Out ppenum: IEnumUnknown):HResult; stdcall;
      END;
 
 
@@ -2708,7 +2709,7 @@ TYPE
        Function Commit(grfCommitFlags:Dword):Hresult; StdCall;
        Function Revert:HResult; StdCall;
        Function EnumElements(Reserved1 :Dword;Reserved2:Pointer;Reserved3:DWord;Out penum:IEnumStatStg):HResult;StdCall;
-       Function RemoteEnumElements(Reserved1 :Dword;cbReserved2:ULong;Reserved2:pbyte;reserved3:DWord;Out penum:IEnumStatStg):HResult;StdCall;
+//       Function RemoteEnumElements(Reserved1 :Dword;cbReserved2:ULong;Reserved2:pbyte;reserved3:DWord;Out penum:IEnumStatStg):HResult;StdCall;
        Function DestroyElement(wcsName: POleStr):HResult;StdCall;
        Function RenameElement(wcsoldName: POleStr;wcsnewName: POleStr):HResult;StdCall;
        Function SetElementTimes(wcsName:POleStr; Const pctime,patime,pmtime : FileTime):HResult;StdCall;
@@ -2899,9 +2900,9 @@ TYPE
 // This interface is only valid on Windows NT 4.0
 
 // This structure contains additional data for hooks.  As a backward
-// compatability hack, the entire structure is passed in place of the
+// compatibility hack, the entire structure is passed in place of the
 // RIID parameter on all hook methods.  Thus the IID must be the first
-// parameter.  As a forward compatability hack the second field is the
+// parameter.  As a forward compatibility hack the second field is the
 // current size of the structure.
 
     SChannelHookCallInfo= Record;
@@ -3304,9 +3305,9 @@ TYPE
    IEnumVARIANT = Interface (IUnknown)
      ['{00020404-0000-0000-C000-000000000046}']
      {$ifndef Call_as}
-      Function  Next(celt: ULONG; OUT rgVar: OLEVARIANT;  out pCeltFetched: ULONG):HResult;StdCall;
+      Function  Next(celt: ULONG; rgVar: POLEVARIANT;  pCeltFetched: pULONG):HResult;StdCall;
      {$else}
-      Function  Next(celt: ULONG; OUT rgVar: OLEVARIANT;  pCeltFetched: pULONG=nil):HResult;StdCall;
+      Function  Next(celt: ULONG; rgVar: POLEVARIANT;  pCeltFetched: pULONG=nil):HResult;StdCall;
      {$endif}
      Function  Skip(celt: ULONG):HResult;StdCall;
      Function  Reset():HResult;StdCall;
@@ -3344,7 +3345,7 @@ TYPE
      Function  GetRefTypeOfImplType(index: UINT; OUT pRefType: HREFTYPE):HResult;StdCall;
      Function  GetImplTypeFlags(index: UINT; OUT pImplTypeFlags: WINT):HResult;StdCall;
      {$ifndef Call_as}
-      Function  GetIDsOfNames(CONST rgszNames: pOleStr; cNames: UINT; OUT pMemId: MEMBERID):HResult;StdCall;
+      Function  GetIDsOfNames(rgszNames: POleStrList; cNames: UINT; OUT pMemId: MEMBERID):HResult;StdCall;
      {$else}
       Function  LocalGetIDsOfNames():HResult;StdCall;
      {$endif}
@@ -3850,6 +3851,7 @@ type
 
 { redefinitions }
   function CoCreateGuid(out _para1:TGUID):HRESULT;stdcall;external 'ole32.dll' name 'CoCreateGuid';
+  function CoGetCancelObject (InThreadId : DWORD; constref InIid : TIID; out ppunk : IUnknown):HRESULT;stdcall;external 'ole32.dll' name 'CoGetCancelObject';
 
 { additional definitions }
 {$ifndef wince}
@@ -4059,7 +4061,7 @@ type
        function GetPageInfo(out pnFirstPage:Integer;out pcPages:Integer):HRESULT;stdcall;
        function RemotePrint(grfFlags:LongWord;var pptd:PtagDVTARGETDEVICE;var pppageset:PtagPAGESET;var pstgmOptions:tagRemSTGMEDIUM;pcallback:IContinueCallback;nFirstPage:Integer;out pcPagesPrinted:Integer;out pnLastPage:Integer):HRESULT;stdcall;
       end;
-  
+
     IOleCommandTarget = interface(IUnknown)
        ['{B722BCCB-4E68-101B-A2BC-00AA00404770}']
        function QueryStatus(var pguidCmdGroup:GUID;cCmds:LongWord;var prgCmds:_tagOLECMD;var pCmdText:_tagOLECMDTEXT):HRESULT;stdcall;
@@ -4340,7 +4342,7 @@ type
 {$ifndef wince}
   function OleCreateMenuDescriptor(hmenuCombined:HMENU; lpMenuWidths:LPOLEMENUGROUPWIDTHS):HOLEMENU;stdcall;external 'ole32.dll' name 'OleCreateMenuDescriptor';
   function OleDestroyMenuDescriptor(holemenu:HOLEMENU):WINOLEAPI;stdcall;external 'ole32.dll' name 'OleDestroyMenuDescriptor';
-  function OleTranslateAccelerator(lpFrame:IOleInPlaceFrame; lpFrameInfo:TOleInPlaceFrameInfo; lpmsg:LPMSG):WINOLEAPI;stdcall;external 'ole32.dll' name 'OleTranslateAccelerator';
+  function OleTranslateAccelerator(lpFrame:IOleInPlaceFrame; var lpFrameInfo:TOleInPlaceFrameInfo; lpmsg:LPMSG):WINOLEAPI;stdcall;external 'ole32.dll' name 'OleTranslateAccelerator';
 {$endif wince}
   function OleSetMenuDescriptor(holemenu:HOLEMENU; hwndFrame:HWND; hwndActiveObject:HWND; lpFrame:IOleInPlaceFrame; lpActiveObj:IOleInPlaceActiveObject):WINOLEAPI;stdcall;external 'ole32.dll' name 'OleSetMenuDescriptor';
 
@@ -4409,12 +4411,12 @@ type
   type
      LPOLESTREAM = ^_OLESTREAM;
      _OLESTREAMVTBL = record
-       Get : function (p : POleStr;out o;dw : DWORD) : DWORD;
-       Put : function (p : POleStr;const o;dw : DWORD) : DWORD;
+       Get : function (p : POleStr;out o;dw : DWORD) : DWORD; stdcall;
+       Put : function (p : POleStr;const o;dw : DWORD) : DWORD; stdcall;
      end;
      OLESTREAMVTBL =  _OLESTREAMVTBL;
 
-     LPOLESTREAMVTBL = OLESTREAMVTBL;
+     LPOLESTREAMVTBL = ^OLESTREAMVTBL;
 
      _OLESTREAM = record
           lpstbl : LPOLESTREAMVTBL;
@@ -4626,7 +4628,7 @@ type
 	const
 	  ACTIVEOBJECT_STRONG = 0;
 	  ACTIVEOBJECT_WEAK = 1;
-	
+
 	function RegisterActiveObject(unk: IUnknown; const clsid: TCLSID; dwFlags: DWORD; out dwRegister: culong): HResult; stdcall; external oleaut32dll name 'RegisterActiveObject';
 	function RevokeActiveObject(dwRegister: culong; pvReserved: Pointer) : HResult; stdcall; external oleaut32dll name 'RevokeActiveObject';
 	function GetActiveObject(const clsid: TCLSID; pvReserved: Pointer; out unk: IUnknown) : HResult; stdcall; external oleaut32dll name 'GetActiveObject';
@@ -4950,7 +4952,7 @@ function SafeArrayCopy(psa: PSafeArray; out psaOut: PSafeArray): HResult; stdcal
   external oleaut32dll name 'SafeArrayCopy';
 function SafeArrayPtrOfIndex(psa: PSafeArray; rgIndices: PLongint; out pvData: Pointer): HResult; stdcall;
   external oleaut32dll name 'SafeArrayPtrOfIndex';
-  
+
 implementation
 
 function Succeeded(Res: HResult) : Boolean;inline;

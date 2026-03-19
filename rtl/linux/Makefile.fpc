@@ -78,7 +78,7 @@ endif
 endif
 # syscall unit compiled with -dFPC_USE_LIBC
 # required mode objfpc which adds a dependency to
-# objpas unit 
+# objpas unit
 ifneq ($(filter -dFPC_USE_LIBC,$(OPT) $(CROSSOPT)),)
   SYSCALL_DEPS_OS+=$(OBJPASUNIT)$(PPUEXT)
 endif
@@ -93,19 +93,28 @@ LOADERS=prt0 dllprt0 cprt0 gprt0
 
 ifeq ($(ARCH),i386)
 override LOADERS=
-CPU_UNITS=$(X86UNIT) $(PORTSUNIT) $(CPUUNIT) $(MMXUNIT)
+CPU_UNITS=$(X86UNIT) $(PORTSUNIT) $(CPUUNIT) $(MMXUNIT) $(INTRINSICSUNIT)
 SYSINIT_UNITS=si_prc si_c21g si_c21 si_c si_dll si_uc
 endif
 
 ifeq ($(ARCH),x86_64)
-CPU_UNITS=$(X86UNIT) $(PORTSUNIT) $(CPUUNIT)
+CPU_UNITS=$(X86UNIT) $(PORTSUNIT) $(CPUUNIT) $(INTRINSICSUNIT)
 SYSINIT_UNITS=si_prc si_c si_g si_dll
 override LOADERS=abitag
+endif
+
+ifeq ($(ARCH),aarch64)
+CPU_UNITS=$(INTRINSICSUNIT)
+endif
+
+ifeq ($(ARCH),powerpc)
+CPU_UNITS=$(INTRINSICSUNIT)
 endif
 
 ifeq ($(ARCH),powerpc64)
 override LOADERS=
 SYSINIT_UNITS=si_prc si_c si_g si_dll
+CPU_UNITS=$(INTRINSICSUNIT)
 endif
 
 ifeq ($(ARCH),sparc64)
@@ -116,11 +125,13 @@ endif
 ifeq ($(ARCH),riscv32)
 override LOADERS=
 SYSINIT_UNITS=si_prc si_dll si_c
+CPU_UNITS=$(INTRINSICSUNIT)
 endif
 
 ifeq ($(ARCH),riscv64)
 override LOADERS=
 SYSINIT_UNITS=si_prc si_dll si_c si_g
+CPU_UNITS=$(INTRINSICSUNIT)
 endif
 
 ifeq ($(ARCH),mips64)
@@ -143,7 +154,7 @@ endif
 
 ifeq ($(ARCH),arm)
 override LOADERS+=ucprt0
-CPU_UNITS=$(CPUUNIT)
+CPU_UNITS=$(CPUUNIT) $(INTRINSICSUNIT)
 endif
 
 ifeq ($(ARCH),sparc)

@@ -273,7 +273,8 @@ unit agsdasz80;
           '_STACK',
           '_HEAP',
           '.gcc_except_table',
-          '.ARM.attributes'
+          '.ARM.attributes',
+          '.note'
         );
       begin
         if atype=sec_user then
@@ -663,7 +664,7 @@ unit agsdasz80;
                         hp:=tai(hp.next);
                         writer.AsmWrite(',');
                       until false;
-                      { Substract section start for secrel32 type }
+                      { Subtract section start for secrel32 type }
                       {if consttype=aitconst_secrel32_symbol then
                         writer.AsmWrite(' - $$');}
                       writer.AsmLn;
@@ -702,7 +703,7 @@ unit agsdasz80;
                         hp:=tai(hp.next);
                         writer.AsmWrite(',');
                       until false;
-                      { Substract section start for secrel32 type }
+                      { Subtract section start for secrel32 type }
                       if consttype=aitconst_secrel32_symbol then
                         writer.AsmWrite(' - $$');
                       writer.AsmLn;

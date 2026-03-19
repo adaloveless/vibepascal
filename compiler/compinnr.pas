@@ -180,7 +180,7 @@ type
      in_max_quad         = 150,
 
 { MMX functions }
-{ these contants are used by the mmx unit }
+{ these constants are used by the mmx unit }
 
      { MMX }
      in_mmx_pcmpeqb      = 200,
@@ -218,6 +218,22 @@ type
 {$if defined(WASM32)}
      ,
      {$i ccpuinnr.inc}
+{$endif}
+{$if defined(ARM)}
+     ,
+     {$i ccpuinnr.inc}
+{$endif}
+{$if defined(AARCH64)}
+     ,
+     {$i ccpuinnr.inc}
+{$endif}
+{$if defined(RISCV)}
+     ,
+     {$i riscv/ccpuinnr.inc}
+{$endif}
+{$if defined(POWERPC) or defined(POWERPC64)}
+     ,
+     {$i ppcgen/ccpuinnr.inc}
 {$endif}
    );
 

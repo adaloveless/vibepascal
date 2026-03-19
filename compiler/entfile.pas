@@ -609,6 +609,7 @@ begin
 {$endif}
      if fisfile then
        f.Free;
+       f := nil;
      mode:=0;
      closed:=true;
    end;
@@ -1266,8 +1267,8 @@ end;
 
 {$ifndef FPC_HAS_TYPE_EXTENDED}
 {$ifdef FPC_SOFT_FPUX80}
-{ i8086,i386 and x86_64 normally have 80bit float type for 
-  entryreal, but this is not supported 
+{ i8086,i386 and x86_64 normally have 80bit float type for
+  entryreal, but this is not supported
   on CPUs without 80bit floats.
   Special code is required to handle this. }
 const
@@ -1329,7 +1330,7 @@ begin
 	floatx80_ba:=swapendian_floatx80entryreal(floatx80_ba);
 {$ifdef FPC_BIG_ENDIAN}
       floatx80_e.high:=pword(@floatx80_ba[0])^;
-      floatx80_e.low:=pqword(@floatx80_ba[8])^;
+      floatx80_e.low:=unaligned(pqword(@floatx80_ba[2])^);
 {$else}
       floatx80_e.high:=pword(@floatx80_ba[8])^;
       floatx80_e.low:=pqword(@floatx80_ba[0])^;

@@ -20,7 +20,7 @@
 {$mode objfpc}
 {$h+}
 {$IFNDEF FPC_DOTTEDUNITS}
-unit streamex;
+unit StreamEx;
 {$ENDIF FPC_DOTTEDUNITS}
 
 Interface
@@ -49,7 +49,7 @@ type
    public
       property Position: Longint read GetPosition write SetPosition;
    end;
-   
+
    { TBidirBinaryObjectWriter }
 
    TBidirBinaryObjectWriter = class(TBinaryObjectWriter)
@@ -59,7 +59,7 @@ type
    public
       property Position: Longint read GetPosition write SetPosition;
    end;
-  
+
    { TDelphiReader }
 
    TDelphiReader = class(TReader)
@@ -116,12 +116,14 @@ type
      FStream: TStream;
      FBuffer: array of Byte;
      procedure FillBuffer;
-   Protected  
+   Protected
      function IsEof: Boolean; override;
    public
-     constructor Create(AStream: TStream; ABufferSize: Integer;
-       AOwnsStream: Boolean); virtual;
+     constructor Create(AStream: TStream; ABufferSize: Integer; AOwnsStream: Boolean); virtual;
      constructor Create(AStream: TStream); virtual;
+     constructor Create(const aFilename: string);
+     constructor Create(const aFilename: string; aDetectBOM: Boolean);
+     constructor Create(const aFilename: string; aEncoding: TEncoding; aDetectBOM: Boolean; aBufferSize: Integer); overload;
      destructor Destroy; override;
      procedure Reset; override;
      procedure Close; override;
@@ -135,7 +137,7 @@ type
    TStringReader = class(TTextReader)
    private
      FReader: TTextReader;
-   Protected  
+   Protected
      function IsEof: Boolean; override;
    public
      constructor Create(const AString: AnsiString; ABufferSize: Integer); virtual;
@@ -302,7 +304,7 @@ type
 
 
 
-  { allows you to represent just a small window of a bigger stream as a substream. 
+  { allows you to represent just a small window of a bigger stream as a substream.
     also makes sure one is actually at the correct position before clobbering stuff. }
 
   TWindowedStream = class(TOwnerStream)
@@ -949,6 +951,26 @@ begin
   Create(AStream, BUFFER_SIZE, False);
 end;
 
+constructor TStreamReader.Create(const aFilename: string);
+begin
+  Create(aFileName,False);
+end;
+
+constructor TStreamReader.Create(const aFilename: string; aDetectBOM: Boolean);
+begin
+  Create(aFileName,TEncoding.Default, aDetectBOM, BUFFER_SIZE);
+end;
+
+constructor TStreamReader.Create(const aFilename: string; aEncoding: TEncoding; aDetectBOM: Boolean; aBufferSize: Integer);
+var
+  F : TFileStream;
+
+begin
+  // DetectBOM & encoding ignored for the moment.
+  F:=TFileStream.Create(aFileName,fmOpenRead or fmShareDenyWrite);
+  Create(F,aBufferSize,True);
+end;
+
 destructor TStreamReader.Destroy;
 begin
   Close;
@@ -957,12 +979,12 @@ end;
 
 procedure TStreamReader.FillBuffer;
 begin
-  if FClosed then 
+  if FClosed then
     begin
     FBufferRead:=0;
     FBufferPosition:=0;
     end
-  else  
+  else
     begin
     FBufferRead := FStream.Read(FBuffer[0], Pred(Length(FBuffer)));
     FBuffer[FBufferRead] := 0;
@@ -997,7 +1019,7 @@ begin
   end;
 end;
 
-procedure TStreamReader.ReadLine(out AString: AnsiString );
+procedure TStreamReader.ReadLine(out AString: Ansistring);
 var
   VPByte: PByte;
   VPosition, VStrLength, VLength: Integer;
@@ -1279,7 +1301,7 @@ begin
 
   if vNewSourcePosition + aCount > fFrontier then // trying to access outside.
     aCount := fFrontier - vNewSourcePosition;
-    
+
   Result := Source.Read(aBuffer, aCount);
   Inc(fPositionHere, Result);
 end;
@@ -1298,7 +1320,7 @@ begin
   if vNewSourcePosition + aCount > fFrontier then // trying to access outside.
     Raise EWriteError.Create(SErrCannotWriteOutsideWindow);
     //aCount := fFrontier - vNewSourcePosition;
-    
+
   Result := Source.Write(aBuffer, aCount);
   Inc(fPositionHere, Result);
 end;
@@ -1313,12 +1335,12 @@ begin
   fStartingPositionHere .... fStart
   fPositionHere............. x
   }
-  
+
   if (aOrigin = soCurrent) and (aOffset = 0) then begin // get position.
     Result := fPositionHere;
     Exit;
   end;
-  
+
   if aOrigin = soBeginning then
     vNewPositionHere := aOffset
   else if aOrigin = soCurrent then
@@ -1331,7 +1353,7 @@ begin
   vSourcePosition := fStart + vNewPositionHere - fStartingPositionHere;
   if (vSourcePosition < 0) or (vSourcePosition >= fFrontier) then
     raise EReadError.Create(SErrInvalidSeekWindow);
-    
+
   Result := Source.Seek(vSourcePosition, 0);
   //if Result = -1 ??? can that happen?
   Result := vNewPositionHere;

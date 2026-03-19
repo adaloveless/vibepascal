@@ -43,6 +43,7 @@ interface
 {$DEFINE HAS_OSUSERDIR}
 {$DEFINE HAS_LOCALTIMEZONEOFFSET}
 {$DEFINE HAS_GETTICKCOUNT64}
+{$DEFINE HAS_INVALIDHANDLE}
 
 // this target has an fileflush implementation, don't include dummy
 {$DEFINE SYSUTILS_HAS_FILEFLUSH_IMPL}
@@ -64,6 +65,10 @@ uses
   baseunix, Unix,errors,sysconst,Unixtype;
 {$ENDIF FPC_DOTTEDUNITS}
 
+
+const
+  INVALID_HANDLE_VALUE = -1;
+
 {$IF defined(LINUX) or defined(FreeBSD)}
 {$DEFINE HAVECLOCKGETTIME}
 {$ENDIF}
@@ -83,13 +88,17 @@ uses
   {$DEFINE USE_FUTIMES}
 {$endif}
 
+{$if declared(fpfutimens)}
+  {$DEFINE USE_FUTIMES}
+{$endif}
+
 { Include platform independent interface part }
 {$i sysutilh.inc}
 
 Function AddDisk(const path:string) : Byte;
 
 { the following is Kylix compatibility stuff, it should be moved to a
-  special compatibilty unit (FK) }
+  special compatibility unit (FK) }
   const
     RTL_SIGINT     = 0;
     RTL_SIGFPE     = 1;
@@ -335,7 +344,7 @@ var
   {$IFDEF HAVECLOCKGETTIME}
   ts: TTimeSpec;
   {$ENDIF}
-  
+
 begin
  {$IFDEF HAVECLOCKGETTIME}
    if clock_gettime(CLOCK_MONOTONIC, @ts)=0 then
@@ -374,7 +383,7 @@ begin
       { Solaris' & AIX' flock is based on top of fcntl, which does not allow
         exclusive locks for files only opened for reading nor shared locks
         for files opened only for writing.
-        
+
         If no locking is specified, we normally need an exclusive lock.
         So create an exclusive lock for fmOpenWrite and fmOpenReadWrite,
         but only a shared lock for fmOpenRead (since an exclusive lock
@@ -456,14 +465,14 @@ begin
   until (fd<>-1) or (fpgeterrno<>ESysEINTR);
 
   { Do not allow to open directories with FileOpen.
-    This would cause weird behavior of TFileStream.Size, 
+    This would cause weird behavior of TFileStream.Size,
     TMemoryStream.LoadFromFile etc. }
   if (fd<>-1) and IsHandleDirectory(fd) then
     begin
     fpClose(fd);
     fd:=feInvalidHandle;
     end;
-  FileOpenNoLocking:=fd;  
+  FileOpenNoLocking:=fd;
 end;
 
 
@@ -617,7 +626,7 @@ begin
 
   If  (fpstat(PAnsiChar(SystemFileName),Info)<0) or fpS_ISDIR(info.st_mode) then
     exit(-1)
-  else 
+  else
     Result:=info.st_mtime;
 end;
 
@@ -892,7 +901,7 @@ Var
                 if (i<=LenPat) then
                   begin
                     repeat
-                      {find a letter (not only first !) which maches pattern[i]}
+                      {find a letter (not only first !) which matches pattern[i]}
                       if UTF8 then
                         begin
                           while (j<=LenName) and
@@ -1495,7 +1504,7 @@ Procedure GetDateTime(Var Year,Month,Day,hour,minute,second:Word);
 }
 Var
   usec,msec : word;
-  
+
 Begin
   DoGetLocalDateTime(year,month,day,hour,minute,second,msec,usec);
 End;
@@ -1812,7 +1821,7 @@ end;
 
 
 {****************************************************************************
-                              GetTempDir 
+                              GetTempDir
 ****************************************************************************}
 
 
@@ -1841,7 +1850,7 @@ begin
 end;
 
 {****************************************************************************
-                              GetUserDir 
+                              GetUserDir
 ****************************************************************************}
 
 Var
@@ -1862,7 +1871,7 @@ begin
     else
       TheUserDir:=GetTempDir(False);
     end;
-  Result:=TheUserDir;    
+  Result:=TheUserDir;
 end;
 
 Procedure SysBeep;
@@ -1883,7 +1892,7 @@ end;
 function GetLocalTimeOffset: Integer;
 
 begin
- Result := -Tzseconds div 60; 
+ Result := -Tzseconds div 60;
 end;
 
 

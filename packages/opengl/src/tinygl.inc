@@ -45,16 +45,16 @@ syscall sysvbase TinyGLBase 76;
 procedure _GlVertex3fv(gcl: pointer; const v: PGLfloat);
 syscall sysvbase TinyGLBase 88;
 
-procedure _GLColor3f(gcl: pointer; red, green, blue: GLfloat); 
+procedure _GLColor3f(gcl: pointer; red, green, blue: GLfloat);
 syscall sysvbase TinyGLBase 100;
 
-procedure _GLColor4f(gcl: pointer; red, green, blue, alpha: GLfloat); 
+procedure _GLColor4f(gcl: pointer; red, green, blue, alpha: GLfloat);
 syscall sysvbase TinyGLBase 106;
 
 procedure _GLNormal3f(gcl: pointer; nx, ny, nz: GLfloat);
 syscall sysvbase TinyGLBase 148;
 
-procedure _GLTexCoord2f(gcl: pointer; s, t: GLfloat); 
+procedure _GLTexCoord2f(gcl: pointer; s, t: GLfloat);
 syscall sysvbase TinyGLBase 160;
 
 procedure _GLMatrixMode(gcl: pointer; mode: GLenum);
@@ -69,19 +69,24 @@ syscall sysvbase TinyGLBase 214;
 procedure _GLPopMatrix(gcl: pointer);
 syscall sysvbase TinyGLBase 220;
 
-procedure _GLRotatef(gcl: pointer; angle, x, y, z: GLfloat); 
+procedure _GLRotatef(gcl: pointer; angle, x, y, z: GLfloat);
 syscall sysvbase TinyGLBase 226;
 
-procedure _GLTranslatef(gcl: pointer; x, y, z: GLfloat); 
+procedure _GLTranslatef(gcl: pointer; x, y, z: GLfloat);
 syscall sysvbase TinyGLBase 232;
 
-procedure _GLScalef(gcl: pointer; x, y, z: GLfloat); 
+procedure _GLScalef(gcl: pointer; x, y, z: GLfloat);
 syscall sysvbase TinyGLBase 238;
 
-procedure _GLViewPort(gcl: pointer; x, y: GLint; width, height: GLsizei);
+{ Older (pre-V53, MorphOS v3.18) TinyGL's ABI for glViewport() did not respect OpenGL
+  conventions, and expected the viewport coordinates in floats. This was deprecated
+  and no longer present in the public C headers, but the library still respects the
+  old ABI, and will keep doing so. There was a new function added with the right
+  argument types, at offset 1912. See _GLViewport() below. }
+procedure _GLViewportOld(gcl: pointer; x, y: GLfloat; width, height: GLfloat);
 syscall sysvbase TinyGLBase 244;
 
-procedure _GLFrustum(gcl: pointer; left, right, bottom, top, zNear, zFar: GLdouble); 
+procedure _GLFrustum(gcl: pointer; left, right, bottom, top, zNear, zFar: GLdouble);
 syscall sysvbase TinyGLBase 250;
 {$ENDIF GL_UNIT}
 
@@ -213,12 +218,6 @@ syscall sysvbase TinyGLBase 604;
 
 procedure _GLDepthFunc(gcl: pointer; func: GLenum);
 syscall sysvbase TinyGLBase 628;
-
-function _GLInit: Pointer; 
-syscall sysvbase TinyGLBase 640;
-
-procedure _GLClose(gcl: pointer);
-syscall sysvbase TinyGLBase 646;
 {$ENDIF GL_UNIT}
 
 {$IFDEF GLU_UNIT}
@@ -264,7 +263,7 @@ procedure _GLUTReshapeFunc(gcl: pointer; f: TGlut2IntCallback);
 syscall sysvbase TinyGLBase 736;
 
 procedure _GLUTIdleFunc(gcl: pointer; f: TGlutVoidCallback);
-syscall sysvbase TinyGLBase 742; 
+syscall sysvbase TinyGLBase 742;
 
 procedure _GLUTKeyboardFunc(gcl: pointer; f: TGlut1Char2IntCallback);
 syscall sysvbase TinyGLBase 748;
@@ -274,6 +273,12 @@ syscall sysvbase TinyGLBase 760;
 
 procedure _GLUTMotionFunc(gcl: pointer; f: TGlut2IntCallback);
 syscall sysvbase TinyGLBase 766;
+
+procedure _GLUTPositionWindow(gcl: pointer; x, y: LongInt);
+syscall sysvbase TinyGLBase 790;
+
+procedure _GLUTReshapeWindow(gcl: pointer; width, height: LongInt);
+syscall sysvbase TinyGLBase 796;
 
 function _GLUTGet(gcl: pointer; t: GLenum): LongInt;
 syscall sysvbase TinyGLBase 802;
@@ -299,6 +304,9 @@ syscall sysvbase TinyGLBase 856;
 function _GLGetString(gcl: pointer; name: GLenum): PAnsiChar;
 syscall sysvbase TinyGLBase 862;
 
+procedure _GLScissor(gcl: pointer; x, y: GLint; width, height: GLsizei);
+syscall sysvbase TinyGLBase 880;
+
 procedure _GLCallLists(gcl: pointer; n: GLsizei; atype: GLenum; const lists: Pointer);
 syscall sysvbase TinyGLBase 892;
 
@@ -318,7 +326,7 @@ syscall sysvbase TinyGLBase 1114;
 procedure _GLFogf(gcl: pointer; pname: GLenum; param: GLfloat);
 syscall sysvbase TinyGLBase 1120;
 
-procedure _GLFogfv(gcl: pointer; pname: GLenum; const params: PGLfloat); 
+procedure _GLFogfv(gcl: pointer; pname: GLenum; const params: PGLfloat);
 syscall sysvbase TinyGLBase 1126;
 
 procedure _GLReadPixels(gcl: pointer; x, y: GLint; width, height: GLsizei; format, atype: GLenum; pixels: Pointer);
@@ -345,6 +353,17 @@ syscall sysvbase TinyGLBase 1348;
 {$IFDEF GL_UNIT}
 procedure _GLCopyTexImage2D(gcl: pointer; target: GLenum; level: GLint; internalFormat: GLenum; x, y: GLint; width, height: GLsizei; border: GLint); inline;
 syscall sysvbase TinyGLBase 1402;
+{$ENDIF GL_UNIT}
+
+{$IFDEF GL_UNIT}
+{ See the comment at _GLViewportOld() }
+procedure _GLViewport(gcl: pointer; x, y: GLint; width, height: GLsizei);
+syscall sysvbase TinyGLBase 1912;
+{$ENDIF GL_UNIT}
+
+{$IFDEF GL_UNIT}
+procedure _GLIndexi(gcl: pointer; c: GLint);
+syscall sysvbase TinyGLBase 2908;
 {$ENDIF GL_UNIT}
 
 
@@ -460,8 +479,7 @@ end;
 
 procedure glIndexi(c: GLint); inline;
 begin
-{$WARNING glIndexi is dummy.}
-  // DUMMY, FIX ME!!! 
+  _GLIndexi(tglContext, c);
 end;
 
 procedure glLightModelfv(pname: GLenum; const params: PGLfloat); inline;
@@ -487,7 +505,7 @@ end;
 procedure glVertex3f(x, y, z: GLfloat); inline;
 begin
   _GLVertex3f(tglContext, x, y ,z);
-end; 
+end;
 
 procedure glVertex3fv(const v: PGLfloat); inline;
 begin
@@ -526,7 +544,7 @@ end;
 
 procedure glMateriali(face, pname: GLenum; param: GLint); inline;
 begin
-  // WTF?! 
+  // WTF?!
   _GLMaterialf(tglContext, face, pname, param);
 end;
 
@@ -539,7 +557,7 @@ end;
 procedure glMatrixMode(mode: GLenum); inline;
 begin
   _GLMatrixMode(tglContext, mode);
-end; 
+end;
 
 procedure glNormalPointer(atype: GLenum; stride: GLsizei; const pointer: Pointer); inline;
 begin
@@ -595,32 +613,32 @@ end;
 procedure glFrustum(left, right, bottom, top, zNear, zFar: GLdouble); inline;
 begin
   _GLFrustum(tglContext, left, right, bottom, top, zNear, zFar);
-end; 
+end;
 
 procedure glTranslatef(x, y, z: GLfloat); inline;
 begin
   _GLTranslatef(tglContext, x, y, z);
-end; 
+end;
 
 procedure glScalef(x, y, z: GLfloat); inline;
 begin
   _GLScalef(tglContext, x, y, z);
-end; 
+end;
 
 procedure glRotatef(angle, x, y, z: GLfloat); inline;
 begin
   _GLRotatef(tglContext, angle, x, y, z);
-end; 
+end;
 
 procedure glColor3f(red, green, blue: GLfloat); inline;
 begin
   _GLColor3f(tglContext, red, green, blue);
-end; 
+end;
 
 procedure glColor4f(red, green, blue, alpha: GLfloat); inline;
 begin
   _GLColor4f(tglContext, red, green, blue, alpha);
-end; 
+end;
 
 procedure glNormal3f(nx, ny, nz: GLfloat); inline;
 begin
@@ -760,7 +778,17 @@ end;
 
 procedure glViewport(x, y: GLint; width, height: GLsizei); inline;
 begin
-  _GLViewport(tglContext, x, x, width, height);
+  if PLibrary(TinyGLBase)^.lib_Version >= 53 then
+    _GLViewport(tglContext, x, y, width, height)
+  else
+    { we support calling _GLViewportOld() to work with older TinyGL
+    versions. See the comment there. }
+    _GLViewportOld(tglContext, x, y, width, height);
+end;
+
+procedure glScissor(x, y: GLint; width, height: GLsizei); inline;
+begin
+  _GLScissor(tglContext, x, y, width, height)
 end;
 {$ENDIF GL_UNIT}
 
@@ -877,6 +905,16 @@ begin
   _GLUTMotionFunc(tglContext, f);
 end;
 
+procedure GLUTPositionWindow(x, y: Integer); inline;
+begin
+  _GLUTPositionWindow(tglContext, x, y);
+end;
+
+procedure GLUTReshapeWindow(width, height: Integer); inline;
+begin
+  _GLUTReshapeWindow(tglContext, width, height);
+end;
+
 procedure GLUTPassiveMotionFunc(f: TGlut2IntCallback); inline;
 begin
   _GLUTPassiveMotionFunc(tglContext, f);
@@ -910,6 +948,6 @@ end;
 procedure GLUTSetColor(cell: Integer; red, green, blue: GLfloat); inline;
 begin
 {$WARNING GLUTSetColor is dummy.}
-  // DUMMY, FIX ME!!! 
+  // DUMMY, FIX ME!!!
 end;
 {$ENDIF GLUT_UNIT}

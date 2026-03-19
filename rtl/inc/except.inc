@@ -197,7 +197,7 @@ begin
   If hp^=nil then
     begin
 {$ifdef excdebug}
-      writeln ('At end of ExceptionAddresStack');
+      writeln ('At end of ExceptionAddressStack');
 {$endif}
       halt (255);
     end
@@ -315,7 +315,7 @@ begin
        PopObjectStack;
 
        Also the PopAddrStack shouldn't be done, we do it now
-       immediatly in the exception handler (FK)
+       immediately in the exception handler (FK)
       PopAddrStack; }
     end;
 end;
@@ -325,6 +325,10 @@ Procedure SysInitExceptions;
   Initialize exceptionsupport
 }
 begin
+  // These are here, because they need to be initialized for every thread.
+  CastErrorFrom:='';
+  CastErrorTo:='';
+
   ExceptObjectstack:=Nil;
   ExceptAddrStack:=Nil;
 end;

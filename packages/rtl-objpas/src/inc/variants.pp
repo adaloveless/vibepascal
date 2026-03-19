@@ -1554,7 +1554,7 @@ end;
 
 procedure DoVarOpInt64to32(var vl : TVarData; const vr : TVarData; const OpCode : TVarOp);
 begin
-  { can't do this well without an efficent way to check for overflows,
+  { can't do this well without an efficient way to check for overflows,
     let the Int64 version handle it and check the Result if we can downgrade it
     to integer }
   DoVarOpInt64(vl, vr, OpCode);
@@ -2327,6 +2327,10 @@ begin
       Dest.vType := varOleStr;
       Dest.vOleStr := nil;
       WideString(Pointer(Dest.vOleStr)) := WideString(Pointer(vOleStr));
+    end else if vType = varUString then begin
+      Dest.vType := varUString;
+      Dest.vustring := Nil;
+      UnicodeString(Dest.vustring) := UnicodeString(vustring);
     end else if vType = varAny then begin
       Dest := Source;
       RefAnyProc(Dest);
@@ -2456,6 +2460,11 @@ begin
         varDate:     SysVarFromTDateTime(Variant(aDest), VariantToDate(aSource));
 {$endif}
         varOleStr:   DoVarCastWStr(aDest, aSource);
+        varUString:  begin
+          DoVarClearIfComplex(aDest);
+          aDest.vType := aVarType;
+          UnicodeString(aDest.vustring) := VariantToUnicodeString(aSource);
+        end;
         varBoolean:  SysVarFromBool(Variant(aDest), VariantToBoolean(aSource));
         varShortInt: SysVarFromInt(Variant(aDest), VariantToShortInt(aSource), -1);
         varByte:     SysVarFromInt(Variant(aDest), VariantToByte(aSource), 1);
@@ -2466,13 +2475,10 @@ begin
 
         varDispatch: DoVarCastDispatch(aDest, aSource);
         varUnknown:  DoVarCastInterface(aDest, aSource);
-      else
-        case aVarType of
-          varString: DoVarCastLStr(aDest, aSource);
-          varAny:    VarCastError(vType, varAny);
+        varString:   DoVarCastLStr(aDest, aSource);
+        varAny:      VarCastError(vType, varAny);
         else
           DoVarCastComplex(aDest, aSource, aVarType);
-        end;
       end;
     end;
 
@@ -3161,6 +3167,37 @@ begin
 end;
 
 
+function DoVarArraySameValue(const A, B: Variant): Boolean;
+  var
+    i: Integer;
+    Dims: Integer;
+    Bounds: array[0..63] of TVarArrayBound;
+    Iterator: TVariantArrayIterator;
+    vA, vB: Variant;
+  begin
+    if (VarArrayDimCount(A) <> VarArrayDimCount(B)) then Exit(false);
+    Dims := VarArrayDimCount(A);
+    for i := 1 to Dims do begin
+      if (VarArrayLowBound(A, i) <> VarArrayLowBound(B, i)) then Exit(false);
+      if (VarArrayHighBound(A, i) <> VarArrayHighBound(B, i)) then Exit(false);
+      Bounds[Pred(i)].lowbound := VarArrayLowBound(A, i);
+      Bounds[Pred(i)].elementcount := VarArrayHighBound(A, i) - VarArrayLowBound(A, i) + 1;
+    end;
+    Iterator.Init(Dims, @Bounds);
+    try
+      if not(Iterator.AtEnd) then
+        repeat
+          vA := sysvararrayget(A, Dims, PLongint(Iterator.Coords));
+          vB := sysvararrayget(B, Dims, PLongint(Iterator.Coords));
+          if not VarSameValue(vA, vB) then Exit(false);
+        until not Iterator.Next;
+    finally
+      Iterator.Done;
+    end;
+    Exit(true);
+  end;
+
+
 function VarSameValue(const A, B: Variant): Boolean;
   var
     v1,v2 : TVarData;
@@ -3171,6 +3208,8 @@ function VarSameValue(const A, B: Variant): Boolean;
       Result:=v1.vType=v2.vType
     else if v2.vType in [varEmpty,varNull] then
       Result:=False
+    else if VarIsArray(A) and VarIsArray(B) then
+      Result:=DoVarArraySameValue(a, b)
     else
       Result:=A=B;
   end;
@@ -3449,7 +3488,7 @@ function VarTypeIsValidElementType(const aVarType: TVarType): Boolean;
       varSingle,varDouble,varDate,
 {$endif}
       varCurrency,varOleStr,varDispatch,varError,varBoolean,
-      varVariant,varUnknown,varShortInt,varByte,varWord,varLongWord,varInt64]) or
+      varVariant,varUnknown,varShortInt,varByte,varWord,varLongWord,varInt64, varQWord]) or
     FindCustomVariantType(aVarType,customvarianttype);
   end;
 
@@ -4808,8 +4847,12 @@ begin
      tkDynArray:
        begin
          dynarr:=Nil;
-         DynArrayFromVariant(dynarr, Value, PropInfo^.PropType);
-         SetDynArrayProp(Instance, PropInfo, dynarr);
+         try
+           DynArrayFromVariant(dynarr, Value, PropInfo^.PropType);
+           SetDynArrayProp(Instance, PropInfo, dynarr);
+         finally
+           DynArrayClear(dynarr, PropInfo);
+         end;
        end;
    else
      raise EPropertyConvertError.CreateFmt('SetPropValue: Invalid Property Type %s',

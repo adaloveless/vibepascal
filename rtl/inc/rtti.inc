@@ -80,18 +80,28 @@ begin
     end;
 end;
 
-{ if you modify this procedure, fpc_copy must be probably modified as well }
-procedure RecordRTTI(Data:Pointer;Ri:PRecordInfoInit;rttiproc:TRTTIProc);
+procedure FinalizeRecordFields(Data:Pointer;Ri:PRecordInfoInit);
 var
   i : longint;
   Re : PRecordElement;
 begin
-  { Get element info, hacky, but what else can we do? }
   Re:=AlignTypeData(Pointer(@Ri^.Count)+SizeOf(Ri^.Count));
-  { Process elements }
   for i:=Ri^.Count downto 1 Do
     begin
-      rttiproc(Data+Re^.Offset,Re^.TypeInfo^);
+      int_finalize(Data+Re^.Offset,Re^.TypeInfo^);
+      Inc(Re);
+    end;
+end;
+
+procedure AddRefRecordFields(Data:Pointer;Ri:PRecordInfoInit);
+var
+  i : longint;
+  Re : PRecordElement;
+begin
+  Re:=AlignTypeData(Pointer(@Ri^.Count)+SizeOf(Ri^.Count));
+  for i:=Ri^.Count downto 1 Do
+    begin
+      int_addref(Data+Re^.Offset,Re^.TypeInfo^);
       Inc(Re);
     end;
 end;
@@ -102,40 +112,57 @@ begin
   Result:=PRecordInfoInit(ti)^.InitRecordOpTable;
 end;
 
-Procedure fpc_Initialize (Data,TypeInfo : pointer);[Public,Alias : 'FPC_INITIALIZE'];  compilerproc;
+procedure InitializeRecord(Data : pointer;Ri : PRecordInfoInit); forward;
+
+const
+  RTTIFlattenInitializePointer = 0;
+  RTTIFlattenInitialize: array[TTypeKind] of uint8 =
+  ( { 0: pointer, 1: record, 2: array, 3: variant, 255: unmanaged. }
+    {tkUnknown} 255, {tkInteger} 255, {tkChar} 255, {tkEnumeration} 255, {tkFloat} 255,
+    {tkSet} 255, {tkMethod} 255, {tkSString} 255, {tkLString} 255, {tkAString} 0,
+    {tkWString} 0, {tkVariant} 3, {tkArray} 2, {tkRecord} 1, {tkInterface} 0,
+    {tkClass} 255, {tkObject} 1, {tkWChar} 255, {tkBool} 255, {tkInt64} 255, {tkQWord} 255,
+    {tkDynArray} 0, {tkInterfaceRaw} 255, {tkProcVar} 255, {tkUString} 0, {tkUChar} 255,
+    {tkHelper} 255, {tkFile} 255, {tkClassRef} 255, {tkPointer} 255
+  );
+
+procedure InlinedInitialize(Data,TypeInfo : pointer); inline; { Should come before InitializeRecord for inlining. }
 var
   ri: PRecordInfoInit;
 begin
-  case PTypeKind(TypeInfo)^ of
-{$ifdef FPC_HAS_FEATURE_DYNARRAYS}
-    tkDynArray,
-{$endif FPC_HAS_FEATURE_DYNARRAYS}
-{$ifdef FPC_HAS_FEATURE_ANSISTRINGS}
-    tkAstring,
-{$endif FPC_HAS_FEATURE_ANSISTRINGS}
-{$ifdef FPC_HAS_FEATURE_WIDESTRINGS}
-    tkWstring,tkUString,
-{$endif FPC_HAS_FEATURE_WIDESTRINGS}
-    tkInterface:
-      PPAnsiChar(Data)^:=Nil;
-    tkArray:
+  case cardinal(RTTIFlattenInitialize[PTypeKind(TypeInfo)^]) of
+    RTTIFlattenInitializePointer: { pointer }
+      PPointer(Data)^:=Nil;
+    1: { record }
+      InitializeRecord(Data,RTTIRecordInfoInit(TypeInfo));
+    2: { array }
       with PArrayInfo(aligntoqword(typeInfo+2+PByte(typeInfo)[1]))^ do
         int_InitializeArray(data,ElInfo^,ElCount);
-{$ifdef FPC_HAS_FEATURE_OBJECTS}
-    tkObject,
-{$endif FPC_HAS_FEATURE_OBJECTS}
-    tkRecord:
-      begin
-        ri:=RTTIRecordInfoInit(typeinfo);
-        recordrtti(data,ri,@int_initialize);
-        if Assigned(ri^.recordop) and Assigned(ri^.recordop^.Initialize) then
-          ri^.recordop^.Initialize(data);
-      end;
 {$ifdef FPC_HAS_FEATURE_VARIANTS}
-    tkVariant:
+    3: { variant }
       variant_init(PVarData(Data)^);
 {$endif FPC_HAS_FEATURE_VARIANTS}
   end;
+end;
+
+procedure InitializeRecord(Data : pointer;Ri : PRecordInfoInit);
+var
+  i : longint;
+  Re : PRecordElement;
+begin
+  Re:=AlignTypeData(Pointer(@Ri^.Count)+SizeOf(Ri^.Count));
+  for i:=Ri^.Count downto 1 Do
+    begin
+      InlinedInitialize(Data+Re^.Offset,Re^.TypeInfo^);
+      Inc(Re);
+    end;
+  if Assigned(Ri^.RecordOp) and Assigned(Ri^.RecordOp^.Initialize) then
+    Ri^.RecordOp^.Initialize(Data);
+end;
+
+Procedure fpc_Initialize (Data,TypeInfo : pointer);[Public,Alias : 'FPC_INITIALIZE'];  compilerproc;
+begin
+  InlinedInitialize(Data,TypeInfo);
 end;
 
 
@@ -167,7 +194,7 @@ begin
         ri:=RTTIRecordInfoInit(typeinfo);
         if Assigned(ri^.recordop) and Assigned(ri^.recordop^.Finalize) then
           ri^.recordop^.Finalize(data);
-        recordrtti(data,ri,@int_finalize);
+        FinalizeRecordFields(data,ri);
       end;
 {$ifdef FPC_HAS_FEATURE_CLASSES}
     tkInterface:
@@ -211,7 +238,7 @@ begin
     tkrecord :
       begin
         ri:=RTTIRecordInfoInit(typeinfo);
-        recordrtti(data,ri,@int_addref);
+        AddRefRecordFields(data,ri);
         if Assigned(ri^.recordop) and Assigned(ri^.recordop^.AddRef) then
           ri^.recordop^.AddRef(Data);
       end;
@@ -355,13 +382,33 @@ end;
 procedure fpc_initialize_array(data,typeinfo : pointer;count : SizeInt); [public,alias:'FPC_INITIALIZE_ARRAY']; compilerproc;
   var
     sample,size,i : SizeInt;
+    ri : PRecordInfoInit;
   begin
     sample:=RTTIManagedSizes[PTypeKind(typeinfo)^];
     if sample<>RTTISpecialSize then
       FillChar(data^,sample*count,0)
-    else if RTTIManagementAndSize(typeinfo, rotInitialize, size, false) then
-      for i:=0 to count-1 do
-        int_initialize(data+size*i,typeinfo);
+    else if PTypeKind(typeinfo)^=tkArray then
+      with PArrayInfo(aligntoqword(typeInfo+2+PByte(typeInfo)[1]))^ do
+        int_InitializeArray(data,ElInfo^,count*ElCount)
+    else
+      begin { tkRecord/tkObject. }
+        ri:=RTTIRecordInfoInit(typeinfo);
+        size:=ri^.size;
+        if (ri^.Count>0) or Assigned(Ri^.RecordOp) then { Heuristically replaces the more expensive RTTIManagementAndSize. Can have false positives but they are harmless and won’t occur in practice. }
+          for i:=0 to count-1 do
+            InitializeRecord(data+size*i,ri);
+      end;
+  end;
+
+
+function SkipTrailingNils(data : PPointer;count : SizeInt) : SizeInt;
+  var
+    pd: PPointer;
+  begin
+    pd:=data+count;
+    while (pd<>data) and not Assigned(pd[-1]) do
+      dec(pd);
+    result:=SizeUint(pointer(pd)-pointer(data)) div sizeof(pointer);
   end;
 
 
@@ -369,7 +416,10 @@ procedure fpc_finalize_array(data,typeinfo : pointer;count : SizeInt); [Public,A
   var
     size,i : SizeInt;
   begin
-    if RTTIManagementAndSize(typeinfo, rotFinalize, size, false) then
+    if RTTIFlattenInitialize[PTypeKind(typeinfo)^]=RTTIFlattenInitializePointer then
+      for i:=0 to SkipTrailingNils(data,count)-1 do
+        int_finalize(PPointer(data)+i,typeinfo)
+    else if RTTIManagementAndSize(typeinfo, rotFinalize, size, false) then
       for i:=0 to count-1 do
         int_finalize(data+size*i,typeinfo);
   end;
@@ -379,7 +429,10 @@ procedure fpc_addref_array(data,typeinfo: pointer; count: SizeInt); [public,alia
   var
     size,i : SizeInt;
   begin
-    if RTTIManagementAndSize(typeinfo, rotAddRef, size, false) then
+    if RTTIFlattenInitialize[PTypeKind(typeinfo)^]=RTTIFlattenInitializePointer then
+      for i:=0 to SkipTrailingNils(data,count)-1 do
+        int_addref(PPointer(data)+i,typeinfo)
+    else if RTTIManagementAndSize(typeinfo, rotAddRef, size, false) then
       for i:=0 to count-1 do
         int_addref(data+size*i,typeinfo);
   end;
@@ -400,6 +453,9 @@ procedure InitializeArray(p, typeInfo: Pointer; count: SizeInt);
 
 procedure FinalizeArray(p, typeInfo: Pointer; count: SizeInt);
   external name 'FPC_FINALIZE_ARRAY';
+
+procedure AddRefArray(p, typeInfo: Pointer; count: SizeInt);
+  external name 'FPC_ADDREF_ARRAY';
 
 procedure CopyArray(dest, source, typeInfo: Pointer; count: SizeInt);
   var

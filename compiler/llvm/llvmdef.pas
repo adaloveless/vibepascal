@@ -49,7 +49,7 @@ interface
 
     { returns the identifier to use as typename for a def in llvm (llvm only
       allows naming struct types) -- only supported for tabstractrecorddef
-      descendantds and complex procvars }
+      descendants and complex procvars }
     function llvmtypeidentifier(def: tdef): TSymStr;
 
     { encode a type into the internal format used by LLVM (for a type
@@ -96,7 +96,7 @@ interface
       which we know that they should be passed on the stack }
     function llvmbyvalparaloc(paraloc: pcgparalocation): boolean;
 
-    { returns whether a def is representated by an aggregate type in llvm
+    { returns whether a def is represented by an aggregate type in llvm
       (struct, array) }
     function llvmaggregatetype(def: tdef): boolean;
 
@@ -135,9 +135,9 @@ implementation
   function llvmtypeidentifier(def: tdef): TSymStr;
     begin
       if assigned(def.typesym) then
-        result:='%"typ.'+def.fullownerhierarchyname(false)+def.typesym.realname+'"'
+        result:='%"typ.'+def.fullownerhierarchyname(false,false)+def.typesym.realname+'"'
       else
-        result:='%"typ.'+def.fullownerhierarchyname(false)+def.unique_id_str+'"';
+        result:='%"typ.'+def.fullownerhierarchyname(false,false)+def.unique_id_str+'"';
     end;
 
 

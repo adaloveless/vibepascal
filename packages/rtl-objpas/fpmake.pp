@@ -7,29 +7,29 @@ uses {$ifdef unix}cthreads,{$endif} fpmkunit;
 
 procedure add_rtl_objpas(const ADirectory: string);
 
-Const 
-  // All Unices have full set of KVM+Crt in unix/ except QNX which is not
+Const
+  // All Unixes have full set of KVM+Crt in unix/ except QNX which is not
   // in workable state atm.
   UnixLikes = AllUnixOSes -[QNX]; // qnx never was active in 2.x afaik
 
 //  AllUnixOSes  = [Linux,FreeBSD,NetBSD,OpenBSD,Darwin,QNX,BeOS,Solaris,Haiku,iphonesim,ios,aix,Android];
 //    unixlikes-[beos];
 //
-  StrUtilsOSes  = [atari,emx,gba,go32v2,macosclassic,msdos,nds,netware,wince,nativent,os2,netwlibc,sinclairql,human68k,symbian,watcom,wii,win16,win32,win64,freertos,wasip1,wasip1threads]+UnixLikes+AllAmigaLikeOSes;
-  VarUtilsOSes  = [atari,emx,gba,go32v2,macosclassic,msdos,nds,netware,wince,nativent,os2,netwlibc,sinclairql,human68k,symbian,watcom,wii,win16,win32,win64,freertos,wasip1,wasip1threads]+UnixLikes+AllAmigaLikeOSes;
-  ConvUtilsOSes = [nativent,netware,netwlibc,macosclassic,sinclairql,human68k,win32,win64,wince,wasip1,wasip1threads]+AllAmigaLikeOSes+UnixLikes-[BeOS];
+  StrUtilsOSes  = [atari,emx,gba,go32v2,macosclassic,msdos,nds,netware,wince,nativent,os2,netwlibc,sinclairql,human68k,symbian,watcom,wii,win16,win32,win64,freertos]+UnixLikes+AllAmigaLikeOSes+AllWebAssemblyOSes;
+  VarUtilsOSes  = [atari,emx,gba,go32v2,macosclassic,msdos,nds,netware,wince,nativent,os2,netwlibc,sinclairql,human68k,symbian,watcom,wii,win16,win32,win64,freertos]+UnixLikes+AllAmigaLikeOSes+AllWebAssemblyOSes;
+  ConvUtilsOSes = [nativent,netware,netwlibc,macosclassic,sinclairql,human68k,win32,win64,wince]+AllAmigaLikeOSes+UnixLikes-[BeOS]+AllWebAssemblyOSes;
   ConvUtilOSes  = [atari,Go32v2,msdos,os2,emx,freertos,watcom,win16];
-  DateUtilsOSes = [gba,nativent,nds,netware,netwlibc,macosclassic,sinclairql,human68k,symbian,wii,win32,win64,wince,freertos,wasip1,wasip1threads]+UnixLikes+AllAmigaLikeOSes;
+  DateUtilsOSes = [gba,nativent,nds,netware,netwlibc,macosclassic,sinclairql,human68k,symbian,wii,win32,win64,wince,freertos]+UnixLikes+AllAmigaLikeOSes+AllWebAssemblyOSes;
   DateUtilOSes  = [atari,Go32v2,msdos,os2,emx,freertos,watcom,win16];
-  StdConvsOSes  = [NativeNT,win16,win32,win64,os2,msdos,go32v2,freertos,wasip1,wasip1threads]+UnixLikes-[BeOS];
-  FmtBCDOSes    = [atari,emx,gba,go32v2,msdos,nativent,nds,netware,netwlibc,os2,sinclairql,human68k,symbian,watcom,wii,win16,win32,win64,wince,freertos,wasip1,wasip1threads]+UnixLikes+AllAmigaLikeOSes;
-  VariantsOSes  = [atari,emx,gba,go32v2,msdos,nativent,nds,netware,netwlibc,os2,sinclairql,human68k,symbian,watcom,wii,win16,win32,win64,wince,freertos,wasip1,wasip1threads]+UnixLikes+AllAmigaLikeOSes;
-  RttiOSes      = [atari,emx,gba,go32v2,msdos,nativent,nds,netware,netwlibc,os2,sinclairql,human68k,symbian,watcom,wii,win16,win32,win64,wince,freertos,wasip1,wasip1threads]+UnixLikes+AllAmigaLikeOSes;
-  UItypesOSes   = [atari,emx,gba,go32v2,msdos,nativent,nds,netware,netwlibc,os2,sinclairql,human68k,symbian,watcom,wii,win16,win32,win64,wince,freertos,wasip1,wasip1threads]+UnixLikes+AllAmigaLikeOSes;
+  StdConvsOSes  = [NativeNT,win16,win32,win64,os2,msdos,go32v2,freertos]+UnixLikes-[BeOS]+AllWebAssemblyOSes;
+  FmtBCDOSes    = [atari,emx,gba,go32v2,msdos,nativent,nds,netware,netwlibc,os2,sinclairql,human68k,symbian,watcom,wii,win16,win32,win64,wince,freertos]+UnixLikes+AllAmigaLikeOSes+AllWebAssemblyOSes;
+  VariantsOSes  = [atari,emx,gba,go32v2,msdos,nativent,nds,netware,netwlibc,os2,sinclairql,human68k,symbian,watcom,wii,win16,win32,win64,wince,freertos]+UnixLikes+AllAmigaLikeOSes+AllWebAssemblyOSes;
+  RttiOSes      = [atari,emx,gba,go32v2,msdos,nativent,nds,netware,netwlibc,os2,sinclairql,human68k,symbian,watcom,wii,win16,win32,win64,wince,freertos]+UnixLikes+AllAmigaLikeOSes+AllWebAssemblyOSes;
+  UItypesOSes   = [atari,emx,gba,go32v2,msdos,nativent,nds,netware,netwlibc,os2,sinclairql,human68k,symbian,watcom,wii,win16,win32,win64,wince,freertos]+UnixLikes+AllAmigaLikeOSes+AllWebAssemblyOSes;
   AllTargetsObjPas = DateUtilsOses +DateUtilOSes+
                   VarutilsOses + ConvutilsOSes + ConvutilOSes + StdConvsOSes+
                   FmtBCDOSes + StrUtilsOSes + UITypesOSes;
-  MonitorOSes   = [Win32,win64]+UnixLikes-[BeOS,Haiku]+[wasip1,wasip1threads];
+  MonitorOSes   = [Win32,win64,wince]+UnixLikes-[BeOS,Haiku]+[wasip1,wasip1threads];
 
 Var
   P : TPackage;
@@ -66,7 +66,7 @@ begin
     T:=P.Targets.AddUnit('system.uiconsts.pp',uitypesOses);
       T.Dependencies.AddUnit('system.uitypes');
     T:=P.Targets.AddUnit('system.timespan.pp',uitypesOses);
-    
+
     T:=P.Targets.AddUnit('system.actions.pp',UItypesOSes);
       T.Dependencies.AddUnit('system.uitypes');
     T:=P.Targets.AddUnit('system.math.vectors.pp',UItypesOSes);
@@ -93,7 +93,7 @@ begin
      begin
        AddInclude('convutil.inc');
      end;
- 
+
     // normal
     T:=P.Targets.AddUnit('convutils.pp',ConvutilsOSes);
     with T.Dependencies do
@@ -107,7 +107,7 @@ begin
      begin
        AddInclude('dateutil.inc');
      end;
- 
+
     // normal
     T:=P.Targets.AddUnit('dateutils.pp',dateutilsOSes);
     with T.Dependencies do
@@ -128,7 +128,7 @@ begin
       AddUnit('variants');
 
     T:=P.Targets.AddUnit('variants.pp',VariantsOSes);
-    T.ResourceStrings:=true; 
+    T.ResourceStrings:=true;
     with T.Dependencies do
      begin
        AddUnit('varutils');
@@ -148,10 +148,10 @@ begin
       T.Dependencies.AddUnit('fpmonitor');
 
     P.NamespaceMap:='namespaces.lst';
-    
+
   end
 end;
- 
+
 {$ifndef ALLPACKAGES}
 begin
   add_rtl_objpas('');

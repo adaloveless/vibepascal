@@ -29,7 +29,7 @@ begin
     2: begin Val(S, I16, Err); I64:=I16; end;
     4: begin Val(S, I32, Err); I64:=I32; end;
     8: begin Val(S, I64, Err); end;
-    otherwise 
+    otherwise
       begin
         writeln('Invalid value for DestSize: ',DestSize);
         halt(1);
@@ -111,9 +111,9 @@ begin
   Test(4,'4294967295', FALSE, 0);
   Test(4,'7795000000', FALSE, 0);
   Test(4,'%11111111111111111111111111111111', TRUE, -1);  //High(Dword)
-  Test(4,'%100000000000000000000000000000000', FALSE, 0); //Hig(Dword) + 1
+  Test(4,'%100000000000000000000000000000000', FALSE, 0); //High(Dword) + 1
   Test(4,'&37777777777', TRUE, -1);                       //High(Dword)
-  Test(4,'&40000000000', FALSE, 0);                       //Hig(Dword) + 1
+  Test(4,'&40000000000', FALSE, 0);                       //High(Dword) + 1
   Test(4,'-$123', TRUE, -291);
   Test(4,'+$123', TRUE, 291);
   Test(4,'xFFFFFFFF', TRUE, -1);

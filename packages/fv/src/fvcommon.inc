@@ -11,7 +11,7 @@
 {                                                          }
 {****************[ THIS CODE IS FREEWARE ]*****************}
 {                                                          }
-{     This sourcecode is released for the purpose to       }
+{     This source code is released for the purpose to      }
 {   promote the pascal language on all platforms. You may  }
 {   redistribute it and/or modify with the following       }
 {   DISCLAIMER.                                            }
@@ -239,7 +239,7 @@ Given two SmallInt values returns the lowest SmallInt of the two.
 ---------------------------------------------------------------------}
 FUNCTION MinIntegerOf (A, B: SmallInt): SmallInt;
 
-{-MaxIntegerof-------------------------------------------------------
+{-MaxIntegerOf-------------------------------------------------------
 Given two SmallInt values returns the biggest SmallInt of the two.
 04Oct99 LdB
 ---------------------------------------------------------------------}
@@ -263,7 +263,7 @@ FUNCTION MaxLongIntOf (A, B: LongInt): LongInt;
 
 { ******************************* REMARK ****************************** }
 {  Delphi 3+ does not define these standard routines so I have made     }
-{  some public functions here to complete compatability.                }
+{  some public functions here to complete compatibility.                }
 { ****************************** END REMARK *** Leon de Boer, 14Aug98 * }
 
 {-MemAvail-----------------------------------------------------------
@@ -294,7 +294,7 @@ CONST
 {<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>}
 
 {$IFDEF PPC_DELPHI3}                                  { DELPHI 3+ COMPILER }
-USES WinTypes, WinProcs;                              { Stardard units }
+USES WinTypes, WinProcs;                              { Standard units }
 {$ENDIF}
 
 {***************************************************************************}

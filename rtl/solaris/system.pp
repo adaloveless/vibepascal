@@ -16,10 +16,6 @@ unit System;
 
 interface
 
-
-{$IFNDEF FPC_DISABLE_MONITOR}
-{$DEFINE SYSTEM_HAS_FEATURE_MONITOR}
-{$ENDIF}
 {$define FPC_IS_SYSTEM}
 
 {$linklib m}
@@ -112,7 +108,7 @@ function paramstr(l: longint) : shortstring;
   s: shortstring;
   s1: shortstring;
  begin
-   { stricly conforming POSIX applications  }
+   { strictly conforming POSIX applications }
    { have the executing filename as argv[0] }
 //   if l=0 then
 //     begin

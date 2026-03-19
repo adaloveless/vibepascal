@@ -305,7 +305,7 @@ type
      destructor destroy; override;
 
     public
-     { returns a builder for generating data that is only referrenced by the
+     { returns a builder for generating data that is only referenced by the
        typed constant date we are currently generating (e.g. string data for a
        pchar constant). Also returns the label that will be placed at the start
        of that data. list is the tasmlist to which the data will be added.
@@ -472,7 +472,7 @@ type
        supported this is equal to the header size }
      class function get_string_symofs(typ: tstringtype; winlikewidestring: boolean): pint; virtual;
 
-     { returns the offset of the array data relatve to dynamic array constant
+     { returns the offset of the array data relative to dynamic array constant
        labels. On most platforms, this is 0 (with the header at a negative
        offset), but on some platforms such negative offsets are not supported
        and thus this is equal to the header size }
@@ -666,6 +666,7 @@ implementation
    destructor tai_simpletypedconst.destroy;
      begin
        fval.free;
+       fval := nil;
        inherited destroy;
      end;
 
@@ -720,7 +721,7 @@ implementation
             if ai.adetyp<>tck_simple then
               internalerror(2014070103);
             add_to_string(newstr,tai_simpletypedconst(ai).val);
-            ai.free;
+            ai.free; // no nil needed
           end;
        fvalues.count:=0;
        { the "nil" def will be replaced with an array def of the appropriate
@@ -788,7 +789,8 @@ implementation
              1:
                begin
                  add_to_string(tai_string(tai_simpletypedconst(fvalues[0]).val),tai_simpletypedconst(val).val);
-                 val.free
+                 val.free;
+                 val := nil;
                end
              else
                internalerror(2014070104);
@@ -850,6 +852,7 @@ implementation
    destructor tai_aggregatetypedconst.destroy;
      begin
        fvalues.free;
+       fvalues := nil;
        inherited destroy;
      end;
 
@@ -1022,7 +1025,7 @@ implementation
               if not(section in [low(TObjCAsmSectionType)..high(TObjCAsmSectionType)]) then
                 prelist.concat(tai_directive.Create(asd_reference,asmsym.name))
              end
-           else if section<>sec_fpc then
+           else if not(section in [sec_fpc,sec_note]) then
              internalerror(2015101402);
          end;
 
@@ -1045,6 +1048,7 @@ implementation
        fasmlist.concat(tai_symbol_end.Createname(asmsym.name));
        { free the temporary list }
        prelist.free;
+       prelist := nil;
      end;
 
 
@@ -1078,6 +1082,7 @@ implementation
            symind.increfs;
 
            indtcb.free;
+           indtcb := nil;
            if not (target_info.system in systems_indirect_var_imports) then
              current_module.add_public_asmsym(symind.name,AB_INDIRECT,AT_DATA);
          end;
@@ -1275,7 +1280,9 @@ implementation
           (ErrorCount=0) then
          internalerror(2014062901);
        faggregateinformation.free;
+       faggregateinformation := nil;
        fasmlist.free;
+       fasmlist := nil;
        inherited destroy;
      end;
 
@@ -1560,6 +1567,7 @@ implementation
        info:=curagginfo;
        faggregateinformation.count:=faggregateinformation.count-1;
        info.free;
+       info := nil;
      end;
 
 
@@ -1827,6 +1835,7 @@ implementation
        { we emit the high value, not the count }
        arrlengthloc.replace(tai_const.Create_sizeint(arrlength-1),sizesinttype);
        arrlengthloc.free;
+       arrlengthloc := nil;
        if get_dynarray_symofs=0 then
          emit_tai(tai_symbol_end.create(llofs.lab),arrdef);
        result:=end_anonymous_record;
@@ -1975,6 +1984,7 @@ implementation
              strtcb.get_final_asmlist(strlab,datadef,sec_rodata_norel,strlab.name,const_align(sizeof(pint)))
            );
            strtcb.free;
+           strtcb := nil;
 
            entry^.Data:=strlab;
            { Make sure strlab has a reference }
@@ -2193,7 +2203,9 @@ implementation
        for i:=high(fields) downto low(fields) do
          queue_subscriptn(tabstractrecorddef(parentdefs[i]),tfieldvarsym(syms[i]));
        syms.free;
+       syms := nil;
        parentdefs.free;
+       parentdefs := nil;
      end;
 
 
@@ -2301,6 +2313,7 @@ implementation
        list.insertafter(ai,insertpos);
        list.remove(insertpos);
        insertpos.free;
+       insertpos := nil;
      end;
 
 

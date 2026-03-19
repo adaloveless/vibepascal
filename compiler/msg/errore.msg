@@ -39,7 +39,7 @@
 #   n_   note
 #   h_   hint
 #   i_   info
-#   l_   add linenumber
+#   l_   add line number
 #   u_   used
 #   t_   tried
 #   c_   conditional
@@ -168,7 +168,7 @@ general_t_objectpath_local=01033_T_$1: Using local object path: $2
 #
 # Scanner
 #
-# 02115 is the last used one
+# 02122 is the last used one
 #
 % \section{Scanner messages.}
 % This section lists the messages that the scanner emits. The scanner takes
@@ -194,7 +194,7 @@ scan_f_syn_expected=02003_F_Syntax error, "$1" expected but "$2" found
 % This indicates that the compiler expected a different token than
 % the one you typed. It can occur almost anywhere it is possible to make an error
 % against the Pascal language.
-scan_t_start_include_file=02004_TL_Start reading includefile $1
+scan_t_start_include_file=02004_TL_Start reading include file $1
 % When you provide the \var{-vt} switch, the compiler tells you
 % when it starts reading an included file.
 scan_w_comment_level=02005_W_Comment level $1 found
@@ -407,9 +407,11 @@ scanner_w_illegal_warn_identifier=02087_W_Illegal identifier "$1" for $WARN dire
 scanner_e_illegal_alignment_directive=02088_E_Illegal alignment directive
 % The alignment directive is not valid. Either the alignment type is not known or the alignment
 % value is not a power of two.
-scanner_w_alignment_large_than_max=02114_N_Variable "$1" has align directive larger than system maximum alignment for variables
+scanner_w_alignment_larger_than_max=02114_W_Variable "$1" has align directive larger than system maximum alignment for variables
+scanner_n_alignment_larger_than_max=02121_N_Variable "$1" has align directive larger than system maximum alignment for variables
 % The type of the variable has an 'align' directive which is larger than  current maximum
-scanner_w_local_alignment_large_than_max=02115_N_Local variable "$1" has align directive larger than system maximum alignment for local variables
+scanner_w_local_alignment_larger_than_max=02115_W_Local variable "$1" has align directive larger than system maximum alignment for local variables
+scanner_n_local_alignment_larger_than_max=02122_N_Local variable "$1" has align directive larger than system maximum alignment for local variables
 % The type of the variable has an 'align' directive which is larger than current  maximum.
 scanner_f_illegal_utf8_bom=02089_F_It is not possible to include a file that starts with an UTF-8 BOM in a module that uses a different code page
 % All source code that is part of a single compilation entity (program, library, unit) must be encoded
@@ -481,7 +483,18 @@ scan_e_duplicate_rtti_option=02112_E_A Duplicate RTTI option "$1"
 scan_e_misplaced_rtti_directive=02113_E_A The RTTI directive cannot be used here
 % The \var{\$RTTI} directive can not be used in this location (e.g. before the \var{PROGRAM}
 % or \var{UNIT} headers).
-% \end{description}
+scan_e_unknown_lineending_type=02116_E_Unknown line ending type specified. Valid options are CR, CRLF, LF, PLATFORM, or SOURCE.
+% The line ending type that was specified is not one of CR, CRLF, LF, PLATFORM, or SOURCE.
+scan_e_trimcount_out_of_range=02117_E_The value of MULTILINESTRINGTRIMLEFT cannot be less than 0 or greater than 65535.
+% MULTILINESTRINGTRIMLEFT is stored in a "word" field, and thus is restricted to the range 0..65535.
+scan_e_illegal_directive=02118_E_Illegal compiler directive "$1"
+% You have specified a compiler directive that cannot (for one of several possible reasons) currently be used.
+scan_f_unterminated_multiline_string=02119_F_Unterminated multi-line string starting at line $1, column $2.
+% The file contains an "unbalanced" number of multi-line string denoting backtick characters.
+scan_e_improperly_indented_multiline_string=02120_E_Incorrectly indented multi-line string (need $1 whitespace chars) starting at line $2, column $3.
+% The multi-line string does not have the proper indentation, every line
+% must have at least the number of spaces as in the last line.
+%\end{description}
 #
 # Parser
 #
@@ -1537,7 +1550,7 @@ parser_d_internal_parser_string=03319_D_Parsing internally generated code: $1
 parser_e_feature_unsupported_for_vm=03320_E_This language feature is not supported on managed VM targets
 % Certain language features are not supported on targets that are managed virtual machines.
 parser_e_jvm_invalid_virtual_constructor_call=03321_E_Calling a virtual constructor for the current instance inside another constructor is not possible on the JVM target
-% The JVM does not natively support virtual constructor. Unforunately, we are not aware of a way to
+% The JVM does not natively support virtual constructor. Unfortunately, we are not aware of a way to
 % emulate them in a way that makes it possible to support calling virtual constructors
 % for the current instance inside another constructor.
 parser_e_method_lower_visibility=03322_E_Overriding method "$1" cannot have a lower visibility ($2) than in parent class $3 ($4)
@@ -1670,7 +1683,7 @@ parser_e_location_regpair_only_data=03358_E_Only data registers are supported fo
 % AmigaOS/MorphOS syscall specific: for 64 bit register pairs, only data registers are supported
 parser_e_location_regpair_only_consecutive=03359_E_Only consecutive registers are supported for explicit location register pairs
 % MorphOS syscall specific: only consecutive (f.e.: d1-d2) registers are supported for 64 bit register pairs
-parser_e_constructurs_cannot_take_type_parameters=03360_E_Constructors cannot take type parameters
+parser_e_constructors_cannot_take_type_parameters=03360_E_Constructors cannot take type parameters
 % The use of type parameters in constructors is not allowed.
 parser_e_raise_with_noreturn_not_allowed=03361_E_Raise in subroutines declared as noreturn is not allowed
 % \var{noreturn} tells the compiler that the activation scope of the subroutine is never left. This includes exceptions
@@ -2418,7 +2431,7 @@ sym_e_formal_class_not_resolved=05080_E_No full definition of the formally decla
 % access one of its fields, send a message to it, or use it to inherit from), the compiler requires the full definition
 % of the class to be in scope.
 sym_e_interprocgoto_into_init_final_code_not_allowed=05081_E_Gotos into initialization or finalization blocks of units are not allowed
-% Gotos into initialization or finalization blockse of units are not allowed.
+% Gotos into initialization or finalization blocks of units are not allowed.
 sym_e_external_class_name_mismatch1=05082_E_Invalid external name "$1" for formal class "$2"
 sym_e_external_class_name_mismatch2=05083_E_Complete class definition with external name "$1" here
 % When a class is declared using a formal external definition, the actual external
@@ -2638,7 +2651,7 @@ cg_h_inherited_ignored=06048_H_Inherited call to abstract method ignored
 % of a parent class via \var{inherited;}. The call is then ignored.
 cg_e_goto_label_not_found=06049_E_Goto label "$1" not defined or optimized away
 % The label used in the goto definition is not defined or optimized away by the
-% unreachable code elemination.
+% unreachable code elimination.
 cg_f_unknown_type_in_unit=06050_F_Cannot find type "$1" in unit "$2". Check if you use the correct run time library.
 % The compiler expects that the runtime library contains certain type definitions. If you see this error
 % and you didn't change the runtime library code, it's very likely that the runtime library
@@ -2651,7 +2664,7 @@ cg_e_labels_cannot_defined_outside_declaration_scope=06052_E_Label must be defin
 % In ISO mode, labels must be defined in the same scope as they are declared.
 cg_e_goto_across_procedures_with_exceptions_not_allowed=06053_E_Leaving procedures containing explicit or implicit exceptions frames using goto is not allowed
 % Non-local gotos might not be used to leave procedures using exceptions either implicitly or explicitly. Procedures
-% which use automated types like ansistrings or class constructurs are affected by this too.
+% which use automated types like ansistrings or class constructors are affected by this too.
 cg_e_mod_only_defined_for_pos_quotient=06054_E_In ISO mode, the mod operator is defined only for positive quotient
 % In ISO pascal, only positive values are allowed for the quotient: \var{n mod m} is only valid if \var{m>0}.
 cg_d_autoinlining=06055_DL_Auto inlining: $1
@@ -2680,6 +2693,12 @@ cg_w_interrupt_does_not_save_registers=06062_W_The target CPU does not support p
 % Certain processors have no memory (e.~g. avr1 family), so they do not support storing/restoring the used registers
 % in an interrupt routine. The programmer has to ensure that while there is a chance for the interrupt routine being
 % called that no other code depending on registers being preserved is executed.
+cg_f_unknown_internal_procedure_number=06063_F_Unknown internal procedure number "$1"
+% The directive \var{internproc} is used with a number not known by the compiler. \var{internproc} should be used only by the
+% supplied RTL or by users really knowing what they are doing.
+cg_e_intrinsic_not_supported_by_instruction_set=06064_E_Intrinsic not supported by the currently selected instruction set
+% The intrinsic translates into an assembler instruction which is not supported by the instruction set
+% selected by \var{-Cp}
 %
 % \end{description}
 # EndOfTeX
@@ -2965,10 +2984,10 @@ asmr_e_wrong_gotpcrel_intel_syntax=07117_E_GOTPCREL references in Intel assemble
 % \verb*[global_symbol wrt ..gotpcrel]*
 asmr_e_no_gotpcrel_support=07118_E_The current target does not support GOTPCREL relocations
 % Not all targets support position-independent code using a global offset table.
-% Use a different way to access symbols in a position-indepent way in these cases.
+% Use a different way to access symbols in a position-independent way in these cases.
 asmr_w_global_access_without_got=07119_W_Exported/global symbols should be accessed via the GOT
 % Global symbols (symbols from the unit interface, or defined in a program
-% or library) should be accessed via the GOT when generating position-indepent code.
+% or library) should be accessed via the GOT when generating position-independent code.
 asmr_w_check_mem_operand_size=07120_W_Check size of memory operand "$1"
 % The size of memory operand is possible invalid. This is
 % probably an error in the assembler statement
@@ -3554,7 +3573,7 @@ unit_w_unsupported_esp_idf_version=10071_W_Unsupported esp-idf version
 #
 #  Options
 #
-# 11068 is the last used one
+# 11070 is the last used one
 #
 # BeginOfTeX
 %
@@ -3681,7 +3700,7 @@ option_debug_external_unsupported=11048_W_Disabling external debug information b
 % Not all debug formats can be stored in an external file on all platforms. In particular, on
 % Mac OS X only DWARF debug information can be stored externally.
 option_dwarf_smartlink_creation=11049_N_DWARF debug information cannot be used with smart linking with external assembler, disabling static library creation.
-% Smart linking is currently incompatble with DWARF debug information on most
+% Smart linking is currently incompatible with DWARF debug information on most
 % platforms, so smart linking is disabled in such cases.
 option_invalid_macosx_deployment_target=11050_E_Invalid value for MACOSX_DEPLOYMENT_TARGET environment variable: $1
 option_invalid_iphoneos_deployment_target=11051_E_Invalid value for IPHONEOS_DEPLOYMENT_TARGET environment variable: $1
@@ -3701,7 +3720,7 @@ option_malformed_para=11055_E_Malformed parameter: $1
 option_smart_link_requires_external_linker=11056_W_Smart linking requires external linker
 option_com_files_require_tiny_model=11057_E_Creating .COM files is not supported in the current memory model. Only the tiny memory model supports making .COM files.
 % Do not enable experimental -gc option if -Ur option is given.
-option_gc_incompatible_with_release_flag=11058_W_Experimental CheckPointer option not enabled because it is incomptatible with -Ur option.
+option_gc_incompatible_with_release_flag=11058_W_Experimental CheckPointer option not enabled because it is incompatible with -Ur option.
 % The compiler binary only supports a single target architecture. Invoke the fpc binary if you wish to select a compiler binary for a different target architecture.
 option_invalid_target_architecture=11059_E_Unsupported target architecture -P$1, invoke the "fpc" compiler driver instead.
 % The ppc<target> executables support only a single target architecture. They do not support the -P switch. The compiler driver "fpc"
@@ -3714,7 +3733,7 @@ option_valgrind_heaptrc_mismatch=11062_E_You can not use both options ($1) ($2) 
 option_unsupported_fpu=11063_F_The selected FPU type "$1" is not supported by the selected instruction set "$2"
 % Not all instruction sets support all FPU types. For example on ARM, Thumb(-1) supports no FPU/VFP instruction set
 option_too_many_exception_modes=11064_E_Only one WebAssembly exception support mode can be specified.
-% Only one WebAssembly exception support mode (NOEXCEPTIONS, JSEXCEPTIONS, BFEXCEPTIONS or NATIVEEXCEPTIONS) can be specified.
+% Only one WebAssembly exception support mode (NOEXCEPTIONS, BFEXCEPTIONS or NATIVEEXCEPTIONS) can be specified.
 option_subtarget_is_already_set=11065_W_Subtarget is already set to: $1
 % Displayed if more than one \var{-t} option is specified.
 option_subtarget_config_not_found=11066_E_Subtarget $1 specified but no corresponding config file $2 found.
@@ -3724,6 +3743,10 @@ option_x_ignored=11067_N_Ignoring compiler executable suffix $1.
 option_switch_bin_to_src_assembler_cross_endian=11068_N_Switching assembler to default source writing assembler in cross-endian configuration
 % This notifies you that the assembler has been changed because
 % the binary assembler writer is not yet ready for cross-endian configuration.
+option_e_win16_unsupported_memory_model=11069_W_Unsupported memory model $1 for Win16 OS
+% i8086-win16 system only supports large and huge memory models.
+option_n_win16_set_default_large_memory_model=11070_N_Setting memory model for Win16 system to "large"
+% i8086-win16 requires at least large memory model.
 %
 % \end{description}
 # EndOfTeX
@@ -3903,7 +3926,7 @@ package_u_ppl_filename=13029_U_PPL filename $1
 #
 option_logo=11023_[
 Free Pascal Compiler version $FPCFULLVERSION [$FPCDATE] for $FPCCPU
-Copyright (c) 1993-2025 by Florian Klaempfl and others
+Copyright (c) 1993-2026 by Florian Klaempfl and others
 ]
 
 #
@@ -4007,7 +4030,7 @@ F*0*_Only options valid for the default or selected platform are listed.
 # Assembler related options
 **1a_The compiler does not delete the generated assembler file, automatically switches to external assembler writer
 **2a5_Don't generate Big Obj COFF files for GNU Binutils older than 2.25 (Windows, NativeNT)
-**2al_List sourcecode lines in assembler file
+**2al_List source code lines in assembler file
 **2an_List node info in assembler file (-dEXTDEBUG compiler)
 **2ao_Add an extra option to external assembler call (ignored for internal)
 *L2ap_Use pipes instead of creating temporary assembler files
@@ -4143,8 +4166,8 @@ J*3CTlowercaseprocstart_  Lowercase the first character of procedure/function/me
 A*3CTthumbinterworking_ Generate Thumb interworking-safe code if possible
 W*3CTnoexceptions_        Disable the exception support. Raising an exception will abort the program.
 W*3CTbfexceptions_        Enable the branchful exception support for WebAssembly
-W*3CTjsexceptions_        Enable the JavaScript-based exception support for WebAssembly (experimental)
-W*3CTwasmexceptions_      Enable the native WebAssembly exceptions support
+W*3CTwasmexceptions_      Enable the native WebAssembly exceptions support (current proposal - exceptions with exnref)
+W*3CTlegacyexceptions_    Enable the native WebAssembly exceptions support (legacy proposal, compatible with earlier browser versions)
 W*3CTwasmthreads_         Enable WebAssembly threads support (experimental)
 W*3CTsaturatingfloattoint_ Use saturating (non-trapping) float-to-int conversion instructions
 J*2Cv_Var/out parameter copy-out checking
@@ -4399,6 +4422,7 @@ P*2Twii_Wii
 p*2Taix_AIX
 p*2Tdarwin_Darwin/Mac OS X
 p*2Tembedded_Embedded
+p*2Tfreebsd_FreeBSD
 p*2Tlinux_Linux
 # riscv32 targets
 R*2Tembedded_Embedded
@@ -4451,7 +4475,7 @@ W*2Twasip2_The WebAssembly System Interface Preview 2 (WASI 0.2) (experimental)
 **2*_i : Show general info
 **2*_j : Always add main source (useful when run in parallel make)
 #**2*_k : Not used yet
-**2*_l : Show linenumbers
+**2*_l : Show line numbers
 **2*_m<x>,<y> : Do not show messages numbered <x> and <y>
 **2*_n : Show notes
 #**2*_o : Not used yet
@@ -4563,7 +4587,8 @@ P*2WT_Specify MPW tool type application (Classic Mac OS)
 **2Xf_Substitute pthread library name for linking (BSD)
 **2Xg_Create debuginfo in a separate file and add a debuglink section to executable
 **2Xi_Use internal linker
-L*2XlS<x>_LLVM utilties suffix (e.g. -7 in case clang is called clang-7)
+L*2XlS<x>_LLVM utilities suffix (e.g. -7 in case clang is called clang-7)
+W*2XlS<x>_LLVM utilities suffix (e.g. -17 in case llvm-mc is called llvm-mc-17)
 **2XLA_Define library substitutions for linking
 **2XLD_Exclude default order of standard libraries
 **2XLO_Define order of library linking

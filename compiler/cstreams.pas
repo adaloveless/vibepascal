@@ -59,7 +59,7 @@ var
   CStreamError : longint;
 
 type
-{ Fake TComponent class, it isn't used any futher }
+{ Fake TComponent class, it isn't used any further }
   TCComponent = class(TObject)
   end;
 
@@ -217,7 +217,7 @@ implementation
 
     begin
     // We do nothing. Pipe streams don't support this
-    // As well as possible read-ony streams !!
+    // As well as possible read-only streams !!
     end;
 
   procedure TCStream.ReadBuffer(var Buffer; Count: Longint);
@@ -417,6 +417,7 @@ end;
 function TCFileStream.Read(var Buffer; Count: Longint): Longint;
 begin
   CStreamError:=0;
+  Result:=0;
   BlockRead(FHandle,Buffer,Count,Result);
   If Result=-1 then Result:=0;
 end;
@@ -425,6 +426,7 @@ end;
 function TCFileStream.Write(const Buffer; Count: Longint): Longint;
 begin
   CStreamError:=0;
+  Result:=0;
   BlockWrite (FHandle,(@Buffer)^,Count,Result);
   If Result=-1 then Result:=0;
 end;
@@ -623,6 +625,7 @@ begin
     SaveToStream(S);
   finally
     S.free;
+    S := nil;
   end;
 end;
 
@@ -711,6 +714,7 @@ begin
     LoadFromStream(S);
   finally
     S.free;
+    S := nil;
   end;
 end;
 

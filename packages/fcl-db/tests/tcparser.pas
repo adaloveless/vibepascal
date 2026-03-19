@@ -472,6 +472,7 @@ type
     procedure TestOrderByCollate;
     procedure TestOrderByCollateDesc;
     procedure TestOrderByCollateDescTwoFields;
+    procedure TestOrderByUpper;
     procedure TestGroupByOne;
     procedure TestGroupByTwo;
     procedure TestHavingOne;
@@ -495,10 +496,17 @@ type
     procedure TestWhereAll;
     procedure TestWhereAny;
     procedure TestWhereSome;
+    procedure TestWhereInRange;
+    procedure TestWhereDotFloat;
     procedure TestParam;
+    procedure TestParam_Underscore;
     procedure TestParamExpr;
     procedure TestNoTable;
     procedure TestSourcePosition;
+    procedure TestForUpdate;
+    procedure TestForUpdateNowait;
+    procedure TestForUpdateOf;
+    procedure TestWithLock;
   end;
 
   { TTestRollBackParser }
@@ -4046,7 +4054,7 @@ Var
 begin
   TestSelect('SELECT A.B FROM A');
   AssertEquals('One field',1,Select.Fields.Count);
-  // Field supports linking/refering to a table
+  // Field supports linking/referring to a table
   AssertField(Select.Fields[0],'B');
   Expr := ((Select.Fields[0] as TSQLSelectField).Expression as TSQLIdentifierExpression);
   AssertEquals('Field has explicit table',2,Expr.IdentifierPath.Count);
@@ -4202,6 +4210,36 @@ begin
   AssertEquals('ORDER BY source position = 1', 1, Select.Orderby.SourcePos);
   AssertEquals('Table source line = 2', 2, Select.Tables[0].SourceLine);
   AssertEquals('Table source position = 6', 6, Select.Tables[0].SourcePos);
+end;
+
+procedure TTestSelectParser.TestForUpdate;
+begin
+  TestSelect('SELECT B FROM A FOR UPDATE');
+  AssertEquals('FOR UPDATE',Select.ForUpdate<>nil,true);
+  AssertEquals('FOR UPDATE list count',Select.ForUpdate.Count,0);
+end;
+
+procedure TTestSelectParser.TestForUpdateNowait;
+begin
+  TestSelect('SELECT B FROM A FOR UPDATE NOWAIT');
+  AssertEquals('FOR UPDATE',Select.ForUpdate<>nil,true);
+  AssertEquals('FOR UPDATE list count',Select.ForUpdate.Count,0);
+  AssertEquals('FOR UPDATE',Select.ForUpdateNoWait,true);
+end;
+
+procedure TTestSelectParser.TestForUpdateOf;
+begin
+  TestSelect('SELECT * FROM A FOR UPDATE OF B,C');
+  AssertEquals('FOR UPDATE',Select.ForUpdate<>nil,true);
+  AssertEquals('FOR UPDATE list count',Select.ForUpdate.Count,2);
+  AssertIdentifierName('FOR UPDATE[0]','B',Select.ForUpdate[0]);
+  AssertIdentifierName('FOR UPDATE[1]','C',Select.ForUpdate[1]);
+end;
+
+procedure TTestSelectParser.TestWithLock;
+begin
+  TestSelect('SELECT * FROM DOCUMENT WITH LOCK');
+  AssertEquals('WITH LOCK',Select.WithLock,true);
 end;
 
 procedure TTestSelectParser.TestSelectTwoFieldsTwoInnerTablesJoin;
@@ -4715,7 +4753,7 @@ begin
   AssertField(Select.Fields[0],'B');
   AssertTable(Select.Tables[0],'A');
   AssertEquals('One order by field',1,Select.Orderby.Count);
-  // Field does not support linking/refering to a table, so the field name is
+  // Field does not support linking/referring to a table, so the field name is
   // assigned as C.D (instead of D with a <link to table C>)
   AssertOrderBy(Select.OrderBy[0],'C.D',0,obAscending);
 end;
@@ -4811,6 +4849,20 @@ begin
   AssertIdentifierName('Correct collation','E',O.Collation);
   O:=AssertOrderBy(Select.OrderBy[1],'F',0,obAscending);
   AssertIdentifierName('Correct collation','E',O.Collation);
+end;
+
+procedure TTestSelectParser.TestOrderByUpper;
+var
+  O: TSQLOrderByElement;
+begin
+  TestSelect('SELECT B FROM A ORDER BY UPPER(C)');
+  AssertEquals('One field',1,Select.Fields.Count);
+  AssertEquals('One table',1,Select.Tables.Count);
+  AssertField(Select.Fields[0],'B');
+  AssertTable(Select.Tables[0],'A');
+  AssertEquals('One order by field',1,Select.Orderby.Count);
+  O:=AssertOrderBy(Select.OrderBy[0],'C',0,obAscending);
+  AssertEquals('Order by upper',O.Upper,true);
 end;
 
 procedure TTestSelectParser.TestGroupByOne;
@@ -5275,6 +5327,15 @@ begin
   AssertTable(S.Tables[0],'D','');
 end;
 
+procedure TTestSelectParser.TestWhereInRange;
+begin
+  TestSelect('SELECT A FROM B WHERE A IN (4..6)');
+end;
+
+procedure TTestSelectParser.TestWhereDotFloat;
+begin
+  TestSelect('SELECT A FROM B WHERE (A + .3 > -.5)');
+end;
 
 procedure TTestSelectParser.TestParam;
 
@@ -5292,6 +5353,22 @@ begin
   AssertNotNull('Have field expresssion,',F.Expression);
   P:=TSQLParameterExpression(CheckClass(F.Expression,TSQLParameterExpression));
   AssertIdentifierName('Correct parameter name','A',P.Identifier);
+end;
+
+procedure TTestSelectParser.TestParam_Underscore;
+var
+  F: TSQLSelectField;
+  P: TSQLParameterExpression;
+begin
+  TestSelect('SELECT :_A FROM B');
+  AssertEquals('1 table in select',1,Select.Tables.Count);
+  AssertTable(Select.Tables[0],'B','');
+  AssertEquals('1 fields in select',1,Select.Fields.Count);
+  AssertNotNull('Have field',Select.Fields[0]);
+  F:=TSQLSelectField(CheckClass(Select.Fields[0],TSQLSelectField));
+  AssertNotNull('Have field expresssion,',F.Expression);
+  P:=TSQLParameterExpression(CheckClass(F.Expression,TSQLParameterExpression));
+  AssertIdentifierName('Correct parameter name','_A',P.Identifier);
 end;
 
 procedure TTestSelectParser.TestParamExpr;

@@ -29,7 +29,7 @@ interface
 
     type
        { TCmdStr is used to pass command line parameters to an external program to be
-         executed from the FPC application. In some circomstances, this can be more
+         executed from the FPC application. In some circumstances, this can be more
          than 255 characters. That's why using Ansi Strings}
        TCmdStr = AnsiString;
        TPathStr = AnsiString;
@@ -290,7 +290,7 @@ interface
            constants in order to reduce the generated code size (Java routines
            are limited to 64kb of bytecode) }
          ts_compact_int_array_init,
-         { for the JVM target: intialize enum fields in constructors with the
+         { for the JVM target: initialize enum fields in constructors with the
            enum class instance corresponding to ordinal value 0 (not done by
            default because this initialization can only be performed after the
            inherited constructors have run, and if they call a virtual method
@@ -327,11 +327,12 @@ interface
          ts_wasm_no_exceptions,
          { Branchful exceptions support. A global threadvar is checked after each function call. }
          ts_wasm_bf_exceptions,
-         { JavaScript-based exception support }
-         ts_wasm_js_exceptions,
-         { native WebAssembly exceptions support:
+         { WebAssembly exnref exceptions support:
            https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/Exceptions.md }
-         ts_wasm_native_exceptions,
+         ts_wasm_native_exnref_exceptions,
+         { WebAssembly legacy exceptions support:
+           https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/legacy/Exceptions.md }
+         ts_wasm_native_legacy_exceptions,
          { support multithreading via the WebAssembly threading proposal:
            https://github.com/WebAssembly/threads/blob/master/proposals/threads/Overview.md }
          ts_wasm_threads,
@@ -350,7 +351,7 @@ interface
          f_ansistrings,f_widestrings,f_textio,f_consoleio,f_fileio,
          f_random,f_variants,f_objects,f_dynarrays,f_threading,f_commandargs,
          f_processes,f_stackcheck,f_dynlibs,f_softfpu,f_objectivec1,f_resources,
-         f_unicodestring
+         f_unicodestring,f_monitor
        );
        tfeatures = set of tfeature;
 
@@ -426,8 +427,8 @@ interface
          mf_symansistr,               { symbols are ansistrings (for ppudump) }
          mf_wasm_no_exceptions,       { unit was compiled in WebAssembly 'no exceptions' mode }
          mf_wasm_bf_exceptions,       { unit was compiled in WebAssembly 'branchful' exceptions mode }
-         mf_wasm_js_exceptions,       { unit was compiled in WebAssembly JavaScript-based exceptions mode }
-         mf_wasm_native_exceptions,   { unit was compiled in WebAssembly native exceptions mode }
+         mf_wasm_exnref_exceptions,   { unit was compiled in WebAssembly exceptions with exnref mode }
+         mf_wasm_native_exceptions,   { unit was compiled in WebAssembly native legacy exceptions mode }
          mf_wasm_threads,             { unit was compiled with WebAssembly multithreading support turned on }
          mf_system_unit               { unit was compiled as a System unit }
        );
@@ -436,7 +437,7 @@ interface
     type
        ttargetswitchinfo = record
           name: string[22];
-          { target switch can have an arbitratry value, not only on/off }
+          { target switch can have an arbitrary value, not only on/off }
           hasvalue: boolean;
           { target switch can be used only globally }
           isglobal: boolean;
@@ -475,8 +476,8 @@ interface
          (name: 'FARPROCSPUSHODDBP';   hasvalue: false; isglobal: false; define: 'FPC_FAR_PROCS_PUSH_ODD_BP'),
          (name: 'NOEXCEPTIONS';        hasvalue: false; isglobal: true ; define: 'FPC_WASM_NO_EXCEPTIONS'),
          (name: 'BFEXCEPTIONS';        hasvalue: false; isglobal: true ; define: 'FPC_WASM_BRANCHFUL_EXCEPTIONS'),
-         (name: 'JSEXCEPTIONS';        hasvalue: false; isglobal: true ; define: 'FPC_WASM_JS_EXCEPTIONS'),
-         (name: 'WASMEXCEPTIONS';      hasvalue: false; isglobal: true ; define: 'FPC_WASM_NATIVE_EXCEPTIONS'),
+         (name: 'WASMEXCEPTIONS';      hasvalue: false; isglobal: true ; define: 'FPC_WASM_EXNREF_EXCEPTIONS'),
+         (name: 'LEGACYEXCEPTIONS';    hasvalue: false; isglobal: true ; define: 'FPC_WASM_LEGACY_EXCEPTIONS'),
          (name: 'WASMTHREADS';         hasvalue: false; isglobal: true ; define: 'FPC_WASM_THREADS'),
          (name: 'SATURATINGFLOATTOINT';hasvalue: false; isglobal: false; define: 'FPC_WASM_SATURATING_FLOAT_TO_INT')
        );
@@ -499,7 +500,7 @@ interface
          'ANSISTRINGS','WIDESTRINGS','TEXTIO','CONSOLEIO','FILEIO',
          'RANDOM','VARIANTS','OBJECTS','DYNARRAYS','THREADING','COMMANDARGS',
          'PROCESSES','STACKCHECK','DYNLIBS','SOFTFPU','OBJECTIVEC1','RESOURCES',
-         'UNICODESTRINGS'
+         'UNICODESTRINGS','MONITOR'
        );
 
     type
@@ -518,7 +519,7 @@ interface
          m_tp_procvar,          { tp style procvars (no @ needed) }
          m_mac_procvar,         { macpas style procvars }
          m_repeat_forward,      { repeating forward declarations is needed }
-         m_pointer_2_procedure, { allows the assignement of pointers to
+         m_pointer_2_procedure, { allows the assignment of pointers to
                                   procedure variables                     }
          m_autoderef,           { does auto dereferencing of struct. vars }
          m_initfinal,           { initialization/finalization for units }
@@ -556,6 +557,7 @@ interface
          m_implicit_function_specialization,    { attempt to specialize generic function by inferring types from parameters }
          m_function_references, { enable Delphi-style function references }
          m_anonymous_functions, { enable Delphi-style anonymous functions }
+         m_multiline_strings,   { multi-line strings denoted with '`' are enabled and valid }
          m_statement_expressions, { enables expressions using statements like if, case, try }
          m_array_equality,      { enables equality operator in addition to ArrayOperators modeswitch }
          m_no_rtti,             { hides RTTI ASCII text }
@@ -674,6 +676,17 @@ interface
        );
        tproccalloptions = set of tproccalloption;
 
+       tlineendingtype = ({Carriage return, aka #13}
+                          le_cr,
+                          {Carriage return + line feed, aka #13#10}
+                          le_crlf,
+                          {Line feed, aka #10}
+                          le_lf,
+                          {Use the platform default}
+                          le_platform,
+                          {Use whatever is in the file}
+                          le_source);
+
      const
        proccalloptionStr : array[tproccalloption] of string[16]=('',
            'CDecl',
@@ -756,6 +769,7 @@ interface
          'IMPLICITFUNCTIONSPECIALIZATION',
          'FUNCTIONREFERENCES',
          'ANONYMOUSFUNCTIONS',
+         'MULTILINESTRINGS',
          'STATEMENTEXPRESSIONS',
          'ARRAYEQUALITY',
          'NORTTI',
@@ -828,7 +842,9 @@ interface
          { x86 only: subroutine uses ymm registers, requires vzeroupper call }
          pi_uses_ymm,
          { set if no frame pointer is needed, the rules when this applies is target specific }
-         pi_no_framepointer_needed
+         pi_no_framepointer_needed,
+         { procedure has been normalized so no expressions contain block nodes }
+         pi_normalized
        );
        tprocinfoflags=set of tprocinfoflag;
 
@@ -932,6 +948,9 @@ interface
     type
       pmessagestaterecord = ^tmessagestaterecord;
       tmessagestaterecord = record
+        {$IFDEF DEBUG_MESSAGESTATE}
+        owner: TObject; { tmodule }
+        {$ENDIF}
         next : pmessagestaterecord;
         value : longint;
         state : tmsgstate;

@@ -31,9 +31,9 @@ interface
 Type TOrgFormatSettings = record
                             ShortDateFormat,
                             LongDateFormat ,
-                            ShortTimeFormat, 
+                            ShortTimeFormat,
                             LongTimeFormat ,
-                            CurrencyString1, 
+                            CurrencyString1,
                             CurrencyString2: string;
                            end;
 
@@ -127,7 +127,7 @@ procedure GetFormatSettings(out fmts: TFormatSettings);
   begin
     Result := '';
     l := Length(s);
-    //possible flag, with specifier or modifier - glibc exension
+    //possible flag, with specifier or modifier - glibc extension
     while (i<=l) and (s[i] in ['0'..'9', '_', '-', '^', '#', 'E', 'O']) do begin
       Result := Result + s[i];
       inc(i);
@@ -158,7 +158,10 @@ procedure GetFormatSettings(out fmts: TFormatSettings);
     inc(i);
     SkipModifiers(s, i);
     inc(i);
-    if i<=Length(s) then
+    // Only accept common ASCII separators, such as ':', '.', '-', etc.
+    // Skip CJK-style language-specific date/time units like "时", "分", "초", "년".
+    // e.g. skip "14时05分30秒" or "2024년6월19일"
+    if (i<=Length(s)) and (s[i] in [':', '.', '-', '/', ' ', '_']) then
       FindSeparator := s[i];
   end;
 
@@ -199,7 +202,7 @@ procedure GetFormatSettings(out fmts: TFormatSettings);
           'G': TransformFormatStr := TransformFormatStr + 'yyyy';
           'h': TransformFormatStr := TransformFormatStr + 'mmm';
           'H': TransformFormatStr := TransformFormatStr + 'hh';
-          'I': begin 
+          'I': begin
                  TransformFormatStr := TransformFormatStr + 'hh';
                  clock12:=true;
                end;
@@ -215,7 +218,7 @@ procedure GetFormatSettings(out fmts: TFormatSettings);
                  TransformFormatStr := TransformFormatStr + 'mm';
           'M': TransformFormatStr := TransformFormatStr + 'nn';
           'n': TransformFormatStr := TransformFormatStr + sLineBreak;
-          'p','P': 
+          'p','P':
                begin
                  TransformFormatStr := TransformFormatStr + 'ampm';
                  clock12:=false;
@@ -223,7 +226,7 @@ procedure GetFormatSettings(out fmts: TFormatSettings);
                end;
           'r': begin
                  TransformFormatStr := TransformFormatStr + 'hh:nn:ss';
-                 clock12:=true;  
+                 clock12:=true;
                end;
           'R': TransformFormatStr := TransformFormatStr + 'hh:nn';
           //'s':
@@ -266,7 +269,7 @@ const
     ( (7, 10), (3, 11) ), //The sign string follows the quantity and currency_symbol
     ( (6, 13), (1, 9) ), //The sign string immediately precedes the currency_symbol
     ( (7, 10), (2, 12) )  //The sign string immediately follows the currency_symbol
-  ); 
+  );
 var
   i: integer;
   prec, sep, signp: byte;
@@ -287,11 +290,11 @@ begin
     end;
   //Date stuff
   fmts.ShortDateFormat := GetLocaleStr(D_FMT);
- 
+
 {$ifdef localedebug}
   OrgFormatSettings.ShortDateFormat:=fmts.shortdateformat;
 {$endif}
- 
+
   fmts.DateSeparator := FindSeparator(fmts.ShortDateFormat, fmts.DateSeparator);
   fmts.ShortDateFormat := TransformFormatStr(fmts.ShortDateFormat);
   fmts.LongDateFormat := GetLocaleStr(D_FMT);

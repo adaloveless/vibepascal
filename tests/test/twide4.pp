@@ -3,7 +3,7 @@
 {$mode objfpc}
 {$endif fpc}
 
-{$ifdef go32v2}
+{$if defined(go32v2) or defined(wasi)}
   {$define USE_INTERNAL_UNICODE}
 {$endif}
 
@@ -109,7 +109,7 @@ begin
   a[2].free;
   a[3].free;
   a[4].free;
-  
+
   if error then
-    halt(1);  
+    halt(1);
 end.

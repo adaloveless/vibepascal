@@ -59,6 +59,7 @@ Type
     procedure TestVarExternalLibNoName;
     Procedure TestVarCVar;
     Procedure TestVarCVarExternal;
+    Procedure TestVarCVarWeakExternal;
     Procedure TestVarCVarExport;
     Procedure TestVarPublic;
     Procedure TestVarPublicName;
@@ -146,6 +147,7 @@ begin
   IsThreadVar:=True;
   ParseVar('b','');
   AssertVariableType('b');
+  AssertTrue('Thread variable',(vmThread in Thevar.VarModifiers));
 end;
 
 procedure TTestVarParser.TestSimpleVarAbsoluteName;
@@ -408,6 +410,12 @@ end;
 procedure TTestVarParser.TestVarCVarExternal;
 begin
   ParseVar('integer; cvar;external','');
+  AssertEquals('Variable modifiers',[vmcvar,vmexternal],TheVar.VarModifiers);
+end;
+
+procedure TTestVarParser.TestVarCVarWeakExternal;
+begin
+  ParseVar('integer; cvar;weakexternal','');
   AssertEquals('Variable modifiers',[vmcvar,vmexternal],TheVar.VarModifiers);
 end;
 

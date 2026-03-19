@@ -24,9 +24,6 @@ Unit System;
 
 Interface
 
-{$IFNDEF FPC_DISABLE_MONITOR}
-{$DEFINE SYSTEM_HAS_FEATURE_MONITOR}
-{$ENDIF}
 {$define FPC_USE_SIGPROCMASK}
 {$define FPC_USE_SIGALTSTACK}
 
@@ -170,7 +167,7 @@ end;
 
 function paramstr(l: longint) : shortstring;
  begin
-   { stricly conforming POSIX applications  }
+   { strictly conforming POSIX applications }
    { have the executing filename as argv[0] }
 //   if l=0 then
 //     begin
@@ -208,15 +205,18 @@ begin
   e[j]:=1 shl i;
   { this routine is called from a signal handler, so must not change errno }
   olderrno:=geterrno;
-  fpsigprocmask(SIG_UNBLOCK,@e,@oe);
-  reenable_signal:=geterrno=0;
+  seterrno(0);
+  if fpsigprocmask(SIG_UNBLOCK,@e,@oe)<>0 then
+    reenable_signal:=geterrno=0
+  else
+    reenable_signal:=true;
   seterrno(olderrno);
 end;
 
 {$ifdef DEBUG}
   { Declare InstallDefaultSignalHandler as forward to be able
     to test aclling fpsigaction again within SignalToRunError
-    function implemented within sighnd.inc inlcude file }
+    function implemented within sighnd.inc include file }
 procedure InstallDefaultSignalHandler(signum: longint; out oldact: SigActionRec); forward;
 {$endif}
 

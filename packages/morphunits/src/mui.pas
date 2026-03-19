@@ -94,7 +94,7 @@ interface
      !        +--Coloradjust     (several gadgets to adjust a color)
      !        +--Palette         (complete palette gadget)
      !        +--Popstring       (base class for popup objects)
-     !           +--Popobject    (popup aynthing in a separate window)
+     !           +--Popobject    (popup anything in a separate window)
      !           !  +--Poplist   (popup a simple listview)
      !           !  \--Popscreen (popup a list of public screens)
      !           \--Popasl       (popup an asl requester)
@@ -3221,7 +3221,7 @@ const
        MUIMRI_TRUECOLOR = 1 shl 1;
     {
        If mri_Flags & MUIMRI_THINFRAMES, MUI uses thin frames
-       (1:1) apsect ratio instead of standard 2:1 frames.
+       (1:1) aspect ratio instead of standard 2:1 frames.
      }
        MUIMRI_THINFRAMES = 1 shl 2;
     {
@@ -3411,6 +3411,16 @@ syscall legacy MUIMasterBase 192;
 procedure MUI_EndRefresh(mri : pMUI_RenderInfo location 'a0'; flags : LongWord location 'd0');
 syscall legacy MUIMasterBase 198;
 
+function MUI_RequestObjectA(app : POINTER location 'd0';
+                      win : POINTER location 'd1';
+                      flags : LongWord location 'd2';
+                      title : PAnsiChar location 'a0';
+                      gadgets : PAnsiChar location 'a1';
+                      obj : pObject_ location 'a2';
+                      format : PAnsiChar location 'a3';
+                      params : POINTER location 'a4') : longint;
+syscall legacy MUIMasterBase 756;
+
 
 (*
 ** some procedures to get some information about our object
@@ -3427,7 +3437,7 @@ function MUIPen(pen : longint): longint;
 ** object-data like rastport, window, etc.
 **
 ** NOTE: These macros may only be used in custom classes and are
-** only valid if your class is inbetween the specified methods!
+** only valid if your class is in between the specified methods!
 *)
 
 function OBJ_App(obj : Pointer) : pObject_;       inline;     (* valid between MUIM_Setup/Cleanup *)
@@ -3493,6 +3503,7 @@ function MUI_AslRequestTags(req : POINTER; tags : array Of LongWord) : BOOLEAN;
 function MUI_MakeObject(_type : LONGINT; params : array of LongWord) : pLongWord; inline;
 function MUI_NewObject(a0arg : PAnsiChar; tags : array of LongWord) : pLongWord; inline;
 function MUI_Request(app : POINTER; win : POINTER; flags : longword; title : PAnsiChar; gadgets : PAnsiChar; format : PAnsiChar; params : array of LongWord) : LONGINT;
+function MUI_RequestObject(app : POINTER; win : POINTER; flags : LongWord; title : PAnsiChar; gadgets : PAnsiChar; obj : pObject_; format : PAnsiChar; params : array of LongWord) : longint;
 
 
 function InitMUIMasterLibrary : boolean;
@@ -3799,6 +3810,12 @@ function MUI_Request(app : POINTER; win : POINTER; flags : longword; title : PAn
 begin
     MUI_Request := MUI_RequestA(app , win , flags , title , gadgets , format , @params);
 end;
+
+function MUI_RequestObject(app : POINTER; win : POINTER; flags : LongWord; title : PAnsiChar; gadgets : PAnsiChar; obj : pObject_; format : PAnsiChar; params : array of LongWord) : longint;
+begin
+    MUI_RequestObject := MUI_RequestObjectA(app, win, flags, title, gadgets, obj, format, @params);
+end;
+
 
 function MAKE_ID(a,b,c,d : AnsiChar): longword;
 begin

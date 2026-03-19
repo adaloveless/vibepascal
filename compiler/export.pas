@@ -71,7 +71,7 @@ type
       procedure generatelib;virtual;
       procedure setinitname(list: TAsmList; const s: string); virtual;
       procedure setfininame(list: TAsmList; const s: string); virtual;
-      
+
       property initname: string read finitname;
       property fininame: string read ffininame;
       property ignoreduplicates : boolean read fignoreduplicates write fignoreduplicates;
@@ -155,7 +155,7 @@ procedure exportname(const s : string; options: texportoptions);
           item:=TCmdStrListItem(item.next);
         end;
     end;
-    
+
 
   procedure exportallprocsymnames(ps: tprocsym; options: texportoptions);
     var
@@ -282,6 +282,7 @@ procedure DoneExport;
 begin
   if assigned(Exportlib) then
     Exportlib.free;
+    Exportlib := nil;
 end;
 
 

@@ -1004,7 +1004,7 @@ type
     procedure   AfterPrintWithChilds; virtual;
     property    Font: TFPReportFont read FFont write SetFont;
     property    UseParentFont: boolean read FUseParentFont write SetUseParentFont;
-    { when set to True then band and child bands are keept on the same page (no page break between them) }
+    { when set to True then band and child bands are kept on the same page (no page break between them) }
     property    KeepTogetherWithChildren: Boolean read FKeepTogetherWithChildren write SetKeepTogetherWithChildren default True;
     { band position:
       fpNormal:        after detail or inner group footer
@@ -1639,7 +1639,7 @@ type
     procedure BuiltInGetInIntermediateGroupFooter(var Result: TFPExpressionResult; const Args: TExprParameterArray);
     procedure BuiltinGetIsOverflowed(var Result: TFPExpressionResult; const Args: TExprParameterArray);
     procedure BuiltinGetIsGroupDetailsPrinted(var Result: TFPExpressionResult; const Args: TExprParameterArray);
-    { checks if children are visble, removes children if needed, and recalc Band.Layout bounds }
+    { checks if children are visible, removes children if needed, and recalc Band.Layout bounds }
     procedure EmptyRTObjects;
     procedure ClearDataBandLastTextValues(ABand: TFPReportCustomBandWithData);
     // Init, update and finish aggregates. Called at start, new record, EOF respectively
@@ -2003,6 +2003,7 @@ type
     procedure   DoWriteLocalProperties(AWriter: TFPReportStreamer; AOriginal: TFPReportElement = nil); override;
     procedure   ExpandExpressions;
     procedure   UpdateAggregates;
+    procedure   ResetAggregates;
     function    PrepareObject(aRTParent: TFPReportElement): TFPReportElement; override;
     procedure   SetParent(const AValue: TFPReportElement); override;
     property    Text: TFPReportString read FText write SetText;
@@ -2101,7 +2102,7 @@ type
     property    ShapeType;
     property    Orientation;
     property    CornerRadius;
-    property    Color; 
+    property    Color;
     property    StretchMode;
   end;
 
@@ -2117,7 +2118,7 @@ type
     FImageID: integer;
     procedure   SetImage(AValue: TFPCustomImage);
     procedure   SetStretched(AValue: boolean);
-    procedure   SetFieldName(AValue: TFPReportString); 
+    procedure   SetFieldName(AValue: TFPReportString);
     procedure   SetDBImageType(AValue: TFPReportString);
     procedure   LoadDBData(AData: TFPReportData);
     procedure   SetImageID(AValue: integer);
@@ -4860,7 +4861,7 @@ begin
     else if (lBlock.Pos.Top + lBlock.Height + lBlock.Descender) > Layout.Height then // partially out of bounds
     begin
       lRemainingHeight :=  Layout.Height - lBlock.Pos.Top;
-      { calculate % of text [height] that falls inside the bounderies of the Memo. }
+      { calculate % of text [height] that falls inside the boundaries of the Memo. }
       d := (lRemainingHeight / (lBlock.Height + lBlock.Descender)) * 100;
 
       {$IFDEF gDEBUG}
@@ -5074,12 +5075,26 @@ begin
     end;  { for ... }
 end;
 
+procedure TFPReportCustomMemo.ResetAggregates;
+Var
+  i : integer;
+  n : TFPExprNode;
+begin
+  // aggregate handling
+  for i := 0 to Length(ExpressionNodes)-1 do
+    begin
+    n := ExpressionNodes[i].ExprNode;
+    if Assigned(n)
+       and n.HasAggregate
+       and Not (moNoResetAggregateOnPrint in Options) then
+        n.InitAggregate;
+    end;
+end;
+
 function TFPReportCustomMemo.PrepareObject(aRTParent: TFPReportElement): TFPReportElement;
 
 Var
   m : TFPReportCustomMemo;
-  I : integer;
-  N : TFPExprNode;
 
   Procedure CheckVisibility;
 
@@ -5112,15 +5127,6 @@ begin
     end;
   m.ExpandExpressions;
   CheckVisibility;
-  // aggregate handling
-  for I := 0 to Length(m.Original.ExpressionNodes)-1 do
-    begin
-    n := m.Original.ExpressionNodes[I].ExprNode;
-    if Assigned(n)
-       and n.HasAggregate
-       and Not (moNoResetAggregateOnPrint in m.Options) then
-        n.InitAggregate;
-    end;
 end;
 
 procedure TFPReportCustomMemo.SetParent(const AValue: TFPReportElement);
@@ -5464,7 +5470,7 @@ begin
   idx := TFPReportCustomBand(Parent).Page.Report.Images.GetIndexFromID(ImageID);
   AWriter.WriteInteger('ImageIndex', idx);
   AWriter.WriteBoolean('Stretched', Stretched);
-  AWriter.WriteString('FieldName', FieldName);  
+  AWriter.WriteString('FieldName', FieldName);
   AWriter.WriteString('DBImageType', DBImageType);
 end;
 
@@ -5556,7 +5562,7 @@ begin
   { See code comments in DoWriteLocalProperties() }
   ImageID := AReader.ReadInteger('ImageIndex', -1);
   Stretched := AReader.ReadBoolean('Stretched', Stretched);
-  FieldName := AReader.ReadString('FieldName', FieldName);  
+  FieldName := AReader.ReadString('FieldName', FieldName);
   DBImageType := AReader.ReadString('DBImageType', DBImageType);
 end;
 
@@ -6247,7 +6253,7 @@ begin
   else
     FGroupConditionValue := EvaluateExpressionAsText(GroupCondition);
   if FLastGroupConditionValue <> FGroupConditionValue then
-    { repated group header needs previous variables }
+    { repeated group header needs previous variables }
     FNeedsPrevVariables := True;
   if Assigned(FParentGroupHeader) then
     FParentGroupHeader.InternalEvaluateGroupCondition;
@@ -6923,7 +6929,7 @@ var
 
 begin
   Result := Visible;
-  if Result and (FVisibleExpr <> '') then 
+  if Result and (FVisibleExpr <> '') then
   begin
     if EvaluateExpression(FVisibleExpr,res) then
       if (res.ResultType=rtBoolean) then // We may need to change this.
@@ -8318,7 +8324,7 @@ begin
     if P=Nil then
       p:=FindRecursive(CN);
     if not Assigned(p) then
-      Continue; // failded to find the component
+      Continue; // failed to find the component
     c := FindRecursive(FReferenceList.ValueFromIndex[i]);
     P.FixupReference(PN,VN,C);
     end;
@@ -9555,8 +9561,24 @@ begin
 end;
 
 procedure TFPReportCustomBand.AfterPrintWithChilds;
+var
+  i: integer;
+  c: TFPReportElement;
+  lBand: TFPReportCustomBand;
 begin
-  // Do nothing
+  // reset aggregates after printing
+
+  lBand := Self;
+  while Assigned(lBand) do
+  begin
+    for i := 0 to lBand.ChildCount - 1 do
+    begin
+      c := lBand.Child[i];
+      if c is TFPReportMemo then
+        TFPReportMemo(c).ResetAggregates; // checks for moNoResetAggregateOnPrint
+    end;
+    lBand := lBand.ChildBand;
+  end;
 end;
 
 constructor TFPReportCustomBand.Create(AOwner: TComponent);
@@ -9641,8 +9663,30 @@ begin
     begin
       // do nothing special
     end
-    else if (FVisibleOnPage in [vpNotOnFirst, vpLastOnly, vpNotOnFirstAndLast]) then
-      Exit; // user asked to skip this band
+    else if (FVisibleOnPage in [vpNotOnFirst, vpNotOnFirstAndLast]) then
+      Exit // user asked to skip this band
+    else if Report.TwoPass and Report.IsFirstPass then
+    begin
+      if FVisibleOnPage in [vpLastOnly] then
+      begin // last page not yet known. Include on page 1 to reserve space one time in the report
+        // do nothing special
+      end
+      else if FVisibleOnPage in [vpNotOnLast] then
+        Exit // last page not yet known. Exclude on page 1 to reserve space n-1 times in the report
+    end
+    else if (not Report.IsFirstPass) then
+    begin
+      if FVisibleOnPage in [vpLastOnly] then
+      begin // second pass, exclude if page 1 is not the last page
+        if Report.FPerDesignerPageCount[Report.FRTCurDsgnPageIdx] > 1 then
+          Exit; // user asked to skip this band
+      end
+      else if FVisibleOnPage in [vpNotOnLast] then
+      begin // second pass, exclude if page 1 is the last page
+        if Report.FPerDesignerPageCount[Report.FRTCurDsgnPageIdx] = 1 then
+          Exit; // user asked to skip this band
+      end;
+    end
   end
   else if (Report.FPageNumberPerDesignerPage > 1) then
   begin  // multi-page rules
@@ -9651,6 +9695,25 @@ begin
     else if FVisibleOnPage in [vpNotOnFirst] then
     begin
       // do nothing special
+    end
+    else if Report.TwoPass and Report.IsFirstPass then
+    begin
+      if FVisibleOnPage in [vpLastOnly] then
+        Exit // first pass: include on page 1 only, to reserve space only 1 time in the report
+      else if FVisibleOnPage in [vpFirstAndLastOnly] then
+      begin // first pass: include on pages 1-2, to reserve space 2 times in the report
+        if Report.FPageNumberPerDesignerPage > 2 then
+          Exit;  // skip this band, space has been reserved 2 times already
+      end
+      else if FVisibleOnPage in [vpNotOnLast] then
+      begin // first pass: exclude on page 1, include on other pages, to reserve space n-1 times
+        // do nothing special
+      end
+      else if FVisibleOnPage in [vpNotOnFirstAndLast] then
+      begin // first pass: exclude on pages 1-2, include on other pages, to reserve space n-2 times
+        if Report.FPageNumberPerDesignerPage <= 2 then
+          Exit; // skip this band, space will be reserved from page 3, to reserve space n-2 times
+      end;
     end
     else if (not Report.IsFirstPass) then
     begin // last page rules
@@ -9838,7 +9901,7 @@ begin
       group header if page break occurs due to no space        }
     GroupHeader.FNeedsReprintedHeader := False;
     { the old group is finished so next repeated group header
-      does not need to use previous varaible values            }
+      does not need to use previous variable values            }
     GroupHeader.FNeedsPrevVariables := False;
     { the old group is finished
       so an intermediate group footer is needed  }
@@ -11437,7 +11500,7 @@ var
   i: Integer;
   lFooter: TFPReportCustomBand;
 begin
-  { move all allready layouted group footers (only bpStackAtBottom)
+  { move all already layouted group footers (only bpStackAtBottom)
     up by offset of page footer                                      }
   lOffset := FRTPage.RTLayout.Top + FRTPage.RTLayout.Height - FPageFooterYPos;
   for i:=0 to FRTBottomStackedFooterList.Count-1 do
@@ -12379,7 +12442,7 @@ begin
         also move header to next column/page }
       if CurrentLoop.FGroupHeaderList.Count > 0 then
       begin
-        { when data band overflows use start with lowest gropup header }
+        { when data band overflows use start with lowest group header }
         if (aBand is TFPReportCustomDataBand) and
         not Assigned(TFPReportCustomDataBand(aband).MasterBand) then
           lToMoveGrp := TFPReportCustomGroupHeaderBand(CurrentLoop.FGroupHeaderList[0])

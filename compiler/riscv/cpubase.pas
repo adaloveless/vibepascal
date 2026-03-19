@@ -158,15 +158,29 @@ uses
         A_FCVT_D_L,A_FCVT_D_LU,A_FMV_D_X,
 {$endif RISCV64}
 
+        { Zfa extension }
+        A_FLI_S,A_FLI_D,A_FLI_Q,A_FLI_H,
+        A_FMINM_S,A_FMAXM_S,A_FMINM_D,A_FMAXM_D,A_FMINM_H,A_FMAXM_H,A_FMINM_Q,A_FMAXM_Q,
+        A_FROUND_S,A_FROUNDNX_S,A_FROUND_D,A_FROUNDNX_D,A_FROUND_H,A_FROUNDNX_H,A_FROUND_Q,A_FROUNDNX_Q,
+        A_FCVTMOD_W_D,
+        A_FMVH_X_D,A_FMVP_D_X,A_FMVH_X_Q,A_FMVP_Q_X,
+        A_FLEQ_S,A_FLTQ_S,
+        A_FLEQ_D,A_FLTQ_D,
+        A_FLEQ_H,A_FLTQ_H,
+        A_FLEQ_Q,A_FLTQ_Q,
+
         { Q-extension }
         A_FLQ,A_FSQ,
 //        A_FMADD_D,A_FMSUB_D,A_FNMSUB_D,A_FNMADD_D,
 //        A_FADD_D,A_FSUB_D,A_FMUL_D,A_FDIV_D,
 //        A_FSQRT_D,A_FSGNJ_D,A_FSGNJN_D,A_FSGNJX_D,
         A_FMIN_Q,A_FMAX_Q,
-//        A_FEQ_D,A_FLT_D,A_FLE_D,A_FCLASS_D,
+        A_FEQ_Q,A_FLT_Q,A_FLE_Q,A_FCLASS_Q,
 //        A_FCVT_D_S,A_FCVT_S_D,
 //        A_FCVT_W_D,A_FCVT_WU_D,A_FCVT_D_W,A_FCVT_D_WU,
+
+        { Zihintpause }
+        A_PAUSE,
 
         { Machine mode }
         A_MRET,A_HRET,A_SRET,A_URET,
@@ -175,7 +189,7 @@ uses
         { Supervisor }
         A_SFENCE_VM,
 
-        { pseudo instructions for accessiong control and status registers }
+        { pseudo instructions for accessing control and status registers }
         A_RDINSTRET,A_RDINSTRETH,A_RDCYCLE,A_RDCYCLEH,A_RDTIME,A_RDTIMEH,A_CSRR,A_CSRW,A_CSRS,A_CSRC,A_CSRWI,
         A_CSRSI,A_CSRCI
       );
@@ -188,12 +202,6 @@ uses
       firstop = low(tasmop);
       { Last value of opcode enumeration  }
       lastop  = high(tasmop);
-
-      { Last value of opcode for TCommonAsmOps set below  }
-      LastCommonAsmOp = A_MRET;
-
-    Type
-      TCommonAsmOps = Set of A_None .. LastCommonAsmOp;
 
 {*****************************************************************************
                                   Registers
@@ -323,6 +331,8 @@ uses
 
       TFenceFlag = (ffI, ffO, ffR, ffW);
       TFenceFlags = set of TFenceFlag;
+
+      TAsmRealSpecialValue = (ARSV_None,ARSV_Nan,ARSV_Min,ARSV_Inf);
 
       TRoundingMode = (RM_Default,
                        RM_RNE,
@@ -454,7 +464,7 @@ uses
          The value of this constant is equal to the constant
          PARM_BOUNDARY / BITS_PER_UNIT in the GCC source.
       }
-{$ifdef RISCV64}	  
+{$ifdef RISCV64}
       std_param_align = 8;
 {$endif RISCV64}
 {$ifdef RISCV32}

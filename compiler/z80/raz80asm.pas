@@ -161,7 +161,7 @@ Unit raz80asm;
         srsymtable : TSymtable;
         can_be_condition : Boolean;
       begin
-        c:=scanner.c;
+        c:=current_scanner.c;
         { certain instructions can have a condition, as an operand. We need to set this flag,
           because 'C' can be either a register, or a condition, depending on the context }
         can_be_condition:=(actasmtoken=AS_OPCODE) and (actopcode in [A_JP,A_JR,A_JRJP,A_CALL,A_RET]);
@@ -249,7 +249,7 @@ Unit raz80asm;
           { Here we must handle all possible cases }
           begin
             case c of
-              '.' :  { possiblities : - local label reference , such as in jmp @local1 }
+              '.' :  { possibilities : - local label reference , such as in jmp @local1 }
                      {               - field of object/record                         }
                      {               - directive.                                     }
                 begin
@@ -708,7 +708,7 @@ Unit raz80asm;
                   exit;
                 end;
 
-              '@' : { possiblities : - local label reference , such as in jmp @local1 }
+              '@' : { possibilities : - local label reference , such as in jmp @local1}
                     {                - @Result, @Code or @Data special variables.     }
                 begin
                   actasmpattern:=c;

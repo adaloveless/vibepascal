@@ -83,7 +83,7 @@ implementation
           if (([m_iso,m_extpas]*current_settings.modeswitches)<>[]) and (is_record(tpointerdef(p.resultdef).pointeddef)) then
             begin
               variantdesc:=trecorddef(tpointerdef(p.resultdef).pointeddef).variantrecdesc;
-              while (token=_COMMA) and assigned(variantdesc) do
+              while (current_scanner.token=_COMMA) and assigned(variantdesc) do
                 begin
                   consume(_COMMA);
                   p2:=factor(false,[]);
@@ -166,8 +166,10 @@ implementation
             if not(assigned(sym)) then
               begin
                  p.free;
+                 p := nil;
                  if is_new then
                    p2.free;
+                   p2 := nil;
                  new_dispose_statement := cerrornode.create;
                  consume_all_until(_RKLAMMER);
                  consume(_RKLAMMER);
@@ -209,7 +211,7 @@ implementation
             { extended syntax of new and dispose }
             { function styled new is handled in factor }
             { destructors have no parameters }
-            destructorname:=pattern;
+            destructorname:=current_scanner.pattern;
             destructorpos:=current_tokenpos;
             consume(_ID);
 
@@ -218,6 +220,7 @@ implementation
                  p.free;
                  p:=factor(false,[]);
                  p.free;
+                 p := nil;
                  consume(_RKLAMMER);
                  new_dispose_statement:=cnothingnode.create;
                  exit;
@@ -229,6 +232,7 @@ implementation
                  p.free;
                  p:=factor(false,[]);
                  p.free;
+                 p := nil;
                  consume(_RKLAMMER);
                  new_dispose_statement:=cerrornode.create;
                  exit;
@@ -238,6 +242,7 @@ implementation
               begin
                  Message(parser_e_pointer_to_class_expected);
                  p.free;
+                 p := nil;
                  new_dispose_statement:=factor(false,[]);
                  consume_all_until(_RKLAMMER);
                  consume(_RKLAMMER);
@@ -268,12 +273,13 @@ implementation
                  else
                   Message(parser_e_expr_have_to_be_destructor_call);
                  p.free;
+                 p := nil;
                  new_dispose_statement:=cerrornode.create;
               end
             else
               begin
                 { For new(var,constructor) we need to take a copy because
-                  p is also used in the assignmentn below }
+                  p is also used in the assignment below }
                 if is_new then
                   begin
                     p2:=cderefnode.create(p.getcopy);
@@ -345,6 +351,7 @@ implementation
                  if is_typeparam(p.resultdef) then
                    begin
                       p.free;
+                      p := nil;
                       consume(_RKLAMMER);
                       new_dispose_statement:=cnothingnode.create;
                       exit;
@@ -452,6 +459,7 @@ implementation
            consume_all_until(_RKLAMMER);
            consume(_RKLAMMER);
            p1.free;
+           p1 := nil;
            new_function:=cerrornode.create;
            exit;
          end;
@@ -462,6 +470,7 @@ implementation
            consume_all_until(_RKLAMMER);
            consume(_RKLAMMER);
            p1.free;
+           p1 := nil;
            new_function:=cerrornode.create;
            exit;
          end;
@@ -486,6 +495,7 @@ implementation
                consume_all_until(_RKLAMMER);
                consume(_RKLAMMER);
                p1.free;
+               p1 := nil;
                new_function:=cerrornode.create;
                exit;
              end;
@@ -497,7 +507,7 @@ implementation
             { search the constructor also in the symbol tables of
               the parents }
             afterassignment:=false;
-            searchsym_in_class(classh,classh,pattern,srsym,srsymtable,[ssf_search_helper]);
+            searchsym_in_class(classh,classh,current_scanner.pattern,srsym,srsymtable,[ssf_search_helper]);
             consume(_ID);
             do_member_read(classh,false,srsym,p1,again,[cnf_new_call],nil);
             { we need to know which procedure is called }
@@ -512,6 +522,7 @@ implementation
               the pointer to the object }
             p1.resultdef:=p2.resultdef;
             p2.free;
+            p2 := nil;
             consume(_RKLAMMER);
           end;
         new_function:=p1;
@@ -643,6 +654,7 @@ implementation
          end;
         ppn.left:=nil;
         paras.free;
+        paras := nil;
         result.free;
         result:=newblock;
       end;

@@ -113,6 +113,7 @@ interface
        public
           usefieldalignment,     { alignment to use for fields (PACKRECORDS value), C_alignment is C style }
           recordalignment,       { alignment desired when inserting this record }
+          explicitrecordalignment, { explicit alignment for inserting this record, given by align XX at end of declaration }
           fieldalignment,        { alignment current alignment used when fields are inserted }
           padalignment : shortint;   { size to a multiple of which the symtable has to be rounded up }
           recordalignmin: shortint; { local equivalentsof global settings, so that records can be created with custom settings internally }
@@ -428,7 +429,7 @@ interface
 {$endif UNITALIASES}
 
 {*** Init / Done ***}
-    procedure IniTSymtable;
+    procedure InitSymtable;
     procedure DoneSymtable;
 
     const
@@ -835,7 +836,7 @@ implementation
         def : tstoreddef;
         sym : tstoredsym;
       begin
-        { first deref the interface ttype symbols. This is needs
+        { first deref the interface ttype symbols. This needs
           to be done before the interface defs are derefed, because
           the interface defs can contain references to the type symbols
           which then already need to contain a resolved typedef field (PFV) }
@@ -1193,6 +1194,7 @@ implementation
         _datasize:=0;
         databitsize:=0;
         recordalignment:=1;
+        explicitrecordalignment:=0;
         usefieldalignment:=usealign;
         recordalignmin:=recordminalign;
         padalignment:=1;
@@ -1218,6 +1220,7 @@ implementation
           exit;
 {$ifdef llvm}
         fllvmst.free;
+        fllvmst := nil;
 {$endif llvm}
         for mop:=low(tmanagementoperator) to high(tmanagementoperator) do
           TFPList.FreeAndNilDisposing(mop_list[mop],TypeInfo(tmanagementoperator_offset_entry));
@@ -1230,6 +1233,7 @@ implementation
         if ppufile.readentry<>ibrecsymtableoptions then
           Message(unit_f_ppu_read_error);
         recordalignment:=shortint(ppufile.getbyte);
+        explicitrecordalignment:=shortint(ppufile.getbyte);
         usefieldalignment:=shortint(ppufile.getbyte);
         recordalignmin:=shortint(ppufile.getbyte);
         if (usefieldalignment=C_alignment) then
@@ -1248,6 +1252,7 @@ implementation
          { in case of classes using C alignment, the alignment of the parent
            affects the alignment of fields of the childs }
          ppufile.putbyte(byte(recordalignment));
+         ppufile.putbyte(byte(explicitrecordalignment));
          ppufile.putbyte(byte(usefieldalignment));
          ppufile.putbyte(byte(recordalignmin));
          if (usefieldalignment=C_alignment) then
@@ -1765,6 +1770,7 @@ implementation
           end;
         { we don't need to remove the entries as they become part of list }
         sublist.free;
+        sublist := nil;
       end;
 
     procedure tabstractrecordsymtable.get_managementoperator_offset_list(mop:tmanagementoperator;list:tfplist);
@@ -2034,7 +2040,7 @@ implementation
                   ) or
                   (
                    { In Delphi, you can repeat members of a parent class. You can't }
-                   { do this for objects however, and you (obviouly) can't          }
+                   { do this for objects however, and you (obviously) can't         }
                    { declare two fields with the same name in a single class        }
                    (m_delphi in current_settings.modeswitches) and
                    (
@@ -2102,6 +2108,7 @@ implementation
     destructor tllvmshadowsymtable.destroy;
       begin
         symdeflist.free;
+        symdeflist := nil;
       end;
 
 
@@ -2402,7 +2409,9 @@ implementation
         buildmapping(tempsymlist, variantstarts);
 
         variantstarts.free;
+        variantstarts := nil;
         tempsymlist.free;
+        tempsymlist := nil;
       end;
 
 {$endif llvm}
@@ -2822,6 +2831,7 @@ implementation
         if refcount>1 then
           exit;
         withrefnode.free;
+        withrefnode := nil;
         { Disable SymList because we don't Own it }
         SymList:=nil;
         inherited destroy;
@@ -3430,7 +3440,7 @@ implementation
                          (symownerdef.owner.iscurrentunit)
                        ) or
                        { access from a generic method that belongs to the class
-                         but that is specialized elsewere }
+                         but that is specialized elsewhere }
                        (
                          isspezproc and
                          (current_procinfo.procdef.struct=curstruct)
@@ -3498,7 +3508,7 @@ implementation
                         )
                        ) or
                        { access from a generic method that belongs to the class
-                         but that is specialized elsewere }
+                         but that is specialized elsewhere }
                        (
                          isspezproc and
                          (current_procinfo.procdef.struct=curstruct)
@@ -3555,7 +3565,7 @@ implementation
                     exit;
                   end;
               end;
-            { check dummy sym visbility by following associated procsyms }
+            { check dummy sym visibility by following associated procsyms }
             if tprocsym(sym).could_be_implicitly_specialized then
               begin
                 for i:=0 to tprocsym(sym).genprocsymovlds.count-1 do
@@ -4236,7 +4246,7 @@ implementation
                     break;
                   end;
                 { independently of the operator being better count if we encountered
-                  multpile String[x] operators }
+                  multiple String[x] operators }
                 if checkshortstring and assigned(currpd) and is_shortstring(currpd.returndef) then
                   inc(shortstringcount);
                 if curreq>besteq then
@@ -4274,6 +4284,16 @@ implementation
           result:=nil;
         if result=nil then
           result:=search_specific_assignment_operator(_ASSIGNMENT,from_def,to_def);
+
+        { if we're assigning to a typed pointer, but we did not find a suitable assignment
+          operator then we also check for a untyped pointer assignment operator }
+        if not assigned(result) and is_pointer(to_def) and not is_voidpointer(to_def) then
+          begin
+            if explicit then
+              result:=search_specific_assignment_operator(_OP_EXPLICIT,from_def,voidpointertype);
+            if not assigned(result) then
+              result:=search_specific_assignment_operator(_ASSIGNMENT,from_def,voidpointertype);
+          end;
 
         { restore symtable stack }
         if to_def.typ in [recorddef,objectdef] then
@@ -4569,7 +4589,7 @@ implementation
               dec(i);
             until result or (i<0);
             if not result then
-              { just to be sure that noone uses odef }
+              { just to be sure that none uses odef }
               odef:=nil;
           end;
       end;
@@ -5049,12 +5069,17 @@ implementation
       begin
         generrorsym.owner:=nil;
         generrorsym.free;
+        generrorsym := nil;
         generrordef.owner:=nil;
         generrordef.free;
+        generrordef := nil;
         initialmacrosymtable.free;
+        initialmacrosymtable := nil;
         macrosymtablestack.free;
+        macrosymtablestack := nil;
 {$ifdef UNITALIASES}
         unitaliases.free;
+        unitaliases := nil;
 {$endif}
      end;
 

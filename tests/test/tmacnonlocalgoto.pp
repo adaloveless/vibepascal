@@ -28,7 +28,7 @@ program tmacnonlocalgoto;
                   failed := true;
 		Local(5);
 		failed := true;
-        
+
 	end;
 
 
@@ -40,7 +40,7 @@ begin
 	if failed then
 		writeln('Failed')
 	else
-		writeln('Succeded');
+		writeln('Succeeded');
 
   {$IFC NOT UNDEFINED FPC}
 	if failed then

@@ -17,10 +17,6 @@ unit System;
 
 interface
 
-{$IFNDEF FPC_DISABLE_MONITOR}
-{$DEFINE SYSTEM_HAS_FEATURE_MONITOR}
-{$ENDIF}
-
 {$define FPC_IS_SYSTEM}
 {$ifdef SYSTEMDEBUG}
   {$define SYSTEMEXCEPTIONDEBUG}
@@ -1063,7 +1059,7 @@ var
   i : longint;
 begin
   result:=false;
-  { read memory savely without causing another exeception }
+  { read memory safely without causing another exeception }
   if not(ReadProcessMemory(GetCurrentProcess,p,@a,sizeof(a),nil)) then
     exit;
   i:=0;
@@ -1421,7 +1417,7 @@ begin
 end;
 
 {****************************************************************************
-                      OS dependend widestrings
+                      OS dependent widestrings
 ****************************************************************************}
 
 function CharUpperBuff(lpsz:LPWSTR; cchLength:DWORD):DWORD; cdecl; external KernelDLL name 'CharUpperBuffW';
@@ -1534,7 +1530,7 @@ function WinCEGetStandardCodePage(const stdcp: TStandardCodePageEnum): TSystemCo
     end;
   end;
 
-{ there is a similiar procedure in sysutils which inits the fields which
+{ there is a similar procedure in sysutils which inits the fields which
   are only relevant for the sysutils units }
 procedure InitWinCEWidestrings;
   begin
@@ -1597,16 +1593,6 @@ Function SysReAllocMem (var p:pointer;Size:ptruint):Pointer;
 begin
   Result:=realloc(p, Size);
   p:=Result;
-end;
-
-function SysTryResizeMem(var p:pointer;size : ptruint):boolean;
-var
-  res: pointer;
-begin
-  res:=realloc(p, Size);
-  Result:=(res <> nil) or (Size = 0);
-  if Result then
-    p:=res;
 end;
 
 function SysMemSize(P : pointer): ptruint;

@@ -356,7 +356,7 @@ begin
       end;
 
       //ip2Leb,  // memory arguments, ask for offset + align
-      ipJumpVec: 
+      ipJumpVec:
       begin
         while (sc.token in [weNumber, weIdent]) do begin
           if (ci.vecTableCount = length(ci.vecTable)) then begin
@@ -605,7 +605,7 @@ begin
   sc.Next;
 end;
 
-// parseIdOffset - should only be used for elems declareted at module leve
+// parseIdOffset - should only be used for elems declared at module level
 // if elems declared in a table, parseIdOffset should be set to false
 procedure ParseElem(sc: TWatScanner; dst: TWasmElement; parseIdOffset: Boolean);
 var

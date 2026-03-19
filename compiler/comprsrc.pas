@@ -45,7 +45,7 @@ type
       procedure Collect(const fn : ansistring);virtual;
       procedure EndCollect; virtual;
    end;
-   
+
    TWinLikeResourceFile = class(tresourcefile)
    private
       fResScript : TScript;
@@ -244,6 +244,7 @@ destructor TWinLikeResourceFile.Destroy;
 begin
   if fResScript<>nil then
     fResScript.Free;
+    fResScript := nil;
   inherited;
 end;
 
@@ -300,7 +301,7 @@ begin
           if (target_info.endian=endian_big) then
             arch:=arch+'eb';
         end;
-      if target_info.cpu=systems.cpu_powerpc64 then
+      if target_info.cpu=cpu_powerpc64 then
         begin
           { differentiate between ppc64 and ppc64le }
           if target_info.endian=endian_little then
@@ -379,14 +380,14 @@ begin
   BlockRead(f, buf, SizeOf(buf), i);
   close(f);
   Filemode:=oldfmode;
-  
+
   if i<>SizeOf(buf) then
     exit;
 
   for i:=1 to 32 do
     if buf[i]<>ResSignature[i] then
       exit;
-      
+
   Result:=True;
 end;
 
@@ -450,10 +451,12 @@ begin
     end;
   dst.CopyFrom(src,src.Size);
   dst.Free;
+  dst := nil;
   src.Free;
+  src := nil;
   Result:=true;
 end;
- 
+
 procedure CompileResourceFiles;
 var
   resourcefile : tresourcefile;
@@ -486,6 +489,7 @@ begin
       if resourcefile.IsCompiled(s) then
         begin
           resourcefile.free;
+          resourcefile := nil;
           if AnsiCompareFileName(IncludeTrailingPathDelimiter(ExpandFileName(current_module.outputpath)), p) <> 0 then
             begin
               { Copy .res file to units output dir. Otherwise .res file will not be found
@@ -510,6 +514,7 @@ begin
             end;
           resourcefile.compile(outfmt, current_module.outputpath+res.FPStr);
           resourcefile.free;
+          resourcefile := nil;
         end;
       res:=TCmdStrListItem(res.Next);
     end;
@@ -519,7 +524,7 @@ end;
 procedure CollectResourceFiles;
 var
   resourcefile : tresourcefile;
-  
+
   procedure ProcessModule(u : tmodule);
   var
     res : TCmdStrListItem;
@@ -540,7 +545,7 @@ var
         res:=TCmdStrListItem(res.Next);
       end;
   end;
-  
+
 var
   hp : tused_unit;
   s : TCmdStr;
@@ -564,6 +569,7 @@ begin
   { Finish collection }
   resourcefile.EndCollect;
   resourcefile.free;
+  resourcefile := nil;
 end;
 
 procedure initglobals;

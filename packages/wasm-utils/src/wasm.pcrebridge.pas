@@ -22,7 +22,7 @@ uses
 {$IFDEF FPC_DOTTEDUNITS}
   System.CTypes, System.SysUtils,
 {$ELSE}
-  ctypes, sysutils, 
+  ctypes, sysutils,
 {$ENDIF}
   wasm.regexp.objects;
 
@@ -174,6 +174,7 @@ var
 
 begin
   Result:=Nil;
+  // Allocate memory for Move.
   SetLength(S,RegexLen);
   Move(Regexp^,S[1],SizeOf(Char)*RegexLen);
   F:=OptsToFlags(Opts);
@@ -182,7 +183,8 @@ begin
   except
     on E : Exception do
       begin
-      ErrorNr^:=PCRE2_ERROR_WASM; // Does not exist (yet)
+      if Assigned(ErrorNr) then
+        ErrorNr^:=PCRE2_ERROR_WASM; // Does not exist (yet)
       gLastError:=E.Message;
       ErrorPos^:=0;
       end;
@@ -287,7 +289,8 @@ begin
     CaptureOffset:=1+(I*EntryLen);
     NameOffset:=1+CharOffset+(I*EntryLen);
     Move(CaptureIdx,FNamesTable[CaptureOffset],SizeOf(Word));
-    Move(NS[1],FNamesTable[NameOffset],Length(NS)*SizeOf(Char));
+    if (NS<>'') then
+      Move(NS[1],FNamesTable[NameOffset],Length(NS)*SizeOf(Char));
     end;
 end;
 

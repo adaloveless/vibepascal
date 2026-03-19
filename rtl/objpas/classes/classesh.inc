@@ -25,7 +25,7 @@
 type
    { extra types to compile with FPC }
    HRSRC =  TFPResourceHandle deprecated;
-   
+
    TComponentName = type string;
    THandle = System.THandle;
 
@@ -34,7 +34,7 @@ type
    TSmallPoint=TYU.TSmallPoint;
 
 {$ifndef FPC_HAS_FEATURE_DYNLIBS}
-   HMODULE = ptrint; 
+   HMODULE = ptrint;
 {$else}
    HModule = System.HModule;
 {$endif}
@@ -161,7 +161,7 @@ type
 Const
   // Delphi compatibility
   ssCommand = ssMeta;
-  
+
   SGUIDObserved = '{663C603C-3F3C-4CC5-823C-AC8079F979E5}';
   SGUIDObserver = '{BC7376EA-199C-4C2A-8684-F4805F0691CA}';
 
@@ -535,6 +535,7 @@ Type
     function Extract(Item: Pointer): Pointer;
     function First: Pointer;
     function GetEnumerator: TFPListEnumerator;
+    function Contains(Item: Pointer): boolean;
     function IndexOf(Item: Pointer): Integer;
     function IndexOfItem(Item: Pointer; Direction: TDirection): Integer;
     procedure Insert(Index: Integer; Item: Pointer); {$ifdef CLASSESINLINE} inline; {$endif CLASSESINLINE}
@@ -618,6 +619,7 @@ Type
     function Extract(item: Pointer): Pointer;
     function First: Pointer; inline;
     function GetEnumerator: TListEnumerator;
+    function Contains(Item: Pointer): boolean;
     function IndexOf(Item: Pointer): Integer; inline;
     procedure Insert(Index: Integer; Item: Pointer);
     function Last: Pointer; inline;
@@ -640,8 +642,8 @@ Type
   TThreadList = class
   private
     FList: TList;
-    FDuplicates: TDuplicates;
     FLock: TRTLCriticalSection;
+    FDuplicates: TDuplicates;
   public
     constructor Create;
     destructor Destroy; override;
@@ -1020,8 +1022,11 @@ type
     function GetEnumerator: TStringsEnumerator;
     procedure GetNameValue(Index : Integer; Out AName,AValue : String);
     function GetText: PChar; virtual;
+    function Contains(const S: string): Boolean;
+    function ContainsObject(const AObject: TObject): Boolean; inline;
     function IndexOf(const S: string): Integer; virtual;
     function IndexOf(const S: string; aStart : Integer): Integer; virtual;
+    function ContainsName(const Name: string): Boolean; virtual;
     function IndexOfName(const Name: string): Integer; virtual;
     function IndexOfObject(AObject: TObject): Integer; virtual;
     procedure Insert(Index: Integer; const S: string); virtual; abstract;
@@ -1564,7 +1569,7 @@ type
     procedure WriteUnicodeString(const AString: UnicodeString);
     function ReadAnsiString(Count: Longint): AnsiString; overload;
     procedure WriteAnsiString(const AString: AnsiString); override;
-    function ReadString(Count: Longint): string; 
+    function ReadString(Count: Longint): string;
     procedure WriteString(const AString: string);
     property DataString: RTLString read GetDataString;
     Property AnsiDataString : AnsiString Read GetAnsiDataString;
@@ -1952,7 +1957,7 @@ type
     function ReadComponentDeltaRes(Instance: TComponent; const DeltaCandidates: array of Ansistring; const Proc: TGetStreamProc): TComponent;
     function ReadVariant: Variant;
     procedure ReadSignature;
-    // Readstr assumes that valuetype has aleady been read and will raise an error if it was not a string type
+    // Readstr assumes that valuetype has already been read and will raise an error if it was not a string type
     function ReadStr : RawByteString;
     function ReadString: RawBytestring;
     function ReadWideString: WideString;
@@ -2258,6 +2263,7 @@ type
       Exception: TObject;
       SyncEvent: PRtlEvent;
       Next: PThreadQueueEntry;
+      ExecuteAfter : TDateTime;
     end;
   public type
     TSystemTimes = record
@@ -2281,9 +2287,9 @@ type
     FSynchronizeEntry: PThreadQueueEntry;
     class function GetCurrentThread: TThread; static;
     class function GetIsSingleProcessor: Boolean; static; inline;
-    class procedure InternalQueue(aThread: TThread; aMethod: TThreadMethod; aQueueIfMain: Boolean); static;
+    class procedure InternalQueue(aThread: TThread; aMethod: TThreadMethod; aQueueIfMain: Boolean; aExecuteAfter: TDateTime); static;
 {$ifdef FPC_HAS_REFERENCE_PROCEDURE}
-    class procedure InternalQueue(aThread: TThread; aProcedure: TThreadProcedure; aQueueIfMain: Boolean); static;
+    class procedure InternalQueue(aThread: TThread; aProcedure: TThreadProcedure; aQueueIfMain: Boolean; aExecuteAfter: TDateTime); static;
 {$endif}
     procedure CallOnTerminate;
     function GetPriority: TThreadPriority;
@@ -2361,9 +2367,9 @@ type
     {$ifdef FPC_HAS_REFERENCE_PROCEDURE}
     class procedure Queue(aThread: TThread; AProcedure : TThreadProcedure); static;
     {$endif}
-    class procedure ForceQueue(aThread: TThread; aMethod: TThreadMethod); inline; static;
+    class procedure ForceQueue(aThread: TThread; aMethod: TThreadMethod; aDelay : Integer = 0); inline; static;
     {$ifdef FPC_HAS_REFERENCE_PROCEDURE}
-    class procedure ForceQueue(aThread: TThread; aMethod: TThreadProcedure); inline; static;
+    class procedure ForceQueue(aThread: TThread; aMethod: TThreadProcedure; aDelay : Integer = 0); inline; static;
     {$endif}
     class procedure RemoveQueuedEvents(aThread: TThread; aMethod: TThreadMethod); static;
     class procedure RemoveQueuedEvents(aMethod: TThreadMethod); static;
@@ -2403,7 +2409,7 @@ type
     property ThreadID: TThreadID read FThreadID;
     property OnTerminate: TNotifyEvent read FOnTerminate write FOnTerminate;
     property FatalException: TObject read FFatalException;
-  end; 
+  end;
 
 
 { TComponent class }
@@ -2451,7 +2457,7 @@ type
   end;
 
   TBasicAction = class;
-  
+
 
   { TComponent }
 
@@ -2571,7 +2577,7 @@ type
     property Owner: TComponent read FOwner;
     property VCLComObject: Pointer read FVCLComObject write FVCLComObject;
     Property Observers : TObservers Read GetObservers;
-    property OnGetDeltaStreams: TGetDeltaStreamsEvent read FOnGetDeltaStreams write FOnGetDeltaStreams;    
+    property OnGetDeltaStreams: TGetDeltaStreamsEvent read FOnGetDeltaStreams write FOnGetDeltaStreams;
   published
     property Name: TComponentName read FName write SetName stored False;
     property Tag: PtrInt read FTag write FTag default 0;
@@ -2766,17 +2772,17 @@ type
   TDataModuleClass = Class of TDataModule;
 
   TPlatformIds = UInt32;
-  
+
   ComponentPlatformsAttribute = class(TCustomAttribute)
   private
     FPlatforms: TPlatformIds;
   public
     constructor Create(const aPlatforms: TPlatformIds);
     property Platforms: TPlatformIds read FPlatforms write FPlatforms;
-  end;  
+  end;
 
 
-  
+
 const
   { Platform identifiers }
     pidWin32          = $00000001;
@@ -2805,16 +2811,16 @@ const
     pidAllPlatforms = pidWin32 or pidWin64 or
                     pidOSX32 or pidOSX64 or pidOSXArm64 or
                     pidiOSDevice32 or pidiOSDevice64 or
-                    pidiOSSimulator32 or pidiOSSimulator64 or 
+                    pidiOSSimulator32 or pidiOSSimulator64 or
                     pidAndroidArm32 or pidAndroidArm64 or
                     pidLinux64;
-                    
+
     pfidWindows     = pidWin32 or pidWin64;
     pfidOSX         = pidOSX32 or pidOSX64 or pidOSXArm64;
     pfidiOS         = pidiOSDevice32 or pidiOSDevice64 or
                       pidiOSSimulator32 or pidiOSSimulator64;
     pfidAndroid     = pidAndroidArm32 or pidAndroidArm64;
-    pfidLinux       = pidLinux64;  
+    pfidLinux       = pidLinux64;
 
 var
   // IDE hooks for TDatamodule support.
@@ -2896,7 +2902,7 @@ Type
 var
   GlobalNameSpace: IReadWriteSync;
   IsUniqueGlobalComponentNameProc: TIsUniqueGlobalComponentName;
-  
+
 { Object filing routines }
 
 type
@@ -2909,7 +2915,7 @@ type
   TIntToIdent = function(Int: Longint; var Ident: string): Boolean;
   TFindGlobalComponent = function(const Name: string): TComponent;
   TInitComponentHandler = function(Instance: TComponent; RootAncestor : TClass): boolean;
-  
+
 var
   MainThreadID: TThreadID;
 

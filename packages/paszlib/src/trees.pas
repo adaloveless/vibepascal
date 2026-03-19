@@ -8,7 +8,7 @@ unit Trees;
   trees.c -- output deflated data using Huffman coding
   Copyright (C) 1995-1998 Jean-loup Gailly
 
-  Pascal tranlastion
+  Pascal translation
   Copyright (C) 1998 by Jacques Nomssi Nzali
   For conditions of distribution and use, see copyright notice in readme.txt
 }
@@ -1482,7 +1482,9 @@ begin
     max_count := 138;
     min_count := 3;
   end;
+{$push}{$R-}
   tree[max_code+1].dl.Len := word($ffff); { guard }
+{$pop}
 
   for n := 0 to max_code do
   begin
@@ -1564,7 +1566,9 @@ begin
   for n := 0 to max_code do
   begin
     curlen := nextlen;
+{$push}{$R-}
     nextlen := tree[n+1].dl.Len;
+{$pop}
     inc(count);
     if (count < max_count) and (curlen = nextlen) then
       continue

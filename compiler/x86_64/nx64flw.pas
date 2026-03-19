@@ -213,6 +213,7 @@ function tx64tryfinallynode.dogetcopy: tnode;
           begin
             n.finalizepi.code:=finalizepi.code.getcopy;
             n.right:=ccallnode.create(nil,tprocsym(n.finalizepi.procdef.procsym),nil,nil,[],nil);
+            firstpass(n.right);
           end;
       end;
     result:=n;
@@ -425,7 +426,7 @@ procedure tx64tryexceptnode.pass_generate_code;
     breakexceptlabel:=nil;
 
     include(flowcontrol,fc_inflowcontrol);
-    { this can be called recursivly }
+    { this can be called recursively }
     oldBreakLabel:=nil;
     oldContinueLabel:=nil;
     oldendexceptlabel:=endexceptlabel;

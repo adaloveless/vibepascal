@@ -28,6 +28,9 @@ interface
   uses
     cclasses,cstreams,
     globtype,
+    {$ifdef cpufpemu}
+    ppu,
+    {$endif}
     pcp,finput,fpkg;
 
   type
@@ -67,7 +70,6 @@ implementation
     cfileutl,cutils,
     systems,globals,version,
     verbose,
-    ppu,
     entfile,pkgutil;
 
 { tpcppackage }
@@ -312,6 +314,7 @@ implementation
           rewriteppu(module^.module.ppufilename,stream);
           module^.size:=stream.position;
           stream.free;
+          stream := nil;
         end;
 
       pos:=pcpfile.position;
@@ -416,6 +419,7 @@ implementation
   destructor tpcppackage.destroy;
     begin
       pcpfile.free;
+      pcpfile := nil;
       inherited destroy;
     end;
 

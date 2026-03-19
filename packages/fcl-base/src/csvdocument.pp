@@ -36,7 +36,7 @@
 }
 
 {$IFNDEF FPC_DOTTEDUNITS}
-unit csvdocument;
+unit CsvDocument;
 {$ENDIF FPC_DOTTEDUNITS}
 
 {$IFDEF FPC}
@@ -119,12 +119,12 @@ type
     function  HasRow(ARow: Integer): Boolean;
     // Indicates if there is a cell at specified position
     function  HasCell(ACol, ARow: Integer): Boolean;
-    
+
     // Search
-    
+
     // Return column for cell data AString at row ARow
     function  IndexOfCol(const AString: String; ARow: Integer): Integer;
-    // Return row for cell data AString at coloumn ACol
+    // Return row for cell data AString at column ACol
     function  IndexOfRow(const AString: String; ACol: Integer): Integer;
 
     // Utils

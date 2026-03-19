@@ -26,7 +26,7 @@ interface
 
     uses
        { common }
-       cutils,compinnr,
+       sysutils,cutils,compinnr,
        { target }
        globtype,globals,widestr,constexp,
        { symtable }
@@ -363,6 +363,9 @@ interface
          { do not override this routine in platform-specific subclasses,
            override ppuwrite_platform instead }
          procedure ppuwrite(ppufile:tcompilerppufile);override;final;
+         { returns the symbol type of the local variable or local parameter
+           referenced by the absolute symbol }
+         function reftyp : tsymtyp;
       end;
       tabsolutevarsymclass = class of tabsolutevarsym;
 
@@ -655,7 +658,7 @@ implementation
 
     procedure tstoredsym.ppuwrite(ppufile:tcompilerppufile);
       var
-        oldintfcrc : boolean;
+        oldcrc : boolean;
       begin
 {$ifdef symansistr}
          ppufile.putansistring(realname);
@@ -672,12 +675,12 @@ implementation
            This does mean that changing e.g. the "deprecated" state of a symbol
            by itself will not trigger a recompilation of dependent units.
          }
-         oldintfcrc:=ppufile.do_interface_crc;
-         ppufile.do_interface_crc:=false;
+         oldcrc:=ppufile.do_crc;
+         ppufile.do_crc:=false;
          ppufile.putset(tppuset2(symoptions));
          if sp_has_deprecated_msg in symoptions then
            ppufile.putstring(deprecatedmsg^);
-         ppufile.do_interface_crc:=oldintfcrc;
+         ppufile.do_crc:=oldcrc;
          trtti_attribute_list.ppuwrite(rtti_attribute_list,ppufile);
       end;
 
@@ -733,19 +736,34 @@ implementation
     destructor tstoredsym.destroy;
       begin
         rtti_attribute_list.free;
+        rtti_attribute_list := nil;
         inherited destroy;
       end;
 
 
     procedure tstoredsym.register_sym;
+      var
+        tmod : tmodule;
       begin
         if registered then
           exit;
-        { Register in current_module }
-        if assigned(current_module) then
+        if assigned(owner) then
           begin
-            current_module.symlist.Add(self);
-            SymId:=current_module.symlist.Count-1;
+            tmod:=find_module_from_symtable(owner);
+            if assigned(tmod) and assigned(current_module) and (tmod<>current_module) then
+              begin
+                comment(v_error,'Symbol '+realname+' from module '+tmod.mainsource+' registered with current module '+current_module.mainsource);
+              end;
+            if not assigned(tmod) then
+              tmod:=current_module;
+          end
+        else
+          tmod:=current_module;
+        { Register in current_module }
+        if assigned(tmod) then
+          begin
+            tmod.symlist.Add(self);
+            SymId:=tmod.symlist.Count-1;
           end
         else
           SymId:=symid_registered_nost;
@@ -969,10 +987,13 @@ implementation
     destructor tprocsym.destroy;
       begin
         FProcdefList.Free;
-        if assigned(FProcdefDerefList) then
-          FProcdefDerefList.Free;
+        FProcdefList := nil;
+        FProcdefDerefList.Free;
+        FProcdefDerefList := nil;
         fgenprocsymovlds.free;
+        fgenprocsymovlds := nil;
         fgenprocsymovldsderefs.free;
+        fgenprocsymovldsderefs := nil;
         inherited destroy;
       end;
 
@@ -1028,7 +1049,9 @@ implementation
         for i:=0 to ProcdefList.Count-1 do
           begin
             pd:=tprocdef(ProcdefList[i]);
-            if (pd.owner=owner) and (pd.forwarddef) then
+            { Don't check for is_specialization, but whether it's somehow part
+              of a specialization }
+            if (pd.owner=owner) and (pd.forwarddef) and not (df_specialization in pd.defoptions) then
               begin
                 { For mode macpas. Make implicit externals (procedures declared in the interface
                   section which do not have a counterpart in the implementation)
@@ -1540,9 +1563,9 @@ implementation
 
     function tprocsym.could_be_implicitly_specialized:boolean;
       begin
-        result:=(m_implicit_function_specialization in current_settings.modeswitches) and 
+        result:=(m_implicit_function_specialization in current_settings.modeswitches) and
                 (sp_generic_dummy in symoptions) and
-                assigned(genprocsymovlds);          
+                assigned(genprocsymovlds);
       end;
 
 {****************************************************************************
@@ -1620,8 +1643,9 @@ implementation
         pap : tpropaccesslisttypes;
       begin
          for pap:=low(tpropaccesslisttypes) to high(tpropaccesslisttypes) do
-           propaccesslist[pap].free;
+           FreeAndNil(propaccesslist[pap]);
          parast.free;
+         parast := nil;
          inherited destroy;
       end;
 
@@ -1877,15 +1901,15 @@ implementation
 
     procedure tabstractvarsym.ppuwrite(ppufile:tcompilerppufile);
       var
-        oldintfcrc : boolean;
+        oldcrc : boolean;
       begin
          inherited ppuwrite(ppufile);
          ppufile.putbyte(byte(varspez));
-         oldintfcrc:=ppufile.do_crc;
+         oldcrc:=ppufile.do_crc;
          ppufile.do_crc:=false;
          ppufile.putbyte(byte(varregable));
          ppufile.putset(tppuset1(varsymaccess));
-         ppufile.do_crc:=oldintfcrc;
+         ppufile.do_crc:=oldcrc;
          ppufile.putderef(vardefderef);
          ppufile.putset(tppuset4(varoptions));
       end;
@@ -2472,7 +2496,7 @@ implementation
 
     procedure tparavarsym.ppuwrite(ppufile:tcompilerppufile);
       var
-        oldintfcrc : boolean;
+        oldcrc : boolean;
       begin
          inherited ppuwrite(ppufile);
          ppufile.putword(paranr);
@@ -2482,13 +2506,13 @@ implementation
            we write them to the unit file.
            This enables constant folding for inline procedures loaded from units
          }
-         oldintfcrc:=ppufile.do_crc;
+         oldcrc:=ppufile.do_crc;
          ppufile.do_crc:=false;
          ppufile.putbyte(ord(varstate));
          { write also info about the usage of parameters,
            the absolute usage does not matter }
          ppufile.putbyte(min(1,refs));
-         ppufile.do_crc:=oldintfcrc;
+         ppufile.do_crc:=oldcrc;
 
          if vo_has_explicit_paraloc in varoptions then
            begin
@@ -2539,6 +2563,7 @@ implementation
       begin
         if assigned(ref) then
           ref.free;
+          ref := nil;
         inherited destroy;
       end;
 
@@ -2606,6 +2631,21 @@ implementation
          end;
       end;
 
+         { returns the symbol type of the local variable or local parameter
+           referenced by the absolute symbol }
+    function tabsolutevarsym.reftyp : tsymtyp;
+      var
+        plist : ppropaccesslistitem;
+      begin
+        reftyp:=typ;
+        if abstyp=tovar then
+          begin
+            plist:=ref.firstsym;
+            if assigned(plist) and (plist^.sltype=sl_load) and
+               assigned(plist^.sym) and not(assigned(plist^.next)) then
+              reftyp:=plist^.sym.typ;
+          end;
+      end;
 
 {****************************************************************************
                                   TCONSTSYM
@@ -3181,6 +3221,7 @@ implementation
     procedure done_symsym;
       begin
         syssym_list.free;
+        syssym_list := nil;
       end;
 
 

@@ -73,7 +73,7 @@ unit rgobj;
        These instructions are moved between five linked lists. There
        is also a linked list per register to keep track about the moves
        it is associated with. Because we need to determine quickly in
-       which of the five lists it is we add anu enumeradtion to each
+       which of the five lists it is we add anu enumeration to each
        move instruction.}
 
       Tmoveset=(ms_coalesced_moves,ms_constrained_moves,ms_frozen_moves,
@@ -469,9 +469,14 @@ unit rgobj;
          for i:=low(Ausable) to high(Ausable) do
            begin
              usable_registers[i]:=Ausable[i];
-             include(usable_register_set,Ausable[i]);
+	     if (Ausable[i] in usable_register_set) then
+               internalerror(2025112601)
+             else
+               begin
+                 include(usable_register_set,Ausable[i]);
+                 inc(usable_registers_cnt);
+               end;
            end;
-         usable_registers_cnt:=high(Ausable)+1;
          { Initialize Worklists }
          spillednodes.init;
          simplifyworklist.init;
@@ -493,11 +498,15 @@ unit rgobj;
         live_registers.done;
 
         move_garbage.free;
+        move_garbage := nil;
         worklist_moves.free;
+        worklist_moves := nil;
 
         dispose_reginfo;
         extended_backwards.free;
+        extended_backwards := nil;
         backwards_was_first.free;
+        backwards_was_first := nil;
       end;
 
 
@@ -639,7 +648,7 @@ unit rgobj;
           i8086 where indexed memory access instructions allow only
           few registers as arguments and additionally the calling convention
           provides no general purpose volatile registers.
-          
+
           Also spill registers which have the initial memory location
           and are used only once. This allows to access the memory location
           directly, without preloading it to a register.
@@ -678,6 +687,7 @@ unit rgobj;
             end;
         until endspill;
         ibitmap.free;
+        ibitmap := nil;
 
         translate_registers(list);
 
@@ -690,7 +700,7 @@ unit rgobj;
         }
 
         for i:=0 to High(spillinfo) do
-          spillinfo[i].interferences.Free;
+          FreeAndNil(spillinfo[i].interferences);
         spillinfo:=nil;
       end;
 
@@ -1469,7 +1479,7 @@ unit rgobj;
           add_worklist(u);
         end
       {Do u and v interfere? In that case the move is constrained. Two
-       precoloured nodes interfere allways. If v is precoloured, by the above
+       precoloured nodes interfere always. If v is precoloured, by the above
        code u is precoloured, thus interference...}
       else if (v<first_imaginary) or ibitmap[u,v] then
         begin
@@ -1550,7 +1560,7 @@ unit rgobj;
       freeze_moves(n);
     end;
 
-{ The spilling approach selected by SPILLING_NEW does not work well for AVR as it eploits apparently the problem of the current
+{ The spilling approach selected by SPILLING_NEW does not work well for AVR as it exploits apparently the problem of the current
   reg. allocator with AVR. The current reg. allocator is not aware of the fact that r1-r15 and r16-r31 are not equal on AVR }
 {$if defined(AVR)}
 {$define SPILLING_OLD}
@@ -1591,7 +1601,7 @@ unit rgobj;
 
         modify reg1
 
-        In this example, all register have the same degree. However, spilling reg1 is most benefical as it is used least. Furthermore,
+        In this example, all register have the same degree. However, spilling reg1 is most beneficial as it is used least. Furthermore,
         spilling reg1 is a step toward solving the coloring problem as the registers used during spilling will have a lower degree
         as no register are in use at the location where reg1 is spilled.
       }
@@ -1625,9 +1635,9 @@ unit rgobj;
         to get too much conflicts with the result that the spilling code
         will never converge (PFV)
 
-        We need a special processing for nodes with the ri_spill_helper flag set. 
+        We need a special processing for nodes with the ri_spill_helper flag set.
         These nodes contain a value of a previously spilled node.
-        We need to avoid another spilling of ri_spill_helper nodes, since it will 
+        We need to avoid another spilling of ri_spill_helper nodes, since it will
         likely lead to an endless loop and the register allocation will fail.
       }
       maxlength:=0;
@@ -1780,7 +1790,7 @@ unit rgobj;
       if spill_loop then
         begin
           { Spilling loop is detected when colouring registers using the select-stack order.
-            Trying to eliminte this by using a different colouring order. }
+            Trying to eliminate this by using a different colouring order. }
           reset_colours;
           { To prevent spilling of helper registers it is needed to assign colours to them first. }
           for i:=selectstack.length downto 1 do
@@ -1952,17 +1962,33 @@ unit rgobj;
                 { Insert live end deallocation before reg allocations
                   to reduce conflicts }
                 p:=live_end;
-                while assigned(p) and
-                      assigned(p.previous) and
-                      (tai(p.previous).typ=ait_regalloc) and
-                      (tai_regalloc(p.previous).ratype=ra_alloc) and
-                      (tai_regalloc(p.previous).reg<>r) do
-                  p:=tai(p.previous);
-                { , but add release after a reg_a_sync }
-                if assigned(p) and
-                   (p.typ=ait_regalloc) and
-                   (tai_regalloc(p).ratype=ra_sync) then
-                  p:=tai(p.next);
+                if assigned(p) then
+                  begin
+                    while assigned(p.previous) and
+                      (
+                        (
+                          (tai(p.previous).typ=ait_regalloc) and
+                          (
+                            (
+                              (tai_regalloc(p.previous).ratype=ra_alloc) and
+                              (tai_regalloc(p.previous).reg<>r)
+                            ) or (
+                              (tai_regalloc(p.previous).ratype=ra_resize)
+                              { Don't worry if a resize for the same supreg as
+                                r appears - it won't cause issues in the end
+                                since it's stripped out anyway and the deallocs
+                                are adjusted after graph colouring }
+                            )
+                          )
+                        ) or
+                        (tai(p.previous).typ in [ait_comment,ait_tempalloc,ait_varloc])
+                      ) do
+                      p:=tai(p.previous);
+                    { , but add release after a reg_a_sync }
+                    if (p.typ=ait_regalloc) and
+                      (tai_regalloc(p).ratype=ra_sync) then
+                    p:=tai(p.next);
+                  end;
                 if assigned(p) then
                   list.insertbefore(pdealloc,p)
                 else
@@ -2395,6 +2421,23 @@ unit rgobj;
                       it is a move and both arguments are the same }
                     if is_same_reg_move(regtype) then
                       begin
+                        { Be careful of dangling pointers in previous reg_allocs,
+                          ss these can confuse the register allocator }
+                        hp:=tai(p.previous);
+                        while Assigned(hp) do
+                          begin
+                            if (hp.typ in [ait_comment,ait_tempalloc,ait_varloc]) then
+                              { Do nothing, but pass control flow to
+                                "hp:=tai(hp.previous)" and continue the loop }
+                            else if (hp.typ=ait_regalloc) then
+                              begin
+                                if tai_regalloc(hp).instr=p then
+                                  tai_regalloc(hp).instr:=nil;
+                              end
+                            else
+                              Break;
+                            hp:=tai(hp.previous);
+                          end;
                         remove_ai(list,p);
                         continue;
                       end;
@@ -2514,6 +2557,7 @@ unit rgobj;
             end;
         list.insertlistafter(headertai,templist);
         templist.free;
+        templist := nil;
         { Walk through all instructions, we can start with the headertai,
           because before the header tai is only symbols }
         p:=headertai;
@@ -2525,7 +2569,7 @@ unit rgobj;
                   begin
                     if (getregtype(reg)=regtype) then
                       begin
-                        {A register allocation of the spilled register (and all coalesced registers) 
+                        {A register allocation of the spilled register (and all coalesced registers)
                          must be removed.}
                         supreg:=get_alias(getsupreg(reg));
                         if supregset_in(regs_to_spill_set,supreg) then
@@ -2838,7 +2882,7 @@ unit rgobj;
           following code for it. The used positions where code need
           to be inserted are marked using #. Note that code is always inserted
           before the positions using pos.previous. This way the position is always
-          the same since pos doesn't change, but pos.previous is modified everytime
+          the same since pos doesn't change, but pos.previous is modified every time
           new code is inserted.
 
           [
@@ -2868,7 +2912,7 @@ unit rgobj;
         oldlive_registers.copyfrom(live_registers);
 
         { Process all tai_regallocs belonging to this instruction, ignore explicit
-          inserted regallocs. These can happend for example in i386:
+          inserted regallocs. These can happened for example in i386:
              mov ref,ireg26
              <regdealloc ireg26, instr=taicpu of lea>
              <regalloc edi, insrt=nil>
@@ -2877,13 +2921,21 @@ unit rgobj;
           they can't be used during the spilling }
         loadpos:=tai(instr.previous);
         while assigned(loadpos) and
+          (
+            (loadpos.typ in [ait_comment,ait_tempalloc,ait_varloc]) or
+            (
               (loadpos.typ=ait_regalloc) and
-              ((tai_regalloc(loadpos).instr=nil) or
-               (tai_regalloc(loadpos).instr=instr)) do
+              (
+                (tai_regalloc(loadpos).instr=nil) or
+                (tai_regalloc(loadpos).instr=instr)
+              )
+            )
+          ) do
           begin
             { Only add deallocs belonging to the instruction. Explicit inserted deallocs
               belong to the previous instruction and not the current instruction }
-            if (tai_regalloc(loadpos).instr=instr) and
+            if (loadpos.typ=ait_regalloc) and
+               (tai_regalloc(loadpos).instr=instr) and
                (tai_regalloc(loadpos).ratype=ra_dealloc) then
               live_registers.add(get_alias(getsupreg(tai_regalloc(loadpos).reg)));
             loadpos:=tai(loadpos.previous);
@@ -3002,7 +3054,7 @@ unit rgobj;
 {$ifdef DEBUG_SPILLCOALESCE}
     procedure trgobj.write_spill_stats;
 
-      { This procedure outputs spilling statistincs.
+      { This procedure outputs spilling statistics.
         If no spilling has occurred, no output is provided.
         NUM is the number of spilled registers.
         EFF is efficiency of the spilling which is based on

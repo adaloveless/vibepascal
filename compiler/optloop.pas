@@ -33,17 +33,20 @@ unit optloop;
 
     function unroll_loop(node : tnode) : tnode;
     function OptimizeInductionVariables(node : tnode) : boolean;
+    function optimize_record_writes(var n: tnode): boolean;
     function OptimizeForLoop(var node : tnode) : boolean;
 
   implementation
 
     uses
-      cutils,cclasses,compinnr,
+      cclasses,cutils,compinnr,cdynset,
       globtype,globals,constexp,
-      verbose,
-      symdef,symsym,
-      defutil,
+{$ifdef i386}
       cpuinfo,
+{$endif i386}
+      verbose,
+      symbase,symconst,symdef,symsym,symtype,
+      defutil,
       nutils,
       nadd,nbas,nflw,ncon,ninl,ncal,nld,nmem,ncnv,
       ncgmem,
@@ -260,18 +263,6 @@ unit optloop;
           end;
       end;
 
-    var
-      initcode,
-      calccode,
-      deletecode : tblocknode;
-      initcodestatements,
-      calccodestatements,
-      deletecodestatements: tstatementnode;
-      templist : tfplist;
-      inductionexprs : tfplist;
-      changedforloop,
-      containsnestedforloop,
-      docalcatend: boolean;
 
     function checkcontinue(var n:tnode; arg: pointer): foreachnoderesult;
       begin
@@ -295,7 +286,7 @@ unit optloop;
                 { no aliasing? }
                 result:=(([nf_write,nf_modify]*expr.flags)=[]) and not(tabstractvarsym(tloadnode(expr).symtableentry).addr_taken) and
                 { no definition in the loop? }
-                  not(DFASetIn(tfornode(loop).t2.optinfo^.defsum,expr.optinfo^.index));
+                  not(DynSetIn(tfornode(loop).t2.optinfo^.defsum,expr.optinfo^.index));
             end;
           vecn:
             begin
@@ -312,57 +303,77 @@ unit optloop;
       end;
 
 
-    { checks if the strength of n can be recuded, arg is the tforloop being considered }
-    function dostrengthreductiontest(var n: tnode; arg: pointer): foreachnoderesult;
+    type
+      toptimizeinductionvariablescontext = object
+        currforloop : tfornode;
+        initcode,
+        calccode,
+        deletecode : tblocknode;
+        initcodestatements,
+        calccodestatements,
+        deletecodestatements: tstatementnode;
+        ninductions : sizeint;
+        inductions : array of record
+          temp : ttempcreatenode;
+          expr : tnode;
+        end;
+        changedforloop,
+        containsnestedforloop,
+        docalcatend : boolean;
+        function findpreviousstrengthreduction(var n: tnode): boolean;
+        procedure addinduction(temp : ttempcreatenode; expr : tnode);
+        function dostrengthreductiontest(var n: tnode): foreachnoderesult;
+        procedure optimizeinductionvariablessingleforloop(var n: tnode);
+      end;
 
-      function findpreviousstrengthreduction : boolean;
-        var
-          i : longint;
-          hp : tnode;
-        begin
-          result:=false;
-          for i:=0 to inductionexprs.count-1 do
-            begin
-              { do we already maintain one expression? }
-              if tnode(inductionexprs[i]).isequal(n) then
-                begin
-                  case n.nodetype of
-                    muln:
-                      hp:=ctemprefnode.create(ttempcreatenode(templist[i]));
-                    vecn:
-                      hp:=ctypeconvnode.create_internal(cderefnode.create(ctemprefnode.create(
-                        ttempcreatenode(templist[i]))),n.resultdef);
-                    else
-                      internalerror(200809211);
-                  end;
-                  n.free;
-                  n:=hp;
-                  result:=true;
-                  exit;
+
+    function toptimizeinductionvariablescontext.findpreviousstrengthreduction(var n: tnode): boolean;
+      var
+        i : longint;
+        hp : tnode;
+      begin
+        result:=false;
+        for i:=0 to ninductions-1 do
+          begin
+            { do we already maintain one expression? }
+            if inductions[i].expr.isequal(n) then
+              begin
+                case n.nodetype of
+                  muln:
+                    hp:=ctemprefnode.create(inductions[i].temp);
+                  vecn:
+                    hp:=ctypeconvnode.create_internal(cderefnode.create(ctemprefnode.create(inductions[i].temp)),n.resultdef);
+                  else
+                    internalerror(200809211);
                 end;
-            end;
-        end;
+                n.free;
+                n:=hp;
+                exit(true);
+              end;
+          end;
+      end;
 
 
-      procedure CreateNodes;
-        begin
-          if not assigned(initcode) then
-            begin
-              initcode:=internalstatements(initcodestatements);
-              calccode:=internalstatements(calccodestatements);
-              deletecode:=internalstatements(deletecodestatements);
-            end;
-        end;
+    procedure toptimizeinductionvariablescontext.addinduction(temp : ttempcreatenode; expr : tnode);
+      begin
+        if not assigned(initcode) then
+          begin
+            initcode:=internalstatements(initcodestatements);
+            calccode:=internalstatements(calccodestatements);
+            deletecode:=internalstatements(deletecodestatements);
+            docalcatend:=not(assigned(currforloop.entrylabel)) and
+              not(foreachnodestatic(currforloop.t2,@checkcontinue,nil));
+          end;
+        if ninductions>=length(inductions) then
+          SetLength(inductions,4+ninductions+ninductions shr 1);
+        inductions[ninductions].temp:=temp;
+        inductions[ninductions].expr:=expr;
+        inc(ninductions);
+      end;
 
 
-      procedure CheckCalcAtEnd;
-        begin
-          if not assigned(initcode) then
-            docalcatend:=not(assigned(tfornode(arg).entrylabel)) and
-              not(foreachnodestatic(tfornode(arg).t2,@checkcontinue,nil));
-        end;
-
-
+    { checks if the strength of n can be reduced, currforloop is the tforloop being considered }
+    function toptimizeinductionvariablescontext.dostrengthreductiontest(var n: tnode): foreachnoderesult;
       var
         tempnode,startvaltemp : ttempcreatenode;
         dummy : longint;
@@ -379,23 +390,23 @@ unit optloop;
           muln:
             begin
               if (taddnode(n).right.nodetype=loadn) and
-                taddnode(n).right.isequal(tfornode(arg).left) and
+                taddnode(n).right.isequal(currforloop.left) and
                 { plain read of the loop variable? }
                 not(nf_write in taddnode(n).right.flags) and
                 not(nf_modify in taddnode(n).right.flags) and
-                is_loop_invariant(tfornode(arg),taddnode(n).left) then
+                is_loop_invariant(currforloop,taddnode(n).left) then
                 taddnode(n).swapleftright;
 
               if (taddnode(n).left.nodetype=loadn) and
-                taddnode(n).left.isequal(tfornode(arg).left) and
+                taddnode(n).left.isequal(currforloop.left) and
                 { plain read of the loop variable? }
                 not(nf_write in taddnode(n).left.flags) and
                 not(nf_modify in taddnode(n).left.flags) and
-                is_loop_invariant(tfornode(arg),taddnode(n).right) then
+                is_loop_invariant(currforloop,taddnode(n).right) then
                 begin
                   changedforloop:=true;
                   { did we use the same expression before already? }
-                  if not(findpreviousstrengthreduction) then
+                  if not(findpreviousstrengthreduction(n)) then
                     begin
 {$ifdef DEBUG_OPTSTRENGTH}
                       writeln('**********************************************************************************');
@@ -403,15 +414,11 @@ unit optloop;
                       printnode(n);
                       writeln('**********************************************************************************');
 {$endif DEBUG_OPTSTRENGTH}
-                      CheckCalcAtEnd;
                       tempnode:=ctempcreatenode.create(n.resultdef,n.resultdef.size,tt_persistent,
                         tstoreddef(n.resultdef).is_intregable or tstoreddef(n.resultdef).is_fpuregable);
+                      addinduction(tempnode,n);
 
-                      templist.Add(tempnode);
-                      inductionexprs.Add(n);
-                      CreateNodes;
-
-                      if lnf_backward in tfornode(arg).loopflags then
+                      if lnf_backward in currforloop.loopflags then
                         addstatement(calccodestatements,
                           geninlinenode(in_dec_x,false,
                           ccallparanode.create(ctemprefnode.create(tempnode),ccallparanode.create(taddnode(n).right.getcopy,nil))))
@@ -421,12 +428,12 @@ unit optloop;
                           ccallparanode.create(ctemprefnode.create(tempnode),ccallparanode.create(taddnode(n).right.getcopy,nil))));
 
                       addstatement(initcodestatements,tempnode);
-                      nn:=tfornode(arg).right.getcopy;
+                      nn:=currforloop.right.getcopy;
                       { If the calculation is not performed at the end
                         it is needed to adjust the starting value }
                       if not docalcatend then
                         begin
-                          if lnf_backward in tfornode(arg).loopflags then
+                          if lnf_backward in currforloop.loopflags then
                             nt:=addn
                           else
                             nt:=subn;
@@ -455,10 +462,10 @@ unit optloop;
               { is the index the counter variable? }
               if not(is_special_array(tvecnode(n).left.resultdef)) and
                 not(is_packed_array(tvecnode(n).left.resultdef)) and
-                (tvecnode(n).right.isequal(tfornode(arg).left) or
+                (tvecnode(n).right.isequal(currforloop.left) or
                  { fpc usually creates a type cast to access an array }
                  ((tvecnode(n).right.nodetype=typeconvn) and
-                  ttypeconvnode(tvecnode(n).right).left.isequal(tfornode(arg).left)
+                  ttypeconvnode(tvecnode(n).right).left.isequal(currforloop.left)
                  )
                 ) and
                 { plain read of the loop variable? }
@@ -467,7 +474,7 @@ unit optloop;
                 { direct array access? }
                 ((tvecnode(n).left.nodetype=loadn) or
                 { ... or loop invariant expression? }
-                is_loop_invariant(tfornode(arg),tvecnode(n).right))
+                is_loop_invariant(currforloop,tvecnode(n).right))
 {$if not (defined(cpu16bitalu) or defined(cpu8bitalu))}
                 { removing the multiplication is only worth the
                   effort if it's not a simple shift }
@@ -477,7 +484,7 @@ unit optloop;
                 begin
                   changedforloop:=true;
                   { did we use the same expression before already? }
-                  if not(findpreviousstrengthreduction) then
+                  if not(findpreviousstrengthreduction(n)) then
                     begin
 {$ifdef DEBUG_OPTSTRENGTH}
                       writeln('**********************************************************************************');
@@ -485,14 +492,10 @@ unit optloop;
                       printnode(n);
                       writeln('**********************************************************************************');
 {$endif DEBUG_OPTSTRENGTH}
-                      CheckCalcAtEnd;
                       tempnode:=ctempcreatenode.create(voidpointertype,voidpointertype.size,tt_persistent,true);
+                      addinduction(tempnode,n);
 
-                      templist.Add(tempnode);
-                      inductionexprs.Add(n);
-                      CreateNodes;
-
-                      if lnf_backward in tfornode(arg).loopflags then
+                      if lnf_backward in currforloop.loopflags then
                         addstatement(calccodestatements,
                           cinlinenode.createintern(in_dec_x,false,
                           ccallparanode.create(ctemprefnode.create(tempnode),ccallparanode.create(
@@ -505,15 +508,15 @@ unit optloop;
 
                       addstatement(initcodestatements,tempnode);
 
-                      startvaltemp:=maybereplacewithtemp(tfornode(arg).right,initcode,initcodestatements,tfornode(arg).right.resultdef.size,true);
+                      startvaltemp:=maybereplacewithtemp(currforloop.right,initcode,initcodestatements,currforloop.right.resultdef.size,true);
                       nn:=caddrnode.create(
-                          cvecnode.create(tvecnode(n).left.getcopy,ctypeconvnode.create_internal(tfornode(arg).right.getcopy,tvecnode(n).right.resultdef))
+                          cvecnode.create(tvecnode(n).left.getcopy,ctypeconvnode.create_internal(currforloop.right.getcopy,tvecnode(n).right.resultdef))
                         );
                       { If the calculation is not performed at the end
                         it is needed to adjust the starting value }
                       if not docalcatend then
                         begin
-                          if lnf_backward in tfornode(arg).loopflags then
+                          if lnf_backward in currforloop.loopflags then
                             nt:=addn
                           else
                             nt:=subn;
@@ -532,7 +535,7 @@ unit optloop;
                       addstatement(deletecodestatements,ctempdeletenode.create(tempnode));
                     end;
                   { Copy the nf_write,nf_modify flags to the new deref node of the temp.
-                    Othewise assignments to vector elements will be removed. }
+                    Otherwise assignments to vector elements will be removed. }
                   if nflags*[nf_write,nf_modify]<>[] then
                     begin
                       if (n.nodetype<>typeconvn) or (ttypeconvnode(n).left.nodetype<>derefn) then
@@ -550,28 +553,36 @@ unit optloop;
       end;
 
 
-    function OptimizeInductionVariablesSingleForLoop(node : tnode) : tnode;
+    function dostrengthreductiontest_callback(var n: tnode; arg: pointer): foreachnoderesult;
+      begin
+        result:=toptimizeinductionvariablescontext(arg^).dostrengthreductiontest(n);
+      end;
+
+
+    procedure toptimizeinductionvariablescontext.optimizeinductionvariablessingleforloop(var n: tnode);
       var
         loopcode : tblocknode;
         loopcodestatements,
         newcodestatements : tstatementnode;
-        fornode : tfornode;
+        newfor,oldn : tnode;
       begin
-        result:=nil;
-        if node.nodetype<>forn then
-          exit;
-        templist:=TFPList.Create;
-        inductionexprs:=TFPList.Create;
+        { do we have DFA available? }
+        if pi_dfaavailable in current_procinfo.flags then
+          begin
+            CalcDefSum(tfornode(n).t2);
+          end;
+        currforloop:=tfornode(n);
         initcode:=nil;
         calccode:=nil;
         deletecode:=nil;
         initcodestatements:=nil;
         calccodestatements:=nil;
         deletecodestatements:=nil;
+        ninductions:=0;
         docalcatend:=false;
         { find all expressions being candidates for strength reduction
           and replace them }
-        foreachnodestatic(pm_postprocess,node,@dostrengthreductiontest,node);
+        foreachnodestatic(pm_postprocess,n,@dostrengthreductiontest_callback,@self);
 
         { clue everything together }
         if assigned(initcode) then
@@ -580,73 +591,489 @@ unit optloop;
             do_firstpass(tnode(calccode));
             do_firstpass(tnode(deletecode));
             { create a new for node, the old one will be released by the compiler }
-            with tfornode(node) do
-              begin
-                fornode:=cfornode.create(left,right,t1,t2,lnf_backward in loopflags);
-                left:=nil;
-                right:=nil;
-                t1:=nil;
-                t2:=nil;
-              end;
-            node:=fornode;
+            oldn:=n;
+            newfor:=cfornode.create(tfornode(oldn).left,tfornode(oldn).right,tfornode(oldn).t1,tfornode(oldn).t2,lnf_backward in tfornode(oldn).loopflags);
+            tfornode(oldn).left:=nil;
+            tfornode(oldn).right:=nil;
+            tfornode(oldn).t1:=nil;
+            tfornode(oldn).t2:=nil;
 
             loopcode:=internalstatements(loopcodestatements);
             if not docalcatend then
               addstatement(loopcodestatements,calccode);
-            addstatement(loopcodestatements,tfornode(node).t2);
+            addstatement(loopcodestatements,tfornode(newfor).t2);
             if docalcatend then
               addstatement(loopcodestatements,calccode);
-            tfornode(node).t2:=loopcode;
-            do_firstpass(node);
+            tfornode(newfor).t2:=loopcode;
+            do_firstpass(newfor);
 
-            result:=internalstatements(newcodestatements);
+            n:=internalstatements(newcodestatements);
+            oldn.Free;
+            oldn := nil;
             addstatement(newcodestatements,initcode);
-            initcode:=nil;
-            addstatement(newcodestatements,node);
+            addstatement(newcodestatements,newfor);
             addstatement(newcodestatements,deletecode);
           end;
-        templist.Free;
-        inductionexprs.Free;
       end;
 
 
-    function OptimizeInductionVariables_iterforloops(var n: tnode; arg: pointer): foreachnoderesult;
+    function optimizeinductionvariablessingleforloop_static(var n: tnode; arg: pointer): foreachnoderesult;
       var
-        hp : tnode;
+        ctx : ^toptimizeinductionvariablescontext absolute arg;
       begin
         Result:=fen_false;
-        if n.nodetype=forn then
-          begin
-            { do we have DFA available? }
-            if pi_dfaavailable in current_procinfo.flags then
-              begin
-                CalcDefSum(tfornode(n).t2);
-              end;
-
-            containsnestedforloop:=false;
-            hp:=OptimizeInductionVariablesSingleForLoop(n);
-            if assigned(hp) then
-              begin
-                n.Free;
-                n:=hp;
-              end;
-            { can we avoid further searching? }
-            if not(containsnestedforloop) then
-              Result:=fen_norecurse_false;
-          end;
+        if n.nodetype<>forn then
+          exit;
+        ctx^.containsnestedforloop:=false;
+        ctx^.optimizeinductionvariablessingleforloop(n);
+        { can we avoid further searching? }
+        if not(ctx^.containsnestedforloop) then
+          Result:=fen_norecurse_false;
       end;
 
 
     function OptimizeInductionVariables(node : tnode) : boolean;
+      var
+        ctx : toptimizeinductionvariablescontext;
       begin
         Result:=false;
         if not(pi_dfaavailable in current_procinfo.flags) then
           exit;
-        changedforloop:=false;
-        foreachnodestatic(pm_postprocess,node,@OptimizeInductionVariables_iterforloops,nil);
-        Result:=changedforloop;
+        ctx.changedforloop:=false;
+        foreachnodestatic(pm_postprocess,node,@optimizeinductionvariablessingleforloop_static,@ctx);
+        Result:=ctx.changedforloop;
       end;
 
+
+    function recorddirectaccess(var n: tnode; arg: pointer): foreachnoderesult;
+      begin
+        result:=fen_false;
+        case n.nodetype of
+          subscriptn:
+            if (TSubscriptNode(n).left.nodetype=loadn) and
+              (TLoadNode(TSubscriptNode(n).left).symtableentry=TSymEntry(arg)) then
+              { It's fine if the record is loaded to access a single field }
+              result:=fen_norecurse_false;
+          loadn:
+            if (TLoadNode(n).symtableentry=TSymEntry(arg)) then
+              result:=fen_norecurse_true;
+          else
+            ;
+        end;
+      end;
+
+
+    type
+      TFieldTempPair = class(TLinkedListItem)
+        BaseSymbol: TAbstractVarSym;
+        Field: TFieldVarSym;
+        TempCreate: TTempCreateNode;
+        InitialRead: Boolean;
+        FieldRead: Boolean;
+        FieldWritten: Boolean;
+        Score: LongInt;
+        FirstDepth: Integer;
+      end;
+
+      PRecordData = ^TRecordData;
+      TRecordData = record
+        BaseSymbol: TAbstractVarSym;
+        Fields: TLinkedList;
+        Depth: Integer;
+      end;
+
+    function recordloopfindrefs(var n: tnode; arg: pointer): foreachnoderesult; forward;
+
+    { Needed as we can't reference recordloopfindrefs directly within itself }
+    function recordloopfindrefs_recursive(var n: tnode; arg: pointer): foreachnoderesult;
+      begin
+        result:=recordloopfindrefs(n, arg);
+      end;
+
+    function recordloopfindrefs(var n: tnode; arg: pointer): foreachnoderesult;
+      var
+        ThisTemp: TFieldTempPair;
+      begin
+        case n.nodetype of
+          subscriptn:
+            if (TSubscriptNode(n).left.nodetype=loadn) and
+              (TLoadNode(TSubscriptNode(n).left).symtableentry=PRecordData(arg)^.BaseSymbol) and
+              { Needs to be a basic type }
+              not is_string(TSubscriptNode(n).vs.vardef) and
+              not is_object(TSubscriptNode(n).vs.vardef) and
+              not is_managed_type(TSubscriptNode(n).vs.vardef) and
+              (
+                (
+                  tstoreddef(TSubscriptNode(n).vs.vardef).is_intregable and
+                  (TSubscriptNode(n).vs.vardef.size<=sizeof(aint))
+                ) or
+                tstoreddef(TSubscriptNode(n).vs.vardef).is_fpuregable or
+                (
+                  is_vector(tstoreddef(TSubscriptNode(n).vs.vardef)) and
+                  fits_in_mm_register(tstoreddef(TSubscriptNode(n).vs.vardef))
+                )
+              ) then
+              begin
+                { See if we've defined this field already }
+                ThisTemp:=TFieldTempPair(PRecordData(arg)^.Fields.First);
+                while Assigned(ThisTemp) do
+                  begin
+                    if (ThisTemp.BaseSymbol=PRecordData(arg)^.BaseSymbol) and
+                      (ThisTemp.Field=TSubscriptNode(n).vs) then
+                      Break;
+                    ThisTemp:=TFieldTempPair(ThisTemp.Next);
+                  end;
+
+                if not Assigned(ThisTemp) then
+                  begin
+                    ThisTemp:=TFieldTempPair.Create;
+                    ThisTemp.BaseSymbol:=PRecordData(arg)^.BaseSymbol;
+                    ThisTemp.Field:=TSubscriptNode(n).vs;
+                    ThisTemp.TempCreate:=CTempCreateNode.Create(TSubscriptNode(n).vs.vardef,TSubscriptNode(n).vs.vardef.size,tt_persistent,True);
+                    ThisTemp.InitialRead:=(nf_modify in TLoadNode(TSubscriptNode(n).left).flags) or not (nf_write in TLoadNode(TSubscriptNode(n).left).flags);
+                    ThisTemp.FieldWritten:=False;
+                    ThisTemp.Score:=0;
+                    ThisTemp.FirstDepth:=PRecordData(arg)^.Depth;
+                    if not Assigned(PRecordData(arg)^.Fields.Last) then
+                      PRecordData(arg)^.Fields.Insert(ThisTemp)
+                    else
+                      PRecordData(arg)^.Fields.InsertAfter(ThisTemp,PRecordData(arg)^.Fields.Last);
+                  end;
+
+                { A write is worth 1.5 times as much as a read under the scoring system }
+                if TLoadNode(TSubscriptNode(n).left).flags*[nf_write,nf_modify]<>[] then
+                  begin
+                    ThisTemp.FieldWritten:=True;
+                    Inc(ThisTemp.Score,3);
+                    if nf_modify in TLoadNode(TSubscriptNode(n).left).flags then
+                      begin
+                        ThisTemp.FieldRead:=True;
+                        Inc(ThisTemp.Score,2);
+                      end;
+                  end
+                else
+                  begin
+                    ThisTemp.FieldRead:=True;
+                    Inc(ThisTemp.Score,2);
+                  end;
+
+                result:=fen_true;
+                Exit;
+              end;
+          else
+            if n.InheritsFrom(TLoopNode) then
+              begin
+                if foreachnodestatic(pm_postprocess, TLoopNode(n).left, @recordloopfindrefs_recursive, arg) then
+                  result:=fen_true;
+
+                { Writes inside loops may not get executed, so we need to read an initial value to be safe,
+                  hence the incrementation of Depth prior to analysing the right and t1 nodes }
+                Inc(PRecordData(arg)^.Depth);
+                if foreachnodestatic(pm_postprocess, TLoopNode(n).right, @recordloopfindrefs_recursive, arg) then
+                  result:=fen_true;
+                if foreachnodestatic(pm_postprocess, TLoopNode(n).t1, @recordloopfindrefs_recursive, arg) then
+                  result:=fen_true;
+
+                Dec(PRecordData(arg)^.Depth);
+              end;
+        end;
+        result:=fen_false;
+      end;
+
+
+    function recordloopreplacerefs(var n: tnode; arg: pointer): foreachnoderesult;
+      var
+        ThisTemp: TFieldTempPair;
+        NewNode: TNode;
+      begin
+        case n.nodetype of
+          subscriptn:
+            if (TSubscriptNode(n).left.nodetype=loadn) and
+              (TLoadNode(TSubscriptNode(n).left).symtableentry.typ in [localvarsym, paravarsym]) then
+              begin
+                { See if this field has been defined }
+                ThisTemp:=TFieldTempPair(PRecordData(arg)^.Fields.First);
+                while Assigned(ThisTemp) do
+                  begin
+                    if (ThisTemp.BaseSymbol=TLoadNode(TSubscriptNode(n).left).symtableentry) and
+                      (ThisTemp.Field=TSubscriptNode(n).vs) then
+                      Break;
+                    ThisTemp:=TFieldTempPair(ThisTemp.Next);
+                  end;
+
+                if not Assigned(ThisTemp) then
+                  begin
+                    { The field should not be replaced }
+                    result:=fen_norecurse_false;
+                    Exit;
+                  end;
+
+                { Now actually replace the node }
+                NewNode:=CTempRefNode.Create(ThisTemp.TempCreate);
+                NewNode.fileinfo:=n.fileinfo;
+                NewNode.flags:=NewNode.flags+(TLoadNode(TSubscriptNode(n).left).flags*[nf_write,nf_modify]);
+                n.Free;
+                n:=NewNode;
+                n.pass_typecheck;
+                result:=fen_true;
+                Exit;
+              end;
+          else
+            ;
+        end;
+        result:=fen_false;
+      end;
+
+
+    { Estimate a per-platform register limit to prevent too much register pressure. }
+    const
+{$if defined(i386) or defined(i8086)}
+      RECORD_TEMP_LIMIT = 3;
+{$elseif defined(aarch64) or defined(riscv64)}
+      RECORD_TEMP_LIMIT = 15;
+{$else}
+      RECORD_TEMP_LIMIT = 7;
+{$endif}
+
+    function discount_temprefs(var n:tnode; arg: pointer): foreachnoderesult;
+      begin
+        if n.nodetype=temprefn then
+          begin
+            Dec(PInteger(arg)^);
+            result:=fen_norecurse_true;
+          end
+        else
+          result:=fen_false;
+      end;
+
+
+    function _optimize_record_writes(var n:tnode; arg: pointer): foreachnoderesult;
+      var
+        X, Y, SymCount: Integer;
+        MinScore: LongInt;
+        CurrentSym: TSym;
+        RecordData: TRecordData;
+        AbortRecord: Boolean;
+        NewBlock: TBlockNode;
+        NewWrapper: TStatementNode;
+        ThisTemp, NextTemp: TFieldTempPair;
+        NewCopy, NewNode: TNode;
+        record_limit: Integer;
+      begin
+        result:=fen_false;
+        record_limit:=RECORD_TEMP_LIMIT;
+
+        { Record promotion }
+        if (n.nodetype=whilerepeatn) and
+          not (nf_internal in n.flags) then
+          begin
+            if foreachnodestatic(pm_postprocess,n,@discount_temprefs,@record_limit) and
+              (record_limit<=0) then
+              { Likely no free registers }
+              Exit;
+
+            RecordData.Fields:=nil;
+            { Check to see if local record-types can have individual fields
+              promoted to registers }
+            if current_procinfo.procdef.localst.symtabletype = localsymtable then
+              begin
+                RecordData.Fields:=TLinkedList.Create;
+                SymCount:=current_procinfo.procdef.localst.SymList.Count-1;
+                for X:=0 to SymCount do
+                  begin
+                    CurrentSym:=TSym(current_procinfo.procdef.localst.SymList[X]);
+                    if (CurrentSym.typ=localvarsym) and
+                      { Don't optimise records whose address has been taken,
+                        since there may be some multithreaded access going on }
+                      (TAbstractVarSym(CurrentSym).varsymaccess*[vsa_addr_taken,vsa_different_scope]=[]) then
+                      begin
+
+                        if is_record(TAbstractVarSym(CurrentSym).vardef) then
+                          begin
+                            { TODO: Support unions in a limited fashion later }
+                            if TRecordDef(TAbstractVarSym(CurrentSym).vardef).isunion then
+                              Continue;
+
+                            { Ignore records with only a single field, but
+                              note they may be regable }
+                            if (TRecordDef(TAbstractVarSym(CurrentSym).vardef).symtable.SymList.Count <= 1) then
+                              begin
+                                Dec(record_limit);
+                                Continue;
+                              end;
+
+                            AbortRecord:=False;
+                            { Make sure an absolute variable doesn't alias to it }
+                            for Y:=0 to SymCount do
+                              if (X<>Y) and
+                                (TSym(current_procinfo.procdef.localst.SymList[X]).typ=absolutevarsym) and
+                                (TAbsoluteVarSym(current_procinfo.procdef.localst.SymList[X]).abstyp=tovar) and
+                                (TAbsoluteVarSym(current_procinfo.procdef.localst.SymList[X]).ref.firstsym^.sltype=sl_load) and
+                                (TAbsoluteVarSym(current_procinfo.procdef.localst.SymList[X]).ref.firstsym^.sym=CurrentSym) then
+                                begin
+                                  { Don't take any chances }
+                                  AbortRecord:=True;
+                                  Break;
+                                end;
+
+                            if AbortRecord then
+                              Continue;
+
+                            { Check to see that the symbol isn't directly accessed as one }
+                            if foreachnodestatic(pm_postprocess, n, @recorddirectaccess, CurrentSym) then
+                              Continue;
+
+                            RecordData.BaseSymbol:=TAbstractVarSym(CurrentSym);
+                            RecordData.Depth:=0;
+
+                            foreachnodestatic(pm_postprocess, n, @recordloopfindrefs, @RecordData);
+                          end
+                        else if
+                          (
+                            tstoreddef(TAbstractVarSym(CurrentSym).vardef).is_intregable and
+                            (TAbstractVarSym(CurrentSym).vardef.size<=sizeof(aint))
+                          ) or
+                          tstoreddef(TAbstractVarSym(CurrentSym).vardef).is_fpuregable or
+                          (
+                            is_vector(tstoreddef(TAbstractVarSym(CurrentSym).vardef)) and
+                            fits_in_mm_register(tstoreddef(TAbstractVarSym(CurrentSym).vardef))
+                          ) then
+                          begin
+                            if foreachnodestatic(pm_postprocess, n, @recorddirectaccess, CurrentSym) then
+                              { This simple type is likely to become a register, so reduce the limit }
+                              Dec(record_limit);
+                          end;
+                      end;
+                  end;
+
+                if (RecordData.Fields.Count > 0) and
+                  { If record_limit has gone negative, it may be that there are
+                    too many potential regable variables that aren't records,
+                    and in extreme cases the count may still be negative even
+                    if all of the non-record variables are discounted }
+                  (RecordData.Fields.Count + record_limit > 0) then
+                  begin
+                    { If we have too many record fields to potentially optimise,
+                      start excluding ones that give a low return }
+                    while (RecordData.Fields.Count > record_limit) do
+                      begin
+                        MinScore:=$7FFFFFFF;
+                        NextTemp:=nil;
+
+                        ThisTemp:=TFieldTempPair(RecordData.Fields.First);
+                        while Assigned(ThisTemp) do
+                          begin
+                            if (ThisTemp.Score<MinScore) then
+                              begin
+                                NextTemp:=ThisTemp;
+                                MinScore:=ThisTemp.Score;
+                              end;
+
+                            ThisTemp:=TFieldTempPair(ThisTemp.Next);
+                          end;
+
+                        if not Assigned(NextTemp) then
+                          { No more temps }
+                          Break;
+
+                        TFieldTempPair(NextTemp).TempCreate.Free;
+                        RecordData.Fields.Remove(NextTemp);
+                      end;
+
+                    { Now that inefficient ones have been removed, replace the subscript nodes }
+                    if (RecordData.Fields.Count > 0) and
+                      foreachnodestatic(pm_postprocess, n, @recordloopreplacerefs, @RecordData) then
+                      begin
+                        { Since the loop has had temprefs inserted, put
+                          the relevant tempcreates and tempdeletes before
+                          and after it. }
+                        NewBlock:=internalstatements(NewWrapper);
+                        ThisTemp:=TFieldTempPair(RecordData.Fields.First);
+                        while Assigned(ThisTemp) do
+                          begin
+                            ThisTemp.TempCreate.fileinfo:=n.fileinfo;
+                            addstatement(NewWrapper, ThisTemp.TempCreate);
+                            if ThisTemp.InitialRead or (ThisTemp.FirstDepth<>0) then
+                              begin
+                                NewNode:=cassignmentnode.create_internal( { Suppress uninitialized value warning }
+                                  ctemprefnode.create(
+                                    ThisTemp.TempCreate
+                                  ),
+                                  csubscriptnode.create(
+                                    ThisTemp.Field,
+                                    cloadnode.create(ThisTemp.BaseSymbol,current_procinfo.procdef.localst)
+                                  )
+                                );
+                                NewNode.fileinfo:=n.fileinfo;
+                                addstatement(NewWrapper,NewNode);
+                              end;
+                            ThisTemp:=TFieldTempPair(ThisTemp.Next);
+                          end;
+
+                        { If NewCopy is assigned, then it contains a block
+                          created during a previous iteration of this
+                          function's for-loop, which includes the original
+                          loop node, so insert that instead }
+                        NewCopy:=n.getcopy();
+                        node_reset_flags(NewCopy,[],[tnf_pass1_done]);
+                        Include(NewCopy.flags, nf_internal); { Prevents this simplification pass from happening again }
+                        addstatement(NewWrapper, NewCopy);
+
+                        ThisTemp:=TFieldTempPair(RecordData.Fields.Last);
+                        while Assigned(ThisTemp) do
+                          begin
+                            if ThisTemp.FieldWritten then
+                              begin
+                                { Write the value back to the record }
+
+                                NewNode:=cassignmentnode.create(
+                                  csubscriptnode.create(
+                                    ThisTemp.Field,
+                                    cloadnode.create(ThisTemp.BaseSymbol,current_procinfo.procdef.localst)
+                                  ),
+                                  ctemprefnode.create(
+                                    ThisTemp.TempCreate
+                                  )
+                                );
+                                NewNode.pass_typecheck;
+                                NewNode.fileinfo:=n.fileinfo;
+                                addstatement(NewWrapper, NewNode);
+                              end
+                            else
+                              { Might produce a more efficient temp }
+                              ThisTemp.TempCreate.tempflags:=ThisTemp.TempCreate.tempflags+[ti_const];
+
+                            NewNode:=CTempDeleteNode.create(ThisTemp.TempCreate);
+                            NewNode.fileinfo:=n.fileinfo;
+                            addstatement(NewWrapper, NewNode);
+                            ThisTemp:=TFieldTempPair(ThisTemp.Previous);
+                          end;
+
+                        n.Free;
+                        n:=NewBlock;
+                        n.pass_typecheck;
+                        Result:=fen_true;
+
+                        { Keep track of the old block in case more than one
+                          local record appears in the loop }
+                      end;
+                  end;
+              end;
+
+            RecordData.Fields.Free;
+          end;
+      end;
+
+    function optimize_record_writes(var n: tnode): boolean;
+      begin
+        Result:=foreachnodestatic(pm_preprocess,n,@_optimize_record_writes,nil);
+      end;
+
+
+    type
+      toptimizeforloopcontext = object
+        changedforloop : boolean;
+      end;
 
     function OptimizeForLoop_iterforloops(var n: tnode; arg: pointer): foreachnoderesult;
       begin
@@ -671,8 +1098,8 @@ unit optloop;
               Internalerror(2017122801);
             if not(assigned(tfornode(n).left.optinfo)) then
               exit;
-            if not(DFASetIn(tfornode(n).t2.optinfo^.usesum,tfornode(n).left.optinfo^.index)) and
-              not(DFASetIn(tfornode(n).t2.optinfo^.defsum,tfornode(n).left.optinfo^.index))  then
+            if not(DynSetIn(tfornode(n).t2.optinfo^.usesum,tfornode(n).left.optinfo^.index)) and
+              not(DynSetIn(tfornode(n).t2.optinfo^.defsum,tfornode(n).left.optinfo^.index))  then
               begin
                 { convert the loop from i:=a to b into i:=b-a+1 to 1 as this simplifies the
                   abort condition }
@@ -697,20 +1124,20 @@ unit optloop;
                 printnode(n);
                 writeln('**********************************************************************************');
 {$endif DEBUG_OPTFORLOOP}
-                changedforloop:=true;
+                toptimizeforloopcontext(arg^).changedforloop:=true;
               end;
           end;
       end;
 
 
     function OptimizeForLoop(var node : tnode) : boolean;
+      var
+        ctx : toptimizeforloopcontext;
       begin
-        Result:=false;
-        if not(pi_dfaavailable in current_procinfo.flags) then
-          exit;
-        changedforloop:=false;
-        foreachnodestatic(pm_postprocess,node,@OptimizeForLoop_iterforloops,nil);
-        Result:=changedforloop;
+        ctx.changedforloop:=false;
+        if pi_dfaavailable in current_procinfo.flags then
+          foreachnodestatic(pm_postprocess,node,@OptimizeForLoop_iterforloops,@ctx);
+        Result:=ctx.changedforloop;
       end;
 
 end.

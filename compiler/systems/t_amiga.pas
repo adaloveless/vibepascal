@@ -89,7 +89,7 @@ end;
 
 procedure TLinkerAmiga.SetAmigaPPCInfo;
 begin
-  with Info do 
+  with Info do
    begin
     if not UseVLink then
      begin
@@ -445,7 +445,7 @@ begin
       internalerror(2019050948);
   end;
 
-  { Remove ReponseFile }
+  { Remove ResponseFile }
   if (success) and not(cs_link_nolink in current_settings.globalswitches) then
     DeleteFile(outputexedir+Info.ResName);
 

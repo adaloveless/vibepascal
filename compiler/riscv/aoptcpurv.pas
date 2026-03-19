@@ -70,12 +70,22 @@ implementation
     cutils,
     verbose;
 
-  function MatchInstruction(const instr: tai; const op: TCommonAsmOps; const AConditions: TAsmConds = []): boolean;
+  function MatchInstruction(const instr: tai; const ops : array of TAsmOp; const AConditions: TAsmConds = []): boolean;
+    var
+      op : TAsmOp;
     begin
-      result :=
-        (instr.typ = ait_instruction) and
-        (taicpu(instr).opcode in op) and
-        ((AConditions=[]) or (taicpu(instr).condition in AConditions));
+      result:=false;
+      if (instr.typ <> ait_instruction) or
+        ((AConditions <> []) and not(taicpu(instr).condition in AConditions)) then
+        exit;
+      for op in ops do
+        begin
+          if taicpu(instr).opcode = op then
+            begin
+              result:=true;
+              exit;
+            end;
+        end;
     end;
 
 
@@ -716,18 +726,18 @@ implementation
       hp1: tai;
     begin
       result:=false;
-      {
-        Changes
-          andi x, y, #
-          andi z, x, #
-          dealloc x
-        To
-          andi z, y, # and #
-      }
       if (taicpu(p).ops=3) and
          (taicpu(p).oper[2]^.typ=top_const) and
          GetNextInstructionUsingReg(p, hp1, taicpu(p).oper[0]^.reg) then
         begin
+          {
+            Changes
+              andi x, y, #
+              andi z, x, #
+              dealloc x
+            To
+              andi z, y, # and #
+          }
           if MatchInstruction(hp1,A_ANDI) and
             (taicpu(hp1).ops=3) and
             MatchOperand(taicpu(p).oper[0]^,taicpu(hp1).oper[1]^) and
@@ -740,6 +750,29 @@ implementation
               taicpu(hp1).loadconst(2, taicpu(p).oper[2]^.val and taicpu(hp1).oper[2]^.val);
 
               DebugMsg('Peephole AndiAndi2Andi performed', hp1);
+
+              RemoveInstr(p);
+
+              result:=true;
+            end
+          {
+            Changes
+              andi x, y, #ff or ...
+              sb x, ...
+              dealloc x
+            To
+              sb x, ...
+          }
+          else if MatchInstruction(hp1,A_SB) and
+            (taicpu(hp1).ops=2) and
+            MatchOperand(taicpu(p).oper[0]^,taicpu(hp1).oper[0]^) and
+            (taicpu(p).oper[2]^.val and $ff=$ff) and
+            (not RegModifiedBetween(taicpu(p).oper[1]^.reg, p,hp1)) and
+            RegEndOfLife(taicpu(p).oper[0]^.reg, taicpu(hp1)) then
+            begin
+              taicpu(hp1).loadreg(0,taicpu(p).oper[1]^.reg);
+
+              DebugMsg('Peephole AndiSb2Sb performed', hp1);
 
               RemoveInstr(p);
 

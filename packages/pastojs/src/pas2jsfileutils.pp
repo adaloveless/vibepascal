@@ -816,7 +816,6 @@ begin
   if Position<=length(List) then inc(Position); // skip Delimiter
 end;
 
-
 procedure IncreaseChangeStamp(var Stamp: TChangeStamp);
 begin
   if Stamp<High(TChangeStamp) then
@@ -840,15 +839,15 @@ end;
   {$I pas2jsfileutilswasm.inc}
 {$ENDIF}
 
-initialization
 {$IFDEF HAVE_INITPLATFORM}
+initialization
   InitPlatform;
-{$ENDIF} 
+{$ENDIF}
 
-finalization
 {$IFDEF HAVE_FINALIZEPLATFORM}
+finalization
   FinalizePlatform;
-{$ENDIF}  
-  
+{$ENDIF}
+
 end.
 

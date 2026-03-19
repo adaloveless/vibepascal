@@ -28,7 +28,7 @@ begin
     success := false;
 end;
 
-const 
+const
   myFCCconst = 'FPas'; {Free Pascals Creator code :) }
 
 var
@@ -71,7 +71,7 @@ begin
   TestFourCharCode(myFCCconst);
 
   if success then
-    Writeln('Whole test succeded')
+    Writeln('Whole test succeeded')
   else
     begin
       Writeln('Whole test failed');

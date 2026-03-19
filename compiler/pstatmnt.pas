@@ -113,7 +113,7 @@ implementation
          consume(_IF);
          ex:=comp_expr([ef_accept_equal]);
          consume(_THEN);
-         if not(token in endtokens) then
+         if not(current_scanner.token in endtokens) then
            if_a:=statementorexpr
          else
            if_a:=nil;
@@ -149,7 +149,7 @@ implementation
       begin
          first:=nil;
          last:=nil;
-         while token<>_END do
+         while current_scanner.token<>_END do
            begin
               if first=nil then
                 begin
@@ -347,10 +347,13 @@ implementation
                    end;
                end;
              p.free;
+             p := nil;
              sl1.free;
+             sl1 := nil;
              sl2.free;
+             sl2 := nil;
 
-             if token=_COMMA then
+             if current_scanner.token=_COMMA then
                consume(_COMMA)
              else
                break;
@@ -363,11 +366,11 @@ implementation
            { next block }
            inc(blockid);
 
-           if not(token in [_ELSE,_OTHERWISE,_END]) then
+           if not(current_scanner.token in [_ELSE,_OTHERWISE,_END]) then
              consume(_SEMICOLON);
-         until (token in [_ELSE,_OTHERWISE,_END]);
+         until (current_scanner.token in [_ELSE,_OTHERWISE,_END]);
 
-         if (token in [_ELSE,_OTHERWISE]) then
+         if (current_scanner.token in [_ELSE,_OTHERWISE]) then
            begin
               if not try_to_consume(_ELSE) then
                 consume(_OTHERWISE);
@@ -411,7 +414,7 @@ implementation
 
          first:=nil;
          last:=nil;
-         while token<>_UNTIL do
+         while current_scanner.token<>_UNTIL do
            begin
               if first=nil then
                 begin
@@ -657,6 +660,7 @@ implementation
               result:=create_for_in_loop(hloopvar,hloopbody,expr);
 
               expr.free;
+              expr := nil;
             end;
 
 
@@ -853,7 +857,7 @@ implementation
          consume(_FOR);
 
          { Check for inline variable declaration: for var I ... }
-         if (token = _VAR) and (m_inline_var in current_settings.modeswitches) then
+         if (current_scanner.token = _VAR) and (m_inline_var in current_settings.modeswitches) then
            begin
              consume(_VAR);
 
@@ -864,7 +868,7 @@ implementation
                  exit;
                end;
 
-             if token <> _ID then
+             if current_scanner.token <> _ID then
                begin
                  consume(_ID);
                  result := cerrornode.create;
@@ -873,9 +877,9 @@ implementation
 
              { Create the loop variable – type may be set explicitly or inferred. }
              if symtablestack.top.symtabletype = localsymtable then
-               vs := clocalvarsym.create(orgpattern, vs_value, generrordef, [])
+               vs := clocalvarsym.create(current_scanner.orgpattern, vs_value, generrordef, [])
              else
-               vs := cstaticvarsym.create(orgpattern, vs_value, generrordef, []);
+               vs := cstaticvarsym.create(current_scanner.orgpattern, vs_value, generrordef, []);
              vs.register_sym;
              symtablestack.top.insertsym(vs);
              consume(_ID);
@@ -904,7 +908,7 @@ implementation
                      result := cerrornode.create;
                    end;
                end
-             else if token = _ASSIGNMENT then
+             else if current_scanner.token = _ASSIGNMENT then
                begin
                  { Type inference from 'from' expression:  for var I := expr to/downto expr }
                  consume(_ASSIGNMENT);
@@ -1156,7 +1160,7 @@ implementation
             else
               begin
                 consume(_DO);
-                if token<>_SEMICOLON then
+                if current_scanner.token<>_SEMICOLON then
                   p:=statement
                 else
                   p:=cnothingnode.create;
@@ -1166,6 +1170,7 @@ implementation
             for i:=withsymtablelist.count-1 downto 0 do
               symtablestack.pop(TSymtable(withsymtablelist[i]));
             withsymtablelist.free;
+            withsymtablelist := nil;
 
             { Finalize complex withnode with destroy of temp }
             if assigned(newblock) then
@@ -1181,8 +1186,9 @@ implementation
           end
          else
           begin
-            p.free;
             Message1(parser_e_false_with_expr,p.resultdef.GetTypeName);
+            p.free;
+            p := nil;
             { try to recover from error }
             if try_to_consume(_COMMA) then
              begin
@@ -1193,7 +1199,7 @@ implementation
              begin
                consume(_DO);
                { ignore all }
-               if token<>_SEMICOLON then
+               if current_scanner.token<>_SEMICOLON then
                 statement;
              end;
             result:=cerrornode.create;
@@ -1216,7 +1222,7 @@ implementation
          paddr:=nil;
          pframe:=nil;
          consume(_RAISE);
-         if not(token in endtokens) then
+         if not(current_scanner.token in endtokens) then
            begin
               { object }
               pobj:=comp_expr([ef_accept_equal]);
@@ -1307,7 +1313,7 @@ implementation
            p_try_block:=readexpr
          else
            begin
-             while (token<>_FINALLY) and (token<>_EXCEPT) do
+             while (current_scanner.token<>_FINALLY) and (current_scanner.token<>_EXCEPT) do
                begin
                   if first=nil then
                     begin
@@ -1326,7 +1332,7 @@ implementation
              p_try_block:=cblocknode.create(first);
            end;
 
-         if token=_FINALLY then
+         if current_scanner.token=_FINALLY then
            begin
               if is_expr then
                 begin
@@ -1350,15 +1356,15 @@ implementation
               current_exceptblock := exceptblockcounter;
               ot:=generrordef;
               p_specific:=nil;
-              if (idtoken=_ON) then
+              if (current_scanner.idtoken=_ON) then
                 { catch specific exceptions }
                 begin
                    repeat
                      consume(_ON);
-                     if token=_ID then
+                     if current_scanner.token=_ID then
                        begin
-                          objname:=pattern;
-                          objrealname:=orgpattern;
+                          objname:=current_scanner.pattern;
+                          objrealname:=current_scanner.orgpattern;
                           { can't use consume_sym here, because we need already
                             to check for the colon }
                           searchsym(objname,srsym,srsymtable);
@@ -1431,7 +1437,7 @@ implementation
                           last:=tonnode(last).left;
                        end;
                      { set the informations }
-                     { only if the creation of the onnode was succesful, it's possible }
+                     { only if the creation of the onnode was successful, it's possible}
                      { that last and hp are errornodes (JM)                            }
                      if last.nodetype = onn then
                        begin
@@ -1443,12 +1449,15 @@ implementation
                        begin
                          symtablestack.pop(excepTSymtable);
                          if last.nodetype <> onn then
-                           excepTSymtable.free;
+                           begin
+                             excepTSymtable.free;
+                             excepTSymtable := nil;
+                           end;
                        end;
                      if not try_to_consume(_SEMICOLON) then
                         break;
                      consume_emptystats;
-                   until (token in [_END,_ELSE]);
+                   until (current_scanner.token in [_END,_ELSE]);
                    if try_to_consume(_ELSE) then
                      begin
                        { catch the other exceptions }
@@ -1523,6 +1532,7 @@ implementation
              asmstat:=casmnode.create(hl);
              asmstat.fileinfo:=entrypos;
              asmreader.free;
+             asmreader := nil;
            end
          else
            Message(parser_f_assembler_reader_not_supported);
@@ -1547,22 +1557,22 @@ implementation
          { END is read, got a list of changed registers? }
          if try_to_consume(_LECKKLAMMER) then
            begin
-             if token<>_RECKKLAMMER then
+             if current_scanner.token<>_RECKKLAMMER then
               begin
                 if po_assembler in current_procinfo.procdef.procoptions then
                   Message(parser_w_register_list_ignored);
                 repeat
                   { it's possible to specify the modified registers }
-                  if token=_CSTRING then
-                    reg:=std_regnum_search(lower(cstringpattern))
-                  else if token=_CCHAR then
-                    reg:=std_regnum_search(lower(pattern))
+                  if current_scanner.token=_CSTRING then
+                    reg:=std_regnum_search(lower(current_scanner.cstringpattern))
+                  else if current_scanner.token=_CCHAR then
+                    reg:=std_regnum_search(lower(current_scanner.pattern))
                   else
                     reg:=NR_NO;
                   { is_extra_reg is not exported on all architectures from cpubase }
 {$if defined(RISCV)}
-                  if (reg=NR_NO) and (token=_CSTRING) then
-                    reg:=is_extra_reg(upper(cstringpattern));
+                  if (reg=NR_NO) and (current_scanner.token=_CSTRING) then
+                    reg:=is_extra_reg(upper(current_scanner.cstringpattern));
 {$endif defined(RISCV)}
                   if reg<>NR_NO then
                     begin
@@ -1575,7 +1585,7 @@ implementation
                     end
                   else
                     Message(asmr_e_invalid_register);
-                  if token=_CCHAR then
+                  if current_scanner.token=_CCHAR then
                     consume(_CCHAR)
                   else
                     consume(_CSTRING);
@@ -1644,9 +1654,9 @@ implementation
           tokenbuf.reset;
           current_scanner.startrecordtokens(tokenbuf);
           nesting:=0;
-          while token<>_SLASH do
+          while current_scanner.token<>_SLASH do
             begin
-              case token of
+              case current_scanner.token of
                 _LKLAMMER:
                   inc(nesting);
                 _RKLAMMER:
@@ -1660,11 +1670,11 @@ implementation
                 else
                   ; {no action}
               end;
-              consume(token);
+              consume(current_scanner.token);
             end;
           current_scanner.stoprecordtokens;
           { Set the current token to ; to make the constant evaluator happy }
-          token:=_SEMICOLON;
+          current_scanner.token:=_SEMICOLON;
           { Parse recorded tokens }
           current_scanner.startreplaytokens(tokenbuf,false);
 
@@ -1683,9 +1693,9 @@ implementation
             else
               actype:=aitconst_128bit; { default size }
           sym:=nil;
-          if token=_ID then
+          if current_scanner.token=_ID then
             begin
-              if searchsym(pattern,sym,symtable) then
+              if searchsym(current_scanner.pattern,sym,symtable) then
                 begin
                   if sym.typ in [staticvarsym,localvarsym,paravarsym] then
                     begin
@@ -1694,7 +1704,7 @@ implementation
                       if (sym.typ=staticvarsym) and not (actype in [aitconst_128bit,aitconst_ptr]) then
                         Message1(type_e_integer_expr_expected,sym.name);
                       { Additional offset }
-                      if token in [_PLUS,_MINUS] then
+                      if current_scanner.token in [_PLUS,_MINUS] then
                         w:=eval_intconst
                       else
                         w:=0;
@@ -1746,6 +1756,7 @@ implementation
             consume(_RKLAMMER); {error}
         until nesting<0;
         tokenbuf.free;
+        tokenbuf := nil;
         { mark boundaries of assembler block, this is necessary for optimizer }
         hl.insert(tai_marker.create(mark_asmblockstart));
         hl.concat(tai_marker.create(mark_asmblockend));
@@ -1789,7 +1800,7 @@ implementation
             exit;
           end;
 
-        if token <> _ID then
+        if current_scanner.token <> _ID then
           begin
             consume(_ID);   { generate the expected-identifier error }
             result := cerrornode.create;
@@ -1802,9 +1813,9 @@ implementation
           { --- collect one or more variable names -------------------------------- }
           repeat
             if symtablestack.top.symtabletype = localsymtable then
-              vs := clocalvarsym.create(orgpattern, vs_value, generrordef, [])
+              vs := clocalvarsym.create(current_scanner.orgpattern, vs_value, generrordef, [])
             else
-              vs := cstaticvarsym.create(orgpattern, vs_value, generrordef, []);
+              vs := cstaticvarsym.create(current_scanner.orgpattern, vs_value, generrordef, []);
             vs.register_sym;
             symtablestack.top.insertsym(vs);
             sc.add(vs);
@@ -1840,7 +1851,7 @@ implementation
               else
                 result := cnothingnode.create;
             end
-          else if token = _ASSIGNMENT then
+          else if current_scanner.token = _ASSIGNMENT then
             begin
               { Type inference:  var x := expr }
               if sc.count > 1 then
@@ -1908,39 +1919,39 @@ implementation
       begin
          filepos:=current_tokenpos;
          code:=nil;
-         case token of
+         case current_scanner.token of
            _GOTO :
              begin
                 if not(cs_support_goto in current_settings.moduleswitches) then
                   Message(sym_e_goto_and_label_not_supported);
                 consume(_GOTO);
-                if (token<>_INTCONST) and (token<>_ID) then
+                if (current_scanner.token<>_INTCONST) and (current_scanner.token<>_ID) then
                   begin
                     Message(sym_e_label_not_found);
                     code:=cerrornode.create;
                   end
                 else
                   begin
-                     if token=_ID then
+                     if current_scanner.token=_ID then
                        consume_sym(srsym,srsymtable)
                      else
                       begin
-                        if token<>_INTCONST then
+                        if current_scanner.token<>_INTCONST then
                           internalerror(201008021);
 
                         { strip leading 0's in iso mode }
                         if (([m_iso,m_extpas]*current_settings.modeswitches)<>[]) then
-                          while (length(pattern)>1) and (pattern[1]='0') do
-                            delete(pattern,1,1);
+                          while (length(current_scanner.pattern)>1) and (current_scanner.pattern[1]='0') do
+                            delete(current_scanner.pattern,1,1);
 
-                        searchsym(pattern,srsym,srsymtable);
+                        searchsym(current_scanner.pattern,srsym,srsymtable);
                         if srsym=nil then
                           begin
-                            identifier_not_found(pattern);
+                            identifier_not_found(current_scanner.pattern);
                             srsym:=generrorsym;
                             srsymtable:=nil;
                           end;
-                        consume(token);
+                        consume(current_scanner.token);
                       end;
 
                      if srsym.typ<>labelsym then
@@ -2030,20 +2041,25 @@ implementation
                  end;
              end;
            _EOF :
-             Message(scan_f_end_of_file);
+             if current_scanner.had_multiline_string then
+               Message2(scan_f_unterminated_multiline_string,
+                        tostr(current_scanner.multiline_start_line),
+                        tostr(current_scanner.multiline_start_column))
+             else
+               Message(scan_f_end_of_file);
          else
            begin
              { don't typecheck yet, because that will also simplify, which may
                result in not detecting certain kinds of syntax errors --
                see mantis #15594 }
              p:=expr(false);
-             { save the pattern here for latter usage, the label could be "000",
-               even if we read an expression, the pattern is still valid if it's really
+             { save the current_scanner.pattern here for latter usage, the label could be "000",
+               even if we read an expression, the current_scanner.pattern is still valid if it's really
                a label (FK)
                if you want to mess here, take care of
                tests/webtbs/tw3546.pp
              }
-             s:=pattern;
+             s:=current_scanner.pattern;
 
              { When a colon follows a intconst then transform it into a label }
              if (p.nodetype=ordconstn) and
@@ -2055,6 +2071,7 @@ implementation
                 else
                   searchsym(s,srsym,srsymtable);
                 p.free;
+                p := nil;
 
                 if assigned(srsym) and
                    (srsym.typ=labelsym) then
@@ -2081,7 +2098,7 @@ implementation
 
              if p.nodetype=labeln then
                begin
-                 if not(token in endtokens) then
+                 if not(current_scanner.token in endtokens) then
                    begin
                      astatement:=statement();
                      typecheckpass(astatement);
@@ -2163,7 +2180,7 @@ implementation
          filepos:=current_tokenpos;
          consume(starttoken);
 
-         while not((token=_END) or (token=_FINALIZATION)) do
+         while not((current_scanner.token=_END) or (current_scanner.token=_FINALIZATION)) do
            begin
               if first=nil then
                 begin
@@ -2175,12 +2192,12 @@ implementation
                    tstatementnode(last).right:=cstatementnode.create(statement,nil);
                    last:=tstatementnode(last).right;
                 end;
-              if ((token=_END) or (token=_FINALIZATION)) then
+              if ((current_scanner.token=_END) or (current_scanner.token=_FINALIZATION)) then
                 break
               else
                 begin
                    { if no semicolon, then error and go on }
-                   if token<>_SEMICOLON then
+                   if current_scanner.token<>_SEMICOLON then
                      begin
                         consume(_SEMICOLON);
                         consume_all_until(_SEMICOLON);
@@ -2192,8 +2209,8 @@ implementation
 
          { don't consume the finalization token, it is consumed when
            reading the finalization block, but allow it only after
-           an initalization ! }
-         if (starttoken<>_INITIALIZATION) or (token<>_FINALIZATION) then
+           an initialization ! }
+         if (starttoken<>_INITIALIZATION) or (current_scanner.token<>_FINALIZATION) then
            consume(_END);
 
          last:=cblocknode.create(first);
@@ -2228,7 +2245,7 @@ implementation
            current_procinfo.procdef.proccalloption:=pocall_register;
 
          { force the asm statement }
-         if token<>_ASM then
+         if current_scanner.token<>_ASM then
            consume(_ASM);
          include(current_procinfo.flags,pi_is_assembler);
          p:=_asm_statement;
@@ -2282,7 +2299,7 @@ implementation
         if not (m_statement_expressions in current_settings.modeswitches) then
           exit(false);
         result:=true;
-        case token of
+        case current_scanner.token of
         _IF: p1:=if_statement(true);
         _CASE: p1:=case_statement(true);
         _TRY: p1:=try_statement(true);

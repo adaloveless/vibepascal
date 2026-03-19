@@ -176,7 +176,7 @@ type
     class function ParseJSONValueUTF8(const aData: TByteDynArray; const aOffset: Integer;
                                       const aCount: Integer): TJSONValue; overload; static;
     class function ParseJSONValueUTF8(const aData: TByteDynArray;
-                                      const aOffset: Integer): TJSONValue; overload; static; 
+                                      const aOffset: Integer): TJSONValue; overload; static;
   end;
   TJSONValueClass = Class of TJSONValue;
   TJSONValueList = specialize TList<TJSONValue>;
@@ -349,6 +349,7 @@ type
     function AddPair(const aStr: TJSONString; const aVal: TJSONValue): TJSONObject; overload;
     function AddPair(const aStr: UnicodeString; const aVal: TJSONValue): TJSONObject; overload;
     function AddPair(const aStr: UnicodeString; const aVal: UnicodeString): TJSONObject; overload;
+    function AddPair(const aStr: UnicodeString; const aVal: String): TJSONObject; overload;
     function AddPair(const aStr: UnicodeString; const aVal: Int64): TJSONObject; overload;
     function AddPair(const aStr: UnicodeString; const aVal: Integer): TJSONObject; overload;
     function AddPair(const aStr: UnicodeString; const aVal: Double): TJSONObject; overload;
@@ -364,9 +365,9 @@ type
     property Count: Integer read GetCount;
     property Pairs[const aIndex: Integer]: TJSONPair read GetPair;
     property Values[const aName: UnicodeString]: TJSONValue read GetValue;
-    function Size: Integer; inline; 
-    function Get(const aIndex: Integer): TJSONPair; overload; inline; 
-    function Get(const aName: UnicodeString): TJSONPair; overload; inline; 
+    function Size: Integer; inline;
+    function Get(const aIndex: Integer): TJSONPair; overload; inline;
+    function Get(const aName: UnicodeString): TJSONPair; overload; inline;
   end;
 
   TJSONPairEnumerator = class(TJSONObject.TEnumerator)
@@ -425,7 +426,7 @@ type
     procedure ToChars(aBuilder: TUnicodeStringBuilder; aOptions: TJSONAncestor.TJSONOutputOptions); override;
     function Clone: TJSONAncestor; override;
     function GetEnumerator: TEnumerator; inline;
-    function Size: Integer; inline; 
+    function Size: Integer; inline;
     function Get(const Index: Integer): TJSONValue; inline;
   end;
 
@@ -1469,18 +1470,105 @@ begin
 end;
 
 procedure TJSONString.ToChars(aBuilder: TUnicodeStringBuilder; aOptions: TJSONAncestor.TJSONOutputOptions);
+  procedure AppendWithSpecialChars(Builder: TUnicodeStringBuilder; Options: TJSONAncestor.TJSONOutputOptions);
+    var
+      P, PEnd: PWideChar;
+      UnicodeValue: Integer;
+      Buff: array [0 .. 5] of WideChar;
+    begin
+      P := Pointer(FValue);
+      PEnd := P + Length(FValue);
+      while P < PEnd do
+      begin
+        case P^ of
+        '"': Builder.Append('\"');
+        '\': Builder.Append('\\');
+        #$8: Builder.Append('\b');
+        #$9: Builder.Append('\t');
+        #$a: Builder.Append('\n');
+        #$c: Builder.Append('\f');
+        #$d: Builder.Append('\r');
+        #0 .. #7, #$b, #$e .. #31, #$0080 .. High(WideChar):
+          begin
+            UnicodeValue := Ord(P^);
+            if (TJSONOutputOption.EncodeBelow32 in Options) and (UnicodeValue < 32) or
+               (TJSONOutputOption.EncodeAbove127 in Options) and (UnicodeValue > 127) then
+            begin
+              Buff[0] := '\';
+              Buff[1] := 'u';
+              Buff[2] := Char(DecimalToHex((UnicodeValue and 61440) shr 12));
+              Buff[3] := Char(DecimalToHex((UnicodeValue and 3840) shr 8));
+              Buff[4] := Char(DecimalToHex((UnicodeValue and 240) shr 4));
+              Buff[5] := Char(DecimalToHex((UnicodeValue and 15)));
+              Builder.Append(Buff, 0, High(Buff) + 1);
+            end
+            else
+              Builder.Append(P^);
+          end;
+        else
+          Builder.Append(P^);
+        end;
+        Inc(P);
+      end;
+    end;
 
+  {$WARNINGS OFF}
+    function ContainsSpecialChars: Boolean;
+    var
+      P, PEnd: PWideChar;
+    begin
+      P := Pointer(FValue);
+      PEnd := P + Length(FValue);
+      while P < PEnd do
+      begin
+        if P^ in ['"', '\', #$8, #$9, #$a, #$c, #$d] then
+          Exit(True);
+        Inc(P);
+      end;
+      Result := False;
+    end;
+
+    function ContainsSpecialCharsExt(Options: TJSONOutputOptions): Boolean;
+    var
+      P, PEnd: PWideChar;
+    begin
+      P := Pointer(FValue);
+      PEnd := P + Length(FValue);
+      while P < PEnd do
+      begin
+        case P^ of
+        '"', '\', #$8, #$9, #$a, #$c, #$d:
+          Exit(True);
+        #0 .. #7, #$b, #$e .. #31:
+          if TJSONOutputOption.EncodeBelow32 in Options then
+            Exit(True);
+        #$0080 .. High(Char):
+          if TJSONOutputOption.EncodeAbove127 in Options then
+            Exit(True);
+        end;
+        Inc(P);
+      end;
+      Result := False;
+    end;
+  {$WARNINGS ON}
 var
-  Len : Integer;
-  B : TBytes;
-  S : UTF8String;
-
+  LSpecChars: Boolean;
 begin
-  Len:=EstimatedByteSize;
-  SetLength(B,Len);
-  Len:=ToBytes(B,0,aOptions);
-  S:=TEncoding.UTF8.GetAnsiString(B,0,Len);
-  aBuilder.Append(S);
+  if FIsNull then
+    aBuilder.Append('null')
+  else
+  begin
+    aBuilder.Append('"');
+    if aOptions <> [] then
+      LSpecChars := ContainsSpecialCharsExt(aOptions)
+    else
+      LSpecChars := ContainsSpecialChars;
+    if LSpecChars then
+      AppendWithSpecialChars(aBuilder, aOptions)
+    else
+      aBuilder.Append(FValue);
+    aBuilder.Append('"');
+  end;
 end;
 
 function TJSONString.Value: UnicodeString;
@@ -1568,12 +1656,12 @@ end;
 
 procedure TJSONNumber.ToChars(aBuilder: TUnicodeStringBuilder; aOptions: TJSONAncestor.TJSONOutputOptions);
 begin
-  inherited ToChars(aBuilder, aOptions);
+  aBuilder.Append(Value);
 end;
 
 function TJSONNumber.Clone: TJSONAncestor;
 begin
-  Result:=inherited Clone;
+  Result:=TJSONNumber.Create(Self.Value);
 end;
 
 { TJSONNull }
@@ -1784,8 +1872,10 @@ end;
 
 destructor TJSONPair.Destroy;
 begin
-  JSonString:=nil;
-  JsonValue:=nil;
+  if Assigned(FJSonString) and (FJSONString.Owned) then
+    FreeAndNil(FJSonString);
+  if Assigned(FJSonValue) and (FJSONValue.Owned) then
+    FreeAndNil(FJSonValue);
   inherited Destroy;
 end;
 
@@ -2005,6 +2095,11 @@ begin
   Result:=Self;
 end;
 
+function TJSONObject.AddPair(const aStr: UnicodeString; const aVal: String): TJSONObject;
+begin
+  AddPair(TJSONPair.Create(aStr, UTF8Decode(aVal)));
+  Result:=Self;
+end;
 
 function TJSONObject.AddPair(const aStr: UnicodeString; const aVal: Int64): TJSONObject;
 
@@ -2130,6 +2225,7 @@ var
   O : TJSONObject absolute v;
 
 begin
+  Result:=0;
   V:=TJSONValue.ParseJSONValue(aData,aPos,aCount,[TJSONParseOption.UseBool]);
   if not (V is TJSONObject) then
     begin

@@ -27,6 +27,7 @@ interface
 
 uses
   cclasses,
+  tokens,
   globtype,
   symtype,symbase;
 
@@ -41,6 +42,7 @@ type
     oldgenericdummysyms   : tfphashobjectlist;
     oldspecializestate    : pspecializationstate;
     oldcurrent_genericdef : tdef;
+    oldoptoken            : ttoken;
   end;
 
   tspecializationcontext=class
@@ -70,6 +72,7 @@ end;
 destructor tspecializationcontext.destroy;
 begin
   paramlist.free;
+  paramlist := nil;
   tfplist.FreeAndNilDisposing(poslist,TypeInfo(tfileposinfo));
   inherited destroy;
 end;

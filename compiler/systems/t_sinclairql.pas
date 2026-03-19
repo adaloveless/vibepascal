@@ -305,7 +305,7 @@ begin
   MakeSinclairQLExe:=DoExec(BinStr,CmdStr,true,false);
 
   { Kludge:
-      With the above linker script, vlink will produce two files. The main binary 
+      With the above linker script, vlink will produce two files. The main binary
       and the relocation info. Here we copy the two together. (KB) }
   if MakeSinclairQLExe and not sinclairql_vlink_experimental then
     begin
@@ -317,7 +317,7 @@ begin
       bufsize:=16384;
 {$push}
 {$i-}
-      { Rename vlink's output file into the header file it is, then parse the 
+      { Rename vlink's output file into the header file it is, then parse the
         expected length from it. Later we use either this size or the final binary
         size in the BASIC loader, depending on which one is bigger. (KB) }
       RenameFile(ExeName,HdrName);
@@ -340,7 +340,7 @@ begin
       reset(fs,1);
       BinSize := FileSize(fs);
 
-      { We assume .bss size is total size indicated by linker minus emmited binary.
+      { We assume .bss size is total size indicated by linker minus emitted binary.
         DataSpace size is .bss + stack space }
       DataSpace := NToBE(DWord(max((HeaderSize - BinSize) - RelocSize + StackSize,0)));
 
@@ -399,7 +399,7 @@ begin
 
   success:=MakeSinclairQLExe;
 
-  { Remove ReponseFile }
+  { Remove ResponseFile }
   if (success) and not(cs_link_nolink in current_settings.globalswitches) then
     DeleteFile(outputexedir+Info.ResName);
 

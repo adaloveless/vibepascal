@@ -164,7 +164,9 @@ type
     Procedure TestProcedureCDeclExport;
     Procedure TestFunctionCDeclExport;
     Procedure TestProcedureExternal;
+    Procedure TestProcedureWeakExternal;
     Procedure TestFunctionExternal;
+    Procedure TestFunctionWeakExternal;
     Procedure TestFunctionForwardNoReturnDelphi;
     procedure TestFunctionForwardNoReturnNoDelphi;
     Procedure TestProcedureExternalLibName;
@@ -384,7 +386,7 @@ begin
     AssertNotNull(N+' Have argument type',A.ArgType);
     AssertEquals(N+' Correct argument type name',TypeName,A.ArgType.Name);
     end
-  else  
+  else
     begin
     AssertNotNull(N+' Have argument type',A.ArgType);
     T:=A.ArgType;
@@ -393,7 +395,7 @@ begin
     AssertNotNull(N+'Have dest type',T);
     AssertEquals(N+' Correct argument dest type name',Copy(TypeName,2,MaxInt),T.Name);
     end;
-    
+
 end;
 
 procedure TTestProcedureFunction.AssertArrayArg(ProcType: TPasProcedureType;
@@ -1210,11 +1212,26 @@ begin
   AssertNull('No Library name expression',Proc.LibraryExpr);
 end;
 
+procedure TTestProcedureFunction.TestProcedureWeakExternal;
+begin
+  ParseProcedure(';weakexternal','');
+  AssertProc([pmWeakExternal],[],ccDefault,0);
+  AssertNull('No Library name expression',Proc.LibraryExpr);
+end;
+
 procedure TTestProcedureFunction.TestFunctionExternal;
 begin
   AddDeclaration('function A : Integer; external');
   ParseFunction;
   AssertFunc([pmExternal],[],ccDefault,0);
+  AssertNull('No Library name expression',Func.LibraryExpr);
+end;
+
+procedure TTestProcedureFunction.TestFunctionWeakExternal;
+begin
+  AddDeclaration('function A : Integer; weakexternal');
+  ParseFunction;
+  AssertFunc([pmWeakExternal],[],ccDefault,0);
   AssertNull('No Library name expression',Func.LibraryExpr);
 end;
 

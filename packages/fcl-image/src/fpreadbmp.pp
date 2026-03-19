@@ -198,6 +198,8 @@ begin
   end
   else if nPalette>0 then
     begin
+    if (BFI.ClrUsed > 0) and (Integer(BFI.ClrUsed) > nPalette) then
+      raise FPImageException.Create('Invalid BMP ClrUsed value');
     GetMem(FPalette, nPalette*SizeOf(TFPColor));
     SetLength(ColInfo, nPalette);
     if BFI.ClrUsed>0 then
@@ -214,7 +216,7 @@ begin
 end;
 
 procedure TFPReaderBMP.InternalRead(Stream:TStream; Img:TFPCustomImage);
-// NOTE: Assumes that BMP header already has been read
+// NOTE: Assumes that BMP header & Info Header already has been read in InternalCheck
 Var
   Row, i, pallen : Integer;
   BadCompression : boolean;
@@ -223,10 +225,6 @@ begin
   continue:=true;
   Progress(psStarting,0,false,Rect,'',continue);
   if not continue then exit;
-  Stream.Read(BFI,SizeOf(BFI));
-  {$IFDEF ENDIAN_BIG}
-  SwapBMPInfoHeader(BFI);
-  {$ENDIF}
   { This will move past any junk after the BFI header }
   Stream.Position:=Stream.Position-SizeOf(BFI)+BFI.Size;
   with BFI do
@@ -240,6 +238,8 @@ begin
       raise FPImageException.Create('Bad BMP compression mode');
     TopDown:=(Height<0);
     Height:=abs(Height);
+    if (Width <= 0) or (Width > 65535) or (Height <= 0) or (Height > 65535) then
+      raise FPImageException.Create('Invalid BMP dimensions');
     if (TopDown and (not (Compression in [BI_RGB,BI_BITFIELDS]))) then
       raise FPImageException.Create('Top-down bitmaps cannot be compressed');
     Img.SetSize(0,0);
@@ -345,7 +345,7 @@ begin
       end;
     end
     else
-      case b1 of 
+      case b1 of
         0: break; { end of line }
         1: break; { end of file }
         2: begin  { Next pixel position. Skipped pixels should be left untouched, but we set them to zero }
@@ -359,7 +359,7 @@ begin
                inc(i,b1);
                { aligned on 2 bytes boundary: every group starts on a 2 bytes boundary, but absolute group
                  could end on odd address if there is a odd number of elements, so we pad it  }
-               if (b1 mod 2)<>0 then Stream.Seek(1,soFromCurrent); 
+               if (b1 mod 2)<>0 then Stream.Seek(1,soFromCurrent);
              end;
       end;
   end;
@@ -411,7 +411,7 @@ begin
         end;
       end
       else
-        case b1 of 
+        case b1 of
           0: break; { end of line }
           1: break; { end of file }
           2: begin  { Next pixel position. Skipped pixels should be left untouched, but we set them to zero }
@@ -498,23 +498,37 @@ begin
 end;
 
 function  TFPReaderBMP.InternalCheck (Stream:TStream) : boolean;
-// NOTE: Does not rewind the stream!
+// Reads bitmap file header and bitmap info header
 var
-  BFH:TBitMapFileHeader;
-  n: Int64;
+  lBFH:TBitMapFileHeader;
+  lPos,n: Int64;
 begin
   Result:=False;
   if Stream=nil then
     exit;
-  n:=SizeOf(BFH);
-  Result:=Stream.Read(BFH,n)=n;
-  if Result then 
-    begin
-   {$IFDEF ENDIAN_BIG}
-    SwapBMPFileHeader(BFH);
-   {$ENDIF}
-    Result := BFH.bfType = BMmagic; // Just check magic number
-    end;
+  n:=SizeOf(lBFH);
+  if Stream.Read(lBFH,n)<>n then
+    exit;
+  {$IFDEF ENDIAN_BIG}
+  SwapBMPFileHeader(lBFH);
+  {$ENDIF}
+  if lBFH.bfType<>BMmagic then
+    exit;
+  if lBFH.bfReserved<>0 then
+    exit;
+  n:=SizeOf(BFI);
+  if Stream.Read(BFI,n)<>n then
+    exit;
+  {$IFDEF ENDIAN_BIG}
+  SwapBMPInfoHeader(BFI);
+  {$ENDIF}
+  if not (BFI.Size in [12, 40, 52, 56, 108, 124]) then
+    exit;
+  if not (BFI.BitCount in [1, 4, 8, 16, 24, 32]) then
+    exit;
+  if not (BFI.Compression in [BI_RGB..BI_ALPHABITFIELDS]) then
+    exit;
+  Result:=True;
 end;
 
 class function TFPReaderBMP.InternalSize (Stream: TStream): TPoint;

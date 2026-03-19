@@ -119,7 +119,7 @@ begin
     GetMem(FScanLine,FLineSize);
 
     if ImgType = TARGA_GRAY_IMAGE then
-      FPaletteSize:=SizeOf(TFPColor)*255
+      FPaletteSize:=SizeOf(TFPColor)*256
     else
       FPaletteSize:=SizeOf(TFPColor)*ToWord(MapLength);
     GetMem(FPalette,FPaletteSize);
@@ -279,7 +279,12 @@ begin
   Case Header.ImgType of
     TARGA_INDEXED_IMAGE
       : for Col:=0 to Img.width-1 do
-         Img.Colors[Col,Row]:=FPalette[P[Col]];
+        begin
+          if P[Col] >= ToWord(Header.MapStart) then
+            Img.Colors[Col,Row]:=FPalette[P[Col] - ToWord(Header.MapStart)]
+          else
+            Img.Colors[Col,Row]:=colBlack;
+        end;
     TARGA_TRUECOLOR_IMAGE
       : for Col:=0 to Img.Width-1 do
           begin
@@ -346,7 +351,7 @@ var
   hdr: TTargaHeader;
   oldPos: Int64;
   n: Integer;
-  
+
 begin
   Result:=False;
   if Stream = nil then
@@ -355,7 +360,7 @@ begin
   try
     n := SizeOf(hdr);
     Result:=(Stream.Read(hdr, n)=n)
-            and (hdr.ImgType in [1, 2, 3, 9, 10, 11]) 
+            and (hdr.ImgType in [1, 2, 3, 9, 10, 11])
             and (hdr.PixelSize in [8, 16, 24, 32]);
   finally
     Stream.Position := oldPos;

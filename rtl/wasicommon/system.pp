@@ -17,11 +17,6 @@ unit system;
 
 interface
 
-
-{$IFNDEF FPC_DISABLE_MONITOR}
-{$DEFINE SYSTEM_HAS_FEATURE_MONITOR}
-{$ENDIF}
-
 {$define FPC_IS_SYSTEM}
 
 {$if defined(WASIp1threads) and not defined(FPC_WASM_THREADS)}
@@ -75,7 +70,7 @@ var
   envp: PPAnsiChar;
   ___fpc_wasm_suspender: WasmExternRef; section 'WebAssembly.Global';
   WasmGrowMemoryCallback : TWasmGrowMemoryCallBack;
-  
+
 function __fpc_get_wasm_suspender: WasmExternRef;
 procedure __fpc_set_wasm_suspender(v: WasmExternRef);
 
@@ -532,7 +527,7 @@ begin
   SysInitStdIO;
   Setup_Environment;
   Setup_PreopenedDirs;
-{$ifdef FPC_WASM_THREADS}  
+{$ifdef FPC_WASM_THREADS}
   TLSInfoBlock:=Nil;
-{$endif}  
+{$endif}
 end.

@@ -183,6 +183,7 @@ implementation
         if not(actionlist.Empty) then
           Internalerror(2019020501);
         actionlist.Free;
+        actionlist := nil;
         inherited Destroy;
       end;
 
@@ -226,11 +227,17 @@ implementation
     destructor tpsabiehprocinfo.destroy;
       begin
          gcc_except_table_data.free;
+         gcc_except_table_data := nil;
          actionstack.free;
+         actionstack := nil;
          landingpadstack.free;
+         landingpadstack := nil;
          typefilterlist.free;
+         typefilterlist := nil;
          callsite_table_data.Free;
+         callsite_table_data := nil;
          action_table_data.Free;
+         action_table_data := nil;
          inherited;
       end;
 
@@ -468,7 +475,7 @@ implementation
                 gcc_except_table_data.concat(tai_comment.Create(strpnew('Call site table for '+procdef.fullprocname(true))));
 {$endif debug_eh}
                 gcc_except_table_data.concatList(callsite_table_data);
-                { action table must follow immediatly after callsite table }
+                { action table must follow immediately after callsite table }
 {$ifdef debug_eh}
                 if not(action_table_data.Empty) then
                   gcc_except_table_data.concat(tai_comment.Create(strpnew('Action table for '+procdef.fullprocname(true))));
@@ -631,7 +638,7 @@ implementation
            use_cleanup(exceptframekind) then
           begin
             { Resume might not be called outside of an landing pad else
-              the unwind is immediatly terminated, so create an empty landing pad }
+              the unwind is immediately terminated, so create an empty landing pad }
             psabiehprocinfo:=current_procinfo as tpsabiehprocinfo;
 
             if psabiehprocinfo.landingpadstack.count>1 then

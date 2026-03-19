@@ -116,7 +116,17 @@ begin
         begin
           AddUnit('wformat');
         end;
+    T:=P.Targets.AddUnit('wmarkdown.pp');
+      with T.Dependencies do
+        begin
+          AddUnit('wformat');
+        end;
     T:=P.Targets.AddUnit('wtex.pp');
+      with T.Dependencies do
+        begin
+          AddUnit('wformat');
+        end;
+    T:=P.Targets.AddUnit('wtext.pp');
       with T.Dependencies do
         begin
           AddUnit('wformat');
@@ -145,6 +155,9 @@ begin
     T:=P.Targets.addUnit('basenenc.pp');
 
     T:=P.Targets.addUnit('dirwatch.pp');
+
+    T:=P.Targets.addUnit('fppromise.pp',AllOSes-[go32v2,nativent,atari]);
+    T.Dependencies.AddUnit('syncobjs');
 
     // Examples
     P.ExamplePath.Add('examples');

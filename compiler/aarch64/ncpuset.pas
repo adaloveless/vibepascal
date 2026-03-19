@@ -61,7 +61,7 @@ implementation
       begin
         max_linear_list:=10;
       end;
-    
+
 
     function taarch64casenode.has_jumptable: boolean;
       begin
@@ -94,7 +94,7 @@ implementation
                    cg.a_cmp_const_reg_label(current_asmdata.CurrAsmList, opcgsize, OC_EQ,0,hregister,blocklabel(t^.blockid))
                  else
                    begin
-                     { use unsigned_opcgsize here to avoid uncessary sign extensions, at this place hregister will never be negative, because
+                     { use unsigned_opcgsize here to avoid unnecessary sign extensions, at this place hregister will never be negative, because
                        then genlinearlist wouldn't be used }
                      cg.a_op_const_reg_reg_checkoverflow(current_asmdata.CurrAsmList, OP_SUB, unsigned_opcgsize, aint(t^._low.svalue-last.svalue), hregister, hregister,
                        true,ovloc);
@@ -110,10 +110,10 @@ implementation
                  { ELSE-label                                }
                  if first then
                    begin
-                      { have we to ajust the first value ? }
+                      { have we to adjust the first value ? }
                       if (t^._low>get_min_value(left.resultdef)) or (get_min_value(left.resultdef)<>0) then
                         begin
-                          { use unsigned_opcgsize here to avoid uncessary sign extensions, at this place hregister will never be negative, because
+                          { use unsigned_opcgsize here to avoid unnecessary sign extensions, at this place hregister will never be negative, because
                             then genlinearlist wouldn't be use }
                           cg.a_op_const_reg_reg_checkoverflow(current_asmdata.CurrAsmList, OP_SUB, unsigned_opcgsize, aint(t^._low.svalue), hregister, hregister,
                             true,ovloc);
@@ -125,7 +125,7 @@ implementation
                      { present label then the lower limit can be checked    }
                      { immediately. else check the range in between:       }
 
-                     { use unsigned_opcgsize here to avoid uncessary sign extensions, at this place hregister will never be negative, because
+                     { use unsigned_opcgsize here to avoid unnecessary sign extensions, at this place hregister will never be negative, because
                        then genlinearlist wouldn't be use }
                      cg.a_op_const_reg_reg_checkoverflow(current_asmdata.CurrAsmList, OP_SUB, unsigned_opcgsize, aint(t^._low.svalue - last.svalue), hregister, hregister,
                        true,ovloc);
@@ -135,7 +135,7 @@ implementation
                         (not lastrange) then
                        cg.a_jmp_flags(current_asmdata.CurrAsmList,cond_lt,elselabel);
                    end;
-                 { use unsigned_opcgsize here to avoid uncessary sign extensions, at this place hregister will never be negative, because
+                 { use unsigned_opcgsize here to avoid unnecessary sign extensions, at this place hregister will never be negative, because
                    then genlinearlist wouldn't be use }
                  cg.a_op_const_reg_reg_checkoverflow(current_asmdata.CurrAsmList,OP_SUB,unsigned_opcgsize,aint(t^._high.svalue - t^._low.svalue), hregister, hregister,
                    true,ovloc);
@@ -281,7 +281,7 @@ implementation
         if target_info.system=system_aarch64_win64 then
           begin
             { For windows, it has to be in a data section otherwise an access violation
-              will occur, but also full 64-bit references to avoid problems with 
+              will occur, but also full 64-bit references to avoid problems with
               relative references }
             sectype:=sec_rodata;
             new_section(current_procinfo.aktlocaldata,sectype,lower(current_procinfo.procdef.mangledname),sizeof(aint));

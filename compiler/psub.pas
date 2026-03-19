@@ -128,7 +128,7 @@ implementation
     uses
        sysutils,
        { common }
-       cutils, cmsgs,
+       cutils, cmsgs, cdynset,
        { global }
        globtype,tokens,verbose,comphook,constexp,
        systems,cpubase,aasmbase,aasmtai,
@@ -156,6 +156,7 @@ implementation
        ncgutil,
 
        optbase,
+       opttree,
        opttail,
        optcse,
        optloop,
@@ -351,7 +352,7 @@ implementation
 
          { do we have an assembler block without the po_assembler?
            we should allow this for Delphi compatibility (PFV) }
-         if (token=_ASM) and (m_delphi in current_settings.modeswitches) then
+         if (current_scanner.token=_ASM) and (m_delphi in current_settings.modeswitches) then
            include(current_procinfo.procdef.procoptions,po_assembler);
 
          { Handle assembler block different }
@@ -368,7 +369,7 @@ implementation
              (current_module.is_unit or islibrary)
             ) then
            begin
-             if (token=_END) then
+             if (current_scanner.token=_END) then
                 begin
                    consume(_END);
                    { We need at least a node, else the entry/exit code is not
@@ -380,17 +381,17 @@ implementation
                 end
               else
                 begin
-                   if token=_INITIALIZATION then
+                   if current_scanner.token=_INITIALIZATION then
                      begin
                         { The library init code is already called and does not
                           need to be in the initfinal table (PFV) }
                         block:=statement_block(_INITIALIZATION);
                         init_main_block_syms(block);
                      end
-                   else if token=_FINALIZATION then
+                   else if current_scanner.token=_FINALIZATION then
                      begin
                        { when a unit has only a finalization section, we can come to this
-                         point when we try to read the nonh existing initalization section
+                         point when we try to read the nonh existing initialization section
                          so we've to check if we are really try to parse the finalization }
                        if current_procinfo.procdef.proctypeoption=potype_unitfinalize then
                          block:=statement_block(_FINALIZATION)
@@ -687,6 +688,7 @@ implementation
        begin
          TFPList.FreeAndNilDisposing(tempinfo_flags_map,TypeInfo(ttempinfo_flags_entry));
          code.free;
+         code := nil;
          inherited destroy;
        end;
 
@@ -1228,6 +1230,9 @@ implementation
 
            RedoDFA:=ConvertForLoops(code) or RedoDFA;
 
+           if cs_opt_forloop in current_settings.optimizerswitches then
+             RedoDFA:=optimize_record_writes(code) or RedoDFA;
+
            if RedoDFA then
              dfabuilder.redodfainfo(code);
 
@@ -1240,7 +1245,7 @@ implementation
              for i:=0 to dfabuilder.nodemap.count-1 do
                begin
                  UserCode:=GetUserCode();
-                 if DFASetIn(UserCode.optinfo^.life,i) then
+                 if DynSetIn(UserCode.optinfo^.life,i) then
                    begin
                      { do not warn for certain parameters: }
                      if not((tnode(dfabuilder.nodemap[i]).nodetype=loadn) and (tloadnode(dfabuilder.nodemap[i]).symtableentry.typ=paravarsym) and
@@ -1262,14 +1267,19 @@ implementation
 
            if cs_opt_dead_store_eliminate in current_settings.optimizerswitches then
              begin
-               do_optdeadstoreelim(code,RedoDFA);
-               if RedoDFA then
-                 dfabuilder.redodfainfo(code);
+               if normalize(code) then
+                 begin
+                   do_optdeadstoreelim(code,RedoDFA);
+                   if RedoDFA then
+                     dfabuilder.redodfainfo(code);
+                 end;
              end;
          end
        else
          begin
            ConvertForLoops(code);
+           if cs_opt_forloop in current_settings.optimizerswitches then
+             optimize_record_writes(code);
          end;
 
        if (cs_opt_remove_empty_proc in current_settings.optimizerswitches) and
@@ -1410,6 +1420,7 @@ implementation
         nodeset:=THashSet.Create(32,false,false);
         foreachnode(code,@store_node_tempflags,nodeset);
         nodeset.free;
+        nodeset := nil;
       end;
 
 
@@ -1867,6 +1878,7 @@ implementation
                 begin
                   aktproccode.remove(ai);
                   ai.free;
+                  ai := nil;
                   anode.currenttai:=nil;
                 end;
             end;
@@ -2096,7 +2108,7 @@ implementation
             else if not temps_finalized then
               begin
                 hlcg.gen_finalize_code(templist);
-                { the finalcode must be concated if there was no position available,
+                { the finalcode must be concatenated if there was no position available,
                   using insertlistafter will result in an insert at the start
                   when currentai=nil }
                 aktproccode.concatlist(templist);
@@ -2341,12 +2353,14 @@ implementation
           end;
 
         dfabuilder.free;
+        dfabuilder := nil;
 
         { restore symtablestack }
         remove_from_symtablestack;
 
         { restore }
         templist.free;
+        templist := nil;
         current_settings.maxfpuregisters:=oldmaxfpuregisters;
         current_filepos:=oldfilepos;
         current_structdef:=old_current_structdef;
@@ -2669,7 +2683,7 @@ implementation
 
         { When it's a nested procedure then defer the code generation,
           when back at normal function level then generate the code
-          for all defered nested procedures and the current procedure }
+          for all deferred nested procedures and the current procedure }
         if not isnestedproc then
           begin
             if not(df_generic in current_procinfo.procdef.defoptions) then
@@ -3081,7 +3095,7 @@ implementation
         repeat
            if not assigned(current_procinfo) then
              internalerror(200304251);
-           case token of
+           case current_scanner.token of
               _LABEL:
                 begin
                   handle_unexpected_had_generic;
@@ -3114,8 +3128,8 @@ implementation
                    begin
                      { class modifier is only allowed for procedures, functions, }
                      { constructors, destructors                                 }
-                     if not((token in [_FUNCTION,_PROCEDURE,_DESTRUCTOR,_OPERATOR]) or (token=_CONSTRUCTOR)) and
-                        not((token=_ID) and (idtoken=_OPERATOR)) then
+                     if not((current_scanner.token in [_FUNCTION,_PROCEDURE,_DESTRUCTOR,_OPERATOR]) or (current_scanner.token=_CONSTRUCTOR)) and
+                        not((current_scanner.token=_ID) and (current_scanner.idtoken=_OPERATOR)) then
                        Message(parser_e_procedure_or_function_expected);
 
                      if is_interface(current_structdef) then
@@ -3131,7 +3145,7 @@ implementation
               _PROCEDURE,
               _OPERATOR:
                 begin
-                  if hadgeneric and not (token in [_PROCEDURE,_FUNCTION]) then
+                  if hadgeneric and not (current_scanner.token in [_PROCEDURE,_FUNCTION]) then
                     begin
                       Message(parser_e_procedure_or_function_expected);
                       hadgeneric:=false;
@@ -3172,7 +3186,7 @@ implementation
                 end;
               else
                 begin
-                  case idtoken of
+                  case current_scanner.idtoken of
                     _RESOURCESTRING:
                       begin
                         handle_unexpected_had_generic;
@@ -3214,15 +3228,15 @@ implementation
 
          { add implementations for synthetic method declarations added by
            the compiler (not for unit/program init functions, their localst
-           is the staticst -> would duplicate the work done in pmodules) }
+           is the statistic -> would duplicate the work done in pmodules) }
          if (current_procinfo.procdef.localst.symtabletype=localsymtable) and
            { we cannot call add_synthetic_method_implementations as it throws an internalerror if
              the token is a string/char. As this is a syntax error and compilation will abort anyways,
              skipping the call does not matter
            }
-           (token<>_CSTRING) and
-           (token<>_CWCHAR) and
-           (token<>_CWSTRING) then
+           (current_scanner.token<>_CSTRING) and
+           (current_scanner.token<>_CWCHAR) and
+           (current_scanner.token<>_CWSTRING) then
            add_synthetic_method_implementations(current_procinfo.procdef.localst);
 
          { check for incomplete class definitions, this is only required
@@ -3250,7 +3264,7 @@ implementation
       begin
          hadgeneric:=false;
          repeat
-           case token of
+           case current_scanner.token of
              _CONST :
                begin
                  handle_unexpected_had_generic;
@@ -3275,7 +3289,7 @@ implementation
              _PROCEDURE,
              _OPERATOR :
                begin
-                 if hadgeneric and not (token in [_FUNCTION, _PROCEDURE]) then
+                 if hadgeneric and not (current_scanner.token in [_FUNCTION, _PROCEDURE]) then
                    begin
                      message(parser_e_procedure_or_function_expected);
                      hadgeneric:=false;
@@ -3288,7 +3302,7 @@ implementation
                end;
              else
                begin
-                 case idtoken of
+                 case current_scanner.idtoken of
                    _RESOURCESTRING :
                      begin
                        handle_unexpected_had_generic;

@@ -1,5 +1,5 @@
 ﻿{$mode objfpc} {$H+}
-{$ifdef go32v2}
+{$if defined(go32v2) or defined(wasi)}
   {$define USE_INTERNAL_UNICODE}
 {$endif}
 
@@ -22,8 +22,8 @@ uses
   cpall,
  {$endif}
   sysutils;
-  
-type  
+
+type
   ts866 = type AnsiString(866);
   ts1252 = type AnsiString(1252);
 

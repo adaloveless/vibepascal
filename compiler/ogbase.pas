@@ -271,6 +271,7 @@ interface
 {$endif ARM}
 
        constructor create(AList:TFPHashObjectList;const AName:string);virtual;
+       function  ToString:ansistring;override;
        function  address:qword;
        procedure SetAddress(apass:byte;aobjsec:TObjSection;abind:TAsmsymbind;atyp:Tasmsymtype);
        function  ObjData: TObjData;
@@ -308,6 +309,7 @@ interface
         constructor CreateGroup(ADataOffset:TObjSectionOfs;grp:TObjSectionGroup;Atyp:TObjRelocationType);
         constructor CreateRaw(ADataOffset:TObjSectionOfs;s:TObjSymbol;ARawType:byte);
         function TargetName:TSymStr;
+        function ToString: ansistring; override;
         property typ: TObjRelocationType read GetType write SetType;
      end;
 
@@ -342,6 +344,7 @@ interface
        VTRefList : TFPObjectList;
        constructor create(AList:TFPHashObjectList;const Aname:string;Aalign:longint;Aoptions:TObjSectionOptions);virtual;
        destructor  destroy;override;
+       function  ToString:ansistring;override;
        function  write(const d;l:TObjSectionOfs):TObjSectionOfs;
        procedure writeInt8(v: int8);
        procedure writeInt16LE(v: int16);
@@ -859,6 +862,20 @@ implementation
       end;
 
 
+    function TObjSymbol.ToString: ansistring;
+      var
+        objsectionstr: ansistring;
+      begin
+        if Assigned(objsection) then
+          objsectionstr:=objsection.ToString
+        else
+          objsectionstr:='nil';
+        WriteStr(Result,'(Name:',Name,';bind:',bind,';typ:',typ,';pass:',pass,
+          ';refs:',refs,';symidx:',symidx,';objsection:',objsectionstr,';offset:',
+          offset,';size:',size,')');
+      end;
+
+
     function TObjSymbol.address:qword;
       begin
         if assigned(objsection) then
@@ -998,6 +1015,34 @@ implementation
           result:=objsection.Name;
       end;
 
+
+    function TObjRelocation.ToString: ansistring;
+      var
+        typstr,
+        symbolstr,
+        objsectionstr,
+        groupstr: ansistring;
+      begin
+        Str(typ,typstr);
+        if Assigned(symbol) then
+          symbolstr:=symbol.ToString
+        else
+          symbolstr:='nil';
+        if Assigned(objsection) then
+          objsectionstr:=objsection.ToString
+        else
+          objsectionstr:='nil';
+        if Assigned(group) then
+          groupstr:=group.ToString
+        else
+          groupstr:='nil';
+        Result:='(typ:'+typstr+';DataOffset:'+tostr(DataOffset)+
+          ';orgsize:'+tostr(orgsize)+';symbol:'+symbolstr+
+          ';objsection:'+objsectionstr+';group:'+groupstr+
+          ';ftype:'+tostr(ftype)+';size:'+tostr(size)+
+          ';flags:'+tostr(flags)+')';
+      end;
+
 {****************************************************************************
                               TObjSection
 ****************************************************************************}
@@ -1030,11 +1075,24 @@ implementation
     destructor TObjSection.destroy;
       begin
         if assigned(Data) then
-          Data.Free;
+          begin
+            FData.Free;
+            FData := nil;
+          end;
         stringdispose(FCachedFullName);
         ObjRelocations.Free;
+        ObjRelocations := nil;
         VTRefList.Free;
+        VTRefList := nil;
         inherited destroy;
+      end;
+
+
+    function TObjSection.ToString: ansistring;
+      begin
+        System.WriteStr(Result,'(Name:',Name,';index',index,';SecSymIdx:',SecSymIdx,
+          ';SecAlign:',SecAlign,';Size:',Size,';DataPos:',DataPos,';MemPos:',
+          MemPos,';DataAlignBytes:',DataAlignBytes,';Used:',Used,')');
       end;
 
 
@@ -1069,7 +1127,7 @@ implementation
           begin
             if Size<>Data.size then
               internalerror(200602281);
-{$ifndef cpu64bitalu}
+{$ifndef cpu64bitaddr}
             if (qword(size)+l)>SizeLimit then
               SectionTooLargeError;
 {$endif}
@@ -1274,7 +1332,7 @@ implementation
 
     procedure TObjSection.alloc(l:TObjSectionOfs);
       begin
-{$ifndef cpu64bitalu}
+{$ifndef cpu64bitaddr}
         if (qword(size)+l)>SizeLimit then
           SectionTooLargeError;
 {$endif}
@@ -1379,17 +1437,21 @@ implementation
 {$endif}
         ResetCachedAsmSymbols;
         FCachedAsmSymbolList.free;
+        FCachedAsmSymbolList := nil;
         FObjSymbolList.free;
+        FObjSymbolList := nil;
 {$ifdef MEMDEBUG}
         MemObjSymbols.Stop;
 {$endif}
-        GroupsList.free;
+        FGroupsList.free;
+        FGroupsList := nil;
 
         { Sections }
 {$ifdef MEMDEBUG}
         MemObjSections.Start;
 {$endif}
         FObjSectionList.free;
+        FObjSectionList := nil;
 {$ifdef MEMDEBUG}
         MemObjSections.Stop;
 {$endif}
@@ -1405,9 +1467,12 @@ implementation
           {Data} [oso_Data,oso_load,oso_write],
           { Readonly data with relocations must be initially writable for some targets.
             Moreover, e.g. for ELF it depends on whether the executable is linked statically or
-            dynamically. Here we declare it writable, target-specific descendants must provide
-            further handling. }
+            dynamically. }
+{$if defined(support_rodata)}
+          {roData} [oso_Data,oso_load],
+{$else defined(support_rodata)}
           {roData} [oso_Data,oso_load,oso_write],
+{$endif defined(support_rodata)}
           {roData_norel} [oso_Data,oso_load],
           {bss} [oso_load,oso_write],
           {threadvar} [oso_load,oso_write,oso_threadvar],
@@ -1475,7 +1540,8 @@ implementation
           {stack} [oso_load,oso_write],
           {heap} [oso_load,oso_write],
           {gcc_except_table} [oso_data,oso_load],
-          {arm_attribute} [oso_data]
+          {arm_attribute} [oso_data],
+          {note} [oso_Data,oso_note]
         );
       begin
         if target_asm.id in asms_int_coff then
@@ -2071,6 +2137,7 @@ implementation
     destructor TExeVTable.Destroy;
       begin
         ChildList.Free;
+        ChildList := nil;
         if assigned(EntryArray) then
           Freemem(EntryArray);
       end;
@@ -2166,7 +2233,8 @@ implementation
 
     destructor TExeSection.destroy;
       begin
-        ObjSectionList.Free;
+        FObjSectionList.Free;
+        FObjSectionList := nil;
         inherited destroy;
       end;
 
@@ -2231,6 +2299,7 @@ implementation
     destructor TStaticLibrary.destroy;
       begin
         FPayload.Free;
+        FPayload := nil;
         inherited destroy;
       end;
 
@@ -2271,7 +2340,8 @@ implementation
 
     destructor TImportLibrary.destroy;
       begin
-        ImportSymbolList.Free;
+        FImportSymbolList.Free;
+        FImportSymbolList := nil;
         inherited destroy;
       end;
 
@@ -2340,16 +2410,27 @@ implementation
     destructor TExeOutput.destroy;
       begin
         FExeSymbolList.free;
-        UnresolvedExeSymbols.free;
-        ExternalObjSymbols.free;
+        FExeSymbolList := nil;
+        FUnresolvedExeSymbols.free;
+        FUnresolvedExeSymbols := nil;
+        FExternalObjSymbols.free;
+        FExternalObjSymbols := nil;
         FProvidedObjSymbols.free;
+        FProvidedObjSymbols := nil;
         FIndirectObjSymbols.free;
-        CommonObjSymbols.free;
-        ExeVTableList.free;
+        FIndirectObjSymbols := nil;
+        FCommonObjSymbols.free;
+        FCommonObjSymbols := nil;
+        FExeVTableList.free;
+        FExeVTableList := nil;
         FExeSectionList.free;
+        FExeSectionList := nil;
         ComdatGroups.free;
-        ObjDatalist.free;
+        ComdatGroups := nil;
+        FObjDatalist.free;
+        FObjDatalist := nil;
         FWriter.free;
+        FWriter := nil;
         inherited destroy;
       end;
 
@@ -2465,7 +2546,7 @@ implementation
         if assigned(ExeSymbolList.Find(aname)) then
           exit;
         internalObjData.createsection('*'+aname,0,[]);
-        // Use AB_COMMON to avoid muliple defined complaints
+        // Use AB_COMMON to avoid multiple defined complaints
         internalObjData.SymbolDefine(aname,AB_COMMON,AT_DATA);
       end;
 
@@ -2536,6 +2617,7 @@ implementation
             CurrExeSec.AddObjSection(objsec);
           end;
         TmpObjSectionList.Free;
+        TmpObjSectionList := nil;
       end;
 
 
@@ -2909,7 +2991,7 @@ implementation
           for j:=0 to ObjData.ObjSymbolList.Count-1 do
             begin
               objsym:=TObjSymbol(ObjData.ObjSymbolList[j]);
-              { From the local symbols we are only interessed in the
+              { From the local symbols we are only interested in the
                 VTENTRY and VTINHERIT symbols }
               if objsym.bind=AB_LOCAL then
                 begin
@@ -3131,6 +3213,7 @@ implementation
                               objinput:=lib.ObjInputClass.Create;
                               objinput.ReadObjData(lib.ArReader,objdata);
                               objinput.free;
+                              objinput := nil;
                               AddObjData(objdata);
                               LoadObjDataSymbols(objdata);
                               lib.ArReader.CloseFile;
@@ -3259,7 +3342,9 @@ implementation
         if cs_link_opt_vtable in current_settings.globalswitches then
           BuildVTableTree(VTInheritList,VTEntryList);
         VTInheritList.Free;
+        VTInheritList := nil;
         VTEntryList.Free;
+        VTEntryList := nil;
       end;
 
 
@@ -3392,6 +3477,7 @@ implementation
               end;
           end;
         list.Free;
+        list := nil;
       end;
 
 
@@ -3554,7 +3640,7 @@ implementation
                             inc(currstabrelocidx);
                           end;
 
-                        { Check if the stab is refering to a removed section }
+                        { Check if the stab is referring to a removed section }
                         if assigned(hstabreloc) then
                           begin
                             if assigned(hstabreloc.Symbol) then
@@ -3948,7 +4034,7 @@ implementation
                 DoRelocationFixup(objsec);
                 {for size = 0 data is not valid PM }
                 if assigned(objsec.data) and (objsec.data.size<>objsec.size) then
-                  internalerror(2010092801);
+                  internalerror(2010092801,'wrong data size for '+objsec.FullName);
               end;
           end;
       end;
@@ -4095,6 +4181,8 @@ initialization
 
 finalization
   memobjsymbols.free;
+  memobjsymbols := nil;
   memobjsections.free;
+  memobjsections := nil;
 {$endif MEMDEBUG}
 end.

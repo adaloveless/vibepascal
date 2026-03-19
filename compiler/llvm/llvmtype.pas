@@ -513,7 +513,7 @@ implementation
         sec: tasmsectiontype;
         i: longint;
       begin
-        { Necessery for "external" declarations for symbols not declared in the
+        { Necessary for "external" declarations for symbols not declared in the
           current unit. We can't create these declarations when the alias is
           initially generated, because the symbol may still be defined later at
           that point.
@@ -618,7 +618,7 @@ implementation
     procedure TLLVMTypeInfo.appendprocdef(list:TAsmList;def:tprocdef);
       begin
         { the procdef itself is already written by appendprocdef_implicit }
-      
+
         { last write the types from this procdef }
         if assigned(def.parast) then
           write_symtable_defs(current_asmdata.asmlists[al_start],def.parast);

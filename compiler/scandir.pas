@@ -42,6 +42,7 @@ unit scandir;
         packenum,
         packrecords : shortint;
         asmmode : tasmmode;
+        optimizerswitches : toptimizerswitches;
       end;
 
     type
@@ -143,7 +144,7 @@ unit scandir;
     procedure do_message(w:integer);
       begin
         current_scanner.skipspace;
-        Message1(w,current_scanner.readcomment);
+        Message1(w,current_scanner.readlongcomment);
       end;
 
 
@@ -167,32 +168,32 @@ unit scandir;
         majorl:=0;
         minorl:=0;
         revisionl:=0;
-        val(pattern,majorl,error);
+        val(current_scanner.pattern,majorl,error);
         if (error<>0) or (majorl > high(word)) or (majorl < 0) then
           begin
-            Message1(scan_w_wrong_version_ignored,pattern);
+            Message1(scan_w_wrong_version_ignored,current_scanner.pattern);
             exit;
           end;
         isset:=true;
-        if c='.' then
+        if current_scanner.c='.' then
           begin
             current_scanner.readchar;
             current_scanner.readnumber;
-            val(pattern,minorl,error);
+            val(current_scanner.pattern,minorl,error);
             if (error<>0) or (minorl > high(word)) or (minorl < 0) then
               begin
-                Message1(scan_w_wrong_version_ignored,tostr(majorl)+'.'+pattern);
+                Message1(scan_w_wrong_version_ignored,tostr(majorl)+'.'+current_scanner.pattern);
                 exit;
               end;
-            if (c='.') and
+            if (current_scanner.c='.') and
                allowrevision then
               begin
                  current_scanner.readchar;
                  current_scanner.readnumber;
-                 val(pattern,revisionl,error);
+                 val(current_scanner.pattern,revisionl,error);
                  if (error<>0) or (revisionl > high(word)) or (revisionl < 0) then
                    begin
-                      Message1(scan_w_wrong_version_ignored,tostr(majorl)+'.'+tostr(minorl)+'.'+pattern);
+                      Message1(scan_w_wrong_version_ignored,tostr(majorl)+'.'+tostr(minorl)+'.'+current_scanner.pattern);
                       exit;
                    end;
                  major:=word(majorl);
@@ -225,7 +226,7 @@ unit scandir;
         b : longint;
       begin
         current_scanner.skipspace;
-        if not(c in ['0'..'9']) then
+        if not(current_scanner.c in ['0'..'9']) then
          begin
            { Support also the ON and OFF as switch }
            hs:=current_scanner.readid;
@@ -475,6 +476,11 @@ unit scandir;
         do_delphiswitch('D');
       end;
 
+    procedure dir_definitioninfo;
+      begin
+        do_delphiswitch('Y');
+      end;
+
     procedure dir_denypackageunit;
       begin
         do_moduleflagswitch(mf_package_deny,true);
@@ -495,7 +501,7 @@ unit scandir;
     procedure dir_screenname; {ad}
       begin
         if not (target_info.system in [system_i386_netware,system_i386_netwlibc]) then
-          {Message(scan_w_decription_not_support);}
+          {Message(scan_w_description_not_support);}
           comment (V_Warning,'Screenname only supported for target netware');
         current_scanner.skipspace;
         nwscreenname:=current_scanner.readcomment;
@@ -504,7 +510,7 @@ unit scandir;
       procedure dir_threadname; {ad}
       begin
         if not (target_info.system in [system_i386_netware,system_i386_netwlibc]) then
-          {Message(scan_w_decription_not_support);}
+          {Message(scan_w_description_not_support);}
           comment (V_Warning,'Threadname only supported for target netware');
         current_scanner.skipspace;
         nwthreadname:=current_scanner.readcomment;
@@ -513,7 +519,7 @@ unit scandir;
       procedure dir_copyright; {ad}
       begin
         if not (target_info.system in [system_i386_netware,system_i386_netwlibc]) then
-          {Message(scan_w_decription_not_support);}
+          {Message(scan_w_description_not_support);}
           comment (V_Warning,'Copyright only supported for target netware');
         current_scanner.skipspace;
         nwcopyright:=current_scanner.readcomment;
@@ -537,7 +543,7 @@ unit scandir;
 {$endif i8086}
             then
           begin
-            Message1(scan_n_ignored_switch,pattern);
+            Message1(scan_n_ignored_switch,current_scanner.pattern);
             exit;
           end;
         do_localswitch(cs_force_far_calls);
@@ -693,7 +699,7 @@ unit scandir;
         s : string;
       begin
         current_scanner.skipspace;
-        if scanner.c = '''' then
+        if current_scanner.c = '''' then
           begin
             s:= current_scanner.readquotedstring;
             current_scanner.readcomment
@@ -711,7 +717,7 @@ unit scandir;
         s : string;
       begin
         current_scanner.skipspace;
-        if scanner.c = '''' then
+        if current_scanner.c = '''' then
           begin
             s:= current_scanner.readquotedstring;
             current_scanner.readcomment
@@ -738,7 +744,7 @@ unit scandir;
         linkMode : tLinkMode;
       begin
         current_scanner.skipspace;
-        if scanner.c = '''' then
+        if current_scanner.c = '''' then
           begin
             libname:= current_scanner.readquotedstring;
             s:= current_scanner.readcomment;
@@ -836,7 +842,7 @@ unit scandir;
          hs : string;
       begin
          current_scanner.skipspace;
-         if not(c in ['0'..'9']) then
+         if not(current_scanner.c in ['0'..'9']) then
            begin
               hs:=current_scanner.readid;
               if (hs='NORMAL') or (hs='DEFAULT') then
@@ -910,14 +916,14 @@ unit scandir;
           stacksize:=min(l,{$ifdef cpu16bitaddr}65520{$else}67107839{$endif})
         else
           Message(scan_w_invalid_stacksize);
-        if c=',' then
+        if current_scanner.c=',' then
           begin
             current_scanner.readchar;
             current_scanner.skipspace;
             l:=current_scanner.readval64;
             if l>=1024 then
               heapsize:=min(l,heapsize_limit);
-            if c=',' then
+            if current_scanner.c=',' then
               begin
                 current_scanner.readchar;
                 current_scanner.skipspace;
@@ -934,12 +940,13 @@ unit scandir;
     procedure dir_message;
       var
         hs : string;
+        s  : AnsiString;
         w  : longint;
       begin
         w:=0;
         current_scanner.skipspace;
         { Message level specified? }
-        if c='''' then
+        if current_scanner.c='''' then
           w:=scan_n_user_defined
         else
           begin
@@ -968,11 +975,11 @@ unit scandir;
         if w<>0 then
           begin
             current_scanner.skipspace;
-            if c='''' then
-              hs:=current_scanner.readquotedstring
+            if current_scanner.c='''' then
+              s:=current_scanner.readlongquotedstring
             else
-              hs:=current_scanner.readcomment;
-            Message1(w,hs);
+              s:=current_scanner.readlongcomment;
+            Message1(w,s);
           end
         else
           current_scanner.readcomment;
@@ -999,14 +1006,95 @@ unit scandir;
           current_scanner.skipspace;
           current_scanner.readstring;
           if not current_module.mode_switch_allowed and
-              not ((m_mac in current_settings.modeswitches) and (pattern='MACPAS')) then
-            Message1(scan_e_mode_switch_not_allowed,pattern)
-          else if not SetCompileMode(pattern,false) then
-            Message1(scan_w_illegal_switch,pattern)
+              not ((m_mac in current_settings.modeswitches) and (current_scanner.pattern='MACPAS')) then
+            Message1(scan_e_mode_switch_not_allowed,current_scanner.pattern)
+          else if not SetCompileMode(current_scanner.pattern,false) then
+            Message1(scan_w_illegal_switch,current_scanner.pattern)
         end;
       current_module.mode_switch_allowed:= false;
     end;
 
+    procedure dir_multilinestringlineending;
+      var
+        s : string;
+      begin
+        if not (m_multiline_strings in current_settings.modeswitches) then
+          Message1(scan_e_illegal_directive,'MULTILINESTRINGLINEENDING');
+        current_scanner.skipspace;
+        s:=current_scanner.readid;
+        if (s='CR') then
+          current_settings.lineendingtype:=le_cr
+        else if (s='CRLF') then
+          current_settings.lineendingtype:=le_crlf
+        else if (s='LF') then
+          current_settings.lineendingtype:=le_lf
+        else if (s='PLATFORM') then
+          current_settings.lineendingtype:=le_platform
+        else if (s='SOURCE') then
+          current_settings.lineendingtype:=le_source
+        else
+          Message(scan_e_unknown_lineending_type);
+      end;
+
+    procedure dir_textblock;
+      var
+        s : string;
+      begin
+        if not (m_delphi in current_settings.modeswitches) then
+          Message1(scan_e_illegal_directive,'TEXTBLOCK');
+        current_scanner.skipspace;
+        s:=current_scanner.readid;
+        if (s='CR') then
+          current_settings.lineendingtype:=le_cr
+        else if (s='CRLF') then
+          current_settings.lineendingtype:=le_crlf
+        else if (s='LF') then
+          current_settings.lineendingtype:=le_lf
+        else if (s='NATIVE') then
+          current_settings.lineendingtype:=le_platform
+        else
+          Message(scan_e_unknown_lineending_type);
+      end;
+
+    procedure dir_multilinestringtrimleft;
+      var
+        count : longint;
+        s : string;
+      begin
+        if not (m_multiline_strings in current_settings.modeswitches) then
+          Message1(scan_e_illegal_directive,'MULTILINESTRINGTRIMLEFT');
+        current_scanner.skipspace;
+        if (current_scanner.c in ['0'..'9']) then
+          begin
+            count:=current_scanner.readval;
+            if (count<0) or (count>high(word)) then
+              Message(scan_e_trimcount_out_of_range)
+            else
+              begin
+                current_settings.whitespacetrimcount:=count;
+                current_settings.whitespacetrimauto:=false;
+              end;
+          end
+        else
+          begin
+            s:=current_scanner.readid;
+            if s='ALL' then
+              begin
+                current_settings.whitespacetrimcount:=high(word);
+                current_settings.whitespacetrimauto:=false;
+              end
+            else if s='AUTO' then
+              begin
+                current_settings.whitespacetrimcount:=0;
+                current_settings.whitespacetrimauto:=true;
+              end
+            else
+              begin
+                current_settings.whitespacetrimcount:=0;
+                current_settings.whitespacetrimauto:=false;
+              end;
+          end;
+      end;
 
     procedure dir_modeswitch;
       var
@@ -1018,10 +1106,10 @@ unit scandir;
           begin
             current_scanner.skipspace;
             current_scanner.readstring;
-            s:=pattern;
+            s:=current_scanner.pattern;
             { don't combine the assignments to s as the method call will be
-              done before "pattern" is assigned to s and the method changes
-              "pattern" }
+              done before "current_scanner.pattern" is assigned to s and the method changes
+              "current_scanner.pattern" }
             s:=s+current_scanner.readoptionalstate('+');
             if not SetCompileModeSwitch(s,false) then
               Message1(scan_w_illegal_switch,s)
@@ -1042,7 +1130,7 @@ unit scandir;
         begin
           current_scanner.skipspace;
           current_scanner.readstring;
-          s:=orgpattern;
+          s:=current_scanner.orgpattern;
           While (s<>'') do
             begin
               // We may not yet have a correct module namespacelist.
@@ -1050,13 +1138,13 @@ unit scandir;
                 current_namespacelist.Insert(s)
               else // copied when correct module is activated
                 premodule_namespacelist.Insert(s);
-              s:='';  
-              if c=',' then
+              s:='';
+              if current_scanner.c=',' then
                 begin
                   current_scanner.readchar;
                   current_scanner.skipspace;
                   current_scanner.readstring;
-                  s:=orgpattern;
+                  s:=current_scanner.orgpattern;
                 end;
             end;
         end;
@@ -1074,12 +1162,12 @@ unit scandir;
           begin
             current_scanner.skipspace;
             current_scanner.readstring;
-            s:=orgpattern;
-            while c='.' do
+            s:=current_scanner.orgpattern;
+            while current_scanner.c='.' do
               begin
                 current_scanner.readchar;
                 current_scanner.readstring;
-                s:=s+'.'+orgpattern;
+                s:=s+'.'+current_scanner.orgpattern;
               end;
             disposestr(current_module.namespace);
             current_module.namespace:=stringdup(s);
@@ -1134,15 +1222,17 @@ unit scandir;
         { Support also the ON and OFF as switch }
         hs:=current_scanner.readid;
         if (hs='ON') then
-          current_settings.optimizerswitches:=level2optimizerswitches
+          recordpendingoptimizerswitches(level2optimizerswitches)
         else if (hs='OFF') then
-          current_settings.optimizerswitches:=[]
+          recordpendingoptimizerswitches([])
         else if (hs='DEFAULT') then
-          current_settings.optimizerswitches:=init_settings.optimizerswitches
+          recordpendingoptimizerswitches(init_settings.optimizerswitches)
         else
           begin
             if not UpdateOptimizerStr(hs,current_settings.optimizerswitches) then
-              Message1(scan_e_illegal_optimization_specifier,hs);
+              Message1(scan_e_illegal_optimization_specifier,hs)
+            else
+              recordpendingoptimizerswitches(current_settings.optimizerswitches)
           end;
       end;
 
@@ -1157,7 +1247,7 @@ unit scandir;
         v : longint;
       begin
         current_scanner.skipspace;
-        if not(c in ['0'..'9']) then
+        if not(current_scanner.c in ['0'..'9']) then
          begin
            hs:=current_scanner.readid;
            if (hs='NORMAL') or (hs='DEFAULT') then
@@ -1171,7 +1261,7 @@ unit scandir;
            case v of
             1,2,4 : recordpendingpackenum(v);
            else
-            Message1(scan_e_illegal_pack_enum, pattern);
+            Message1(scan_e_illegal_pack_enum, current_scanner.pattern);
            end;
          end;
       end;
@@ -1181,7 +1271,7 @@ unit scandir;
       begin
         current_scanner.skipspace;
         if not SetMinFPConstPrec(current_scanner.readid,current_settings.minfpconstprec) then
-          Message1(scan_e_illegal_minfpconstprec, pattern);
+          Message1(scan_e_illegal_minfpconstprec, current_scanner.pattern);
       end;
 
 
@@ -1194,7 +1284,7 @@ unit scandir;
         if target_info.system in systems_managed_vm then
           Message1(scanner_w_directive_ignored_on_target, 'PACKRECORDS');
         current_scanner.skipspace;
-        if not(c in ['0'..'9']) then
+        if not(current_scanner.c in ['0'..'9']) then
          begin
            hs:=current_scanner.readid;
            { C has the special recordalignmax of C_alignment }
@@ -1212,7 +1302,7 @@ unit scandir;
            case v of
              1,2,4,8,16,32 : recordpendingpackrecords(v);
            else
-            Message1(scan_e_illegal_pack_records,pattern);
+            Message1(scan_e_illegal_pack_records,current_scanner.pattern);
            end;
          end;
       end;
@@ -1224,7 +1314,7 @@ unit scandir;
         v : longint;
       begin
         current_scanner.skipspace;
-        if not(c in ['1','2','4','8']) then
+        if not(current_scanner.c in ['1','2','4','8']) then
          begin
            hs:=current_scanner.readid;
            if (hs='FIXED') or (hs='DEFAULT') OR (hs='NORMAL') then
@@ -1268,6 +1358,7 @@ unit scandir;
           recordpendingpackrecords(switchesstatestack[switchesstatestackpos].packrecords);
           recordpendingsetalloc(switchesstatestack[switchesstatestackpos].setalloc);
           recordpendingasmmode(switchesstatestack[switchesstatestackpos].asmmode);
+          recordpendingoptimizerswitches(switchesstatestack[switchesstatestackpos].optimizerswitches);
           pendingstate.nextmessagerecord:=switchesstatestack[switchesstatestackpos].pmessage;
           { flushpendingswitchesstate will reset the message state }
           current_settings.pmessage:=nil;
@@ -1337,6 +1428,11 @@ unit scandir;
       else
         switchesstatestack[switchesstatestackpos].asmmode:=current_settings.asmmode;
 
+      if psf_optimizerswitches_changed in pendingstate.flags then
+        switchesstatestack[switchesstatestackpos].optimizerswitches:=pendingstate.nextoptimizerswitches
+      else
+        switchesstatestack[switchesstatestackpos].optimizerswitches:=current_settings.optimizerswitches;
+
       switchesstatestack[switchesstatestackpos].pmessage:=pendingstate.nextmessagerecord;
       Inc(switchesstatestackpos);
     end;
@@ -1356,7 +1452,7 @@ unit scandir;
         s : string;
       begin
         current_scanner.skipspace;
-        if scanner.c = '''' then
+        if current_scanner.c = '''' then
           begin
             s:= current_scanner.readquotedstring;
             current_scanner.readcomment
@@ -1430,7 +1526,7 @@ unit scandir;
         { read the clause }
         current_scanner.skipspace;
         current_scanner.readid;
-        case pattern of
+        case current_scanner.pattern of
           'INHERIT':
             dir.clause:=rtc_inherit;
           'EXPLICIT':
@@ -1443,11 +1539,11 @@ unit scandir;
         current_scanner.skipspace;
         current_scanner.readid;
         { the inherit clause doesn't require any options but explicit does }
-        if (pattern='') and (dir.clause=rtc_explicit) then
+        if (current_scanner.pattern='') and (dir.clause=rtc_explicit) then
           Message(scan_e_incomplete_rtti_clause);
-        while pattern<>'' do
+        while current_scanner.pattern<>'' do
           begin
-            case pattern of
+            case current_scanner.pattern of
               'METHODS':
                 option:=ro_methods;
               'PROPERTIES':
@@ -1457,14 +1553,14 @@ unit scandir;
               otherwise
                 begin
                   if current_scanner.preproc_token=_ID then
-                    Message1(scan_e_invalid_rtti_option,pattern);
+                    Message1(scan_e_invalid_rtti_option,current_scanner.pattern);
                   break;
                 end;
             end;
             { the option has already been used }
             if options[option] then
               begin
-                Message1(scan_e_duplicate_rtti_option,pattern);
+                Message1(scan_e_duplicate_rtti_option,current_scanner.pattern);
                 break;
               end;
             dir.options[option]:=read_rtti_options;
@@ -1651,14 +1747,14 @@ unit scandir;
         { note: *not* recorded in the tokenstream, so not replayed for generics }
         current_scanner.skipspace;
         name:=current_scanner.readid;
-        if c='=' then
+        if current_scanner.c='=' then
           begin
             current_scanner.readchar;
             current_scanner.readid;
-            value:=orgpattern;
+            value:=current_scanner.orgpattern;
             UpdateTargetSwitchStr(name+'='+value,current_settings.targetswitches,current_module.in_global);
           end
-        else if c='-' then
+        else if current_scanner.c='-' then
           begin
             current_scanner.readchar;
             UpdateTargetSwitchStr(name+'-',current_settings.targetswitches,current_module.in_global);
@@ -1699,7 +1795,7 @@ unit scandir;
       begin
         if not(target_info.system in systems_jvm) then
           begin
-            Message1(scan_w_illegal_switch,pattern);
+            Message1(scan_w_illegal_switch,current_scanner.pattern);
             exit;
           end;
         do_localswitch(cs_check_var_copyout);
@@ -1739,31 +1835,31 @@ unit scandir;
             major:=0;
             minor:=0;
             revision:=0;
-            val(pattern,major,error);
+            val(current_scanner.pattern,major,error);
             if (error<>0) or (major > high(word)) or (major < 0) then
               begin
-                Message1(scan_w_wrong_version_ignored,pattern);
+                Message1(scan_w_wrong_version_ignored,current_scanner.pattern);
                 exit;
               end;
-            if c='.' then
+            if current_scanner.c='.' then
               begin
                 current_scanner.readchar;
                 current_scanner.readnumber;
-                val(pattern,minor,error);
+                val(current_scanner.pattern,minor,error);
                 if (error<>0) or (minor > high(word)) or (minor < 0) then
                   begin
-                    Message1(scan_w_wrong_version_ignored,tostr(major)+'.'+pattern);
+                    Message1(scan_w_wrong_version_ignored,tostr(major)+'.'+current_scanner.pattern);
                     exit;
                   end;
-                if (c='.') and
+                if (current_scanner.c='.') and
                    (target_info.system in [system_i386_netware,system_i386_netwlibc]) then
                   begin
                      current_scanner.readchar;
                      current_scanner.readnumber;
-                     val(pattern,revision,error);
+                     val(current_scanner.pattern,revision,error);
                      if (error<>0) or (revision > high(word)) or (revision < 0) then
                        begin
-                          Message1(scan_w_wrong_version_ignored,tostr(revision)+'.'+pattern);
+                          Message1(scan_w_wrong_version_ignored,tostr(revision)+'.'+current_scanner.pattern);
                           exit;
                        end;
                      dllmajor:=word(major);
@@ -1811,9 +1907,9 @@ unit scandir;
         current_scanner.skipspace;
         ident:=current_scanner.readid;
         current_scanner.skipspace;
-        if c in ['+','-'] then
+        if current_scanner.c in ['+','-'] then
           begin
-            state:=c;
+            state:=current_scanner.c;
             current_scanner.readchar;
           end
         else
@@ -1933,6 +2029,11 @@ unit scandir;
         do_delphiswitch('J');
       end;
 
+    procedure dir_yd;
+      begin
+        HandleSwitch('Y','+');
+      end;
+
     procedure dir_z1;
       begin
         current_settings.packenum:=1;
@@ -1968,7 +2069,7 @@ unit scandir;
 {$endif i8086}
             then
           begin
-            Message1(scan_n_ignored_switch,pattern);
+            Message1(scan_n_ignored_switch,current_scanner.pattern);
             exit;
           end;
         do_moduleswitch(cs_huge_code);
@@ -2072,8 +2173,6 @@ unit scandir;
 
     procedure dir_region;
       begin
-        current_scanner.skipspace;
-        current_scanner.readquotedstring;
       end;
 
     procedure dir_endregion;
@@ -2118,6 +2217,7 @@ unit scandir;
         AddDirective('COPYRIGHT',directive_all, @dir_copyright);
         AddDirective('D',directive_all, @dir_description);
         AddDirective('DEBUGINFO',directive_all, @dir_debuginfo);
+        AddDirective('DEFINITIONINFO',directive_all, @dir_definitioninfo);
         AddDirective('DENYPACKAGEUNIT',directive_all,@dir_denypackageunit);
         AddDirective('DESCRIPTION',directive_all, @dir_description);
         AddDirective('ENDREGION',directive_all, @dir_endregion);
@@ -2170,6 +2270,9 @@ unit scandir;
         AddDirective('MMX',directive_all, @dir_mmx);
         AddDirective('MODE',directive_all, @dir_mode);
         AddDirective('MODESWITCH',directive_all, @dir_modeswitch);
+        AddDirective('TEXTBLOCK',directive_all, @dir_textblock);
+        AddDirective('MULTILINESTRINGLINEENDING',directive_all, @dir_multilinestringlineending);
+        AddDirective('MULTILINESTRINGTRIMLEFT',directive_all, @dir_multilinestringtrimleft);
         AddDirective('NAMESPACE',directive_all, @dir_namespace);
         AddDirective('NAMESPACES',directive_all, @dir_namespaces);
         AddDirective('NODEFINE',directive_all, @dir_nodefine);
@@ -2188,8 +2291,10 @@ unit scandir;
         AddDirective('PIC',directive_all, @dir_pic);
         AddDirective('POINTERMATH',directive_all, @dir_pointermath);
         AddDirective('POP',directive_all, @dir_pop);
+        AddDirective('POPOPT',directive_all, @dir_pop);
         AddDirective('PROFILE',directive_all, @dir_profile);
         AddDirective('PUSH',directive_all, @dir_push);
+        AddDirective('PUSHOPT',directive_all, @dir_push);
         AddDirective('R',directive_all, @dir_resource);
         AddDirective('RTTI',directive_all, @dir_rtti);
         AddDirective('RANGECHECKS',directive_all, @dir_rangechecks);
@@ -2226,6 +2331,7 @@ unit scandir;
         AddDirective('WARNINGS',directive_all, @dir_warnings);
         AddDirective('WEAKPACKAGEUNIT',directive_all, @dir_weakpackageunit);
         AddDirective('WRITEABLECONST',directive_all, @dir_writeableconst);
+        AdDDirective('YD',directive_all, @dir_yd);
         AddDirective('Z1',directive_all, @dir_z1);
         AddDirective('Z2',directive_all, @dir_z2);
         AddDirective('Z4',directive_all, @dir_z4);

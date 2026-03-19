@@ -114,6 +114,8 @@ interface
        private
          procedure do_gettokenpos(out tokenpos: longint; out filepos: tfileposinfo);
          procedure cachenexttokenpos;
+         procedure postprocessmultiline(len, quote_pos, quote_count: integer);
+         procedure postprocessutf8multiline(len, quote_pos, quote_count: integer);
          procedure setnexttoken;
          procedure savetokenpos;
          procedure restoretokenpos;
@@ -146,10 +148,21 @@ interface
           lasttoken,
           nexttoken    : ttoken;
 
+          { read strings }
+          c              : char;
+
+          orgpattern,
+          pattern        : string;
+          cstringpattern : ansistring;
+          patternw       : tcompilerwidestring;
+
+          { token }
+          token,                        { current token being parsed }
+          idtoken    : ttoken;          { holds the token if the pattern is a known word }
+
           oldlasttokenpos     : longint; { temporary saving/restoring tokenpos }
           oldcurrent_filepos,
           oldcurrent_tokenpos : tfileposinfo;
-
 
           replaytokenbuf,
           recordtokenbuf : tdynamicarray;
@@ -180,6 +193,14 @@ interface
           { hack to allow reading generic generated identifiers IDs}
           allowgenericid : boolean;
 
+          { Having these tracked in the scanner class itself versus local variables allows for
+            informative error handling that would be impossible otherwise }
+          in_multiline_string, had_multiline_string : boolean;
+          multiline_start_line : longint;
+          multiline_start_column : word;
+
+          current_commentstyle : tcommentstyle; { needed to use read_comment from directives }
+
           constructor Create(const fn:string; is_macro: boolean = false);
           destructor Destroy;override;
         { File buffer things }
@@ -199,7 +220,7 @@ interface
           procedure gettokenpos;
           procedure inc_comment_level;
           procedure dec_comment_level;
-          procedure illegal_char(c:char);
+          procedure illegal_char(ch:char);
           procedure end_of_file;
           procedure checkpreprocstack;
           procedure poppreprocstack;
@@ -221,6 +242,7 @@ interface
           procedure tokenwritesizeint(val : asizeint);
           procedure tokenwritelongint(val : longint);
           procedure tokenwritelongword(val : longword);
+          procedure tokenwritebyte(val : byte);
           procedure tokenwriteword(val : word);
           procedure tokenwriteshortint(val : shortint);
           procedure tokenwriteset(var b;size : longint);
@@ -228,7 +250,7 @@ interface
           function  tokenreadsizeint : asizeint;
           procedure tokenwritesettings(var asettings : tsettings; var size : asizeint);
           { longword/longint are 32 bits on all targets }
-          { word/smallint are 16-bits on all targest }
+          { word/smallint are 16-bits on all targets }
           function  tokenreadlongword : longword;
           function  tokenreadword : word;
           function  tokenreadlongint : longint;
@@ -249,6 +271,9 @@ interface
           function  readval64:int64;
           function  readcomment(include_special_char: boolean = false):string;
           function  readquotedstring:string;
+          function  readlongcomment(include_special_char: boolean = false):RawByteString;
+          function  readlongquotedstring:RawByteString;
+          function readstringconstant: boolean;
           function  readstate:char;
           function  readoptionalstate(fallback:char):char;
           function  readstatedefault:char;
@@ -280,20 +305,8 @@ interface
        end;
 {$endif PREPROCWRITE}
 
-    var
-        { read strings }
-        c              : char;
-        orgpattern,
-        pattern        : string;
-        cstringpattern : ansistring;
-        patternw       : tcompilerwidestring;
-
-        { token }
-        token,                        { current token being parsed }
-        idtoken    : ttoken;          { holds the token if the pattern is a known word }
-
-        current_commentstyle : tcommentstyle; { needed to use read_comment from directives }
 {$ifdef PREPROCWRITE}
+    var
         preprocfile     : tpreprocfile;  { used with only preprocessing }
 {$endif PREPROCWRITE}
 
@@ -359,6 +372,7 @@ implementation
 *****************************************************************************}
 
     const
+      DirectiveIgnored=pointer(1);
       { use any special name that is an invalid file name to avoid problems }
       preprocstring : array [preproctyp] of string[7]
         = ('$IFDEF','$IFNDEF','$IF','$IFOPT','$ELSE','$ELSEIF');
@@ -378,12 +392,12 @@ implementation
         while low<high do
          begin
            mid:=(high+low+1) shr 1;
-           if pattern<tokeninfo^[ttoken(mid)].str then
+           if current_scanner.pattern<tokeninfo^[ttoken(mid)].str then
             high:=mid-1
            else
             low:=mid;
          end;
-        is_keyword:=(pattern=tokeninfo^[ttoken(high)].str) and
+        is_keyword:=(current_scanner.pattern=tokeninfo^[ttoken(high)].str) and
                     ((tokeninfo^[ttoken(high)].keyword*current_settings.modeswitches)<>[]);
       end;
 
@@ -467,7 +481,7 @@ implementation
               begin
                 { m_systemcodepage gets enabled -> disable any -FcXXX and
                   "codepage XXX" settings (exclude cs_explicit_codepage), and
-                  overwrite the sourcecode page }
+                  overwrite the source codepage }
                 current_settings.sourcecodepage:=DefaultSystemCodePage;
                 if (current_settings.sourcecodepage<>CP_UTF8) and not cpavailable(current_settings.sourcecodepage) then
                   begin
@@ -829,7 +843,9 @@ implementation
     procedure SetAppType(NewAppType:tapptype);
       begin
 {$ifdef i8086}
-        if (target_info.system in [system_i8086_msdos,system_i8086_embedded]) and (apptype<>NewAppType) then
+        { Set application extension regardless if it might or might not have been correct.
+          Important for secondary compilations from Textmode IDE. }
+        if (target_info.system in [system_i8086_msdos,system_i8086_embedded]) then
           begin
             if NewAppType=app_com then
               begin
@@ -959,8 +975,8 @@ implementation
         s : string;
       begin
         current_scanner.skipspace;
-        if c <> '''' then
-          Message2(scan_f_syn_expected, '''', c);
+        if current_scanner.c <> '''' then
+          Message2(scan_f_syn_expected, '''', current_scanner.c);
         s := current_scanner.readquotedstring;
         stringdispose(outputprefix);
         outputprefix := stringdup(s);
@@ -973,8 +989,8 @@ implementation
         s : string;
       begin
         current_scanner.skipspace;
-        if c <> '''' then
-          Message2(scan_f_syn_expected, '''', c);
+        if current_scanner.c <> '''' then
+          Message2(scan_f_syn_expected, '''', current_scanner.c);
         s := current_scanner.readquotedstring;
         stringdispose(outputsuffix);
         outputsuffix := stringdup(s);
@@ -987,8 +1003,8 @@ implementation
         s : string;
       begin
         current_scanner.skipspace;
-        if c <> '''' then
-          Message2(scan_f_syn_expected, '''', c);
+        if current_scanner.c <> '''' then
+          Message2(scan_f_syn_expected, '''', current_scanner.c);
         s := current_scanner.readquotedstring;
         if OutputFileName='' then
           OutputFileName:=InputFileName;
@@ -1006,7 +1022,7 @@ not well defined, the type system does a best effort. The drawback is
 that some errors might not be detected.
 
 Instead of returning a particular data type, a set of possible data types
-are returned. This way ambigouos types can be handled.  For instance a
+are returned. This way ambiguous types can be handled.  For instance a
 value of 1 can be both a boolean and and integer.
 
 Booleans
@@ -1091,11 +1107,17 @@ type
   class destructor texprvalue.destroydefs;
     begin
       setdef.free;
+      setdef := nil;
       sintdef.free;
+      sintdef := nil;
       uintdef.free;
+      uintdef := nil;
       booldef.free;
+      booldef := nil;
       strdef.free;
+      strdef := nil;
       realdef.free;
+      realdef := nil;
     end;
 
   constructor texprvalue.create_const(c: tconstsym);
@@ -1580,12 +1602,12 @@ type
           dispose(pnormalset(value.valueptr));
         constguid :
           dispose(pguid(value.valueptr));
+        constnil,
+        constpointer,
         constord,
         { error values }
         constnone:
           ;
-        else
-          internalerror(2013112802);
       end;
       inherited destroy;
     end;
@@ -1658,7 +1680,7 @@ type
                 hmodule:=find_module_from_symtable(srsym.Owner);
                 if not Assigned(hmodule) then
                   internalerror(201001120);
-                if hmodule.unit_index=current_filepos.moduleindex then
+                if hmodule.moduleid=current_filepos.moduleindex then
                   begin
                     preproc_consume(_POINT);
                     current_scanner.skipspace;
@@ -1789,7 +1811,7 @@ type
           The result from this procedure can either be that the token
           itself is a value, or that it is a compile time variable/macro,
           which then is substituted for another value (for macros
-          recursivelly substituted).}
+          recursively substituted).}
 
         var
           hs: string;
@@ -1809,7 +1831,7 @@ type
           searchstr := @basesearchstr;
           mac:=nil;
           foundmacro:=false;
-          { Substitue macros and compiler variables with their content/value.
+          { Substitute macros and compiler variables with their content/value.
             For real macros also do recursive substitution. }
           macrocount:=0;
           repeat
@@ -2068,6 +2090,8 @@ type
                                 end;
                               typesym:
                                 begin
+                                  if ttypesym(srsym).typedef.typ in [errordef,abstractdef,forwarddef] then
+                                    Message(parser_e_illegal_expression);
                                   l:=ttypesym(srsym).typedef.size;
                                   MarkSymbolAsUsed(srsym);
                                 end;
@@ -2257,6 +2281,7 @@ type
                     else
                       result:=texprvalue.create_int(0);
                     exprvalue.free;
+                    exprvalue := nil;
                     if current_scanner.preproc_token =_RKLAMMER then
                       preproc_consume(_RKLAMMER)
                     else
@@ -2272,6 +2297,7 @@ type
                     else
                       result:=texprvalue.create_bool(false); {Just to have something}
                     exprvalue.free;
+                    exprvalue := nil;
                   end
                 else
                 if (current_scanner.preproc_pattern='TRUE') then
@@ -2448,6 +2474,7 @@ type
                else
                  Message(scan_e_error_in_preproc_expr);
                exprvalue.free;
+               exprvalue := nil;
              end
            else
              Message(scan_e_error_in_preproc_expr);
@@ -2501,7 +2528,9 @@ type
                      result:=texprvalue.create_bool(false); {Just to have something}
                  end;
                hs1.free;
+               hs1 := nil;
                hs2.free;
+               hs2 := nil;
              end
            else
              break;
@@ -2531,6 +2560,7 @@ type
           end;
         valuedescr:=hs.asStr;
         hs.free;
+        hs := nil;
       end;
 
     procedure dir_if;
@@ -2581,10 +2611,10 @@ type
              if not macstyle then
                begin
                  { may be a macro? }
-                 if c <> ':' then
+                 if current_scanner.c <> ':' then
                    exit;
                  current_scanner.readchar;
-                 if c <> '=' then
+                 if current_scanner.c <> '=' then
                    exit;
                  mac.is_c_macro:=true;
                  current_scanner.readchar;
@@ -2603,7 +2633,7 @@ type
                to have a $ifdef etc. in the macro }
              bracketcount:=0;
              repeat
-               case c of
+               case current_scanner.c of
                  '}' :
                    if (bracketcount=0) then
                     break
@@ -2618,7 +2648,7 @@ type
                end;
                if macropos>=maxmacrolen then
                  Message(scan_f_macro_buffer_overflow);
-               macrobuffer[macropos]:=c;
+               macrobuffer[macropos]:=current_scanner.c;
                inc(macropos);
                current_scanner.readchar;
              until false;
@@ -2632,10 +2662,10 @@ type
            { check if there is an assignment, then we need to give a
              warning }
              current_scanner.skipspace;
-             if c=':' then
+             if current_scanner.c=':' then
               begin
                 current_scanner.readchar;
-                if c='=' then
+                if current_scanner.c='=' then
                   Message(scan_w_macro_support_turned_off);
               end;
           end;
@@ -2684,9 +2714,9 @@ type
 
         { macro assignment can be both := and = }
         current_scanner.skipspace;
-        if c=':' then
+        if current_scanner.c=':' then
           current_scanner.readchar;
-        if c='=' then
+        if current_scanner.c='=' then
           begin
              current_scanner.readchar;
              exprvalue:=preproc_comp_expr(nil);
@@ -2697,7 +2727,7 @@ type
 
              if length(hs) <> 0 then
                begin
-                 {If we are absolutely shure it is boolean, translate
+                 {If we are absolutely sure it is boolean, translate
                   to TRUE/FALSE to increase possibility to do future type check}
                  if exprvalue.isBoolean then
                    begin
@@ -2713,6 +2743,7 @@ type
              else
                Message(scan_e_preproc_syntax_error);
              exprvalue.free;
+             exprvalue := nil;
           end
         else
           Message(scan_e_preproc_syntax_error);
@@ -2886,7 +2917,7 @@ type
                dec(current_scanner.inputpointer);
 {$endif  CHECK_INPUTPOINTER_LIMITS}
                { reset c }
-               c:=#0;
+               current_scanner.c:=#0;
                { shutdown current file }
                current_scanner.tempcloseinputfile;
                { load new file }
@@ -3119,6 +3150,7 @@ type
         nexttoken:=NOTOKEN;
         ignoredirectives:=TFPHashList.Create;
         change_endian_for_replay:=false;
+        initwidestring(patternw);
       end;
 
 
@@ -3149,8 +3181,13 @@ type
         if not inputfile.closed then
           closeinputfile;
         if inputfile.is_macro then
-          inputfile.free;
+          begin
+            inputfile.free;
+            inputfile := nil;
+          end;
         ignoredirectives.free;
+        ignoredirectives := nil;
+        donewidestring(patternw);
       end;
 
 
@@ -3278,11 +3315,11 @@ type
                to_dispose:=nil;
                dec(inputfilecount);
              end;
-           { we can allways close the file, no ? }
+           { we can always close the file, no ? }
            inputfile.close;
            inputfile:=inputfile.next;
            if assigned(to_dispose) then
-             to_dispose.free;
+             to_dispose.free; // no nil needed
            restoreinputfile;
          end;
       end;
@@ -3360,6 +3397,11 @@ type
     procedure tscannerfile.tokenwriteshortint(val : shortint);
       begin
         recordtokenbuf.write(val,sizeof(shortint));
+      end;
+
+    procedure tscannerfile.tokenwritebyte(val : byte);
+      begin
+        recordtokenbuf.write(val,sizeof(byte));
       end;
 
     procedure tscannerfile.tokenwriteword(val : word);
@@ -3547,6 +3589,9 @@ type
             else
              ControllerType:=ct_none;
 {$POP}
+            lineendingtype:=tlineendingtype(tokenreadenum(sizeof(tlineendingtype)));
+            whitespacetrimcount:=tokenreadword;
+            whitespacetrimauto:=boolean(tokenreadbyte);
            endpos:=replaytokenbuf.pos;
            if endpos-startpos<>expected_size then
              Comment(V_Error,'Wrong size of Settings read-in');
@@ -3626,6 +3671,9 @@ type
             if ControllerSupport then
               tokenwriteenum(controllertype,sizeof(tcontrollertype));
 {$POP}
+            tokenwriteenum(lineendingtype,sizeof(tlineendingtype));
+            tokenwriteword(whitespacetrimcount);
+            tokenwritebyte(byte(whitespacetrimauto));
            endpos:=recordtokenbuf.pos;
            size:=endpos-startpos;
            recordtokenbuf.seek(sizepos);
@@ -3950,7 +3998,14 @@ type
                         for i:=1 to mesgnb do
                           begin
                             if not assigned(pmsg) then
-                              new(pmsg);
+                              begin
+                                new(pmsg);
+                                {$IFDEF DEBUG_MESSAGESTATE}
+                                if current_module=nil then
+                                  Internalerror(2026030704);
+                                pmsg^.owner:=current_module;
+                                {$ENDIF}
+                              end;
                             pmsg^.value:=tokenreadlongint;
                             pmsg^.state:=tmsgstate(tokenreadlongint);
                             pmsg^.next:=nil;
@@ -3967,6 +4022,7 @@ type
                         if assigned(pmsg) then
                           dispose(pmsg);
                         msgset.free;
+                        msgset := nil;
                       end;
                     ST_LINE:
                       begin
@@ -4011,7 +4067,7 @@ type
       begin
         with inputfile do
          begin
-           { when nothing more to read then leave immediatly, so we
+           { when nothing more to read then leave immediately, so we
              don't change the current_filepos and leave it point to the last
              char }
            if (c=#26) and (not assigned(next)) then
@@ -4140,7 +4196,7 @@ type
       var
         hp : tinputfile;
       begin
-        { save old postion }
+        { save old position }
 {$ifdef CHECK_INPUTPOINTER_LIMITS}
         dec_inputpointer;
 {$else not CHECK_INPUTPOINTER_LIMITS}
@@ -4193,7 +4249,7 @@ type
         filepos.line:=line_no;
         filepos.column:=tokenpos-lastlinepos;
         filepos.fileindex:=inputfile.ref_index;
-        filepos.moduleindex:=current_module.unit_index;
+        filepos.moduleindex:=current_module.moduleid;
       end;
 
 
@@ -4318,22 +4374,25 @@ type
       end;
 
 
-    procedure tscannerfile.illegal_char(c:char);
+    procedure tscannerfile.illegal_char(ch:char);
       var
         s : string;
       begin
-        if c in [#32..#255] then
-          s:=''''+c+''''
+        if ch in [#32..#255] then
+          s:=''''+ch+''''
         else
-          s:='#'+tostr(ord(c));
-        Message2(scan_f_illegal_char,s,'$'+hexstr(ord(c),2));
+          s:='#'+tostr(ord(ch));
+        Message2(scan_f_illegal_char,s,'$'+hexstr(ord(ch),2));
       end;
 
 
     procedure tscannerfile.end_of_file;
       begin
         checkpreprocstack;
-        Message(scan_f_end_of_file);
+        if in_multiline_string then
+          Message2(scan_f_unterminated_multiline_string, tostr(multiline_start_line), tostr(multiline_start_column))
+        else
+          Message(scan_f_end_of_file);
       end;
 
   {-------------------------------------------
@@ -4588,7 +4647,7 @@ type
              end
             else
              begin
-               current_scanner.ignoredirectives.Add(hs,nil);
+               current_scanner.ignoredirectives.Add(hs,DirectiveIgnored);
                Message1(scan_w_illegal_directive,'$'+hs);
              end;
             { conditionals already read the comment }
@@ -4875,21 +4934,44 @@ type
       begin
         i:=0;
         msgwritten:=false;
-        if (c='''') then
+        if (c in ['''','`']) then
           begin
+            had_multiline_string:=in_multiline_string;
+            in_multiline_string:=(c='`');
+            if in_multiline_string and (not (m_multiline_strings in current_settings.modeswitches)) then
+              begin
+                result[0]:=chr(0);
+                Illegal_Char(c);
+              end;
             repeat
               readchar;
               case c of
                 #26 :
                   end_of_file;
                 #10,#13 :
-                  Message(scan_f_string_exceeds_line);
+                  if not in_multiline_string then
+                    begin
+                      if had_multiline_string then
+                        Message2(scan_f_unterminated_multiline_string,
+                                 tostr(multiline_start_line),
+                                 tostr(multiline_start_column))
+                      else
+                        Message(scan_f_string_exceeds_line);
+                    end;
                 '''' :
-                  begin
-                    readchar;
-                    if c<>'''' then
-                     break;
-                  end;
+                  if not in_multiline_string then
+                    begin
+                      readchar;
+                      if c<>'''' then
+                       break;
+                    end;
+                '`' :
+                  if in_multiline_string then
+                    begin
+                      readchar;
+                      if c<>'`' then
+                       break;
+                    end;
               end;
               if i<255 then
                 begin
@@ -4907,6 +4989,126 @@ type
             until false;
           end;
         result[0]:=chr(i);
+      end;
+
+
+    function tscannerfile.readlongcomment(include_special_char: boolean):RawByteString;
+      var
+        i : longint;
+
+        procedure addchar(char: AnsiChar = #0);
+        begin
+          Inc(i);
+          if i>Length(readlongcomment) then
+            SetLength(readlongcomment, Length(readlongcomment)+256);
+          if char<>#0 then
+            readlongcomment[i]:=char
+          else
+            readlongcomment[i]:=c;
+        end;
+      begin
+        i:=0;
+        SetLength(readlongcomment, 256);
+        repeat
+          case c of
+            '{' :
+              begin
+                if (include_special_char) then
+                  addchar;
+
+                if current_commentstyle=comment_tp then
+                  inc_comment_level;
+              end;
+            '}' :
+              begin
+                if (include_special_char) then
+                  addchar;
+
+                if current_commentstyle=comment_tp then
+                  begin
+                    readchar;
+                    dec_comment_level;
+
+
+                    if comment_level=0 then
+                      break
+                    else
+                      continue;
+                  end;
+              end;
+            '*' :
+              begin
+                if current_commentstyle=comment_oldtp then
+                  begin
+                    readchar;
+                    if c=')' then
+                      begin
+                        readchar;
+                        dec_comment_level;
+                        break;
+                      end
+                    else
+                    { Add both characters !!}
+                      begin
+                        addchar('*');
+                        addchar;
+                      end;
+                  end
+                else
+                { Not old TP comment, so add...}
+                  addchar('*');
+              end;
+            #10,#13 :
+              linebreak;
+            #26 :
+              end_of_file;
+            else
+              addchar;
+          end;
+          readchar;
+        until false;
+        SetLength(readlongcomment, i);
+        SetCodePage(readlongcomment, current_settings.sourcecodepage, False);
+      end;
+
+
+    function tscannerfile.readlongquotedstring:RawByteString;
+      var
+        i : longint;
+        msgwritten : boolean;
+
+        procedure addchar;
+        begin
+          Inc(i);
+          if i>Length(readlongquotedstring) then
+            SetLength(readlongquotedstring, Length(readlongquotedstring)+256);
+          readlongquotedstring[i]:=c;
+        end;
+      begin
+        i:=0;
+        Setlength(readlongquotedstring, 256);
+        msgwritten:=false;
+        if (c='''') then
+          begin
+            repeat
+              readchar;
+              case c of
+                #26 :
+                  end_of_file;
+                #10,#13 :
+                  Message(scan_f_string_exceeds_line);
+                '''' :
+                  begin
+                    readchar;
+                    if c<>'''' then
+                     break;
+                  end;
+              end;
+              addchar;
+            until false;
+          end;
+        SetLength(readlongquotedstring, i);
+        SetCodePage(readlongquotedstring, current_settings.sourcecodepage, False);
       end;
 
 
@@ -5075,28 +5277,44 @@ type
                  if found=1 then
                   found:=2;
                end;
-             '''' :
+             '''','`' :
                if (current_commentstyle=comment_none) then
-                begin
-                  repeat
-                    readchar;
-                    case c of
-                      #26 :
-                        end_of_file;
-                      #10,#13 :
-                        break;
-                      '''' :
-                        begin
-                          readchar;
-                          if c<>'''' then
+                 begin
+                   had_multiline_string:=in_multiline_string;
+                   in_multiline_string:=(c='`');
+                   if in_multiline_string and (not (m_multiline_strings in current_settings.modeswitches)) then
+                     Illegal_Char(c);
+                   repeat
+                     readchar;
+                     case c of
+                       #26 :
+                         end_of_file;
+                       #10,#13 :
+                         if not in_multiline_string then
+                           break;
+                       '''' :
+                         if not in_multiline_string then
                            begin
-                             next_char_loaded:=true;
-                             break;
+                             readchar;
+                             if c<>'''' then
+                              begin
+                                next_char_loaded:=true;
+                                break;
+                              end;
                            end;
-                        end;
-                    end;
-                  until false;
-                end;
+                       '`' :
+                         if in_multiline_string then
+                           begin
+                             readchar;
+                             if c<>'`' then
+                              begin
+                                next_char_loaded:=true;
+                                break;
+                              end;
+                           end;
+                     end;
+                   until false;
+                 end;
              '(' :
                begin
                  if (current_commentstyle=comment_none) then
@@ -5295,7 +5513,671 @@ type
         current_commentstyle:=comment_none;
       end;
 
+    procedure tscannerfile.postprocessutf8multiline(len,quote_pos,quote_count : integer);
+    var
+      malformed : boolean;
+      start, i,stripcol,col,newlen : integer;
+      crlf : boolean;
+      tmp : tcompilerwidestring;
+      ch : tcompilerwidechar;
+    begin
+      stripcol:=quote_pos;
+      malformed:=false;
+      newlen:=0;
+      col:=0;
+      start:=1;
+      initwidestring(tmp);
+      { Strip initial cr/lf }
+      Case current_settings.lineendingtype of
+        le_cr,le_lf : inc(start);
+        le_crlf : inc(start,2);
+        le_source :
+          begin
+          inc(start);
+          if (getcharwidestring(patternw,1)=13) and (getcharwidestring(patternw,start)=10) then
+            inc(start);
+          end;
+        le_platform : inc(start,length(target_info.newline));
+      end;
+      { we don't need the last added quotes }
+      dec(len,quote_count-1);
+      for I:=Start to len do
+        begin
+        ch:=getcharwidestring(patternw,i);
+        inc(col);
+        if (col>stripcol) or (ch=10) or (ch=13) then
+          begin
+          inc(newlen);
+          concatwidestringchar(patternw,ch);
+          end
+        else
+          begin
+          // if less spaces than in the last line, report error
+          if not (ch in [9,32,11]) then
+            begin
+            if not malformed then
+              begin
+              malformed:=true;
+              message3(scan_e_improperly_indented_multiline_string,
+                      tostr(stripcol),
+                      tostr(multiline_start_line),
+                      tostr(multiline_start_column));
+              end;
+            end;
+          end;
+        if (ch=10) or (ch=13) then
+          col:=0;
+        end;
+      // remove last CR/LF
+      ch:=getcharwidestring(tmp,newlen);
+      if (ch=10) or (ch=13) then
+        begin
+        Case current_settings.lineendingtype of
+          le_cr,le_lf : dec(newlen);
+          le_crlf : dec(newlen,2);
+          le_platform : dec(newlen,length(target_info.newline));
+          le_source :
+            begin
+            crlf:=getcharwidestring(tmp,newlen)=10;
+            dec(newlen);
+            if crlf and (newLen>0) and (getcharwidestring(tmp,newlen)=13) then
+              dec(newlen);
+            end;
+        end;
+        end;
+      tmp.len:=newLen;
+      donewidestring(patternw);
+      patternw:=tmp;
+    end;
 
+    procedure tscannerfile.postprocessmultiline(len,quote_pos,quote_count : integer);
+
+    var
+      malformed : boolean;
+      start, i,stripcol,col,newlen : integer;
+      crlf : boolean;
+      tmp : ansistring;
+      ch : ansichar;
+    begin
+      stripcol:=quote_pos;
+      malformed:=false;
+      newlen:=0;
+      setlength(tmp,len-quote_count+1);
+      col:=0;
+      start:=1;
+      { Strip initial cr/lf }
+      Case current_settings.lineendingtype of
+        le_cr,le_lf : inc(start);
+        le_crlf : inc(start,2);
+        le_platform : inc(start,length(target_info.newline));
+        le_source :
+          begin
+          inc(start);
+          if (cstringPattern[1]=#13) and (cstringpattern[start]=#10) then
+            inc(start);
+          end;
+      end;
+      { we don't need the last added quotes }
+      dec(len,quote_count-1);
+      for I:=Start to len do
+        begin
+        ch:=cstringpattern[i];
+        inc(col);
+        if (col>stripcol) or (ch in [#10,#13]) then
+          begin
+          inc(newlen);
+          tmp[newlen]:=ch;
+          end
+        else
+          begin
+          // if less spaces than in the last line, report error
+          if not (ch in [#9,#32,#11]) then
+            begin
+            if not malformed then
+              begin
+              malformed:=true;
+              message3(scan_e_improperly_indented_multiline_string,
+                      tostr(stripcol),
+                      tostr(multiline_start_line),
+                      tostr(multiline_start_column));
+              end;
+            end;
+          end;
+        if ch in [#10,#13] then
+          col:=0;
+        end;
+      // remove last CR/LF
+      if tmp[newlen] in [#10,#13] then
+        begin
+        Case current_settings.lineendingtype of
+          le_cr,le_lf : dec(newlen);
+          le_crlf : dec(newlen,2);
+          le_platform : dec(newlen,length(target_info.newline));
+          le_source :
+              begin
+              crlf:=tmp[newlen]=#10;
+              dec(newlen);
+              if crlf and (tmp[newlen]=#13) then
+                Dec(newlen);
+              end;
+
+        end;
+        end;
+      SetLength(tmp,newlen);
+      cstringpattern:=tmp;
+    end;
+
+
+    function tscannerfile.readstringconstant : boolean;
+
+    type
+       tQuoteStyle = (qsNone,qsBacktick,qsMultiQuote);
+
+    var
+      trimcount,m,code,len,quote_count,init_quote_count,whitespace_count,quote_col : integer;
+      style : tQuoteStyle;
+      iswidestring : boolean;
+      asciinr : string[33];
+      last_c : char;
+      whitespace_only, had_newline, first_multiline, backtick : boolean;
+      d : cardinal;
+      w : word;
+
+    label
+      quote_label;
+    begin
+      last_c :=#0;
+      trimcount:=0;
+      quote_col:=0;
+      whitespace_count:=0;
+      init_quote_count:=0;
+      had_newline:=false;
+      first_multiline:=false;
+      had_multiline_string:=false;
+      backtick:=(c='`');
+      if backtick then
+        style:=qsBacktick
+      else
+        style:=qsNone;
+      whitespace_only:=true;
+      in_multiline_string:=backtick;
+      quote_count:=0;
+      whitespace_only:=true;
+      if in_multiline_string then
+        begin
+          if not (m_multiline_strings in current_settings.modeswitches) then
+            Illegal_Char(c)
+          else
+            begin
+              multiline_start_line:=current_filepos.line;
+              multiline_start_column:=current_filepos.column;
+            end;
+        end;
+      len:=0;
+      cstringpattern:='';
+      iswidestring:=false;
+      if c='^' then
+       begin
+         readchar;
+         c:=upcase(c);
+         if (block_type in [bt_type,bt_const_type,bt_var_type]) or
+            (lasttoken=_ID) or (lasttoken=_NIL) or (lasttoken=_OPERATOR) or
+            (lasttoken=_RKLAMMER) or (lasttoken=_RECKKLAMMER) or (lasttoken=_CARET) then
+          begin
+            token:=_CARET;
+            exit(true);
+          end
+         else
+          begin
+            inc(len);
+            setlength(cstringpattern,256);
+            if c<#64 then
+              cstringpattern[len]:=chr(ord(c)+64)
+            else
+              cstringpattern[len]:=chr(ord(c)-64);
+            readchar;
+          end;
+       end;
+      repeat
+        case c of
+          '#' :
+            begin
+              readchar; { read # }
+              case c of
+                '$':
+                  begin
+                    readchar; { read leading $ }
+                    asciinr:='$';
+                    while (upcase(c) in ['A'..'F','0'..'9']) and (length(asciinr)<=7) do
+                      begin
+                        asciinr:=asciinr+c;
+                        readchar;
+                      end;
+                  end;
+                '&':
+                  begin
+                    readchar; { read leading $ }
+                    asciinr:='&';
+                    while (upcase(c) in ['0'..'7']) and (length(asciinr)<=8) do
+                      begin
+                        asciinr:=asciinr+c;
+                        readchar;
+                      end;
+                  end;
+                '%':
+                  begin
+                    readchar; { read leading $ }
+                    asciinr:='%';
+                    while (upcase(c) in ['0','1']) and (length(asciinr)<=22) do
+                      begin
+                        asciinr:=asciinr+c;
+                        readchar;
+                      end;
+                  end;
+                else
+                  begin
+                    asciinr:='';
+                    while (c in ['0'..'9']) and (length(asciinr)<=8) do
+                      begin
+                        asciinr:=asciinr+c;
+                        readchar;
+                      end;
+                  end;
+              end;
+              val(asciinr,m,code);
+              if (asciinr='') or (code<>0) then
+                Message(scan_e_illegal_char_const)
+              else if (m<0) or (m>255) or (length(asciinr)>3) then
+                begin
+                   if (m>=0) and (m<=$10FFFF) then
+                     begin
+                       if not iswidestring then
+                        begin
+                          if len>0 then
+                            ascii2unicode(@cstringpattern[1],len,current_settings.sourcecodepage,patternw)
+                          else
+                            ascii2unicode(nil,len,current_settings.sourcecodepage,patternw);
+                          iswidestring:=true;
+                          len:=0;
+                        end;
+                       if m<=$FFFF then
+                         concatwidestringchar(patternw,tcompilerwidechar(m))
+                       else
+                         begin
+                           { split into surrogate pair }
+                           dec(m,$10000);
+                           concatwidestringchar(patternw,tcompilerwidechar((m shr 10) + $D800));
+                           concatwidestringchar(patternw,tcompilerwidechar((m and $3FF) + $DC00));
+                         end;
+                     end
+                   else
+                     Message(scan_e_illegal_char_const)
+                end
+              else if iswidestring then
+                concatwidestringchar(patternw,asciichar2unicode(char(m)))
+              else
+                begin
+                  if len>=length(cstringpattern) then
+                    setlength(cstringpattern,length(cstringpattern)+256);
+                  inc(len);
+                  cstringpattern[len]:=chr(m);
+                end;
+            end;
+          '''','`' :
+            begin
+              if c='''' then
+                inc(quote_count);
+              had_multiline_string:=in_multiline_string;
+              if style<>qsMultiQuote then
+                begin
+                  in_multiline_string:=(c='`');
+                  if in_multiline_string then
+                    backtick:=true
+                  else
+                    style:=qsNone;
+                  first_multiline:=in_multiline_string and (last_c in [#0,#32,#61]);
+                end;
+              repeat
+                readchar;
+                quote_label:
+                  case c of
+                    #26 :
+                      end_of_file;
+                    #32,#9,#11 :
+                      begin
+                      inc(whitespace_count);
+                      if (had_newline or first_multiline) and backtick and
+                         (current_settings.whitespacetrimauto or
+                         (current_settings.whitespacetrimcount>0)) then
+                        begin
+                          if current_settings.whitespacetrimauto then
+                            trimcount:=multiline_start_column
+                          else
+                            trimcount:=current_settings.whitespacetrimcount;
+                          while (c in [#32,#9,#11]) and (trimcount>0) do
+                            begin
+                              readchar;
+                              dec(trimcount);
+                            end;
+                          had_newline:=false;
+                          first_multiline:=false;
+                          goto quote_label;
+                        end;
+                      end;
+                    #10,#13 :
+                      begin
+                      whitespace_only:=true;
+                      whitespace_count:=0;
+                      if not in_multiline_string then
+                        begin
+                          if had_multiline_string then
+                            Message2(scan_f_unterminated_multiline_string,
+                                     tostr(multiline_start_line),
+                                     tostr(multiline_start_column))
+                          else if (not backtick)
+                                   and ((quote_count>2) and ((quote_count mod 2)=1))
+                                   and (m_multiline_strings in current_settings.modeswitches) then
+                            begin
+                            style:=qsMultiQuote;
+                            init_quote_count:=quote_count;
+                            multiline_start_line:=current_filepos.line;
+                            multiline_start_column:=current_filepos.column;
+                            in_multiline_string:=true;
+                            had_multiline_string:=true;
+                            trimcount:=0;
+                            quote_count:=0;
+                            len:=0;
+                            if c=#13 then
+                              begin
+                              readchar;
+                              if c<>#10 then
+                                goto quote_label;
+                              end;
+                            end
+                          else
+                            Message(scan_f_string_exceeds_line);
+                        end;
+                      end;
+                    '''' :
+                      begin
+                      inc(quote_count);
+                      if not in_multiline_string then
+                        begin
+                          readchar;
+                          if c='''' then
+                            inc(quote_count)
+                          else
+                            break;
+                        end
+                      else if not backtick then
+                        if whitespace_only and (quote_count=init_quote_count) then
+                          begin
+                          in_multiline_string:=false;
+                          quote_col:=whitespace_count;
+                          readchar;
+                          break;
+                          end;
+                      end;
+                    '`' :
+                      if in_multiline_string and (style=qsBacktick) then
+                        begin
+                          readchar;
+                          if c<>'`' then
+                           break;
+                        whitespace_only:=false;
+                        end;
+                    else
+                      whitespace_only:=false;
+                      quote_count:=0;
+                    end;
+                first_multiline:=false;
+                { interpret as utf-8 string? }
+                if (ord(c)>=$80) and (current_settings.sourcecodepage=CP_UTF8) then
+                  begin
+                    { convert existing string to an utf-8 string }
+                    if not iswidestring then
+                      begin
+                        if len>0 then
+                          ascii2unicode(@cstringpattern[1],len,current_settings.sourcecodepage,patternw)
+                        else
+                          ascii2unicode(nil,len,current_settings.sourcecodepage,patternw);
+                        iswidestring:=true;
+                        len:=0;
+                      end;
+                    { four chars }
+                    if (ord(c) and $f0)=$f0 then
+                      begin
+                        { this always represents a surrogate pair, so
+                          read as 32-bit value and then split into
+                          the corresponding pair of two wchars }
+                        d:=ord(c) and $f;
+                        readchar;
+                        if (ord(c) and $c0)<>$80 then
+                          message(scan_e_utf8_malformed);
+                        d:=(d shl 6) or (ord(c) and $3f);
+                        readchar;
+                        if (ord(c) and $c0)<>$80 then
+                          message(scan_e_utf8_malformed);
+                        d:=(d shl 6) or (ord(c) and $3f);
+                        readchar;
+                        if (ord(c) and $c0)<>$80 then
+                          message(scan_e_utf8_malformed);
+                        d:=(d shl 6) or (ord(c) and $3f);
+                        if d<$10000 then
+                          message(scan_e_utf8_malformed);
+                        d:=d-$10000;
+                        { high surrogate }
+                        w:=$d800+(d shr 10);
+                        concatwidestringchar(patternw,w);
+                        { low surrogate }
+                        w:=$dc00+(d and $3ff);
+                        concatwidestringchar(patternw,w);
+                      end
+                    { three chars }
+                    else if (ord(c) and $e0)=$e0 then
+                      begin
+                        w:=ord(c) and $f;
+                        readchar;
+                        if (ord(c) and $c0)<>$80 then
+                          message(scan_e_utf8_malformed);
+                        w:=(w shl 6) or (ord(c) and $3f);
+                        readchar;
+                        if (ord(c) and $c0)<>$80 then
+                          message(scan_e_utf8_malformed);
+                        w:=(w shl 6) or (ord(c) and $3f);
+                        concatwidestringchar(patternw,w);
+                      end
+                    { two chars }
+                    else if (ord(c) and $c0)<>0 then
+                      begin
+                        w:=ord(c) and $1f;
+                        readchar;
+                        if (ord(c) and $c0)<>$80 then
+                          message(scan_e_utf8_malformed);
+                        w:=(w shl 6) or (ord(c) and $3f);
+                        concatwidestringchar(patternw,w);
+                      end
+                    { illegal }
+                    else if (ord(c) and $80)<>0 then
+                      message(scan_e_utf8_malformed)
+                    else
+                      concatwidestringchar(patternw,tcompilerwidechar(c))
+                  end
+                else if iswidestring then
+                  begin
+                    if in_multiline_string and (c in [#10,#13]) and (not ((c=#10) and (last_c=#13))) then
+                      begin
+                        if current_settings.sourcecodepage=CP_UTF8 then
+                          begin
+                            case current_settings.lineendingtype of
+                              le_cr :
+                                concatwidestringchar(patternw,ord(#13));
+                              le_crlf :
+                                begin
+                                  concatwidestringchar(patternw,ord(#13));
+                                  concatwidestringchar(patternw,ord(#10));
+                                end;
+                              le_lf :
+                                concatwidestringchar(patternw,ord(#10));
+                              le_platform :
+                                begin
+                                  if target_info.newline=#13 then
+                                    concatwidestringchar(patternw,ord(#13))
+                                  else if target_info.newline=#13#10 then
+                                    begin
+                                      concatwidestringchar(patternw,ord(#13));
+                                      concatwidestringchar(patternw,ord(#10));
+                                    end
+                                  else if target_info.newline=#10 then
+                                    concatwidestringchar(patternw,ord(#10));
+                                end;
+                              le_source :
+                                concatwidestringchar(patternw,ord(c));
+                            end;
+                          end
+                        else
+                          case current_settings.lineendingtype of
+                            le_cr :
+                              concatwidestringchar(patternw,asciichar2unicode(#13));
+                            le_crlf :
+                              begin
+                                concatwidestringchar(patternw,asciichar2unicode(#13));
+                                concatwidestringchar(patternw,asciichar2unicode(#10));
+                              end;
+                            le_lf :
+                              concatwidestringchar(patternw,asciichar2unicode(#10));
+                            le_platform :
+                              begin
+                                if target_info.newline=#13 then
+                                  concatwidestringchar(patternw,asciichar2unicode(#13))
+                                else if target_info.newline=#13#10 then
+                                  begin
+                                    concatwidestringchar(patternw,asciichar2unicode(#13));
+                                    concatwidestringchar(patternw,asciichar2unicode(#10));
+                                  end
+                                else if target_info.newline=#10 then
+                                  concatwidestringchar(patternw,asciichar2unicode(#10));
+                              end;
+                            le_source :
+                              concatwidestringchar(patternw,asciichar2unicode(c));
+                          end;
+                        had_newline:=true;
+                        inc(line_no);
+                      end
+                    else if not (in_multiline_string and (c in [#10,#13])) then
+                      begin
+                        if current_settings.sourcecodepage=CP_UTF8 then
+                          concatwidestringchar(patternw,ord(c))
+                        else
+                          concatwidestringchar(patternw,asciichar2unicode(c));
+                      end;
+                  end
+                else
+                  begin
+                     if in_multiline_string and (c in [#10,#13]) and (not ((c=#10) and (last_c=#13))) then
+                       begin
+                         if len>=length(cstringpattern) then
+                           setlength(cstringpattern,length(cstringpattern)+256);
+                         inc(len);
+                         case current_settings.lineendingtype of
+                           le_cr :
+                             cstringpattern[len]:=#13;
+                           le_crlf :
+                             begin
+                               cstringpattern[len]:=#13;
+                               inc(len);
+                               cstringpattern[len]:=#10;
+                             end;
+                           le_lf :
+                             cstringpattern[len]:=#10;
+                           le_platform :
+                             begin
+                               if target_info.newline=#13 then
+                                 cstringpattern[len]:=#13
+                               else if target_info.newline=#13#10 then
+                                 begin
+                                   cstringpattern[len]:=#13;
+                                   inc(len);
+                                   cstringpattern[len]:=#10;
+                                 end
+                               else if target_info.newline=#10 then
+                                 cstringpattern[len]:=#10;
+                             end;
+                           le_source :
+                             cstringpattern[len]:=c;
+                         end;
+                         had_newline:=true;
+                         inc(line_no);
+                       end
+                     else if not (in_multiline_string and (c in [#10,#13])) then
+                       begin
+                         if len>=length(cstringpattern) then
+                           setlength(cstringpattern,length(cstringpattern)+256);
+                         inc(len);
+                         cstringpattern[len]:=c;
+                       end;
+                  end;
+              last_c:=c;
+              until false;
+            end;
+          '^' :
+            begin
+              readchar;
+              c:=upcase(c);
+              if c<#64 then
+               c:=chr(ord(c)+64)
+              else
+               c:=chr(ord(c)-64);
+
+              if iswidestring then
+                concatwidestringchar(patternw,asciichar2unicode(c))
+              else
+                begin
+                  if len>=length(cstringpattern) then
+                    setlength(cstringpattern,length(cstringpattern)+256);
+                   inc(len);
+                   cstringpattern[len]:=c;
+                end;
+
+              readchar;
+            end;
+          else
+           break;
+        end;
+      last_c:=c;
+      until false;
+
+      { strings with length 1 become const chars }
+      if iswidestring then
+        begin
+          if had_multiline_string and not backtick then
+            begin
+            postprocessutf8multiline(len,quote_col,init_quote_count);
+            end;
+          if patternw.len=1 then
+            token:=_CWCHAR
+          else
+            token:=_CWSTRING;
+        end
+      else
+        begin
+          if had_multiline_string and not backtick then
+            begin
+            postprocessmultiline(len,quote_col,init_quote_count);
+            end
+          else
+            setlength(cstringpattern,len);
+          if length(cstringpattern)=1 then
+            begin
+              token:=_CCHAR;
+              pattern:=cstringpattern;
+            end
+          else
+            token:=_CSTRING;
+        end;
+      had_multiline_string:=False;
+      exit(true);
+    end;
 
 {****************************************************************************
                                Token Scanner
@@ -5303,18 +6185,16 @@ type
 
     procedure tscannerfile.readtoken(allowrecordtoken:boolean);
       var
-        code    : integer;
-        d : cardinal;
-        len,
         low,high,mid : longint;
-        w : word;
-        m       : longint;
         mac     : tmacro;
-        asciinr : string[33];
-        iswidestring , firstdigitread: boolean;
-      label
+        firstdigitread: boolean;
+        had_newline,first_multiline : boolean;
+        trimcount : word;
+       label
          exit_label;
       begin
+        had_newline:=false;
+        first_multiline:=false;
         flushpendingswitchesstate;
 
         { record tokens? }
@@ -5760,269 +6640,11 @@ type
                  goto exit_label;
                end;
 
-             '''','#','^' :
+             '''','#','^','`' :
                begin
-                 len:=0;
-                 cstringpattern:='';
-                 iswidestring:=false;
-                 if c='^' then
-                  begin
-                    readchar;
-                    c:=upcase(c);
-                    if (block_type in [bt_type,bt_const_type,bt_var_type]) or
-                       (lasttoken=_ID) or (lasttoken=_NIL) or (lasttoken=_OPERATOR) or
-                       (lasttoken=_RKLAMMER) or (lasttoken=_RECKKLAMMER) or (lasttoken=_CARET) then
-                     begin
-                       token:=_CARET;
-                       goto exit_label;
-                     end
-                    else
-                     begin
-                       inc(len);
-                       setlength(cstringpattern,256);
-                       if c<#64 then
-                         cstringpattern[len]:=chr(ord(c)+64)
-                       else
-                         cstringpattern[len]:=chr(ord(c)-64);
-                       readchar;
-                     end;
-                  end;
-                 repeat
-                   case c of
-                     '#' :
-                       begin
-                         readchar; { read # }
-                         case c of
-                           '$':
-                             begin
-                               readchar; { read leading $ }
-                               asciinr:='$';
-                               while (upcase(c) in ['A'..'F','0'..'9']) and (length(asciinr)<=7) do
-                                 begin
-                                   asciinr:=asciinr+c;
-                                   readchar;
-                                 end;
-                             end;
-                           '&':
-                             begin
-                               readchar; { read leading $ }
-                               asciinr:='&';
-                               while (upcase(c) in ['0'..'7']) and (length(asciinr)<=8) do
-                                 begin
-                                   asciinr:=asciinr+c;
-                                   readchar;
-                                 end;
-                             end;
-                           '%':
-                             begin
-                               readchar; { read leading $ }
-                               asciinr:='%';
-                               while (upcase(c) in ['0','1']) and (length(asciinr)<=22) do
-                                 begin
-                                   asciinr:=asciinr+c;
-                                   readchar;
-                                 end;
-                             end;
-                           else
-                             begin
-                               asciinr:='';
-                               while (c in ['0'..'9']) and (length(asciinr)<=8) do
-                                 begin
-                                   asciinr:=asciinr+c;
-                                   readchar;
-                                 end;
-                             end;
-                         end;
-                         val(asciinr,m,code);
-                         if (asciinr='') or (code<>0) then
-                           Message(scan_e_illegal_char_const)
-                         else if (m<0) or (m>255) or (length(asciinr)>3) then
-                           begin
-                              if (m>=0) and (m<=$10FFFF) then
-                                begin
-                                  if not iswidestring then
-                                   begin
-                                     if len>0 then
-                                       ascii2unicode(@cstringpattern[1],len,current_settings.sourcecodepage,patternw)
-                                     else
-                                       ascii2unicode(nil,len,current_settings.sourcecodepage,patternw);
-                                     iswidestring:=true;
-                                     len:=0;
-                                   end;
-                                  if m<=$FFFF then
-                                    concatwidestringchar(patternw,tcompilerwidechar(m))
-                                  else
-                                    begin
-                                      { split into surrogate pair }
-                                      dec(m,$10000);
-                                      concatwidestringchar(patternw,tcompilerwidechar((m shr 10) + $D800));
-                                      concatwidestringchar(patternw,tcompilerwidechar((m and $3FF) + $DC00));
-                                    end;
-                                end
-                              else
-                                Message(scan_e_illegal_char_const)
-                           end
-                         else if iswidestring then
-                           concatwidestringchar(patternw,asciichar2unicode(char(m)))
-                         else
-                           begin
-                             if len>=length(cstringpattern) then
-                               setlength(cstringpattern,length(cstringpattern)+256);
-                              inc(len);
-                              cstringpattern[len]:=chr(m);
-                           end;
-                       end;
-                     '''' :
-                       begin
-                         repeat
-                           readchar;
-                           case c of
-                             #26 :
-                               end_of_file;
-                             #10,#13 :
-                               Message(scan_f_string_exceeds_line);
-                             '''' :
-                               begin
-                                 readchar;
-                                 if c<>'''' then
-                                  break;
-                               end;
-                           end;
-                           { interpret as utf-8 string? }
-                           if (ord(c)>=$80) and (current_settings.sourcecodepage=CP_UTF8) then
-                             begin
-                               { convert existing string to an utf-8 string }
-                               if not iswidestring then
-                                 begin
-                                   if len>0 then
-                                     ascii2unicode(@cstringpattern[1],len,current_settings.sourcecodepage,patternw)
-                                   else
-                                     ascii2unicode(nil,len,current_settings.sourcecodepage,patternw);
-                                   iswidestring:=true;
-                                   len:=0;
-                                 end;
-                               { four chars }
-                               if (ord(c) and $f0)=$f0 then
-                                 begin
-                                   { this always represents a surrogate pair, so
-                                     read as 32-bit value and then split into
-                                     the corresponding pair of two wchars }
-                                   d:=ord(c) and $f;
-                                   readchar;
-                                   if (ord(c) and $c0)<>$80 then
-                                     message(scan_e_utf8_malformed);
-                                   d:=(d shl 6) or (ord(c) and $3f);
-                                   readchar;
-                                   if (ord(c) and $c0)<>$80 then
-                                     message(scan_e_utf8_malformed);
-                                   d:=(d shl 6) or (ord(c) and $3f);
-                                   readchar;
-                                   if (ord(c) and $c0)<>$80 then
-                                     message(scan_e_utf8_malformed);
-                                   d:=(d shl 6) or (ord(c) and $3f);
-                                   if d<$10000 then
-                                     message(scan_e_utf8_malformed);
-                                   d:=d-$10000;
-                                   { high surrogate }
-                                   w:=$d800+(d shr 10);
-                                   concatwidestringchar(patternw,w);
-                                   { low surrogate }
-                                   w:=$dc00+(d and $3ff);
-                                   concatwidestringchar(patternw,w);
-                                 end
-                               { three chars }
-                               else if (ord(c) and $e0)=$e0 then
-                                 begin
-                                   w:=ord(c) and $f;
-                                   readchar;
-                                   if (ord(c) and $c0)<>$80 then
-                                     message(scan_e_utf8_malformed);
-                                   w:=(w shl 6) or (ord(c) and $3f);
-                                   readchar;
-                                   if (ord(c) and $c0)<>$80 then
-                                     message(scan_e_utf8_malformed);
-                                   w:=(w shl 6) or (ord(c) and $3f);
-                                   concatwidestringchar(patternw,w);
-                                 end
-                               { two chars }
-                               else if (ord(c) and $c0)<>0 then
-                                 begin
-                                   w:=ord(c) and $1f;
-                                   readchar;
-                                   if (ord(c) and $c0)<>$80 then
-                                     message(scan_e_utf8_malformed);
-                                   w:=(w shl 6) or (ord(c) and $3f);
-                                   concatwidestringchar(patternw,w);
-                                 end
-                               { illegal }
-                               else if (ord(c) and $80)<>0 then
-                                 message(scan_e_utf8_malformed)
-                               else
-                                 concatwidestringchar(patternw,tcompilerwidechar(c))
-                             end
-                           else if iswidestring then
-                             begin
-                               if current_settings.sourcecodepage=CP_UTF8 then
-                                 concatwidestringchar(patternw,ord(c))
-                               else
-                                 concatwidestringchar(patternw,asciichar2unicode(c))
-                             end
-                           else
-                             begin
-                               if len>=length(cstringpattern) then
-                                 setlength(cstringpattern,length(cstringpattern)+256);
-                                inc(len);
-                                cstringpattern[len]:=c;
-                             end;
-                         until false;
-                       end;
-                     '^' :
-                       begin
-                         readchar;
-                         c:=upcase(c);
-                         if c<#64 then
-                          c:=chr(ord(c)+64)
-                         else
-                          c:=chr(ord(c)-64);
-
-                         if iswidestring then
-                           concatwidestringchar(patternw,asciichar2unicode(c))
-                         else
-                           begin
-                             if len>=length(cstringpattern) then
-                               setlength(cstringpattern,length(cstringpattern)+256);
-                              inc(len);
-                              cstringpattern[len]:=c;
-                           end;
-
-                         readchar;
-                       end;
-                     else
-                      break;
-                   end;
-                 until false;
-                 { strings with length 1 become const chars }
-                 if iswidestring then
-                   begin
-                     if patternw.len=1 then
-                       token:=_CWCHAR
-                     else
-                       token:=_CWSTRING;
-                   end
-                 else
-                   begin
-                     setlength(cstringpattern,len);
-                     if length(cstringpattern)=1 then
-                       begin
-                         token:=_CCHAR;
-                         pattern:=cstringpattern;
-                       end
-                     else
-                       token:=_CSTRING;
-                   end;
+                 readstringconstant;
                  goto exit_label;
                end;
-
              '>' :
                begin
                  readchar;
@@ -6113,6 +6735,10 @@ exit_label:
         low,high,mid: longint;
         optoken: ttoken;
       begin
+         { Added the assignment to NOTOKEN below because I got a DFA uninitialized result
+           warning when building the compiler with -O3, which broke compilation with -Sew.
+           - Akira1364 }
+         readpreproc:=NOTOKEN;
          skipspace;
          case c of
            '_',
@@ -6148,11 +6774,13 @@ exit_label:
                current_scanner.preproc_pattern:=pattern;
                readpreproc:=optoken;
              end;
-           '''' :
-             begin
-               current_scanner.preproc_pattern:=readquotedstring;
-               readpreproc:=_CSTRING;
-             end;
+           '''','`' :
+             if not ((c='`') and (not (m_multiline_strings in current_settings.modeswitches))) then
+               begin
+                 cstringpattern:=readquotedstring;
+                 current_scanner.preproc_pattern:=cstringpattern;
+                 readpreproc:=_CSTRING;
+               end;
            '0'..'9' :
              begin
                readnumber;
@@ -6335,6 +6963,7 @@ exit_label:
             result:=false;
           end;
         hs.free;
+        hs := nil;
       end;
 
 
@@ -6354,6 +6983,7 @@ exit_label:
             result:=false;
           end;
         hs.free;
+        hs := nil;
       end;
 
 
@@ -6421,7 +7051,6 @@ exit_label:
 
     procedure InitScanner;
       begin
-        InitWideString(patternw);
         turbo_scannerdirectives:=TFPHashObjectList.Create;
         mac_scannerdirectives:=TFPHashObjectList.Create;
 
@@ -6464,8 +7093,9 @@ exit_label:
     procedure DoneScanner;
       begin
         turbo_scannerdirectives.Free;
+        turbo_scannerdirectives := nil;
         mac_scannerdirectives.Free;
-        DoneWideString(patternw);
+        mac_scannerdirectives := nil;
       end;
 
 end.

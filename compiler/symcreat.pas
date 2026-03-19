@@ -38,11 +38,7 @@ interface
       new_scanner: tscannerfile;
       old_scanner: tscannerfile;
       old_filepos: tfileposinfo;
-      old_token: ttoken;
-      old_c: char;
-      old_orgpattern: string;
       old_modeswitches: tmodeswitches;
-      old_idtoken: ttoken;
       valid: boolean;
     end;
 
@@ -152,17 +148,13 @@ implementation
       old_block_type: tblock_type;
     begin
       { would require saving of cstringpattern, patternw }
-      if (token=_CSTRING) or
-         (token=_CWCHAR) or
-         (token=_CWSTRING) then
+      if (current_scanner.token=_CSTRING) or
+         (current_scanner.token=_CWCHAR) or
+         (current_scanner.token=_CWSTRING) then
         internalerror(2011032201);
       sstate.old_scanner:=current_scanner;
       sstate.old_filepos:=current_filepos;
-      sstate.old_token:=token;
-      sstate.old_c:=c;
-      sstate.old_orgpattern:=orgpattern;
       sstate.old_modeswitches:=current_settings.modeswitches;
-      sstate.old_idtoken:=idtoken;
       sstate.valid:=true;
       { creating a new scanner resets the block type, while we want to continue
         in the current one }
@@ -180,15 +172,10 @@ implementation
     begin
       if sstate.valid then
         begin
-          sstate.new_scanner.free;
+          sstate.new_scanner.free; // no nil needed
           set_current_scanner(sstate.old_scanner);
           current_filepos:=sstate.old_filepos;
-          token:=sstate.old_token;
           current_settings.modeswitches:=sstate.old_modeswitches;
-          c:=sstate.old_c;
-          orgpattern:=sstate.old_orgpattern;
-          pattern:=upper(sstate.old_orgpattern);
-          idtoken:=sstate.old_idtoken;
         end;
     end;
 
@@ -724,6 +711,7 @@ implementation
             str:=str+'__fpc_ord2enum.put(JLInteger.valueOf('+tostr(enumsym.value)+'),'+enumname+');';
         end;
       orderedenums.free;
+      orderedenums := nil;
       str:=str+' end;';
       str_parse_method_impl(str,pd,true);
     end;
@@ -1439,7 +1427,7 @@ implementation
       exit('pointer');
     if (vardef is tprocvardef) then
       begin
-      result:=vardef.fullownerhierarchyname(false);
+      result:=vardef.fullownerhierarchyname(false,false);
       if Assigned(vardef.typesym) then
         Result:=Result+(vardef.typesym.Name);
       end
@@ -1884,7 +1872,11 @@ implementation
              (tprocdef(def).localst.symtabletype=localsymtable) then
             add_synthetic_method_implementations(tprocdef(def).localst)
           else if ((def.typ=objectdef) and
-                   not(oo_is_external in tobjectdef(def).objectoptions)) or
+                   not(oo_is_external in tobjectdef(def).objectoptions) and
+                   { we must not create duplicate synthetic methods for a unique
+                     type declaration as that simply shares the VMT of the aliased
+                     types }
+                   not(tobjectdef(def).is_unique_objpasdef)) or
                   (def.typ=recorddef) then
            begin
             { also complete nested types }

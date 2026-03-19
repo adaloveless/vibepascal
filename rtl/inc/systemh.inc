@@ -541,7 +541,7 @@ Type
 { Zero - terminated strings }
 
 {$IF DECLARED(AnsiChar)}
-// Compiler defines AnsiChar and WideChar, not AnsiChar
+// Compiler defines AnsiChar and WideChar, not Char
 {$IFDEF UNICODERTL}
   Char = WideChar;
 {$ElSE}
@@ -835,7 +835,7 @@ const
 var
 {$endif FPC_HAS_FEATURE_DYNLIBS}
   IsConsole : boolean = false; public name 'operatingsystem_isconsole';
-  NoErrMsg: Boolean platform = False; // For Delphi compatibility, not used in FPC.
+  NoErrMsg: Boolean platform = False;
   FirstDotAtFileNameStartIsExtension : Boolean = False;
 
   DefaultSystemCodePage,
@@ -875,7 +875,7 @@ Var
   StdErr      : Text;
 {$else FPC_STDOUT_TRUE_ALIAS}
   { Optionally, make StdOut and StdErr a true alias of Output
-    and ErrOutput. This is benefical on small systems where the
+    and ErrOutput. This is beneficial on small systems where the
     data segment size is limited, as it lessens the RTL's data
     size by a bit more than 1K. }
   StdOut      : Text Absolute Output;
@@ -913,7 +913,7 @@ procedure FillQWord(var x;count:SizeInt;value:QWord); {$if defined(cpui386) and 
 function  IndexChar(const buf;len:SizeInt;b:ansichar):SizeInt;
 function  IndexChar(const buf;len:SizeInt;b:widechar):SizeInt;
 function  IndexByte(const buf;len:SizeInt;b:byte):SizeInt; {$if defined(cpui386) and not defined(CPUX86_HAS_SSE2)} inline; {$endif}
-function  Indexword(const buf;len:SizeInt;b:word):SizeInt; {$if defined(cpui386) and not defined(CPUX86_HAS_SSE2)} inline; {$endif}
+function  IndexWord(const buf;len:SizeInt;b:word):SizeInt; {$if defined(cpui386) and not defined(CPUX86_HAS_SSE2)} inline; {$endif}
 function  IndexDWord(const buf;len:SizeInt;b:DWord):SizeInt; {$if defined(cpui386) and not defined(CPUX86_HAS_SSE2)} inline; {$endif}
 function  IndexQWord(const buf;len:SizeInt;b:QWord):SizeInt; {$if (defined(cpui386) or defined(cpux86_64)) and not defined(CPUX86_HAS_SSE4_1)} inline; {$endif}
 function  CompareChar(const buf1,buf2;len:SizeInt):SizeInt;
@@ -1736,6 +1736,9 @@ Type
   TAbstractErrorProc = Procedure;
   TAssertErrorProc = Procedure(const msg,fname:ShortString;lineno:longint;erroraddr:pointer);
   TSafeCallErrorProc = Procedure(error : HResult;addr : pointer);
+  {$ifdef ENABLE_UNIT_INIT_TRACKING}
+  TUnitInitTrackProc = procedure(aSequence : SmallInt; const aUnitName : ShortString);
+  {$endif ENABLE_UNIT_INIT_TRACKING}
 
 
 const
@@ -1748,6 +1751,9 @@ const
   ExceptObjProc     : Pointer = nil; { Used to convert OS exceptions to FPC exceptions. }
   ExceptClsProc     : Pointer = nil;
 {$endif FPC_HAS_FEATURE_EXCEPTIONS}
+{$ifdef ENABLE_UNIT_INIT_TRACKING}
+  UnitInitTrackingProc : TUnitInitTrackProc;
+{$endif ENABLE_UNIT_INIT_TRACKING}
 
 {*****************************************************************************
                           SetJmp/LongJmp

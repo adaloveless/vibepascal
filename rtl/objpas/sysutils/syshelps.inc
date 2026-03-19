@@ -75,8 +75,25 @@ end;
 
 class function TStringHelper.Compare(const A: TStringType; const B: TStringType;
   Options: TCompareOptions): Integer;
+var
+  LenA,LenB : integer;
 begin
-  Result:=Compare(A,0,B,0,System.Length(B),Options);
+  LenB:=System.Length(B);
+  LenA:=System.Length(A);
+  if LenB=LenA then
+    Result:=Compare(A,0,B,0,LenB,Options)
+  else if (LenB>LenA) then
+    begin
+    Result:=Compare(A,0,B,0,LenA,Options);
+    if Result=0 then // over the length of A, both are equal.
+      Result:=-1;
+    end
+  else // lenB<LenA
+    begin
+    Result:=Compare(A,0,B,0,LenB,Options);
+    if Result=0 then     // Over the length of B, both are equal
+       Result:=1;
+    end;
 end;
 
 
@@ -402,14 +419,13 @@ begin
     end;
 end;
 
-function TStringHelper.Contains(const AValue: TStringType; IgnoreCase: Boolean): Boolean;
+function TStringHelper.Contains(const AValue: TStringType; IgnoreCase: Boolean = False): Boolean;
 begin
   if IgnoreCase then
     Result:=Pos(LowerCase(AValue),LowerCase(Self))>0
   else
     Result:=Pos(AValue,Self)>0;
 end;
-
 
 function TStringHelper.CountChar(const C: TStringChar): SizeInt;
 
@@ -910,12 +926,12 @@ end;
 
 
 function TStringHelper.LastIndexOf(const AValue: TStringType; AStartIndex: SizeInt; ACount: SizeInt): SizeInt;
-  
+
 var
   I,L,LS,M : SizeInt;
   S : TStringType;
   P : PTStringChar;
-    
+
 begin
   Result:=-1;
   LS:=system.Length(Self);

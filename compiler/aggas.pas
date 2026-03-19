@@ -177,6 +177,7 @@ implementation
     destructor TGNUAssembler.Destroy;
       begin
         InstrWriter.free;
+        InstrWriter := nil;
         inherited destroy;
       end;
 
@@ -206,6 +207,7 @@ implementation
            create_smartlink_sections and
            (atype<>sec_toc) and
            (atype<>sec_user) and
+           (atype<>sec_note) and
            { on embedded systems every byte counts, so smartlink bss too }
            ((atype<>sec_bss) or (target_info.system in (systems_embedded+systems_freertos)));
       end;
@@ -222,11 +224,11 @@ implementation
 { vtable for a class called Window:                                       }
 { .section .data.rel.ro._ZTV6Window,"awG",@progbits,_ZTV6Window,comdat    }
 { TODO: .data.ro not yet working}
-{$if defined(arm) or defined(aarch64) or defined(riscv64) or defined(powerpc) or defined(x86_64) or defined(loongarch64)}
+{$if defined(support_rodata)}
           '.rodata',
-{$else defined(arm) or defined(aarch64) or defined(riscv64) or defined(powerpc) or defined(x86_64) or defined(loongarch64)}
+{$else defined(support_rodata)}
           '.data',
-{$endif defined(arm) or defined(aarch64) or defined(riscv64) or defined(powerpc) or defined(x86_64) or defined(loongarch64)}
+{$endif defined(support_rodata)}
           '.rodata',
           '.bss',
           '.threadvar',
@@ -282,7 +284,8 @@ implementation
           '.stack',
           '.heap',
           '.gcc_except_table',
-          '.ARM.attributes'
+          '.ARM.attributes',
+          '.note'
         );
         secnames_pic : array[TAsmSectiontype] of string[length('__DATA, __datacoal_nt,coalesced')] = ('','',
           '.text',
@@ -343,7 +346,8 @@ implementation
           '.stack',
           '.heap',
           '.gcc_except_table',
-          '..ARM.attributes'
+          '.ARM.attributes',
+          '.note'
         );
       var
         sep     : string[3];
@@ -394,9 +398,12 @@ implementation
             end;
           end;
 
-        { section type user gives the user full controll on the section name }
+        { section type user gives the user full control on the section name }
         if atype=sec_user then
           secname:=aname;
+
+        if atype=sec_note then
+          secname:='.note'+aname;
 
         if is_smart_section(atype) and (aname<>'') then
           begin
@@ -512,7 +519,7 @@ implementation
          system_i386_OS2,
          system_i386_EMX: ;
          system_m68k_atari, { atari tos/mint GNU AS also doesn't seem to like .section (KB) }
-         system_m68k_amiga, { amiga has old GNU AS (2.14), which blews up from .section (KB) }
+         system_m68k_amiga, { amiga has old GNU AS (2.14), which blows up from .section (KB) }
          system_m68k_sinclairql, { same story, only ancient GNU tools available (KB) }
          system_m68k_palmos, { see above... (KB) }
          system_m68k_human68k: { see above... (KB) }
@@ -580,6 +587,7 @@ implementation
              if not(atype in [sec_data,sec_rodata,sec_rodata_norel]) and
                 not(asminfo^.id=as_solaris_as) and
                 not(atype=sec_fpc) and
+                not(atype=sec_note) and
                 not(target_info.system in (systems_embedded+systems_freertos)) then
                begin
                  usesectionflags:=true;
@@ -646,6 +654,8 @@ implementation
                     internalerror(2006031101);
                 end;
               end;
+            sec_note :
+              writer.AsmWrite(', "", @note');
           else
             { GNU AS won't recognize '.text.n_something' section name as belonging
               to '.text' and assigns default attributes to it, which is not
@@ -1345,7 +1355,7 @@ implementation
                          writer.AsmWriteln(tai_label(hp).labsym.name);
                        end;
 {$ifdef arm}
-                     { do no change arm mode accidently, .globl seems to reset the mode }
+                     { do no change arm mode accidentally, .globl seems to reset the mode }
                      if GenerateThumbCode or GenerateThumb2Code then
                        writer.AsmWriteln(#9'.thumb_func'#9);
 {$endif arm}
@@ -1752,12 +1762,12 @@ implementation
                    WriteTree(tai_wasmstruc_if(hp).else_asmlist);
                    writer.AsmWriteLn('.err } endif');
                  end
-               else if hp is tai_wasmstruc_try then
+               else if hp is tai_wasmstruc_legacy_try then
                  begin
                    writer.AsmWriteLn('.err try {');
-                   WriteTree(tai_wasmstruc_try(hp).try_asmlist);
-                   if hp is tai_wasmstruc_try_catch then
-                     with tai_wasmstruc_try_catch(hp) do
+                   WriteTree(tai_wasmstruc_legacy_try(hp).try_asmlist);
+                   if hp is tai_wasmstruc_legacy_try_catch then
+                     with tai_wasmstruc_legacy_try_catch(hp) do
                        begin
                          for i:=low(catch_list) to high(catch_list) do
                            begin
@@ -1771,7 +1781,7 @@ implementation
                            end;
                          writer.AsmWriteLn('.err } end try');
                        end
-                   else if hp is tai_wasmstruc_try_delegate then
+                   else if hp is tai_wasmstruc_legacy_try_delegate then
                      writer.AsmWriteLn('.err } delegate')
                    else
                      writer.AsmWriteLn('.err unknown try structured instruction: ' + hp.ClassType.ClassName);
@@ -1822,7 +1832,7 @@ implementation
         { on Windows/(PE)COFF, global symbols are hidden by default: global
           symbols that are not explicitly exported from an executable/library,
           become hidden }
-        if (target_info.system in (systems_windows+systems_wince+systems_nativent)) then
+        if (target_info.system in (systems_windows+systems_wince+systems_nativent+[system_i386_go32v2])) then
           exit;
         if target_info.system in systems_darwin then
           writer.AsmWrite(#9'.private_extern ')
@@ -2264,7 +2274,8 @@ implementation
          sec_none (* sec_stack *),
          sec_none (* sec_heap *),
          sec_none (* gcc_except_table *),
-         sec_none (* sec_arm_attribute *)
+         sec_none (* sec_arm_attribute *),
+         sec_none (* sec_note *)
         );
       begin
         Result := inherited SectionName (SecXTable [AType], AName, AOrder);

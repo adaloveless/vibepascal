@@ -36,6 +36,22 @@ type
   TFPBrushException = class (TFPCanvasException);
   TFPFontException = class (TFPCanvasException);
 
+  TFPCanvasPointArray = array of TPoint;
+
+  { TFPCanvasMatrix }
+
+  TFPCanvasMatrix = object
+    _00, _01, _10, _11: Double;  // 2x2 linear part (rotation, scale, skew)
+    _20, _21: Double;            // translation
+    function Transform(const APoint: TPoint): TPoint; overload;
+    function Transform(X, Y: Integer): TPoint; overload;
+    class function Identity: TFPCanvasMatrix; static;
+    class function CreateTranslation(DX, DY: Double): TFPCanvasMatrix; static;
+    class function CreateScale(SX, SY: Double): TFPCanvasMatrix; static;
+    class function CreateRotation(ARadians: Double): TFPCanvasMatrix; static;
+    function Multiply(const Other: TFPCanvasMatrix): TFPCanvasMatrix;
+  end;
+
   TFPCustomCanvas = class;
 
   { TFPCanvasHelper }
@@ -110,7 +126,7 @@ type
     property Underline : boolean index 7 read GetFlags write SetFlags;
     property StrikeThrough : boolean index 8 read GetFlags write SetFlags;
     property Orientation: Integer read GetOrientation write SetOrientation default 0;
-        
+
   end;
   TFPCustomFontClass = class of TFPCustomFont;
 
@@ -160,7 +176,7 @@ type
     property JoinStyle : TFPPenJoinStyle read FJoinStyle write SetJoinStyle;
   end;
   TFPCustomPenClass = class of TFPCustomPen;
-  
+
   TFPBrushStyle = (bsSolid, bsClear, bsHorizontal, bsVertical, bsFDiagonal,
                    bsBDiagonal, bsCross, bsDiagCross, bsImage, bsPattern);
   TBrushPattern = array[0..PatternBitCount-1] of TPenPattern;
@@ -216,13 +232,14 @@ type
     function MaxSupport : double; virtual;
   end;
 
-  { TMitchelInterpolation }
+  { TMitchellInterpolation }
 
-  TMitchelInterpolation = class (TFPBaseInterpolation)
+  TMitchellInterpolation = class (TFPBaseInterpolation)
   protected
     function Filter (x : double) : double; override;
     function MaxSupport : double; override;
   end;
+  TMitchelInterpolation = TFPBaseInterpolation deprecated 'Use TMitchellInterpolation';
 
   TFPCustomRegion = class
   public
@@ -247,6 +264,7 @@ type
 
   TFPCustomCanvas = class(TPersistent)
   private
+    FMatrix: TFPCanvasMatrix;
     FClipping,
     FManageResources: boolean;
     FRemovingHelpers : boolean;
@@ -298,10 +316,10 @@ type
     procedure DoGetTextSize (text:ansistring; var w,h:integer); virtual; abstract;
     function  DoGetTextHeight (text:ansistring) : integer; virtual; abstract;
     function  DoGetTextWidth (text:ansistring) : integer; virtual; abstract;
-    procedure DoTextOut (x,y:integer;text:unicodestring); virtual; 
-    procedure DoGetTextSize (text:unicodestring; var w,h:integer); virtual; 
-    function  DoGetTextHeight (text:unicodestring) : integer; virtual; 
-    function  DoGetTextWidth (text:unicodestring) : integer; virtual; 
+    procedure DoTextOut (x,y:integer;text:unicodestring); virtual;
+    procedure DoGetTextSize (text:unicodestring; var w,h:integer); virtual;
+    function  DoGetTextHeight (text:unicodestring) : integer; virtual;
+    function  DoGetTextWidth (text:unicodestring) : integer; virtual;
     procedure DoRectangle (Const Bounds:TRect); virtual; abstract;
     procedure DoRectangleFill (Const Bounds:TRect); virtual; abstract;
     procedure DoRectangleAndFill (Const Bounds:TRect); virtual;
@@ -324,6 +342,10 @@ type
                            Continuous: boolean = False); virtual;
     procedure CheckHelper (AHelper:TFPCanvasHelper); virtual;
     procedure AddHelper (AHelper:TFPCanvasHelper);
+    function TransformPoint(X, Y: Integer): TPoint;
+    function TransformRect(const R: TRect): TRect;
+    function TransformPoints(const Points: array of TPoint): TFPCanvasPointArray;
+    function HasRotation: Boolean;
   public
     constructor create;
     destructor destroy; override;
@@ -360,7 +382,7 @@ type
     procedure PolyBezier(Points: PPoint; NumPts: Integer;
                          Filled: boolean = False;
                          Continuous: boolean = False);  virtual;
-    procedure PolyBezier(const Points: array of TPoint;  
+    procedure PolyBezier(const Points: array of TPoint;
                          Filled: boolean = False;
                          Continuous: boolean = False); virtual;
     procedure Rectangle (Const Bounds : TRect); virtual;
@@ -385,6 +407,13 @@ type
     procedure Erase;virtual;
     procedure DrawPixel(const x, y: integer; const newcolor: TFPColor);
     procedure GradientFill(const ARect: TRect; AStartColor, AEndColor: TFPColor; ADirection: TFPGradientDirection); virtual;
+    // coordinate transformation
+    property TransformMatrix: TFPCanvasMatrix read FMatrix write FMatrix;
+    procedure Translate(DX, DY: Double);
+    procedure Scale(SX, SY: Double);
+    procedure Rotate(ARadians: Double);
+    procedure ResetTransform;
+    function HasTransform: Boolean;
     // properties
     property LockCount: Integer read FLocks;
     property Font : TFPCustomFont read GetFont write SetFont;
@@ -419,9 +448,9 @@ type
     function DoGetTextHeight (text:ansistring) : integer; virtual; abstract;
     function DoGetTextWidth (text:ansistring) : integer; virtual; abstract;
     procedure DoDrawText (x,y:integer; text:unicodestring); virtual;
-    procedure DoGetTextSize (text: unicodestring; var w,h:integer); virtual; 
-    function DoGetTextHeight (text: unicodestring) : integer; virtual; 
-    function DoGetTextWidth (text: unicodestring) : integer; virtual; 
+    procedure DoGetTextSize (text: unicodestring; var w,h:integer); virtual;
+    function DoGetTextHeight (text: unicodestring) : integer; virtual;
+    function DoGetTextWidth (text: unicodestring) : integer; virtual;
   end;
 
   TFPEmptyFont = class (TFPCustomFont)
@@ -526,6 +555,7 @@ begin
     (AY >= Rect.Top) and (AY <= Rect.Bottom);
 end;
 
+{$i fpmatrix.inc}
 {$i FPHelper.inc}
 {$i FPFont.inc}
 {$i FPPen.inc}

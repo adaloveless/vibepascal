@@ -115,15 +115,16 @@ interface
 
      type
         tmodulestate = (ms_unknown,
-          ms_registered,
+          ms_registered, { tmodule created }
           ms_load,
-          ms_compile,
-          ms_compiling_waitintf,
-          ms_compiling_waitimpl,
-          ms_compiling_waitfinish,
-          ms_compiling_wait,
-          ms_compiled,
-          ms_processed,
+          ms_compile,    { parsing and compiling }
+          ms_compiling_wait,      { waiting for used units of program/library/package }
+          ms_compiling_waitintf,  { waiting for used units of interface section }
+          ms_compiling_waitimpl,  { waiting for used units of implementation section }
+          ms_compiling_waitfinish,{ after impl section parsed, waiting for other impl sections needed by specializations }
+          ms_compiled_waitcrc,   { after computing own CRC, waiting for used units' CRCs }
+          ms_compiled,   { compiling complete, ppu written }
+          ms_processed,   { task complete }
           ms_moduleerror
         );
         tmodulestates = set of tmodulestate;
@@ -134,10 +135,11 @@ interface
           'Registered',
           'Load',
           'Compile',
+          'Compiling_Waiting',
           'Compiling_Waiting_interface',
           'Compiling_Waiting_implementation',
           'Compiling_Waiting_finish',
-          'Compiling_Waiting',
+          'Compiled_Waiting_crc',
           'Compiled',
           'Processed',
           'Error'
@@ -146,7 +148,7 @@ interface
      type
         tmodulebase = class(TLinkedListItem)
           { index }
-          unit_index       : longint;  { global counter for browser }
+          moduleid      : longint;  { global counter for browser }
           { status }
           state            : tmodulestate;
           { sources }
@@ -154,7 +156,7 @@ interface
           { paths and filenames }
           paramallowoutput : boolean;  { original allowoutput parameter }
           modulename,               { name of the module in uppercase }
-          realmodulename: pshortstring; { name of the module in the orignal case }
+          realmodulename: pshortstring; { name of the module in the original case }
           paramfn,                  { original filename }
           mainsource,               { name of the main sourcefile }
           objfilename,              { fullname of the objectfile }
@@ -337,7 +339,7 @@ uses
         tempopen:=false;
         if is_macro then
          begin
-           { seek buffer postion to bufstart }
+           { seek buffer position to bufstart }
            if bufstart>0 then
             begin
               move(buf[bufstart],buf[0],bufsize-bufstart+1);
@@ -498,6 +500,7 @@ uses
         fileclose:=false;
         try
           f.Free;
+          f := nil;
           fileclose:=true;
         except
         end;
@@ -524,7 +527,7 @@ uses
          ifile : SizeInt;
       begin
          for ifile:=0 to nfiles-1 do
-          files[ifile].free;
+          FreeAndNil(files[ifile]);
          FreeMem(files);
       end;
 
@@ -546,7 +549,7 @@ uses
 
 {$ifndef GENERIC_CPU}
 {$ifdef heaptrc}
-         ppheap_register_file(f.path+f.name,current_module.unit_index*100000+f.ref_index);
+         ppheap_register_file(f.path+f.name,current_module.moduleid*100000+f.ref_index);
 {$endif heaptrc}
 {$endif not GENERIC_CPU}
       end;
@@ -621,7 +624,7 @@ uses
          staticlibfilename:=p+target_info.staticlibprefix+n+target_info.staticlibext;
          exportfilename:=p+'exp'+n+target_info.objext;
 
-         { output dir of exe can be specified separatly }
+         { output dir of exe can be specified separately }
          if AllowOutput and (OutputExeDir<>'') then
            p:=OutputExeDir
          else
@@ -683,7 +686,7 @@ uses
         state:=ms_registered;
         { unit index }
         inc(global_unit_count);
-        unit_index:=global_unit_count;
+        moduleid:=global_unit_count;
         { sources }
         sourcefiles:=TInputFileManager.Create;
       end;

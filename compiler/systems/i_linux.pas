@@ -146,7 +146,7 @@ unit i_linux;
             linkextern   : ld_linux;
             ar           : ar_gnu_ar;
             res          : res_elf;
-            dbg          : dbg_stabs;
+            dbg          : dbg_dwarf3;
             script       : script_unix;
             endian       : endian_little;
             alignment    :
@@ -855,7 +855,7 @@ unit i_linux;
             linkextern   : ld_linux;
             ar           : ar_gnu_ar;
             res          : res_elf;
-            dbg          : dbg_stabs;
+            dbg          : dbg_dwarf3;
             script       : script_unix;
             endian       : endian_little;
             alignment    :
@@ -1144,7 +1144,7 @@ unit i_linux;
             linkextern   : ld_linux;
             ar           : ar_gnu_ar;
             res          : res_elf;
-            dbg          : dbg_stabs;
+            dbg          : dbg_dwarf3;
             script       : script_unix;
             endian       : endian_big;
             alignment    :
@@ -1381,7 +1381,7 @@ unit i_linux;
             first_parm_offset : 16;
             stacksize    : 10*1024*1024;
             stackalign   : 16;
-            abi : abi_riscv_hf;
+            abi : abi_riscv_lp64d;
             llvmdatalayout : 'E-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-f128:64:64-v128:128:128-n32:64';
           );
 

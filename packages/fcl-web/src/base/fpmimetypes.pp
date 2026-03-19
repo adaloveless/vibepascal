@@ -13,7 +13,7 @@
 
  **********************************************************************}
 {$IFNDEF FPC_DOTTEDUNITS}
-unit fpmimetypes;
+unit fpMimeTypes;
 {$ENDIF FPC_DOTTEDUNITS}
 
 {$mode objfpc}{$H+}
@@ -22,10 +22,10 @@ interface
 
 {$IFDEF FPC_DOTTEDUNITS}
 uses
-  System.Classes, System.SysUtils, System.Contnrs;
+  System.Classes, System.SysUtils, System.Contnrs, System.StrUtils;
 {$ELSE FPC_DOTTEDUNITS}
 uses
-  Classes, SysUtils, contnrs;
+  Classes, SysUtils, contnrs, strutils;
 {$ENDIF FPC_DOTTEDUNITS}
 
 Type
@@ -171,9 +171,9 @@ Var
   I : integer;
   E : String;
 begin
-  if Length(AExt) = 0 then 
+  if Length(AExt) = 0 then
     Result:=Nil
-  else 
+  else
     begin
     E:=LowerCase(AExt);
     If (E[1]='.') then
@@ -443,7 +443,7 @@ begin
       if (Fextensions<>'') then
         If Fextensions[Length(FExtensions)]<>';' then
           FExtensions:=FExtensions+';';
-      If (Copy(Fextensions,1,Length(E))<>E) and (Pos(E,FExtensions)=0) then
+      If (Not StartsStr(E,Fextensions)) and (Pos(E,FExtensions)=0) then
         FExtensions:=Extensions+E;
       end;
   Until (E='')

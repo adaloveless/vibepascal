@@ -540,7 +540,6 @@ OBJCUNIT=objc
 OBJCBASEUNIT=objcbase
 OBJPASUNIT=objpas
 OS2DEFUNIT=OS2Api.os2def
-PAGEMEMUNIT=System.PageMem
 PILOTUNIT=PalmApi.Pilot
 PMBIDIUNIT=OS2Api.pmbidi
 PMBITMAPUNIT=OS2Api.pmbitmap
@@ -621,6 +620,7 @@ WASIAPIUNIT=WASIApi.WASIApi
 WASIUTILUNIT=WASIApi.WASIUtil
 WATCOMUNIT=WatcomApi.WatCom
 WEBASSEMBLYUNIT=Wasm.Api
+WASMSEMUNIT=Wasm.Semaphore
 WIN31UNIT=WinApi.Win31
 WINDIRSUNIT=WinApi.WinDirs
 WINDOWSUNIT=WinApi.Windows
@@ -802,7 +802,6 @@ OBJCUNIT=objc
 OBJCBASEUNIT=objcbase
 OBJPASUNIT=objpas
 OS2DEFUNIT=os2def
-PAGEMEMUNIT=pagemem
 PILOTUNIT=pilot
 PMBIDIUNIT=pmbidi
 PMBITMAPUNIT=pmbitmap
@@ -883,6 +882,7 @@ WASIAPIUNIT=wasiapi
 WASIUTILUNIT=wasiutil
 WATCOMUNIT=watcom
 WEBASSEMBLYUNIT=webassembly
+WASMSEMUNIT=wasmsem
 WIN31UNIT=win31
 WINDIRSUNIT=windirs
 WINDOWSUNIT=windows
@@ -934,10 +934,12 @@ SYSUTILS_DEPS_OS=$(HEAPMGRUNIT)$(PPUEXT)
 DOSDIR=.
 DOS_DEPS_OS=$(OBJPASUNIT)$(PPUEXT)
 ifeq ($(ARCH),aarch64)
+CPU_SPECIFIC_COMMON_UNITS+=$(INTRINSICSUNIT)
 CPU_UNITS=$(RASPI3UNIT) $(MMIOUNIT) $(MAILBOXUNIT) $(RASPIUARTUNIT) $(GPIOUNIT)
 CPU_UNITS_DEFINED=1
 endif
 ifeq ($(ARCH),arm)
+CPU_SPECIFIC_COMMON_UNITS+=$(INTRINSICSUNIT)
 ifeq ($(SUBARCH),armv7m)
 CPU_UNITS=$(LM3FURYUNIT) $(LM3TEMPESTUNIT) $(STM32F10X_LDUNIT) $(STM32F10X_MDUNIT) $(STM32F10X_HDUNIT) \
 	$(STM32F10X_XLUNIT) $(STM32F10X_CONNUNIT) $(STM32F10X_CLUNIT) $(LPC13XXUNIT) $(LPC1768UNIT) \
@@ -972,7 +974,7 @@ $(error No CPUs enabled for given SUBARCH, pass either a SUBARCH or set CPU_UNIT
 endif
 endif
 ifeq ($(ARCH),avr)
-CPU_SPECIFIC_COMMON_UNITS=intrinsics
+CPU_SPECIFIC_COMMON_UNITS=$(INTRINSICSUNIT)
 ifeq ($(SUBARCH),avrtiny)
 CPU_UNITS=attiny4 attiny5 attiny9 attiny10 attiny20 attiny40 attiny102 attiny104
 CPU_UNITS_DEFINED=1
@@ -986,55 +988,92 @@ CPU_UNITS=attiny26
 CPU_UNITS_DEFINED=1
 endif
 ifeq ($(SUBARCH),avr25)
-CPU_UNITS=attiny13 attiny13a attiny24 attiny24a attiny25 attiny43u \
-	  attiny44 attiny44a attiny45 attiny48 attiny84a attiny84 attiny85 \
-	  attiny87 attiny88 attiny261 attiny261a attiny441 attiny461 attiny461a attiny828 \
-	  attiny841 attiny861 attiny861a attiny2313 attiny2313a attiny4313
+CPU_UNITS=at90usb82 attiny13 attiny13a attiny24 attiny24a attiny25 attiny43u attiny44 \
+	  attiny44a attiny45 attiny48 attiny84 attiny84a attiny85 attiny87 attiny88 \
+	  attiny261 attiny261a attiny441 attiny461 attiny461a attiny828 attiny841 \
+	  attiny861 attiny861a attiny2313 attiny2313a attiny4313
 CPU_UNITS_DEFINED=1
 endif
 ifeq ($(SUBARCH),avr35)
-CPU_UNITS=at90usb82 at90usb162 atmega8u2 atmega16u2 atmega32u2 attiny167 attiny1634
+CPU_UNITS=at90usb162 atmega8u2 atmega16u2 atmega32u2 attiny167 attiny1634
 CPU_UNITS_DEFINED=1
 endif
 ifeq ($(SUBARCH),avr4)
-CPU_UNITS=at90pwm1 at90pwm2b at90pwm3b at90pwm81 ata6285 ata6286 atmega8 \
-	  atmega8a atmega8hva atmega48 atmega48a atmega48p atmega48pa \
-	  atmega48pb atmega88 atmega88a atmega88p atmega88pa atmega88pb \
-	  atmega8515 atmega8535
+CPU_UNITS=at90pwm1 at90pwm2b at90pwm3 at90pwm3b at90pwm81 ata6285 ata6286 atmega8 \
+	  atmega8a atmega8hva atmega48 atmega48a atmega48p atmega48pa atmega48pb \
+	  atmega88 atmega88a atmega88p atmega88pa atmega88pb atmega8515 atmega8535
 CPU_UNITS_DEFINED=1
 endif
 ifeq ($(SUBARCH),avr5)
-CPU_UNITS=avrsim at90can32 at90can64 at90pwm161 at90pwm216 at90pwm316 \
-	  at90usb646 at90usb647 atmega16 atmega16a atmega16hva atmega16hvb atmega16hvbrevb atmega16m1 \
+CPU_UNITS=avrsim at90can32 at90can64 at90pwm161 at90pwm216 at90pwm316 at90usb646 at90usb647 \
+	  atmega16 atmega16a atmega16hva atmega16hvb atmega16hvbrevb atmega16m1 \
 	  atmega16u4 atmega32 atmega32a atmega32c1 atmega32hvb atmega32hvbrevb atmega32m1 \
-	  atmega32u4 atmega64 atmega64a atmega64c1 atmega64hve2 atmega64m1 atmega64rfr2 atmega162 \
-	  atmega164a atmega164p atmega164pa atmega165a atmega165p atmega165pa \
+	  atmega32u4 atmega64 atmega64a atmega64c1 atmega64hve2 atmega64m1 atmega64rfr2 \
+	  atmega162 atmega164a atmega164p atmega164pa atmega165a atmega165p atmega165pa \
 	  atmega168 atmega168a atmega168p atmega168pa atmega168pb atmega169a atmega169p \
 	  atmega169pa atmega324a atmega324p atmega324pa atmega324pb atmega325 atmega325a \
 	  atmega325p atmega325pa atmega328 atmega328p atmega328pb atmega329 atmega329a \
 	  atmega329p atmega329pa atmega406 atmega640 atmega644 atmega644a atmega644p \
 	  atmega644pa atmega644rfr2 atmega645 atmega645a atmega645p atmega649 atmega649a \
 	  atmega649p atmega3250 atmega3250a atmega3250p atmega3250pa atmega3290 \
-	  atmega3290a atmega3290p atmega3290pa atmega6450 atmega6450a \
-	  atmega6450p atmega6490 atmega6490a atmega6490p
+	  atmega3290a atmega3290p atmega3290pa atmega6450 atmega6450a atmega6450p \
+	  atmega6490 atmega6490a atmega6490p
 CPU_UNITS_DEFINED=1
 endif
 ifeq ($(SUBARCH),avr51)
-CPU_UNITS=at90can128 at90usb1286 at90usb1287 atmega128 atmega128a atmega128rfa1 atmega128rfr2 \
-	  atmega1280 atmega1281 atmega1284 atmega1284p atmega1284rfr2
+CPU_UNITS=at90can128 at90usb1286 at90usb1287 atmega128 atmega128a atmega128rfa1 \
+	  atmega128rfr2 atmega1280 atmega1281 atmega1284 atmega1284p atmega1284rfr2
 CPU_UNITS_DEFINED=1
 endif
 ifeq ($(SUBARCH),avr6)
 CPU_UNITS=avrsim atmega256rfr2 atmega2560 atmega2561 atmega2564rfr2
 CPU_UNITS_DEFINED=1
 endif
+ifeq ($(SUBARCH),avrxmega2)
+CPU_UNITS=atxmega8e5 atxmega16a4 atxmega16a4u atxmega16c4 atxmega16d4 atxmega16e5 \
+	  atxmega32a4 atxmega32a4u atxmega32c3 atxmega32c4 atxmega32d3 atxmega32d4 \
+	  atxmega32e5 avr64da28 avr64da28s avr64da32 avr64da32s avr64da48 avr64da48s \
+	  avr64da64 avr64da64s avr64db28 avr64db32 avr64db48 avr64db64 avr64dd14 \
+	  avr64dd20 avr64dd28 avr64dd32 avr64du28 avr64du32 avr64ea28 avr64ea32 \
+	  avr64ea48
+CPU_UNITS_DEFINED=1
+endif
 ifeq ($(SUBARCH),avrxmega3)
-CPU_UNITS=atmega808 atmega809 atmega1608 atmega1609 atmega3208 atmega3209 \
-	  atmega4808 atmega4809 attiny202 attiny204 attiny212 attiny214 \
-	  attiny402 attiny404 attiny406 attiny412 attiny414 attiny416 \
-	  attiny416auto attiny417 attiny804 attiny806 attiny807 attiny814 \
-	  attiny816 attiny817 attiny1604 attiny1606 attiny1607 attiny1614 \
-	  attiny1616 attiny1617 attiny1624 attiny1626 attiny1627 attiny3214 attiny3216 attiny3217
+CPU_UNITS=atmega808 atmega809 atmega1608 atmega1609 atmega3208 atmega3209 atmega4808 \
+	  atmega4809 attiny202 attiny204 attiny212 attiny214 attiny402 attiny404 \
+	  attiny406 attiny412 attiny414 attiny416  attiny416auto attiny417 attiny424 \
+	  attiny426 attiny427 attiny804 attiny806 attiny807 attiny814 attiny816 \
+	  attiny817 attiny824 attiny826 attiny827 attiny1604 attiny1606 attiny1607 \
+	  attiny1614 attiny1616 attiny1617 attiny1624 attiny1626 attiny1627 \
+	  attiny3216 attiny3217 attiny3224 attiny3226 attiny3227 avr16dd14 avr16dd20 \
+	  avr16dd28 avr16dd32 avr16du14 avr16du20 avr16du28 avr16du32 avr16ea28 \
+	  avr16ea32 avr16ea48 avr16eb14 avr16eb20 avr16eb28 avr16eb32 avr32da28 \
+	  avr32da28s avr32da32 avr32da32s avr32da48 avr32da48s avr32db28 avr32db32 \
+	  avr32db48 avr32dd14 avr32dd20 avr32dd28 avr32dd32 avr32du14 avr32du20 \
+	  avr32du28 avr32du32 avr32ea28 avr32ea32 avr32ea48 avr32eb14 avr32eb20 \
+	  avr32eb28 avr32eb32
+CPU_UNITS_DEFINED=1
+endif
+ifeq ($(SUBARCH),avrxmega4)
+CPU_UNITS=atxmega64a3 atxmega64a3u atxmega64a4u atxmega64b1 atxmega64b3 atxmega64c3 \
+	  atxmega64d3 atxmega64d4 avr128da28 avr128da28s avr128da32 avr128da32s \
+	  avr128da48 avr128da48s avr128da64 avr128da64s avr128db28 avr128db32 avr128db48 \
+	  avr128db64
+CPU_UNITS_DEFINED=1
+endif
+ifeq ($(SUBARCH),avrxmega5)
+CPU_UNITS=atxmega64a1 atxmega64a1u
+CPU_UNITS_DEFINED=1
+endif
+ifeq ($(SUBARCH),avrxmega6)
+CPU_UNITS=atxmega128a3 atxmega128a3u atxmega128b1 atxmega128b3 atxmega128c3 atxmega128d3 \
+	  atxmega128d4 atxmega192a3 atxmega192a3u atxmega192c3 atxmega192d3 atxmega256a3 \
+	  atxmega256a3b atxmega256a3bu atxmega256a3u atxmega256c3 atxmega256d3 atxmega384c3 \
+	  atxmega384d3
+CPU_UNITS_DEFINED=1
+endif
+ifeq ($(SUBARCH),avrxmega7)
+CPU_UNITS=atxmega128a1 atxmega128a1u atxmega128a4u
 CPU_UNITS_DEFINED=1
 endif
 ifeq ($(CPU_UNITS_DEFINED),)
@@ -1043,6 +1082,7 @@ endif
 endif
 ifeq ($(ARCH),i386)
 CPU_UNITS=$(MULTIBOOTUNIT)
+CPU_SPECIFIC_COMMON_UNITS+=$(INTRINSICSUNIT)
 CPU_UNITS_DEFINED=1
 ifeq ($(CPU_UNITS_DEFINED),)
 $(error No CPUs enabled for given SUBARCH, pass either a SUBARCH or set CPU_UNITS_DEFINED=1 if you know what you are doing)
@@ -1070,7 +1110,7 @@ $(error No CPUs enabled for given SUBARCH, pass either a SUBARCH or set CPU_UNIT
 endif
 endif
 ifeq ($(ARCH),riscv32)
-CPU_SPECIFIC_COMMON_UNITS=$(SYSUTILSUNIT) $(MATHUNIT) $(CLASSESUNIT) $(FGLUNIT) $(MACPASUNIT) $(TYPINFOUNIT) $(TYPESUNIT) $(RTLCONSTSUNIT) $(GETOPTSUNIT) $(LINEINFOUNIT)
+CPU_SPECIFIC_COMMON_UNITS=$(SYSUTILSUNIT) $(MATHUNIT) $(CLASSESUNIT) $(FGLUNIT) $(MACPASUNIT) $(TYPINFOUNIT) $(TYPESUNIT) $(RTLCONSTSUNIT) $(GETOPTSUNIT) $(LINEINFOUNIT) $(INTRINSICSUNIT)
 ifeq ($(SUBARCH),rv32ec)
 override FPCOPT+=-Cprv32ec
 CPU_UNITS=CH32VxBootstrap
@@ -1083,7 +1123,12 @@ CPU_UNITS_DEFINED=1
 endif
 ifeq ($(SUBARCH),rv32imac)
 override FPCOPT+=-Cprv32imac
-CPU_UNITS=CH32VxBootstrap $(FE310G000UNIT) $(FE310G002UNIT) $(GD32VF103XXUNIT)
+CPU_UNITS=CH32VxBootstrap $(GD32VF103XXUNIT)
+CPU_UNITS_DEFINED=1
+endif
+ifeq ($(SUBARCH),rv32imac_zicsr_zifencei)
+override FPCOPT+=-Cprv32imac
+CPU_UNITS=CH32VxBootstrap $(FE310G000UNIT) $(FE310G002UNIT)
 CPU_UNITS_DEFINED=1
 endif
 ifeq ($(SUBARCH),rv32i)
@@ -1219,55 +1264,55 @@ override TARGET_LOADERS+=$(LOADERS)
 endif
 override INSTALL_FPCPACKAGE=y y
 ifeq ($(CPU_OS_TARGET),i386-embedded)
-override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC)
+override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC) $(ARCH)
 endif
 ifeq ($(CPU_OS_TARGET),m68k-embedded)
-override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC)
+override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC) $(ARCH)
 endif
 ifeq ($(CPU_OS_TARGET),powerpc-embedded)
-override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC)
+override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC) $(ARCH)
 endif
 ifeq ($(CPU_OS_TARGET),sparc-embedded)
-override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC)
+override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC) $(ARCH)
 endif
 ifeq ($(CPU_OS_TARGET),x86_64-embedded)
-override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC)
+override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC) $(ARCH)
 endif
 ifeq ($(CPU_OS_TARGET),arm-embedded)
-override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC)
+override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC) $(ARCH)
 endif
 ifeq ($(CPU_OS_TARGET),powerpc64-embedded)
-override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC)
+override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC) $(ARCH)
 endif
 ifeq ($(CPU_OS_TARGET),avr-embedded)
-override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC)
+override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC) $(ARCH)
 endif
 ifeq ($(CPU_OS_TARGET),armeb-embedded)
-override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC)
+override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC) $(ARCH)
 endif
 ifeq ($(CPU_OS_TARGET),mipsel-embedded)
-override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC)
+override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC) $(ARCH)
 endif
 ifeq ($(CPU_OS_TARGET),i8086-embedded)
-override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC)
+override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC) $(ARCH)
 endif
 ifeq ($(CPU_OS_TARGET),aarch64-embedded)
-override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC)
+override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC) $(ARCH)
 endif
 ifeq ($(CPU_OS_TARGET),wasm32-embedded)
-override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC)
+override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC) $(ARCH)
 endif
 ifeq ($(CPU_OS_TARGET),riscv32-embedded)
-override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC)
+override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC) $(ARCH)
 endif
 ifeq ($(CPU_OS_TARGET),riscv64-embedded)
-override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC)
+override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC) $(ARCH)
 endif
 ifeq ($(CPU_OS_TARGET),xtensa-embedded)
-override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC)
+override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC) $(ARCH)
 endif
 ifeq ($(CPU_OS_TARGET),z80-embedded)
-override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC)
+override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC) $(ARCH)
 endif
 ifeq ($(CPU_OS_TARGET),i386-embedded)
 override COMPILER_SOURCEDIR+=$(INC) $(PROCINC) $(COMMON) $(ARCH)
@@ -1532,6 +1577,7 @@ STATICLIBPREFIX=libp
 IMPORTLIBPREFIX=libimp
 RSTEXT=.rsj
 EXEDBGEXT=.dbg
+ALL_EXEEXT=.exe
 ifeq ($(OS_TARGET),go32v1)
 STATICLIBPREFIX=
 SHORTSUFFIX=v1
@@ -1628,6 +1674,7 @@ ifeq ($(OS_TARGET),atari)
 EXEEXT=.ttp
 SHORTSUFFIX=ata
 endif
+ALL_EXEEXT+=.ttp
 ifeq ($(OS_TARGET),beos)
 BATCHEXT=.sh
 EXEEXT=
@@ -1654,6 +1701,7 @@ STATICLIBPREFIX=
 SHORTSUFFIX=nw
 IMPORTLIBPREFIX=imp
 endif
+ALL_EXEEXT+=.nlm
 ifeq ($(OS_TARGET),netwlibc)
 EXEEXT=.nlm
 STATICLIBPREFIX=
@@ -1679,6 +1727,7 @@ EXEEXT=.gba
 SHAREDLIBEXT=.so
 SHORTSUFFIX=gba
 endif
+ALL_EXEEXT+=.gba
 ifeq ($(OS_TARGET),symbian)
 SHAREDLIBEXT=.dll
 SHORTSUFFIX=symbian
@@ -1692,6 +1741,7 @@ EXEEXT=.dol
 SHAREDLIBEXT=.so
 SHORTSUFFIX=wii
 endif
+ALL_EXEEXT+=.dol
 ifeq ($(OS_TARGET),aix)
 BATCHEXT=.sh
 EXEEXT=
@@ -1734,6 +1784,7 @@ OEXT=.rel
 endif
 SHORTSUFFIX=emb
 endif
+ALL_EXEEXT+=.bin
 ifeq ($(OS_TARGET),win16)
 STATICLIBPREFIX=
 STATICLIBEXT=.a
@@ -1746,6 +1797,7 @@ endif
 ifeq ($(OS_TARGET),wasip1)
 EXEEXT=.wasm
 endif
+ALL_EXEEXT+=.wasm
 ifeq ($(OS_TARGET),wasip1threads)
 EXEEXT=.wasm
 endif
@@ -2328,9 +2380,14 @@ ifdef INSTALL_CREATEPACKAGEFPC
 ifdef FPCMAKE
 ifdef PACKAGE_VERSION
 ifneq ($(wildcard Makefile.fpc),)
+ifdef FPCMAKENEW
+	$(MKDIR) $(INSTALL_UNITDIR)
+	$(FPCMAKENEW) -o $(INSTALL_UNITDIR)/Package.fpc -p -T$(CPU_TARGET)-$(OS_TARGET) Makefile.fpc
+else
 	$(FPCMAKE) -p -T$(CPU_TARGET)-$(OS_TARGET) Makefile.fpc
 	$(MKDIR) $(INSTALL_UNITDIR)
 	$(INSTALL) Package.fpc $(INSTALL_UNITDIR)
+endif
 endif
 endif
 endif
@@ -2373,6 +2430,7 @@ override CLEANEXEDBGFILES:=$(addprefix $(TARGETDIRPREFIX),$(CLEANEXEDBGFILES))
 endif
 ifdef CLEAN_PROGRAMS
 override CLEANEXEFILES+=$(addprefix $(TARGETDIRPREFIX),$(addsuffix $(EXEEXT), $(CLEAN_PROGRAMS)))
+override ALL_CLEANEXEFILES+=$(foreach lEXEEXT,$(ALL_EXEEXT),$(addprefix $(TARGETDIRPREFIX),$(addsuffix $(lEXEEXT), $(CLEAN_PROGRAMS))))
 override CLEANEXEDBGFILES+=$(addprefix $(TARGETDIRPREFIX),$(addsuffix $(EXEDBGEXT), $(CLEAN_PROGRAMS)))
 endif
 ifdef CLEAN_UNITS
@@ -2411,11 +2469,14 @@ ifdef LIB_NAME
 	-$(DEL) $(LIB_NAME) $(LIB_FULLNAME)
 endif
 	-$(DEL) $(FPCMADE) *$(FULL_TARGET).fpm Package.fpc *$(ASMEXT)
-	-$(DEL) $(FPCEXTFILE) $(REDIRFILE) script*.res link*.res *_script.res *_link.res
+	-$(DEL) $(FPCEXTFILE) $(REDIRFILE) script*.res link*.res *_script.res *_link.res symbol_order*.fpc
 	-$(DEL) $(PPAS) *_ppas$(BATCHEXT) ppas$(BATCHEXT) ppaslink$(BATCHEXT)
 fpc_cleanall: $(CLEANTARGET)
 ifdef CLEANEXEFILES
 	-$(DEL) $(CLEANEXEFILES)
+endif
+ifdef ALL_CLEANEXEFILES
+	-$(DEL) $(ALL_CLEANEXEFILES)
 endif
 ifdef COMPILER_UNITTARGETDIR
 ifdef CLEANPPUFILES
@@ -2438,8 +2499,8 @@ ifneq ($(PPUEXT),.ppu)
 	-$(DEL) *.o *.ppu *.a
 endif
 	-$(DELTREE) *$(SMARTEXT)
-	-$(DEL) fpcmade.* Package.fpc *.fpm
-	-$(DEL) $(FPCEXTFILE) $(REDIRFILE) script*.res link*.res *_script.res *_link.res
+	-$(DEL) fpcmade.* Package*.fpc *.fpm
+	-$(DEL) $(FPCEXTFILE) $(REDIRFILE) script*.res link*.res *_script.res *_link.res symbol_order*.fpc
 	-$(DEL) $(PPAS) *_ppas$(BATCHEXT) ppas$(BATCHEXT) ppaslink$(BATCHEXT)
 ifdef AOUTEXT
 	-$(DEL) *$(AOUTEXT)
@@ -2854,6 +2915,9 @@ sysutils$(PPUEXT) : $(SYSUTILS_DEPS)
 	$(COMPILER) -Fi$(OBJPASDIR)/sysutils $<
 System.SysUtils$(PPUEXT) : $(NSINC)/System.SysUtils.pp $(SYSUTILS_DEPS)
 	$(COMPILER) $(SYSUTILS_OPT) -Fi$(OBJPASDIR)/sysutils -Fi$(SYSUTILSDIR) $<
+ifneq ($(findstring $(ARCH),aarch64 arm powerpc powerpc64 riscv64 riscv32),)
+CLASSES_DEPS_CPU:=$(CLASSES_DEPS_CPU) $(INTRINSICSUNIT)$(PPUEXT)
+endif
 CLASSES_DEPS=$(CLASSESDIR)/classes.pp $(TTHREADINCDIR)/tthread.inc $(wildcard $(OBJPASDIR)/classes/*.inc) \
 	     $(SYSTEMUNIT)$(PPUEXT) $(OBJPASUNIT)$(PPUEXT) $(SORTBASEUNIT)$(PPUEXT) \
 	     $(SYSUTILSUNIT)$(PPUEXT) $(TYPINFOUNIT)$(PPUEXT) $(RTLCONSTSUNIT)$(PPUEXT) \
@@ -2937,6 +3001,13 @@ mmx$(PPUEXT) : $(MMX_DEPS)
 	$(COMPILER) $(MMX_OPT) $<
 System.CPU.MMX$(PPUEXT) : $(NSINC)/System.CPU.MMX.pp $(MMX_DEPS)
 	$(COMPILER) $(MMX_OPT) $<
+INTRINSICS_DEPS=$(PROCINC)/intrinsics.pp \
+	 $(SYSTEMUNIT)$(PPUEXT) \
+	 $(INTRINSICS_DEPS_OS) $(INTRINSICS_DEPS_CPU)
+intrinsics$(PPUEXT) : $(INTRINSICS_DEPS)
+	$(COMPILER) $(INTRINSICS_OPT) $<
+System.Intrinsics$(PPUEXT) : $(NSINC)/System.Intrinsics.pp $(INTRINSICS_DEPS)
+	$(COMPILER) $(INTRINSICS_OPT) $<
 ifeq ($(filter -dFPC_USE_LIBC,$(FPCOPT)),)
   X86_DEPS_OS+=$(SYSCALLUNIT)$(PPUEXT)
 endif
@@ -3014,7 +3085,9 @@ else
 ifeq ($(OS_TARGET),android)
   RTLDEFSINCDIR = $(LINUXINC)
 else
+ifeq ($(RTLDEFSINCDIR),) 
   RTLDEFSINCDIR = $(OSDIR)
+endif
 endif
 endif
 FPWIDESTRING_DEPS=$(OBJPASDIR)/fpwidestring.pp $(RTLDEFSINCDIR)/rtldefs.inc \
@@ -3395,8 +3468,6 @@ else
 $(addsuffix $(PPUEXT),$(CPU_UNITS)):
 	$(COMPILER) -g -Fi$(OSDIR) -Fi$(OSDIR)/$(ARCH) $<
 endif
-intrinsics$(PPUEXT): $(PROCINC)/intrinsics.pp $(SYSTEMUNIT)$(PPUEXT)
-	$(COMPILER) $<
 avrsim$(PPUEXT): $(ARCH)/avrsim.pp $(HEAPMGRUNIT)$(PPUEXT) $(CONSOLEIOUNIT)$(PPUEXT) $(SYSTEMUNIT)$(PPUEXT)
 	$(COMPILER) $(ARCH)/avrsim.pp
 MULTIBOOT_DEPS = $(ARCH)/multiboot.pp $(SYSTEMUNIT)$(PPUEXT) $(OBJPASUNIT)$(PPUEXT) \

@@ -15,7 +15,7 @@
 {$mode objfpc}
 {$h+}
 {$IFNDEF FPC_DOTTEDUNITS}
-unit jsonparser;
+unit JsonParser;
 {$ENDIF FPC_DOTTEDUNITS}
 
 interface
@@ -27,7 +27,7 @@ uses
 uses
   Classes, SysUtils, fpJSON, jsonscanner, jsonreader;
 {$ENDIF FPC_DOTTEDUNITS}
-  
+
 Type
 
   { TJSONParser }
@@ -59,13 +59,15 @@ Type
   Public
     function Parse: TJSONData;
   end;
-  
+
   EJSONParser = {$IFDEF FPC_DOTTEDUNITS}FpJson.Reader{$ELSE}jsonReader{$ENDIF}.EJSONParser;
-  
+
 implementation
 
 Resourcestring
   SErrStructure = 'Structural error';
+  SErrUnexpectedEOF = 'Unexpected EOF encountered.';
+  SErrDuplicateKey = 'Duplicatekey or no object';
 
 { TJSONParser }
 
@@ -78,9 +80,10 @@ Var
 
 begin
   Data:=Nil;
-  AOptions:=[];
+  AOptions:=[joSingle];
   if AUseUTF8 then
     Include(AOptions,joUTF8);
+    
   P:=TJSONParser.Create(AStream,AOptions);
   try
     Data:=P.Parse;
@@ -98,7 +101,7 @@ Var
 
 begin
   Data:=Nil;
-  AOptions:=[];
+  AOptions:=[joSingle];
   if AUseUTF8 then
     Include(AOptions,joUTF8);
   P:=TJSONParser.Create(S,AOptions);
@@ -134,23 +137,26 @@ function TJSONParser.NewValue(AValue: TJSONData): TJSONData;
 begin
   Result:=AValue;
   // Add to existing structural type
-  if (FStruct is TJSONObject) then
+  if FStruct<>nil then
     begin
-    if (Not (joIgnoreDuplicates in options)) then
-      try
-        TJSONObject(FStruct).Add(FKey,AValue);
-      except
+    if (FStruct.JSONType=jtObject) then
+      begin
+      if (Not (joIgnoreDuplicates in options)) then
+        try
+          TJSONObject(FStruct).Add(FKey,AValue);
+        except
+          AValue.Free;
+          Raise;
+        end
+      else if (TJSONObject(FStruct).IndexOfName(FKey)=-1) then
+        TJSONObject(FStruct).Add(FKey,AValue)
+      else
         AValue.Free;
-        Raise;
+      FKey:='';
       end
-    else if (TJSONObject(FStruct).IndexOfName(FKey)=-1) then
-      TJSONObject(FStruct).Add(FKey,AValue)
-    else
-      AValue.Free;
-    FKey:='';
-    end
-  else if (FStruct is TJSONArray) then
-    TJSONArray(FStruct).Add(AValue);
+    else if (FStruct.JSONType=jtArray) then
+      TJSONArray(FStruct).Add(AValue);
+    end;
   // The first actual value is our result
   if (FValue=Nil) then
     FValue:=AValue;
@@ -158,10 +164,10 @@ end;
 
 procedure TJSONParser.KeyValue(const AKey: TJSONStringType);
 begin
-  if (FStruct is TJSONObject) and (FKey='') then
+  if (FStruct<>nil) and (FStruct.JSONType=jtObject) and (FKey='') then
     FKey:=Akey
   else
-    DoError('Duplicatekey or no object');
+    DoError(SErrDuplicateKey);
 end;
 
 procedure TJSONParser.StringValue(const AValue: TJSONStringType);
@@ -207,13 +213,13 @@ end;
 
 procedure TJSONParser.StartArray;
 begin
-  Push(NewValue(CreateJSONArray([])))
+  Push(NewValue(CreateJSONArray([])));
 end;
 
 
 procedure TJSONParser.StartObject;
 begin
-  Push(NewValue(CreateJSONObject([])));
+  Push(NewValue(CreateJSONObject));
 end;
 
 procedure TJSONParser.EndArray;
@@ -237,6 +243,8 @@ begin
   try
     DoExecute;
     Result:=FValue;
+    if (Result=Nil) and (joSingle in Options) then
+      Raise EJSONParser.Create(SErrUnexpectedEOF); 
   except
     On E : exception do
       begin

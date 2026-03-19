@@ -126,6 +126,7 @@ procedure glBlendFunc(sfactor, dfactor: GLenum); inline;
 procedure glVertexPointer(size: GLint; atype: GLenum; stride: GLsizei; const pointer: Pointer); inline;
 
 procedure glViewport(x, y: GLint; width, height: GLsizei); inline;
+procedure glScissor(x, y: GLint; width, height: GLsizei); inline;
 {$ENDIF GL_UNIT}
 
 { ****************************************************************************************************** }
@@ -161,13 +162,15 @@ procedure GLUTMouseFunc(f: TGlut4IntCallback); inline;
 procedure GLUTSpecialFunc(f: TGlut3IntCallback); inline;
 procedure GLUTReshapeFunc(f: TGlut2IntCallback); inline;
 procedure GLUTMotionFunc(f: TGlut2IntCallback); inline;
+procedure GLUTPositionWindow(x, y: Integer); inline;
+procedure GLUTReshapeWindow(width, height: Integer); inline;
 procedure GLUTPassiveMotionFunc(f: TGlut2IntCallback); inline;
 
 procedure GLUTSwapBuffers; inline;
 procedure GLUTPostRedisplay; inline;
 
 function  GLUTGet(t: GLenum): LongInt; inline;
-  
+
 procedure GLUTMainLoop; inline;
 
 procedure GLUTFullScreen; inline;

@@ -1,4 +1,4 @@
-// Test to determine that anonymus functions are enabled in mode delphi
+// Test to determine that anonymous functions are enabled in mode delphi
 {$mode delphi}
 {%NORUN}
 program tfuncref52;
@@ -12,9 +12,9 @@ var
 Procedure Testit;
 
 begin
-  P:=procedure 
+  P:=procedure
     begin
-  
+
     end;
   P;
 end;

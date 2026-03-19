@@ -478,7 +478,7 @@ unit cpupara;
                 Exit(0);
               end;
           end;
-		
+
         (* Final merger cleanup.  *)
         (* The first one must never be X86_64_SSEUP_CLASS or
            X86_64_X87UP_CLASS.  *)
@@ -752,7 +752,7 @@ unit cpupara;
 
       end;
 
-	
+
     function classify_record(calloption: tproccalloption; def: tdef; parentdef: tdef; varspez: tvarspez; var classes: tx64paraclasses; byte_offset: aint): longint;
       var
         vs: tfieldvarsym;
@@ -908,7 +908,7 @@ unit cpupara;
 	  rounded_offset := byte_offset mod 8
         else
           rounded_offset := byte_offset;
-		
+
         case def.typ of
           orddef,
           enumdef,
@@ -1333,7 +1333,7 @@ unit cpupara;
             end;
           objectdef :
             begin
-              { don't treat objects like records, because we only know wheter
+              { don't treat objects like records, because we only know whether
                 or not they'll have a VMT after the entire object is parsed
                 -> if they are used as function result from one of their own
                 methods, their size can still change after we've determined
@@ -1641,7 +1641,7 @@ unit cpupara;
         pushaddr   : boolean;
         paracgsize : tcgsize;
         { loc[2] onwards are only used for _m256 under vectorcall/SysV, and
-          homogeneous vector aggregates and homogeneous float aggreates under
+          homogeneous vector aggregates and homogeneous float aggregates under
           the vectorcall calling convention. [Kit] }
         loc        : tx64paraclasses;
         needintloc,

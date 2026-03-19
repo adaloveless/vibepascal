@@ -59,9 +59,10 @@ type
     FConnected: Boolean;
     FCOnnection: TPQConnection;
     FDBName : String;
-    FActive : Boolean;
-    FUsed: Boolean;
+    FActive : Boolean; // within BEGIN - COMMIT/ROLLBACK
+    FUsed: Boolean; // is currently used in a transaction and cannot be obtained from handle pool
     function GetConnected: Boolean;
+    function GetHasOpenCursors: Boolean; // has open cursors
   protected
     FNativeConn: PPGConn;
     FCursorList  : TThreadList;
@@ -86,6 +87,7 @@ type
     Property NativeConn : PPGConn Read FNativeConn;
     Property Active : Boolean Read Factive;
     Property Used : Boolean Read FUsed Write FUsed;
+    Property HasOpenCursors : Boolean Read GetHasOpenCursors;
     Property Connected : Boolean Read GetConnected;
   end;
 
@@ -269,6 +271,7 @@ const Oid_Bool     = 16;
       Oid_interval  = 1186;
       oid_numeric   = 1700;
       Oid_uuid      = 2950;
+      Oid_JSONB     = 3802;
 
 { TPQTransactionHandle }
 
@@ -323,6 +326,20 @@ begin
   Result:=FNativeConn<>Nil;
 end;
 
+function TPGHandle.GetHasOpenCursors: Boolean;
+
+Var
+  L : TList;
+
+begin
+  L:=FCursorList.LockList;
+  try
+    Result:=L.Count>0;
+  finally
+    FCursorList.UnlockList;
+  end;
+end;
+
 procedure TPGHandle.RegisterCursor(Cursor: TPQCursor);
 begin
   if Cursor.handle=Self then
@@ -350,15 +367,9 @@ begin
   {$ENDIF}
   Cursor.Handle:=Nil;
   FCursorList.Remove(Cursor);
-  L:=FCursorList.LockList;
-  try
-    Used:=L.Count>0;
-    {$IFDEF PQDEBUG}
-    Writeln('>>> ',FHandleID,' [',TThread.CurrentThread.ThreadID, ']  unregistering cursor ',PtrInt(Cursor),'. Handle still used: ',Used);
-    {$ENDIF}
-  finally
-    FCursorList.UnlockList;
-  end;
+  {$IFDEF PQDEBUG}
+  Writeln('>>> ',FHandleID,' [',TThread.CurrentThread.ThreadID, ']  unregistering cursor ',PtrInt(Cursor),'. Handle still used: ',Used);
+  {$ENDIF}
 end;
 
 procedure TPGHandle.UnprepareStatement(Cursor: TPQCursor; Force : Boolean);
@@ -596,6 +607,12 @@ var
 begin
   tr := (trans as TPQTransactionHandle).Handle as TPGHandle;
   TR.RollBack;
+  FHandlePool.LockList; // protect the Used change with critical section
+  try
+    tr.Used:=False; // handle can be reused after successful rollback
+  finally
+    FHandlePool.UnLockList;
+  end;
   result := true;
 end;
 
@@ -605,6 +622,12 @@ var
 begin
   tr := (trans as TPQTransactionHandle).Handle;
   tr.Commit;
+  FHandlePool.LockList; // protect the Used change with critical section
+  try
+    tr.Used:=False; // handle can be reused after successful commit
+  finally
+    FHandlePool.UnLockList;
+  end;
   Result:=True;
 end;
 
@@ -641,7 +664,7 @@ begin
     while (i<L.Count) do
       begin
       T:=TPGHandle(L[i]);
-      if Not (T.Connected and T.Used) then
+      if Not (T.Used or T.HasOpenCursors) then // existing handle must not be used and must not have open cursors
         break
       else
         T:=Nil;
@@ -815,6 +838,7 @@ procedure TPGHandle.Commit;
 
 begin
   Exec('COMMIT',True,SErrCommitFailed);
+  FActive:=False; // handle is not active after successful COMMIT
 end;
 
 procedure TPGHandle.Reset;
@@ -1032,7 +1056,8 @@ begin
                              if size > MaxSmallint then size := MaxSmallint;
                              end;
 //    Oid_text               : Result := ftString;
-    Oid_text,Oid_JSON      : Result := ftMemo;
+    Oid_text,Oid_JSON,
+    Oid_JSONB              : Result := ftMemo;
     Oid_Bytea              : Result := ftBlob;
     Oid_oid                : Result := ftInteger;
     Oid_int8               : Result := ftLargeInt;
@@ -1103,7 +1128,7 @@ begin
 end;
 
 procedure TPQConnection.PrepareStatement(cursor: TSQLCursor;ATransaction : TSQLTransaction;buf : string; AParams : TParams);
-                          
+
 const TypeStrings : array[TFieldType] of string =
     (
       'Unknown',   // ftUnknown
@@ -1121,7 +1146,7 @@ const TypeStrings : array[TFieldType] of string =
       'Unknown',   // ftBytes
       'bytea',     // ftVarBytes
       'Unknown',   // ftAutoInc
-      'bytea',     // ftBlob 
+      'bytea',     // ftBlob
       'text',      // ftMemo
       'bytea',     // ftGraphic
       'text',      // ftFmtMemo
@@ -1325,13 +1350,11 @@ begin
               Handled:=true;
               bd:= AParams[i].AsBlob;
               l:=length(BD);
+              GetMem(ar[i],l+1);
+              ar[i][l]:=#0;
               if l>0 then
-                begin
-                GetMem(ar[i],l+1);
-                ar[i][l]:=#0;
                 Move(BD[0],ar[i]^, L);
-                lengths[i]:=l;
-                end;
+              lengths[i]:=l;
               end
             else
               s := GetAsString(AParams[i]);
@@ -1547,7 +1570,7 @@ begin
     // Joost, 5 jan 2006: I disabled the following, since it's useful for
     // debugging, but it also slows things down. In principle things can only go
     // wrong when FieldDefs is changed while the dataset is opened. A user just
-    // shoudn't do that. ;) (The same is done in IBConnection)
+    // shouldn't do that. ;) (The same is done in IBConnection)
     //if PQfname(Res, x) <> FieldDef.Name then
     //  DatabaseErrorFmt(SFieldNotFound,[FieldDef.Name],self);
 
@@ -1764,7 +1787,7 @@ function TPQConnection.GetSchemaInfoSQL(SchemaType: TSchemaType;
 var s : string;
 
 begin
-  // select * from information_schema.tables with 
+  // select * from information_schema.tables with
   // where table_schema [not] in ('pg_catalog','information_schema') may be better.
   // But the following should work:
   case SchemaType of
@@ -1828,13 +1851,22 @@ procedure TPQConnection.LoadBlobIntoBuffer(FieldDef: TFieldDef;
 var
   x             : integer;
   li            : Longint;
+  v             : PAnsiChar;
 begin
   with cursor as TPQCursor do
     begin
     x := FieldBinding[FieldDef.FieldNo-1].Index;
     li := pqgetlength(res,curtuple,x);
+    v := pqgetvalue(res,CurTuple,x);
+    if PQftype(res, x)=Oid_JSONB then
+    begin
+      // postgres returns the version for the JSONB binary encoding in the first byte (currently it is 0x1) - we don't want to have it in the result
+      //  jump over the first byte
+      inc(v);
+      dec(li);
+    end;
     ReAllocMem(ABlobBuf^.BlobBuffer^.Buffer,li);
-    Move(pqgetvalue(res,CurTuple,x)^, ABlobBuf^.BlobBuffer^.Buffer^, li);
+    Move(v^, ABlobBuf^.BlobBuffer^.Buffer^, li);
     ABlobBuf^.BlobBuffer^.Size := li;
     end;
 end;

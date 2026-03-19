@@ -2,7 +2,7 @@
     $Id: header,v 1.1 2000/07/13 06:33:45 michael Exp $
     This file is part of the Free Component Library (Fcl)
     Copyright (c) 2011- by the Free Pascal development team
-    
+
     Simple HTTP server component.
 
     See the file COPYING.FPC, included in this distribution,
@@ -63,6 +63,10 @@ Type
     Procedure DoSendHeaders(Headers : TStrings); override;
     Procedure DoSendContent; override;
     Property Connection : TFPHTTPConnection Read FConnection;
+  Public
+    procedure StartServerEvents; override;
+    Procedure SendServerEvent(const aEvent : THTTPServerEvent); override;
+    Procedure EndServerEvents; override;
   end;
 
 
@@ -77,6 +81,7 @@ Type
     FBusy: Boolean;
     FConnectionID: String;
     FEmptyDetected: Boolean;
+    FLastRequestTime: QWord;
     FIsUpgraded: Boolean;
     FOnRequestError: TRequestErrorHandler;
     FOnUnexpectedError: TRequestErrorHandler;
@@ -411,6 +416,8 @@ Type
     procedure HandleRequestError(Sender: TObject; E: Exception); virtual;
     // Called when a connection encounters an error outside the request. Will call OnUnexpectedError when set.
     procedure HandleUnexpectedError(Sender: TObject; E : Exception); virtual;
+    // Inet Server
+    Property Server : TInetServer Read FServer;
     // Connection Handler
     Property Connectionhandler : TFPHTTPServerConnectionHandler Read FConnectionHandler;
     // Connection count. Convenience shortcut for Connectionhandler.GetActiveConnectionCount;
@@ -467,7 +474,7 @@ Type
     // If >0, when no new connection appeared after timeout, OnAcceptIdle is called.
     Property AcceptIdleTimeout : Cardinal Read FAcceptIdleTimeout Write SetAcceptIdleTimeout;
   published
-    //aditional server information
+    //additional server information
     property AdminMail: string read FAdminMail write FAdminMail;
     property AdminName: string read FAdminName write FAdminName;
     property ServerBanner: string read FServerBanner write FServerBanner;
@@ -651,7 +658,17 @@ end;
 
 procedure TFPPooledConnectionHandler.CheckRequest(aConnection: TFPHTTPConnection; var aContinue: Boolean);
 begin
-  if Server.Active and aConnection.AllowNewRequest and aConnection.RequestPending then
+  if not Server.Active or not aConnection.AllowNewRequest then
+    exit;
+  // Enforce keep-alive timeout, matching tmThread behavior
+  if (aConnection.KeepConnectionTimeout > 0)
+     and (GetTickCount64 > aConnection.FLastRequestTime + QWord(aConnection.KeepConnectionTimeout)) then
+  begin
+    RemoveConnection(aConnection);
+    exit;
+  end;
+  // Use non-blocking check (timeout=0) to avoid blocking the accept thread
+  if (Not aConnection.IsUpgraded) and aConnection.Socket.CanRead(0) then
     ScheduleRequest(aConnection);
 end;
 
@@ -896,13 +913,34 @@ end;
 
 procedure TFPHTTPConnectionResponse.DoSendContent;
 begin
-  if Connection.IsUpgraded then
+  if Connection.IsUpgraded or EventsStarted then
     exit;
   If Assigned(ContentStream) and (ContentStream.Size>0) then
     Connection.Socket.CopyFrom(ContentStream,0)
   else
     if Length(Content)>0 then
       Connection.Socket.WriteBuffer(Content[1],Length(Content));
+end;
+
+procedure TFPHTTPConnectionResponse.StartServerEvents;
+begin
+  CheckServerEvents;
+end;
+
+procedure TFPHTTPConnectionResponse.SendServerEvent(const aEvent: THTTPServerEvent);
+var
+  lEvent : RawByteString;
+begin
+  if not EventsStarted then
+    Raise EHTTPServer.Create('Server side events not started');
+  lEvent:=aEvent.ToString;
+  SetCodePage(lEvent,CP_UTF8); // UTF8 is mandatory
+  Connection.Socket.WriteBuffer(lEvent[1],Length(lEvent));
+end;
+
+procedure TFPHTTPConnectionResponse.EndServerEvents;
+begin
+  Connection.Socket.Close;
 end;
 
 { TFPHTTPConnection }
@@ -1316,6 +1354,7 @@ begin
       end;
   end;
   FBusy:=False;
+  FLastRequestTime:=GetTickCount64;
 end;
 
 { TFPHTTPConnectionThread }

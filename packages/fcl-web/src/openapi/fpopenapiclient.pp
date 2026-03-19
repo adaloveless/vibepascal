@@ -41,7 +41,9 @@ Type
     RequestID : TServiceRequestID;
     StatusCode : Integer;
     StatusText : String;
+    ContentType : String;
     Content : String;
+    ContentStream : TStream;
   end;
 
   { TServiceResult }
@@ -74,10 +76,13 @@ Type
     FBaseURL: String;
     FOnPrepareRequest: TAPIServicePrepareRequestEvent;
     FOnProcessResponse: TAPIServiceProcessResponseEvent;
+    FRequestHeaders: TStrings;
     FWebClient: TAbstractWebClient;
     procedure SetBaseURL(AValue: String);
+    procedure SetRequestHeaders(const aValue: TStrings);
     procedure SetWebClient(AValue: TAbstractWebClient);
   protected
+    function StreamToString(aStream : TStream) : string;
     procedure PrepareRequest(aRequest: TWebClientRequest); virtual;
     procedure ProcessResponse(aResponse: TWebClientResponse); virtual;
     procedure ProcessServiceException(aReq : TWebClientRequest; aError : Exception);
@@ -86,12 +91,20 @@ Type
     function ReplacePathParam (const aPath : String; const aParamName : string; const aParamValue : String) : String; virtual;
     function ConcatRestParam(const aQueryParam: string; const aParamName: string; const aParamValue: string): string; virtual;
     function ExecuteRequest(const aMethod,aURL,aBody : String; aRequestID : TServiceRequestID = '') : TServiceResponse; virtual;
+    function ExecuteRequest(const aMethod,aURL,aBody : String; aResponseBody : TStream; aRequestID : TServiceRequestID = '') : TServiceResponse; virtual;
     {$IFNDEF VER3_2}
+    function ExecuteRequest(const aMethod,aURL: String; aBody : TStream; aRequestID : TServiceRequestID = '') : TServiceResponse; virtual;
+    function ExecuteRequest(const aMethod,aURL: String; aBody,aResponseBody : TStream; aRequestID : TServiceRequestID = '') : TServiceResponse; virtual;
     function ExecuteRequest(const aMethod,aURL,aBody : String; aCallback : TServiceResponseCallback; aRequestID : TServiceRequestID = '') : TServiceRequestID;virtual;
     {$ENDIF}
+  Public
+    constructor create(aOwner : TComponent); override;
+    destructor destroy; override;
+    procedure AddRequestHeader(const aName, aValue: string);
   Published
     Property WebClient : TAbstractWebClient Read FWebClient Write SetWebClient;
     Property BaseURL : String Read FBaseURL Write SetBaseURL;
+    Property RequestHeaders : TStrings Read FRequestHeaders Write SetRequestHeaders;
     Property OnPrepareRequest : TAPIServicePrepareRequestEvent Read FOnPrepareRequest Write FOnPrepareRequest;
     Property OnProcessResponse : TAPIServiceProcessResponseEvent Read FOnProcessResponse Write FOnProcessResponse;
   end;
@@ -153,6 +166,12 @@ begin
   FBaseURL:=AValue;
 end;
 
+procedure TFPOpenAPIServiceClient.SetRequestHeaders(const aValue: TStrings);
+begin
+  if FRequestHeaders=aValue then Exit;
+  FRequestHeaders.Assign(aValue);
+end;
+
 
 procedure TFPOpenAPIServiceClient.SetWebClient(AValue: TAbstractWebClient);
 
@@ -167,10 +186,18 @@ end;
 
 
 procedure TFPOpenAPIServiceClient.PrepareRequest(aRequest: TWebClientRequest);
+var
+  I : integer;
+  N,V : String;
 
 begin
   aRequest.Headers.Values['Content-Type']:='application/json';
   aRequest.Headers.Values['Accept']:='application/json';
+  For I:=0 to FRequestHeaders.Count-1 do
+    begin
+    FRequestHeaders.GetNameValue(i,N,V);
+    ARequest.Headers.Values[N]:=V;
+    end;
   if assigned(OnPrepareRequest) then
     OnPrepareRequest(Self,aRequest);
 end;
@@ -242,8 +269,102 @@ begin
   Result:=Result+'='+HTTPEncode(aParamValue);
 end;
 
+function TFPOpenAPIServiceClient.StreamToString(aStream : TStream) : string;
+
+begin
+  Result:='';
+  SetLength(Result,aStream.Size);
+  aStream.Position:=0;
+  if (aStream.Size>0) then
+    aStream.ReadBuffer(Result[1],aStream.Size);
+end;
+
+
 
 {$IFNDEF VER3_2}
+function TFPOpenAPIServiceClient.ExecuteRequest(const aMethod,aURL: String; aBody,aResponseBody : TStream; aRequestID : TServiceRequestID = '') : TServiceResponse;
+
+var
+  lReq : TWebClientRequest;
+  lResponse : TWebClientResponse;
+
+begin
+  Result:=Default(TServiceResponse);
+  if Not Assigned(WebClient) then
+    Raise EOpenAPIClient.Create('No webclient assigned');
+  try
+    lReq:=WebClient.CreateRequest(False,aRequestID);
+    LReq.ResponseContent:=aResponseBody;
+    Result.RequestID:=lReq.RequestID;
+    lReq.Content:=aBody;
+    lReq.OwnsStream:=False;
+    try
+      PrepareRequest(lReq);
+      lResponse:=WebClient.ExecuteRequest(aMethod,aURL,lReq);
+      ProcessResponse(lResponse);
+      Result.StatusCode:=lResponse.StatusCode;
+      Result.StatusText:=lResponse.StatusText;
+      Result.ContentType:=lResponse.Headers.Values['Content-Type'];
+      Result.ContentStream:=aResponseBody;
+    except
+      on E : Exception do
+        begin
+        ProcessServiceException(lReq,E);
+        Result.StatusCode:=999;
+        Result.StatusText:=Format('%s: %s',[E.ClassName,E.Message]);
+        end;
+    end;
+  finally
+    lReq.Free;
+    lResponse.Free;
+  end;
+end;
+
+function TFPOpenAPIServiceClient.ExecuteRequest(const aMethod,aURL: String; aBody : TStream; aRequestID : TServiceRequestID = '') : TServiceResponse;
+var
+  lResponse : TStream;
+begin
+  lResponse:=TMemoryStream.Create;
+  try
+    Result:=ExecuteRequest(aMethod,aURL,aBody,lResponse,aRequestID);
+    Result.ContentStream:=Nil;
+    Result.Content:=StreamToString(lResponse);
+  finally
+    lResponse.Free;
+  end;
+end;
+
+
+function TFPOpenAPIServiceClient.ExecuteRequest(const aMethod, aURL, aBody: String; aResponseBody : TStream; aRequestID: TServiceRequestID): TServiceResponse;
+
+var
+  lBody : TStringStream;
+
+begin
+  lBody:=TStringStream.Create(aBody);
+  try
+    Result:=ExecuteRequest(aMethod,aURL,lBody,aResponseBody,aRequestID);
+  finally
+    lBody.Free;
+  end;
+end;
+
+
+function TFPOpenAPIServiceClient.ExecuteRequest(const aMethod, aURL, aBody: String; aRequestID: TServiceRequestID): TServiceResponse;
+
+var
+  lResponse : TMemoryStream;
+begin
+  lResponse:=TStringStream.Create(aBody);
+  try
+    Result:=ExecuteRequest(aMethod,aURL,aBody,lResponse,aRequestID);
+    Result.ContentStream:=Nil;
+    Result.Content:=StreamToString(lResponse);
+  finally
+    lResponse.Free;
+  end;
+end;
+
 function TFPOpenAPIServiceClient.ExecuteRequest(const aMethod,aURL,aBody : String; aCallback : TServiceResponseCallback; aRequestID : TServiceRequestID = '') : TServiceRequestID;
 
 var
@@ -266,6 +387,7 @@ begin
          var
            aResult : TServiceResponse;
          begin
+           aResult:=default(TServiceResponse);
            if not aResponse.Success then
              begin
              ProcessServiceException(lReq,aResponse.Error);
@@ -273,7 +395,6 @@ begin
                begin
                aResult.StatusText:=Format('%s : %s',[ClassName,Message]);
                aResult.StatusCode:=999;
-               aResult.Content:='';
                end
              end
            else
@@ -281,6 +402,7 @@ begin
              ProcessResponse(aResponse.Response);
              aResult.StatusCode:=aResponse.Response.StatusCode;
              aResult.StatusText:=aResponse.Response.StatusText;
+             aResult.ContentType:=aResponse.Response.Headers.Values['Content-Type'];
              aResult.Content:=aResponse.Response.GetContentAsString;
              end;
            aCallBack(aResult);
@@ -302,9 +424,11 @@ begin
     lResponse.Free;
   end;
 end;
-{$ENDIF}
 
-function TFPOpenAPIServiceClient.ExecuteRequest(const aMethod, aURL, aBody: String; aRequestID: TServiceRequestID): TServiceResponse;
+{$ELSE}
+
+function TFPOpenAPIServiceClient.ExecuteRequest(const aMethod,aURL,aBody : String; aResponseBody : TStream; aRequestID : TServiceRequestID = '') : TServiceResponse;
+
 
 var
   lReq : TWebClientRequest;
@@ -315,13 +439,9 @@ begin
   if Not Assigned(WebClient) then
     Raise EOpenAPIClient.Create('No webclient assigned');
   try
-    {$IFNDEF VER3_2}
-    lReq:=WebClient.CreateRequest(False,aRequestID);
-    Result.RequestID:=lReq.RequestID;
-    {$ELSE}
     Result.RequestID:=aRequestID;
     lReq:=WebClient.CreateRequest;
-    {$ENDIF}
+    lReq.ResponseContent:=aResponseBody;
     if aBody<>'' then
       lReq.SetContentFromString(aBody);
     try
@@ -330,7 +450,8 @@ begin
       ProcessResponse(lResponse);
       Result.StatusCode:=lResponse.StatusCode;
       Result.StatusText:=lResponse.StatusText;
-      Result.Content:=lResponse.GetContentAsString;
+      Result.ContentType:=lResponse.Headers.Values['Content-Type'];
+      Result.ContentStream:=lResponse.Content;
     except
       on E : Exception do
         begin
@@ -344,6 +465,44 @@ begin
     lResponse.Free;
   end;
 end;
+
+function TFPOpenAPIServiceClient.ExecuteRequest(const aMethod, aURL, aBody: String; aRequestID: TServiceRequestID): TServiceResponse;
+
+var
+  lResponse : TStream;
+begin
+  lResponse:=TMemoryStream.Create;
+  try
+    Result:=ExecuteRequest(aMethod,aURL,aBody,lResponse,aRequestID);
+    Result.ContentStream:=Nil;
+    SetLength(Result.Content,lResponse.Size);
+    lResponse.Position:=0;
+    if lResponse.Size>0 then
+      lResponse.ReadBuffer(Result.Content[1],lResponse.Size);
+  finally
+    lResponse.Free;
+  end;
+end;
+{$ENDIF}
+
+constructor TFPOpenAPIServiceClient.create(aOwner: TComponent);
+begin
+  inherited create(aOwner);
+  FRequestHeaders:=TStringList.Create;
+  FRequestHeaders.NameValueSeparator:=':';
+end;
+
+destructor TFPOpenAPIServiceClient.destroy;
+begin
+  FreeAndNil(FRequestHeaders);
+  inherited destroy;
+end;
+
+procedure TFPOpenAPIServiceClient.AddRequestHeader(const aName, aValue : string);
+begin
+  RequestHeaders.Values[aName]:=aValue;
+end;
+
 
 
 end.

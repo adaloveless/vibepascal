@@ -94,7 +94,7 @@ type
     FStatus                : TStatusVector;
     FDatabaseInfo          : TDatabaseInfo;
     FDialect               : integer;
-    FBlobSegmentSize       : word; //required for backward compatibilty; not used
+    FBlobSegmentSize       : word; //required for backward compatibility; not used
     FUseConnectionCharSetIfNone: Boolean;
     FWireCompression       : Boolean;
     FCursorCount : Integer;
@@ -172,9 +172,9 @@ type
     Property UseConnectionCharSetIfNone : Boolean Read FUseConnectionCharSetIfNone Write FUseConnectionCharSetIfNone;
     property WireCompression: Boolean read FWireCompression write FWireCompression default False;
   end;
-  
+
   { TIBConnectionDef }
-  
+
   TIBConnectionDef = Class(TConnectionDef)
     Class Function TypeName : String; override;
     Class Function ConnectionClass : TSQLConnectionClass; override;
@@ -184,7 +184,7 @@ type
     Class Function UnLoadFunction : TLibraryUnLoadFunction; override;
     Class Function LoadedLibraryName: string; override;
   end;
-                  
+
 implementation
 
 {$IFDEF FPC_DOTTEDUNITS}
@@ -501,8 +501,10 @@ begin
   ReleaseIBase60;
 {$ELSE}
   // Shutdown embedded subsystem with timeout 300ms (Firebird 2.5+)
-  // Required before unloading library; has no effect on non-embedded client
-  if (pointer(fb_shutdown)<>nil) and (fb_shutdown(300,1)<>0) then
+  // Only call fb_shutdown for embedded Firebird; calling it for a
+  // client connection shuts down the networking subsystem, causing
+  // subsequent reconnect attempts to fail with "connection shutdown".
+  if UseEmbeddedFirebird and (pointer(fb_shutdown)<>nil) and (fb_shutdown(300,1)<>0) then
   begin
     //todo: log error; still try to unload library below as the timeout may have been insufficient
   end;
@@ -674,7 +676,7 @@ var
   ADatabaseName: String;
   DPB: string;
   HN : String;
-  
+
 begin
   DPB := chr(isc_dpb_version1);
   if (UserName <> '') then
@@ -693,13 +695,13 @@ begin
 
   FDatabaseHandle := nil;
   HN:=HostName;
-  if HN <> '' then 
+  if HN <> '' then
     begin
     if Port<>0 then
       HN:=HN+'/'+IntToStr(Port);
     ADatabaseName := HN+':'+DatabaseName
     end
-  else 
+  else
     ADatabaseName := DatabaseName;
   if isc_attach_database(@FStatus[0], Length(ADatabaseName), @ADatabaseName[1],
     @FDatabaseHandle, Length(DPB), @DPB[1]) <> 0 then
@@ -1009,7 +1011,7 @@ begin
       begin
       if isc_dsql_free_statement(@Status, @StatementHandle, DSQL_close)<>0 then
         // If transaction was closed (keepOpenOnCommit, then the cursor is already closed.
-        CheckError('Close Cursor', Status, [335544577]); 
+        CheckError('Close Cursor', Status, [335544577]);
       end;
     end;
 end;
@@ -1327,7 +1329,7 @@ begin
     // Joost, 5 jan 2006: I disabled the following, since it's useful for
     // debugging, but it also slows things down. In principle things can only go
     // wrong when FieldDefs is changed while the dataset is opened. A user just
-    // shoudn't do that. ;) (The same is done in PQConnection)
+    // shouldn't do that. ;) (The same is done in PQConnection)
 
     // if VSQLVar^.AliasName <> FieldDef.Name then
     // DatabaseErrorFmt(SFieldNotFound,[FieldDef.Name],self);
@@ -1517,7 +1519,7 @@ var
 begin
   {$IFNDEF SUPPORT_MSECS}
   DateTimeToSystemTime(PTime,STime);
-  
+
   CTime.tm_year := STime.Year - 1900;
   CTime.tm_mon  := STime.Month -1;
   CTime.tm_mday := STime.Day;
@@ -1624,7 +1626,7 @@ begin
                         'WHERE '+
                           '(r.rdb$system_flag = 0 or r.rdb$system_flag is null) and (rdb$relation_name = ''' + Uppercase(SchemaObjectName) + ''') ' +
                         'ORDER BY '+
-                          'r.rdb$field_name';
+                          'r.rdb$field_position';
     stSequences  : s := 'SELECT ' +
                           'rdb$generator_id         as recno,' +
                           '''' + DatabaseName + ''' as sequence_catalog,' +
@@ -1816,7 +1818,7 @@ var info_request       : string;
     subBlockSize       : integer;
     SelectedRows,
     InsertedRows       : integer;
-    
+
 begin
   SelectedRows:=-1;
   InsertedRows:=-1;
@@ -1860,12 +1862,12 @@ class function TIBConnectionDef.TypeName: String;
 begin
   Result:='Firebird';
 end;
-  
+
 class function TIBConnectionDef.ConnectionClass: TSQLConnectionClass;
 begin
   Result:=TIBConnection;
 end;
-    
+
 class function TIBConnectionDef.Description: String;
 begin
   Result:='Connect to Firebird/Interbase directly via the client library';

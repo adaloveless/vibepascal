@@ -72,7 +72,7 @@ unit agppcgas;
     topstr = string[4];
 
     function branchmode(o: tasmop): topstr;
-    function cond2str(op: tasmop; c: tasmcond): string;  
+    function cond2str(op: tasmop; c: tasmcond): string;
 
   implementation
 
@@ -165,8 +165,8 @@ unit agppcgas;
                  s := s+refaddr2str[refaddr];
              end;
 {$ifdef cpu64bitaddr}
-           if (refaddr=addr_pic) and
-              (target_info.system=system_powerpc64_linux) then
+           if (refaddr=addr_pic) and ((target_info.system=system_powerpc64_linux) or 
+             (target_info.system=system_powerpc64_freebsd)) then
              s := s + '@got';
 {$endif cpu64bitaddr}
 
@@ -506,7 +506,7 @@ unit agppcgas;
         hp : tai;
         max_al : longint;
       begin
-        { Parse all asmlists to get maximum alignement used for all types }
+        { Parse all asmlists to get maximum alignment used for all types }
         for hal:=low(TasmlistType) to high(TasmlistType) do
           begin
             if not (current_asmdata.asmlists[hal].empty) then
@@ -515,11 +515,11 @@ unit agppcgas;
                 hp:=tai(current_asmdata.asmlists[hal].First);
                 while assigned(hp) do
                   begin
-                    case hp.typ of 
+                    case hp.typ of
                      ait_align :
                        begin
                          if tai_align_abstract(hp).aligntype > max_alignment[cur_sectype] then
-                           begin 
+                           begin
                              max_alignment[cur_sectype]:=tai_align_abstract(hp).aligntype;
                              current_asmdata.asmlists[hal].InsertAfter(tai_comment.Create(strpnew('Alignment put to '+tostr(tai_align_abstract(hp).aligntype))),hp);
                            end;
@@ -573,7 +573,7 @@ unit agppcgas;
         { make sure we always have a code and toc section,
           the linker expects that }
         writer.AsmWriteln(#9'.csect .text[PR],'+sectionalignment_aix(sec_code,max_alignment[sec_code]));
-        { set _text_s, to be used by footer below } 
+        { set _text_s, to be used by footer below }
         writer.AsmWriteln(#9'_text_s:');
         writer.AsmWriteln(#9'.toc');
       end;
@@ -675,7 +675,7 @@ unit agppcgas;
          asmcmd: '$ENDIAN -o $OBJ $EXTRAOPT $ARCH $ASM';
 {$endif cpu64bitaddr}
          supported_targets : [system_powerpc_linux,system_powerpc_netbsd,system_powerpc_openbsd,
-                              system_powerpc_MorphOS,system_powerpc_Amiga,system_powerpc_wii,
+                              system_powerpc_MorphOS,system_powerpc_Amiga,system_powerpc_wii,system_powerpc64_freebsd,
                               system_powerpc64_linux,system_powerpc_embedded,system_powerpc64_embedded];
          flags : [af_needar,af_smartlink_sections];
          labelprefix : '.L';

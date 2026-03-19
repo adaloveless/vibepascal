@@ -20,11 +20,11 @@ unit fpopenapi.writer;
 
 interface
 
- uses 
+ uses
   {$IFDEF FPC_DOTTEDUNITS}
-  System.SysUtils, System.Classes, System.Contnrs, FpJson.Data, FpJson.Writer, 
+  System.SysUtils, System.Classes, System.Contnrs, FpJson.Data, FpJson.Writer,
   {$ELSE}
-  sysutils, classes, contnrs, fpjson, jsonwriter, 
+  sysutils, classes, contnrs, fpjson, jsonwriter,
   {$ENDIF}
   fpopenapi.types, fpopenapi.objects, fpjson.schema.schema, fpjson.schema.Writer;
 
@@ -71,6 +71,7 @@ Type
     Procedure WriteProperty(const aName : String; const aValue : TJSONSchema); inline;
     Procedure WriteProperty(const aName : String; const aValue : TJSONData); inline;
     procedure WriteStrings(const aKey : String; aList : TStrings) ;
+    procedure WriteStringMap(const aKey : String; aList : TStrings) ;
     procedure WriteExtensions(aObj : TJSONObject);
     procedure WriteObjectArray(const aKey: String; aList: TFPObjectList; aWriteObject: TWriteObjectFunc); overload;
     procedure WriteMapObject(const aKey : String; aList: TNamedOpenAPIObjectList; aObjectWriter : TWriteObjectFunc);
@@ -132,6 +133,7 @@ Type
     procedure WriteOAuthFlow(aObj : TOauthFlow); virtual; overload;
     procedure WriteOAuthFlow(const aKey : String; aObj : TOauthFlow); virtual; overload;
     procedure WriteOAuthFlows(aObj : TOAuthFlows); virtual; overload;
+    procedure WriteOAuthFlows(const aKey : String; aObj : TOAuthFlows); virtual; overload;
     procedure WriteHeader(aObj : THeader); virtual; overload;
     procedure WriteHeaderOrReference(aObj : THeaderOrReference); virtual; overload;
     procedure WriteHeaderOrReferenceMap(const aKey : string; aObj : THeaderOrReferenceMap); virtual; overload;
@@ -331,6 +333,22 @@ begin
     Writer.WriteValue(S);
     end;
   Writer.EndArray;
+  Writer.EndProperty();
+end;
+
+procedure TOpenAPIWriter.WriteStringMap(const aKey: String; aList: TStrings);
+// Writes TStrings as a JSON object with key-value pairs (Name=Value format)
+var
+  I: Integer;
+begin
+  Writer.StartProperty(aKey);
+  Writer.StartObject;
+  For I := 0 to aList.Count - 1 do
+    begin
+    Writer.NextElement;
+    Writer.WriteProperty(aList.Names[I], aList.ValueFromIndex[I]);
+    end;
+  Writer.EndObject;
   Writer.EndProperty();
 end;
 
@@ -1314,7 +1332,7 @@ begin
       dikPropertyName:
         WriteProperty(lName,aObj.PropertyName);
       dikMapping:
-        WriteStrings(lName,aObj.Mapping);
+        WriteStringMap(lName,aObj.Mapping);
       end;
       end;
   if aObj.HasExtensions then
@@ -1376,7 +1394,7 @@ begin
       sskBearerFormat:
         WriteProperty(lName,aObj.BearerFormat);
       sskFlows:
-        WriteOAuthFlows(aObj.Flows);
+        WriteOAuthFlows(lName, aObj.Flows);
       sskOpenIdConnectUrl:
         WriteProperty(lName,aObj.OpenIdConnectUrl);
       end;
@@ -1422,16 +1440,23 @@ begin
     case lKeyword of
     ofskImplicit:
       WriteOauthFlow(lName,aObj.Implicit);
-    ofskPassword: 
+    ofskPassword:
       WriteOauthFlow(lName,aObj.Password);
-    ofskClientCredentials: 
+    ofskClientCredentials:
       WriteOauthFlow(lName,aObj.ClientCredentials);
-    ofskClientAuthorizationCode: 
+    ofskClientAuthorizationCode:
       WriteOauthFlow(lName,aObj.ClientAuthorizationCode);
     end;
     end;
   if aObj.HasExtensions then
     WriteExtensions(aObj.Extensions);
+end;
+
+procedure TOpenAPIWriter.WriteOAuthFlows(const aKey: String; aObj: TOAuthFlows);
+begin
+  StartObjectProp(aKey);
+  WriteOAuthFlows(aObj);
+  EndObjectProp;
 end;
 
 // OAuth flow
@@ -1448,12 +1473,12 @@ begin
     case lKeyword of
     ofkAuthorizationUrl:
       WriteProperty(lName,aObj.AuthorizationUrl);
-    ofkTokenURL: 
+    ofkTokenURL:
       WriteProperty(lName,aObj.TokenURL);
-    ofkRefreshURL: 
+    ofkRefreshURL:
       WriteProperty(lName,aObj.RefreshURL);
-    ofkScopes: 
-      WriteStrings(lName,aObj.Scopes);
+    ofkScopes:
+      WriteStringMap(lName,aObj.Scopes);
     end;
     end;
   if aObj.HasExtensions then

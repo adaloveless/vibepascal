@@ -196,7 +196,7 @@ type
     property BookmarkSize : integer read GetBookmarkSize;
     property RecNo : Longint read GetRecNo write SetRecNo;
   end;
-  
+
   { TDoubleLinkedBufIndex }
 
   TDoubleLinkedBufIndex = class(TBufIndex)
@@ -640,7 +640,7 @@ type
     function IsReadFromPacket : Boolean;
     function getnextpacket : integer;
     function GetPacketReader(const Format: TDataPacketFormat; const AStream: TStream): TDataPacketReader; virtual;
-    // abstracts, must be overidden by descendents
+    // abstracts, must be overridden by descendents
     function Fetch : boolean; virtual;
     function LoadField(FieldDef : TFieldDef;buffer : pointer; out CreateBlob : boolean) : boolean; virtual;
     procedure LoadBlobIntoBuffer(FieldDef: TFieldDef;ABlobBuf: PBufBlobField); virtual; abstract;
@@ -1281,7 +1281,7 @@ begin
         PlaceQRec := False
       else
         PlaceQRec := True;
-        
+
       //  * Remove that element, e, from the start of its list, by advancing
       //    p or q to the next element along, and decrementing psize or qsize.
       //  * Add e to the end of the list L we are building up.
@@ -1290,7 +1290,7 @@ begin
       else
         PlaceNewRec(p,psize);
       end;
-      
+
     //  * Now we have advanced p until it is where q started out, and we have
     //    advanced q until it is pointing at the next pair of length-K lists to
     //    merge. So set p to the value of q, and go back to the start of this loop.
@@ -1433,7 +1433,7 @@ begin
       // Issue 40450: At design time, create a dataset, set to active.
       // At runtime, open is called, but fields are not bound (this happens in createdataset)
       // So we check for unbound fields and bind them if needed.
-      // Do not call bindfields unconditonally, because descendants may have called it.
+      // Do not call bindfields unconditionally, because descendants may have called it.
       I:=0;
       DoBind:=False;
       While (Not DoBind) and (I<Fields.Count) do
@@ -1554,7 +1554,7 @@ begin
       end;
     end;
   SetLength(FUpdateBuffer,0);
-  
+
   for r := 0 to High(FBlobBuffers) do
     FreeBlobBuffer(FBlobBuffers[r]);
   for r := 0 to High(FUpdateBlobBuffers) do
@@ -1607,7 +1607,7 @@ Var
   OriginalPosition: TBookMark;
   S : TMemoryStream;
   cp: TSystemCodePage;
-  
+
 begin
   Close;
   Fields.Clear;
@@ -1618,7 +1618,7 @@ begin
     if (F is TStringField) then
       cp := TStringField(F).CodePage
     else
-      cp := CP_ACP;    
+      cp := CP_ACP;
     TFieldDef.Create(FieldDefs,F.FieldName,F.DataType,F.Size,F.Required,F.FieldNo,cp);
     end;
   CreateDataset;
@@ -1685,7 +1685,7 @@ begin
                 S.Position:=0;
                 TBlobField(F1).LoadFromStream(S);
                 end
-              else  
+              else
                 F1.AsString:=F2.AsString;
             end;
           end;
@@ -2232,7 +2232,7 @@ begin
 
     ACompareRec.Desc := ixDescending in AIndexOptions;
     if assigned(ADescFields) then
-      ACompareRec.Desc := ACompareRec.Desc or (ADescFields.IndexOf(AField)>-1);
+      ACompareRec.Desc := ACompareRec.Desc and (ADescFields.IndexOf(AField)>-1);
 
     ACompareRec.Options := ALocateOptions;
     if assigned(ACInsFields) and (ACInsFields.IndexOf(AField)>-1) then
@@ -2248,7 +2248,7 @@ procedure TCustomBufDataset.InitDefaultIndexes;
 {
   This procedure makes sure there are 2 default indexes:
   DEFAULT_ORDER, which is simply the order in which the server records arrived.
-  CUSTOM_ORDER, which is an internal index to accomodate the 'IndexFieldNames' property.
+  CUSTOM_ORDER, which is an internal index to accommodate the 'IndexFieldNames' property.
 }
 
 Var
@@ -2536,8 +2536,8 @@ function TCustomBufDataset.GetFieldSize(FieldDef : TFieldDef) : longint;
 begin
   case FieldDef.DataType of
     ftUnknown    : result := 0;
+    ftGuid: result := FieldDef.Size + 1;
     ftString,
-      ftGuid,
       ftFixedChar: result := FieldDef.Size*FieldDef.CharSize + 1;
     ftFixedWideChar,
       ftWideString:result := (FieldDef.Size + 1)*FieldDef.CharSize;
@@ -2738,9 +2738,9 @@ begin
   If Field.FieldNo > 0 then // If =-1, then calculated/lookup field or =0 unbound field
     begin
     if Field.ReadOnly and not (State in [dsSetKey, dsFilter, dsRefreshFields]) then
-      DatabaseErrorFmt(SReadOnlyField, [Field.DisplayName]);	
+      DatabaseErrorFmt(SReadOnlyField, [Field.DisplayName]);
     if State in [dsEdit, dsInsert, dsNewValue] then
-      Field.Validate(Buffer);	
+      Field.Validate(Buffer);
     NullMask := CurrBuff;
 
     inc(CurrBuff,FFieldBufPositions[Field.FieldNo-1]);
@@ -2908,9 +2908,9 @@ begin
     for r := High(FUpdateBuffer) downto 0 do
       CancelRecordUpdateBuffer(r, ABookmark);
     SetLength(FUpdateBuffer, 0);
-    
+
     CurrentIndexBuf.GotoBookmark(@ABookmark);
-    
+
     Resync([]);
     end;
 end;
@@ -2970,6 +2970,7 @@ Const
 begin
   Result.Async:=False;
   Result.Response:=rrApply;
+  Result.HadError:=False;
   // If the record is first inserted and afterwards deleted, do nothing
   if ((aUpdate.UpdateKind=ukDelete) and not (assigned(aUpdate.OldValuesBuffer))) then
     exit;
@@ -3342,7 +3343,7 @@ begin
   if Active then
     Result := FBRecordCount
   else
-    Result:=0;  
+    Result:=0;
 end;
 
 function TCustomBufDataset.UpdateStatus: TUpdateStatus;
@@ -3502,7 +3503,7 @@ begin
       if not Field.GetData(@bufblob) then Exit;
     bmWrite:
       begin
-      if not (State in [dsEdit, dsInsert, dsFilter, dsCalcFields]) then
+      if not (State in [dsEdit, dsInsert, dsFilter, dsCalcFields, dsRefreshFields]) then
         DatabaseErrorFmt(SNotEditing, [Name], Self);
       if Field.ReadOnly and not (State in [dsSetKey, dsFilter]) then
         DatabaseErrorFmt(SReadOnlyField, [Field.DisplayName]);
@@ -3706,7 +3707,7 @@ begin
       InitFieldDefsFromFields;
     BindFields(True);
     end;
-  if FAutoIncValue<0 then  
+  if FAutoIncValue<0 then
     FAutoIncValue:=1;
   // When a FileName is set, do not read from this file; we want empty dataset
   AStoreFileName:=FFileName;

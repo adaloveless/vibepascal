@@ -417,7 +417,7 @@ Type
   PAnsiChar           = ^AnsiChar;
   PPAnsiChar          = ^PAnsiChar;
   PPPAnsiChar         = ^PPAnsiChar;
-  
+
   // Char is an alias
   PChar               = ^Char;
   PPChar              = ^PChar;
@@ -690,9 +690,9 @@ const
 var
 {$endif FPC_HAS_FEATURE_DYNLIBS}
   IsConsole : boolean = false; public name 'operatingsystem_isconsole';
-  NoErrMsg: Boolean platform = False; // For Delphi compatibility, not used in FPC.
+  NoErrMsg: Boolean platform = False;
   FirstDotAtFileNameStartIsExtension : Boolean = False;
-  
+
   DefaultSystemCodePage,
   DefaultUnicodeCodePage,
   { the code page to use when sending paths/file names to OS file system API
