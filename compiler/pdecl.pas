@@ -61,7 +61,7 @@ implementation
        { symtable }
        symconst,symbase,symcpu,symcreat,defutil,defcmp,symtable,symutil,
        { pass 1 }
-       ninl,ncon,nobj,ngenutil,nld,nmem,ncal,pass_1,
+       ninl,ncon,nobj,ngenutil,nld,nmem,ncal,nset,pass_1,
        { parser }
        scanner,
        pbase,pexpr,ptype,ptconst,pdecsub,pdecvar,pdecobj,pgenutil,pparautl,
@@ -384,6 +384,81 @@ implementation
     procedure label_dec;
       var
         labelsym : tlabelsym;
+        sentinel : tlabelsym;
+        labname  : TIDString;
+        lo, hi, i : longint;
+        strval   : ansistring;
+        p        : tnode;
+        lv, hv   : TConstExprInt;
+
+      function const_to_longint(const v: TConstExprInt; out i: longint): boolean;
+        begin
+          if (v<low(longint)) or (v>high(longint)) then
+            begin
+              Message(parser_e_array_range_out_of_bounds);
+              result:=false;
+            end
+          else
+            begin
+              i:=longint(int64(v));
+              result:=true;
+            end;
+        end;
+
+      function set_bounds_from_type(def: tdef; out l, h: longint): boolean;
+        begin
+          if not is_ordinal(def) then
+            begin
+              Message(type_e_ordinal_expr_expected);
+              result:=false;
+              exit;
+            end;
+          getrange(def,lv,hv);
+          result:=const_to_longint(lv,l) and const_to_longint(hv,h);
+        end;
+
+      function get_const_ord_value(n: tnode; out v: TConstExprInt): boolean;
+        begin
+          if not is_constnode(n) then
+            begin
+              Message(type_e_constant_expr_expected);
+              result:=false;
+              exit;
+            end;
+          if n.nodetype<>ordconstn then
+            begin
+              Message(type_e_ordinal_expr_expected);
+              result:=false;
+              exit;
+            end;
+          v:=tordconstnode(n).value;
+          result:=true;
+        end;
+
+      { Create and insert a single label symbol with name n. }
+      procedure insert_one_label(const n: TIDString);
+        begin
+          labelsym:=clabelsym.create(n);
+          symtablestack.top.insertsym(labelsym);
+          if m_non_local_goto in current_settings.modeswitches then
+            begin
+              if symtablestack.top.symtabletype=localsymtable then
+                begin
+                  labelsym.jumpbuf:=clocalvarsym.create('LABEL$_'+labelsym.name,vs_value,rec_jmp_buf,[]);
+                  symtablestack.top.insertsym(labelsym.jumpbuf);
+                end
+              else
+                begin
+                  labelsym.jumpbuf:=cstaticvarsym.create('LABEL$_'+labelsym.name,vs_value,rec_jmp_buf,[]);
+                  symtablestack.top.insertsym(labelsym.jumpbuf);
+                  cnodeutils.insertbssdata(tstaticvarsym(labelsym.jumpbuf));
+                end;
+              include(labelsym.jumpbuf.symoptions,sp_internal);
+              { the buffer will be setup later, but avoid a hint }
+              tabstractvarsym(labelsym.jumpbuf).varstate:=vs_written;
+            end;
+        end;
+
       begin
          consume(_LABEL);
          if not(cs_support_goto in current_settings.moduleswitches) then
@@ -394,35 +469,123 @@ implementation
            else
              begin
                 if current_scanner.token=_ID then
-                  labelsym:=clabelsym.create(current_scanner.orgpattern)
+                  labname:=current_scanner.orgpattern
                 else
                   begin
                     { strip leading 0's in iso mode }
                     if (([m_iso,m_extpas]*current_settings.modeswitches)<>[]) then
                       while (length(current_scanner.pattern)>1) and (current_scanner.pattern[1]='0') do
                         delete(current_scanner.pattern,1,1);
-                    labelsym:=clabelsym.create(current_scanner.pattern);
+                    labname:=current_scanner.pattern;
                   end;
+                consume(current_scanner.token);
 
-                symtablestack.top.insertsym(labelsym);
-                if m_non_local_goto in current_settings.modeswitches then
+                { Array label syntax: label name[1..N] or name['s1','s2'] }
+                if (cs_support_goto in current_settings.moduleswitches) and
+                   (current_scanner.token=_LECKKLAMMER) then
                   begin
-                    if symtablestack.top.symtabletype=localsymtable then
+                    consume(_LECKKLAMMER);
+                    { Insert sentinel so that "goto name[i]" can find the base name }
+                    labelsym:=clabelsym.create(labname);
+                    labelsym.arraylabel:=true;
+                    sentinel:=labelsym;  { save before insert_one_label overwrites labelsym }
+                    symtablestack.top.insertsym(labelsym);
+
+                    if current_scanner.token=_CSTRING then
                       begin
-                        labelsym.jumpbuf:=clocalvarsym.create('LABEL$_'+labelsym.name,vs_value,rec_jmp_buf,[]);
-                        symtablestack.top.insertsym(labelsym.jumpbuf);
+                        { String list: ['str1', 'str2', ...] }
+                        repeat
+                          strval:=upper(current_scanner.cstringpattern);
+                          consume(_CSTRING);
+                          insert_one_label(labname+'$'+strval);
+                          { store string index on sentinel for variable goto }
+                          i:=length(sentinel.arraylabel_strings);
+                          setlength(sentinel.arraylabel_strings,i+1);
+                          sentinel.arraylabel_strings[i]:=strval;
+                          if current_scanner.token=_COMMA then
+                            consume(_COMMA)
+                          else
+                            break;
+                        until false;
                       end
                     else
                       begin
-                        labelsym.jumpbuf:=cstaticvarsym.create('LABEL$_'+labelsym.name,vs_value,rec_jmp_buf,[]);
-                        symtablestack.top.insertsym(labelsym.jumpbuf);
-                        cnodeutils.insertbssdata(tstaticvarsym(labelsym.jumpbuf));
+                        { Ordinal type or constant expression list/ranges:
+                            [byte]
+                            [0..3-1]
+                            [a..b]
+                            [1,2,3]
+                        }
+                        sentinel.arraylabel_lo:=high(longint);
+                        sentinel.arraylabel_hi:=low(longint);
+                        repeat
+                          p:=expr(true);
+                          { ensure constant expressions like 3-1 in ranges are folded }
+                          if (p.nodetype=rangen) and not assigned(p.resultdef) then
+                            do_typecheckpass(p);
+                          if p.nodetype=typen then
+                            begin
+                              if set_bounds_from_type(p.resultdef,lo,hi) then
+                                begin
+                                  for i:=lo to hi do
+                                    insert_one_label(labname+'$'+tostr(i));
+                                  sentinel.arraylabel_lo:=lo;
+                                  sentinel.arraylabel_hi:=hi;
+                                end;
+                              p.free;
+                              p:=nil;
+                              if current_scanner.token=_COMMA then
+                                Message(sym_e_ill_label_decl);
+                              break;
+                            end
+                          else if p.nodetype=rangen then
+                            begin
+                              if get_const_ord_value(trangenode(p).left,lv) and
+                                 get_const_ord_value(trangenode(p).right,hv) and
+                                 const_to_longint(lv,lo) and
+                                 const_to_longint(hv,hi) then
+                                begin
+                                  if lo>hi then
+                                    Message(parser_e_array_lower_less_than_upper_bound)
+                                  else
+                                    for i:=lo to hi do
+                                      insert_one_label(labname+'$'+tostr(i));
+                                  if lo<sentinel.arraylabel_lo then
+                                    sentinel.arraylabel_lo:=lo;
+                                  if hi>sentinel.arraylabel_hi then
+                                    sentinel.arraylabel_hi:=hi;
+                                end;
+                            end
+                          else
+                            begin
+                              if get_const_ord_value(p,lv) and
+                                 const_to_longint(lv,lo) then
+                                begin
+                                  insert_one_label(labname+'$'+tostr(lo));
+                                  if lo<sentinel.arraylabel_lo then
+                                    sentinel.arraylabel_lo:=lo;
+                                  if lo>sentinel.arraylabel_hi then
+                                    sentinel.arraylabel_hi:=lo;
+                                end;
+                            end;
+                          p.free;
+                          p:=nil;
+                          if current_scanner.token=_COMMA then
+                            consume(_COMMA)
+                          else
+                            break;
+                        until false;
+                        if sentinel.arraylabel_lo>sentinel.arraylabel_hi then
+                          begin
+                            sentinel.arraylabel_lo:=0;
+                            sentinel.arraylabel_hi:=0;
+                          end;
                       end;
-                    include(labelsym.jumpbuf.symoptions,sp_internal);
-                    { the buffer will be setup later, but avoid a hint }
-                    tabstractvarsym(labelsym.jumpbuf).varstate:=vs_written;
-                  end;
-                consume(current_scanner.token);
+                    consume(_RECKKLAMMER);
+                  end
+                else
+                  { Normal single label }
+                  insert_one_label(labname);
              end;
            if current_scanner.token<>_SEMICOLON then consume(_COMMA);
          until not(current_scanner.token in [_ID,_INTCONST]);
