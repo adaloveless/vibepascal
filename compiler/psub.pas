@@ -1866,6 +1866,7 @@ implementation
         oldswitches : tlocalswitches;
         templist : TAsmList;
         headertai : tai;
+        blk_i : longint;
 
       procedure delete_marker(anode: tasmnode);
         var
@@ -1976,6 +1977,10 @@ implementation
           begin
             procdef.parast.SymList.ForEachCall(@check_finalize_paras,nil);
             procdef.localst.SymList.ForEachCall(@check_finalize_locals,nil);
+            { also check block-scoped inline vars }
+            if assigned(blocklocalsymtables) then
+              for blk_i:=0 to blocklocalsymtables.count-1 do
+                TSymtable(blocklocalsymtables[blk_i]).SymList.ForEachCall(@check_finalize_locals,nil);
           end;
 
 {$ifdef SUPPORT_SAFECALL}
@@ -2042,6 +2047,10 @@ implementation
             current_filepos:=entrypos;
             gen_alloc_symtable(aktproccode,procdef,procdef.parast);
             gen_alloc_symtable(aktproccode,procdef,procdef.localst);
+            { Allocate space for block-scoped inline vars (m_inline_var) }
+            if assigned(blocklocalsymtables) then
+              for blk_i:=0 to blocklocalsymtables.count-1 do
+                gen_alloc_symtable(aktproccode,procdef,TSymtable(blocklocalsymtables[blk_i]));
 
             { Store temp offset for information about 'real' temps }
             tempstart:=tg.lasttemp;
