@@ -407,6 +407,285 @@ implementation
       end;
 
 
+    function match_statement(is_expr:boolean=false) : tnode;
+      { Match statement: first-match (if-elseif) or fallthrough (match all).
+        Subject-based: match EXPR of pat: stmt; end;
+        Condition-based: match cond: stmt; end; }
+
+      function is_wildcard_underscore : boolean; inline;
+        begin
+          result:=(current_scanner.token=_ID) and (current_scanner.pattern='_');
+        end;
+
+      procedure append_else(var ifchain:tnode;elseblock:tnode);
+        var
+          tailnode : tnode;
+        begin
+          if ifchain=nil then
+            ifchain:=elseblock
+          else
+            begin
+              tailnode:=ifchain;
+              while assigned(tifnode(tailnode).t1) do
+                tailnode:=tifnode(tailnode).t1;
+              tifnode(tailnode).t1:=elseblock;
+            end;
+        end;
+
+      function parse_branch_cond(has_subject:boolean;subject:tnode) : tnode;
+        { Parse pattern(s) for a branch. Subject mode supports comma-separated
+          patterns (OR'd) and tuple patterns with _ wildcards. }
+        var
+          pat,cond : tnode;
+          fields : array of tnode;
+          fieldcount,i,symidx : integer;
+          sym : tsym;
+          recdef : trecorddef;
+        begin
+          { tuple pattern with potential _ wildcards }
+          if has_subject and (current_scanner.token=_LKLAMMER) and
+             assigned(subject.resultdef) and (subject.resultdef.typ=recorddef) and
+             (df_tuple in subject.resultdef.defoptions) then
+            begin
+              consume(_LKLAMMER);
+              fieldcount:=0;
+              setlength(fields,8);
+              repeat
+                if fieldcount>=length(fields) then
+                  setlength(fields,fieldcount*2);
+                if (current_scanner.token=_ID) and (current_scanner.pattern='_') then
+                  begin
+                    fields[fieldcount]:=nil;
+                    consume(_ID);
+                  end
+                else
+                  begin
+                    fields[fieldcount]:=comp_expr([ef_accept_equal]);
+                    do_typecheckpass(fields[fieldcount]);
+                  end;
+                inc(fieldcount);
+              until not try_to_consume(_COMMA);
+              { single expression in parens = parenthesized expr, not tuple }
+              if fieldcount=1 then
+                begin
+                  consume(_RKLAMMER);
+                  if fields[0]=nil then
+                    result:=cordconstnode.create(1,pasbool1type,false)
+                  else
+                    result:=caddnode.create(equaln,subject.getcopy,fields[0]);
+                  exit;
+                end;
+              consume(_RKLAMMER);
+              { build per-field AND chain, skipping wildcards }
+              recdef:=trecorddef(subject.resultdef);
+              cond:=nil;
+              i:=0;
+              for symidx:=0 to recdef.symtable.symlist.count-1 do
+                begin
+                  sym:=tsym(recdef.symtable.symlist[symidx]);
+                  if sym.typ<>fieldvarsym then
+                    continue;
+                  if i>=fieldcount then
+                    break;
+                  if fields[i]<>nil then
+                    begin
+                      pat:=caddnode.create(equaln,
+                        csubscriptnode.create(tfieldvarsym(sym),subject.getcopy),
+                        fields[i]);
+                      if cond=nil then
+                        cond:=pat
+                      else
+                        cond:=caddnode.create(andn,cond,pat);
+                    end;
+                  inc(i);
+                end;
+              if cond=nil then
+                cond:=cordconstnode.create(1,pasbool1type,false);
+              result:=cond;
+            end
+          else
+            begin
+              { normal pattern with optional comma-separated OR }
+              pat:=comp_expr([ef_accept_equal]);
+              do_typecheckpass(pat);
+              if has_subject then
+                begin
+                  result:=caddnode.create(equaln,subject.getcopy,pat);
+                  while try_to_consume(_COMMA) do
+                    begin
+                      pat:=comp_expr([ef_accept_equal]);
+                      do_typecheckpass(pat);
+                      result:=caddnode.create(orn,result,
+                        caddnode.create(equaln,subject.getcopy,pat));
+                    end;
+                end
+              else
+                result:=pat;
+            end;
+        end;
+
+      var
+        subject,cond,stmt,ifchain,firstcond,walknode,stmtblock : tnode;
+        fallthrough,has_subject,has_catchall : boolean;
+        stmts,exprstatements : tstatementnode;
+        resultdef : tdef;
+        resultvar : ttempcreatenode;
+      begin
+        consume(_MATCH);
+        { check for 'all' (context-sensitive) }
+        fallthrough:=(current_scanner.token=_ID) and (current_scanner.pattern='ALL');
+        if fallthrough then
+          consume(_ID);
+        { determine mode: subject-based (match X of) vs condition-based }
+        has_subject:=false;
+        subject:=nil;
+        firstcond:=nil;
+        if not is_wildcard_underscore then
+          begin
+            firstcond:=comp_expr([ef_accept_equal]);
+            do_typecheckpass(firstcond);
+            if current_scanner.token=_OF then
+              begin
+                has_subject:=true;
+                subject:=firstcond;
+                set_varstate(subject,vs_read,[vsf_must_be_valid]);
+                consume(_OF);
+                firstcond:=nil;
+              end;
+          end;
+        if fallthrough then
+          begin
+            { fallthrough: independent if-statements in repeat..until true }
+            stmtblock:=internalstatements(stmts);
+            repeat
+              if is_wildcard_underscore then
+                begin
+                  consume(_ID);
+                  consume(_COLON);
+                  addstatement(stmts,statement);
+                  if not(current_scanner.token in [_END]) then
+                    consume(_SEMICOLON);
+                  break;
+                end;
+              if firstcond<>nil then
+                begin
+                  cond:=firstcond;
+                  firstcond:=nil;
+                end
+              else
+                cond:=parse_branch_cond(has_subject,subject);
+              consume(_COLON);
+              addstatement(stmts,cifnode.create(cond,statement,nil));
+              if not(current_scanner.token in [_ELSE,_OTHERWISE,_END]) then
+                consume(_SEMICOLON);
+            until current_scanner.token in [_ELSE,_OTHERWISE,_END];
+            if try_to_consume(_ELSE) or try_to_consume(_OTHERWISE) then
+              addstatement(stmts,statements_til_end)
+            else
+              consume(_END);
+            if has_subject then
+              subject.free;
+            result:=cwhilerepeatnode.create(
+              cordconstnode.create(1,pasbool1type,false),
+              stmtblock,false,true);
+          end
+        else
+          begin
+            { first-match: if-elseif chain }
+            resultdef:=nil;
+            has_catchall:=false;
+            ifchain:=nil;
+            repeat
+              if is_wildcard_underscore then
+                begin
+                  has_catchall:=true;
+                  consume(_ID);
+                  consume(_COLON);
+                  if is_expr then
+                    begin
+                      stmt:=expr(true);
+                      resultdef:=branch_type(resultdef,stmt.resultdef);
+                    end
+                  else
+                    stmt:=statement;
+                  append_else(ifchain,stmt);
+                  if not(current_scanner.token in [_END]) then
+                    consume(_SEMICOLON);
+                  break;
+                end;
+              if firstcond<>nil then
+                begin
+                  cond:=firstcond;
+                  firstcond:=nil;
+                end
+              else
+                cond:=parse_branch_cond(has_subject,subject);
+              consume(_COLON);
+              if is_expr then
+                begin
+                  stmt:=expr(true);
+                  resultdef:=branch_type(resultdef,stmt.resultdef);
+                end
+              else
+                stmt:=statement;
+              stmt:=cifnode.create(cond,stmt,nil);
+              append_else(ifchain,stmt);
+              if not(current_scanner.token in [_ELSE,_OTHERWISE,_END]) then
+                consume(_SEMICOLON);
+            until current_scanner.token in [_ELSE,_OTHERWISE,_END];
+            if try_to_consume(_ELSE) or try_to_consume(_OTHERWISE) then
+              begin
+                has_catchall:=true;
+                if is_expr then
+                  begin
+                    stmt:=expr(true);
+                    resultdef:=branch_type(resultdef,stmt.resultdef);
+                  end
+                else
+                  stmt:=statements_til_end;
+                append_else(ifchain,stmt);
+              end
+            else if is_expr and not has_catchall then
+              consume(_ELSE)
+            else
+              consume(_END);
+            if has_subject then
+              subject.free;
+            if not is_expr then
+              result:=ifchain
+            else
+              begin
+                { expression mode: wrap branches in temp var assignments }
+                result:=internalstatements(exprstatements);
+                resultvar:=ctempcreatenode.create(resultdef,resultdef.size,tt_persistent,true);
+                addstatement(exprstatements,resultvar);
+                { walk if-chain, wrap each branch value in assignment }
+                walknode:=ifchain;
+                while walknode.nodetype=ifn do
+                  begin
+                    tifnode(walknode).right:=cassignmentnode.create(
+                      ctemprefnode.create(resultvar),tifnode(walknode).right);
+                    if assigned(tifnode(walknode).t1) and (tifnode(walknode).t1.nodetype=ifn) then
+                      walknode:=tifnode(walknode).t1
+                    else
+                      begin
+                        if assigned(tifnode(walknode).t1) then
+                          tifnode(walknode).t1:=cassignmentnode.create(
+                            ctemprefnode.create(resultvar),tifnode(walknode).t1);
+                        break;
+                      end;
+                  end;
+                if ifchain.nodetype<>ifn then
+                  { single catch-all value }
+                  ifchain:=cassignmentnode.create(ctemprefnode.create(resultvar),ifchain);
+                addstatement(exprstatements,ifchain);
+                addstatement(exprstatements,ctempdeletenode.create_normal_temp(resultvar));
+                addstatement(exprstatements,ctemprefnode.create(resultvar));
+              end;
+          end;
+      end;
+
+
     function repeat_statement : tnode;
 
       var
@@ -2966,6 +3245,8 @@ implementation
              code:=if_statement;
            _CASE :
              code:=case_statement;
+           _MATCH :
+             code:=match_statement;
            _REPEAT :
              code:=repeat_statement;
            _WHILE :
@@ -3347,6 +3628,7 @@ implementation
         case current_scanner.token of
         _IF: p1:=if_statement(true);
         _CASE: p1:=case_statement(true);
+        _MATCH: p1:=match_statement(true);
         _TRY: p1:=try_statement(true);
         else
           result:=false;
