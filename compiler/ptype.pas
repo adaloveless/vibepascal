@@ -45,6 +45,11 @@ interface
     { ... but rejects types that cannot be returned from functions }
     function result_type(options:TSingleTypeOptions):tdef;
 
+    { helpers to build anonymous tuple records, exported for pexpr }
+    function make_tuple_recdef:trecorddef;
+    procedure add_tuple_field(recdef:trecorddef;const fname:TIDString;ftype:tdef);
+
+
     { reads any type declaration, where the resulting type will get name as type identifier }
     procedure read_named_type(var def:tdef;const newsym:tsym;genericdef:tstoreddef;genericlist:tfphashobjectlist;parseprocvardir:boolean;var hadtypetoken:boolean);
 
@@ -468,6 +473,11 @@ implementation
       end;
 
 
+    { forward for tuple dispatch inside single_type; implementation is
+      below result_type since the helpers it calls need single_type first }
+    function try_consume_tuple_type(out def:tdef):boolean; forward;
+
+
     procedure single_type(out def:tdef;options:TSingleTypeOptions);
 
        function handle_dummysym(sym:tsym):tdef;
@@ -549,6 +559,28 @@ implementation
                        parse_nested_types(def,stoIsForwardDef in options,[stoAllowSpecialization,stoAllowTypeDef]*options<>[],nil);
                      end;
                  end;
+
+               _LKLAMMER:
+                 { tuple type, e.g. (Integer, String); needs modeswitch TUPLES }
+                 if m_tuples in current_settings.modeswitches then
+                   begin
+                     consume(_LKLAMMER);
+                     if not try_consume_tuple_type(def) then
+                       begin
+                         Message(parser_e_tuple_needs_type);
+                         { skip remaining tokens to ) }
+                         while not(current_scanner.token in [_RKLAMMER,_SEMICOLON,_EOF]) do
+                           consume(current_scanner.token);
+                         if current_scanner.token=_RKLAMMER then
+                           consume(_RKLAMMER);
+                         def:=generrordef;
+                       end;
+                   end
+                 else
+                   begin
+                     message(type_e_type_id_expected);
+                     def:=generrordef;
+                   end;
 
                else
                  begin
@@ -677,11 +709,178 @@ implementation
 
     function result_type(options:TSingleTypeOptions):tdef;
       begin
-        single_type(result,options);
+        { for array-of-X return types, use read_anon_type; otherwise
+          stick with single_type to avoid breaking type resolution }
+        if current_scanner.token in [_ARRAY,_PACKED,_BITPACKED] then
+          read_anon_type(result,false,nil)
+        else
+          single_type(result,options);
         { file types cannot be function results }
         if result.typ=filedef then
           message(parser_e_illegal_function_result);
       end;
+
+
+    { creates an anonymous internal record to back a tuple type }
+    function make_tuple_recdef:trecorddef;
+      begin
+        result:=crecorddef.create_global_internal('',
+          current_settings.packrecords,
+          current_settings.alignment.recordalignmin);
+        { let init/fini RTTI be emitted if the tuple has managed fields }
+        exclude(result.defstates,ds_init_table_written);
+        exclude(result.defstates,ds_rtti_table_written);
+        include(result.defoptions,df_tuple);
+      end;
+
+
+    { adds a field to a tuple record def with the given name and type }
+    procedure add_tuple_field(recdef:trecorddef;const fname:TIDString;ftype:tdef);
+      var
+        fs : tfieldvarsym;
+      begin
+        fs:=cfieldvarsym.create(fname,vs_value,ftype,[]);
+        trecordsymtable(recdef.symtable).insertsym(fs);
+        trecordsymtable(recdef.symtable).addfield(fs,vis_public);
+      end;
+
+
+    { parses a positional tuple body after _LKLAMMER was consumed }
+    function positional_tuple_type:tdef;
+      var
+        recdef     : trecorddef;
+        elemdef    : tdef;
+        fieldcount : longint;
+      begin
+        recdef:=make_tuple_recdef;
+        fieldcount:=0;
+        repeat
+          inc(fieldcount);
+          read_anon_type(elemdef,false,nil);
+          add_tuple_field(recdef,'_'+tostr(fieldcount),elemdef);
+        until not try_to_consume(_COMMA);
+
+        consume(_RKLAMMER);
+        trecordsymtable(recdef.symtable).addalignmentpadding;
+
+        if fieldcount<2 then
+          begin
+            Message(parser_e_illegal_expression);
+            result:=generrordef;
+          end
+        else
+          result:=recdef;
+      end;
+
+
+    { parses a named tuple body after _LKLAMMER was consumed.
+      Syntax: name (, name)* : type (; name (, name)* : type)* ) }
+    function named_tuple_type:tdef;
+      var
+        recdef  : trecorddef;
+        grouptype : tdef;
+        groupnames : array of TIDString;
+        groupcount : longint;
+        totalfields : longint;
+        i : longint;
+      begin
+        recdef:=make_tuple_recdef;
+        totalfields:=0;
+        setlength(groupnames,4);
+        repeat
+          groupcount:=0;
+          repeat
+            if groupcount>=length(groupnames) then
+              setlength(groupnames,length(groupnames)*2);
+            groupnames[groupcount]:=current_scanner.orgpattern;
+            inc(groupcount);
+            consume(_ID);
+          until not try_to_consume(_COMMA);
+
+          consume(_COLON);
+          read_anon_type(grouptype,false,nil);
+
+          for i:=0 to groupcount-1 do
+            add_tuple_field(recdef,groupnames[i],grouptype);
+          inc(totalfields,groupcount);
+        until not try_to_consume(_SEMICOLON);
+
+        consume(_RKLAMMER);
+        trecordsymtable(recdef.symtable).addalignmentpadding;
+
+        if totalfields<2 then
+          begin
+            Message(parser_e_illegal_expression);
+            result:=generrordef;
+          end
+        else
+          result:=recdef;
+      end;
+
+
+    { orchestrator for tuple parsing after _LKLAMMER was consumed. Returns
+      true and sets def if a tuple was parsed; false means caller should
+      try to parse the construct as something else (an anonymous enum).
+      Uses scanner token recording/replay to peek past identifier lists
+      before committing to the tuple path. }
+    function try_consume_tuple_type(out def:tdef):boolean;
+      var
+        srsym : tsym;
+        srsymtable : tsymtable;
+        buf : tdynamicarray;
+      begin
+        def:=nil;
+        case current_scanner.token of
+          _STRING,_FILE,_ARRAY,_RECORD,_CARET,_SET,_PACKED,_BITPACKED:
+            begin
+              def:=positional_tuple_type;
+              exit(true);
+            end;
+          _ID:
+            if searchsym_type(current_scanner.pattern,srsym,srsymtable) then
+              begin
+                def:=positional_tuple_type;
+                exit(true);
+              end;
+          else
+            exit(false);
+        end;
+
+        { _ID that is not a type: named tuple vs enum. If the scanner is
+          already recording tokens (generic declaration context), nested
+          recording would internalerror, so assume named tuple and let the
+          named parser surface a clear error if we guessed wrong. }
+        if current_scanner.is_recording_tokens then
+          begin
+            def:=named_tuple_type;
+            exit(true);
+          end;
+
+        buf:=tdynamicarray.create(64);
+        current_scanner.startrecordtokens(buf);
+        while current_scanner.token=_ID do
+          begin
+            consume(_ID);
+            if current_scanner.token<>_COMMA then
+              break;
+            consume(_COMMA);
+          end;
+        current_scanner.stoprecordtokens;
+
+        if current_scanner.token=_COLON then
+          begin
+            current_scanner.startreplaytokens(buf,false);
+            def:=named_tuple_type;
+            result:=true;
+          end
+        else
+          begin
+            { not a tuple - replay and fall through to enum parsing }
+            current_scanner.startreplaytokens(buf,false);
+            result:=false;
+          end;
+      end;
+
 
     procedure parse_record_members(recsym:tsym);
 
@@ -1848,6 +2047,11 @@ implementation
            _LKLAMMER:
               begin
                 consume(_LKLAMMER);
+                { try tuple parsing first when TUPLES modeswitch is on;
+                  fall through to enum parsing if it turns out not to be one }
+                if (not (m_tuples in current_settings.modeswitches)) or
+                   (not try_consume_tuple_type(def)) then
+                  begin
                 first:=true;
                 { allow negativ value_str }
                 l:=int64(-1);
@@ -1951,6 +2155,7 @@ implementation
 {$ifdef jvm}
                 jvm_maybe_create_enum_class(name,def);
 {$endif}
+                  end;
               end;
             _ARRAY:
               array_dec(false,genericdef,genericlist);

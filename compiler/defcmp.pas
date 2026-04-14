@@ -192,10 +192,13 @@ interface
     { procdefs the parameters defs shall belong to.                       }
     function equal_genfunc_paradefs(fwdef,currdef:tdef;fwpdst,currpdst:tsymtable):boolean;
 
+    function tuples_have_equal_shape(a,b:trecorddef):boolean;
+
 
 implementation
 
     uses
+      cutils,
       verbose,systems,constexp,
       symtable,symsym,symcpu,
       defutil,symutil;
@@ -210,6 +213,60 @@ implementation
     function same_objectdef_implementedinterfaces(intffrom,intfto:tobject):boolean;
       begin
         result:=equal_defs(TImplementedInterface(intffrom).IntfDef,TImplementedInterface(intfto).IntfDef);
+      end;
+
+
+    { true if a tuple record uses auto-generated _1, _2, _3 ... field names }
+    function is_positional_tuple(t:trecorddef):boolean;
+      var
+        i,idx : longint;
+        sym : tsym;
+      begin
+        result:=false;
+        idx:=0;
+        for i:=0 to t.symtable.symlist.count-1 do
+          begin
+            sym:=tsym(t.symtable.symlist[i]);
+            if sym.typ<>fieldvarsym then
+              continue;
+            inc(idx);
+            if sym.name<>'_'+tostr(idx) then
+              exit;
+          end;
+        result:=idx>0;
+      end;
+
+
+    { two tuple records are shape-equal if the fields line up by index
+      with equal types. Field names must also match, UNLESS one side is
+      positional (auto _1, _2 ...), in which case names on the other
+      side are ignored. }
+    function tuples_have_equal_shape(a,b:trecorddef):boolean;
+      var
+        lista,listb : tfphashobjectlist;
+        i : longint;
+        fa,fb : tfieldvarsym;
+        ignore_names : boolean;
+      begin
+        result:=false;
+        lista:=a.symtable.symlist;
+        listb:=b.symtable.symlist;
+        if lista.count<>listb.count then
+          exit;
+        ignore_names:=is_positional_tuple(a) or is_positional_tuple(b);
+        for i:=0 to lista.count-1 do
+          begin
+            if (tsym(lista[i]).typ<>fieldvarsym) or
+               (tsym(listb[i]).typ<>fieldvarsym) then
+              exit;
+            fa:=tfieldvarsym(lista[i]);
+            fb:=tfieldvarsym(listb[i]);
+            if (not ignore_names) and (fa.name<>fb.name) then
+              exit;
+            if not equal_defs(fa.vardef,fb.vardef) then
+              exit;
+          end;
+        result:=true;
       end;
 
 
@@ -304,6 +361,20 @@ implementation
           begin
             doconv:=tc_equal;
             compare_defs_ext:=te_exact;
+            exit;
+          end;
+
+         { two records where at least one is a tuple: structural compat
+           when shapes match (field count, names, types in order).
+           Positional tuples ignore names on either side. }
+         if (def_from.typ=recorddef) and
+            (def_to.typ=recorddef) and
+            ((df_tuple in def_from.defoptions) or
+             (df_tuple in def_to.defoptions)) and
+            tuples_have_equal_shape(trecorddef(def_from),trecorddef(def_to)) then
+          begin
+            doconv:=tc_equal;
+            compare_defs_ext:=te_equal;
             exit;
           end;
 

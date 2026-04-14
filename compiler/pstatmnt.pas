@@ -54,7 +54,7 @@ implementation
        nutils,ngenutil,nbas,nadd,ncal,nmem,nset,ncnv,ncon,nld,nflw,ninl,
        { parser }
        scanner,
-       pbase,ptype,pexpr,
+       pbase,ptype,pexpr,ptconst,
        { codegen }
        procinfo,cgbase,
        { assembler reader }
@@ -404,6 +404,285 @@ implementation
          addstatement(statements,casenode);
          addstatement(statements,ctempdeletenode.create_normal_temp(resultvar));
          addstatement(statements,ctemprefnode.create(resultvar));
+      end;
+
+
+    function match_statement(is_expr:boolean=false) : tnode;
+      { Match statement: first-match (if-elseif) or fallthrough (match all).
+        Subject-based: match EXPR of pat: stmt; end;
+        Condition-based: match cond: stmt; end; }
+
+      function is_wildcard_underscore : boolean; inline;
+        begin
+          result:=(current_scanner.token=_ID) and (current_scanner.pattern='_');
+        end;
+
+      procedure append_else(var ifchain:tnode;elseblock:tnode);
+        var
+          tailnode : tnode;
+        begin
+          if ifchain=nil then
+            ifchain:=elseblock
+          else
+            begin
+              tailnode:=ifchain;
+              while assigned(tifnode(tailnode).t1) do
+                tailnode:=tifnode(tailnode).t1;
+              tifnode(tailnode).t1:=elseblock;
+            end;
+        end;
+
+      function parse_branch_cond(has_subject:boolean;subject:tnode) : tnode;
+        { Parse pattern(s) for a branch. Subject mode supports comma-separated
+          patterns (OR'd) and tuple patterns with _ wildcards. }
+        var
+          pat,cond : tnode;
+          fields : array of tnode;
+          fieldcount,i,symidx : integer;
+          sym : tsym;
+          recdef : trecorddef;
+        begin
+          { tuple pattern with potential _ wildcards }
+          if has_subject and (current_scanner.token=_LKLAMMER) and
+             assigned(subject.resultdef) and (subject.resultdef.typ=recorddef) and
+             (df_tuple in subject.resultdef.defoptions) then
+            begin
+              consume(_LKLAMMER);
+              fieldcount:=0;
+              setlength(fields,8);
+              repeat
+                if fieldcount>=length(fields) then
+                  setlength(fields,fieldcount*2);
+                if (current_scanner.token=_ID) and (current_scanner.pattern='_') then
+                  begin
+                    fields[fieldcount]:=nil;
+                    consume(_ID);
+                  end
+                else
+                  begin
+                    fields[fieldcount]:=comp_expr([ef_accept_equal]);
+                    do_typecheckpass(fields[fieldcount]);
+                  end;
+                inc(fieldcount);
+              until not try_to_consume(_COMMA);
+              { single expression in parens = parenthesized expr, not tuple }
+              if fieldcount=1 then
+                begin
+                  consume(_RKLAMMER);
+                  if fields[0]=nil then
+                    result:=cordconstnode.create(1,pasbool1type,false)
+                  else
+                    result:=caddnode.create(equaln,subject.getcopy,fields[0]);
+                  exit;
+                end;
+              consume(_RKLAMMER);
+              { build per-field AND chain, skipping wildcards }
+              recdef:=trecorddef(subject.resultdef);
+              cond:=nil;
+              i:=0;
+              for symidx:=0 to recdef.symtable.symlist.count-1 do
+                begin
+                  sym:=tsym(recdef.symtable.symlist[symidx]);
+                  if sym.typ<>fieldvarsym then
+                    continue;
+                  if i>=fieldcount then
+                    break;
+                  if fields[i]<>nil then
+                    begin
+                      pat:=caddnode.create(equaln,
+                        csubscriptnode.create(tfieldvarsym(sym),subject.getcopy),
+                        fields[i]);
+                      if cond=nil then
+                        cond:=pat
+                      else
+                        cond:=caddnode.create(andn,cond,pat);
+                    end;
+                  inc(i);
+                end;
+              if cond=nil then
+                cond:=cordconstnode.create(1,pasbool1type,false);
+              result:=cond;
+            end
+          else
+            begin
+              { normal pattern with optional comma-separated OR }
+              pat:=comp_expr([ef_accept_equal]);
+              do_typecheckpass(pat);
+              if has_subject then
+                begin
+                  result:=caddnode.create(equaln,subject.getcopy,pat);
+                  while try_to_consume(_COMMA) do
+                    begin
+                      pat:=comp_expr([ef_accept_equal]);
+                      do_typecheckpass(pat);
+                      result:=caddnode.create(orn,result,
+                        caddnode.create(equaln,subject.getcopy,pat));
+                    end;
+                end
+              else
+                result:=pat;
+            end;
+        end;
+
+      var
+        subject,cond,stmt,ifchain,firstcond,walknode,stmtblock : tnode;
+        fallthrough,has_subject,has_catchall : boolean;
+        stmts,exprstatements : tstatementnode;
+        resultdef : tdef;
+        resultvar : ttempcreatenode;
+      begin
+        consume(_MATCH);
+        { check for 'all' (context-sensitive) }
+        fallthrough:=(current_scanner.token=_ID) and (current_scanner.pattern='ALL');
+        if fallthrough then
+          consume(_ID);
+        { determine mode: subject-based (match X of) vs condition-based }
+        has_subject:=false;
+        subject:=nil;
+        firstcond:=nil;
+        if not is_wildcard_underscore then
+          begin
+            firstcond:=comp_expr([ef_accept_equal]);
+            do_typecheckpass(firstcond);
+            if current_scanner.token=_OF then
+              begin
+                has_subject:=true;
+                subject:=firstcond;
+                set_varstate(subject,vs_read,[vsf_must_be_valid]);
+                consume(_OF);
+                firstcond:=nil;
+              end;
+          end;
+        if fallthrough then
+          begin
+            { fallthrough: independent if-statements in repeat..until true }
+            stmtblock:=internalstatements(stmts);
+            repeat
+              if is_wildcard_underscore then
+                begin
+                  consume(_ID);
+                  consume(_COLON);
+                  addstatement(stmts,statement);
+                  if not(current_scanner.token in [_END]) then
+                    consume(_SEMICOLON);
+                  break;
+                end;
+              if firstcond<>nil then
+                begin
+                  cond:=firstcond;
+                  firstcond:=nil;
+                end
+              else
+                cond:=parse_branch_cond(has_subject,subject);
+              consume(_COLON);
+              addstatement(stmts,cifnode.create(cond,statement,nil));
+              if not(current_scanner.token in [_ELSE,_OTHERWISE,_END]) then
+                consume(_SEMICOLON);
+            until current_scanner.token in [_ELSE,_OTHERWISE,_END];
+            if try_to_consume(_ELSE) or try_to_consume(_OTHERWISE) then
+              addstatement(stmts,statements_til_end)
+            else
+              consume(_END);
+            if has_subject then
+              subject.free;
+            result:=cwhilerepeatnode.create(
+              cordconstnode.create(1,pasbool1type,false),
+              stmtblock,false,true);
+          end
+        else
+          begin
+            { first-match: if-elseif chain }
+            resultdef:=nil;
+            has_catchall:=false;
+            ifchain:=nil;
+            repeat
+              if is_wildcard_underscore then
+                begin
+                  has_catchall:=true;
+                  consume(_ID);
+                  consume(_COLON);
+                  if is_expr then
+                    begin
+                      stmt:=expr(true);
+                      resultdef:=branch_type(resultdef,stmt.resultdef);
+                    end
+                  else
+                    stmt:=statement;
+                  append_else(ifchain,stmt);
+                  if not(current_scanner.token in [_END]) then
+                    consume(_SEMICOLON);
+                  break;
+                end;
+              if firstcond<>nil then
+                begin
+                  cond:=firstcond;
+                  firstcond:=nil;
+                end
+              else
+                cond:=parse_branch_cond(has_subject,subject);
+              consume(_COLON);
+              if is_expr then
+                begin
+                  stmt:=expr(true);
+                  resultdef:=branch_type(resultdef,stmt.resultdef);
+                end
+              else
+                stmt:=statement;
+              stmt:=cifnode.create(cond,stmt,nil);
+              append_else(ifchain,stmt);
+              if not(current_scanner.token in [_ELSE,_OTHERWISE,_END]) then
+                consume(_SEMICOLON);
+            until current_scanner.token in [_ELSE,_OTHERWISE,_END];
+            if try_to_consume(_ELSE) or try_to_consume(_OTHERWISE) then
+              begin
+                has_catchall:=true;
+                if is_expr then
+                  begin
+                    stmt:=expr(true);
+                    resultdef:=branch_type(resultdef,stmt.resultdef);
+                  end
+                else
+                  stmt:=statements_til_end;
+                append_else(ifchain,stmt);
+              end
+            else if is_expr and not has_catchall then
+              consume(_ELSE)
+            else
+              consume(_END);
+            if has_subject then
+              subject.free;
+            if not is_expr then
+              result:=ifchain
+            else
+              begin
+                { expression mode: wrap branches in temp var assignments }
+                result:=internalstatements(exprstatements);
+                resultvar:=ctempcreatenode.create(resultdef,resultdef.size,tt_persistent,true);
+                addstatement(exprstatements,resultvar);
+                { walk if-chain, wrap each branch value in assignment }
+                walknode:=ifchain;
+                while walknode.nodetype=ifn do
+                  begin
+                    tifnode(walknode).right:=cassignmentnode.create(
+                      ctemprefnode.create(resultvar),tifnode(walknode).right);
+                    if assigned(tifnode(walknode).t1) and (tifnode(walknode).t1.nodetype=ifn) then
+                      walknode:=tifnode(walknode).t1
+                    else
+                      begin
+                        if assigned(tifnode(walknode).t1) then
+                          tifnode(walknode).t1:=cassignmentnode.create(
+                            ctemprefnode.create(resultvar),tifnode(walknode).t1);
+                        break;
+                      end;
+                  end;
+                if ifchain.nodetype<>ifn then
+                  { single catch-all value }
+                  ifchain:=cassignmentnode.create(ctemprefnode.create(resultvar),ifchain);
+                addstatement(exprstatements,ifchain);
+                addstatement(exprstatements,ctempdeletenode.create_normal_temp(resultvar));
+                addstatement(exprstatements,ctemprefnode.create(resultvar));
+              end;
+          end;
       end;
 
 
@@ -856,6 +1135,164 @@ implementation
             end;
 
 
+          { for var (x, y, ...) in collection do body - destructure each
+            tuple element into fresh locals and prepend field assignments
+            to the body. Entered after 'for var' was consumed; the current
+            token is '('. }
+          function for_in_destructure_loop : tnode;
+            var
+              tnames : array of string;
+              tcount : longint;
+              itempvs : tabstractnormalvarsym;
+              uservs : tabstractnormalvarsym;
+              hdef : tdef;
+              elemdef : tdef;
+              collexpr, hbody, wrappedbody : tnode;
+              recdef : trecorddef;
+              fieldsyms : array of tfieldvarsym;
+              fieldcount : longint;
+              sym : tsym;
+              st_unused : tsymtable;
+              i : longint;
+              wrapblk : tblocknode;
+              wraplast : tstatementnode;
+              uniq : string;
+              orig_hloopvar : tnode;
+              forblockst : tblocksymtable;
+            begin
+              result := nil;
+              consume(_LKLAMMER);
+              tcount := 0;
+              setlength(tnames, 4);
+              repeat
+                if current_scanner.token <> _ID then
+                  begin
+                    Message(parser_e_syntax_error);
+                    exit(cerrornode.create);
+                  end;
+                if tcount >= length(tnames) then
+                  setlength(tnames, length(tnames)*2);
+                tnames[tcount] := current_scanner.orgpattern;
+                inc(tcount);
+                consume(_ID);
+              until not try_to_consume(_COMMA);
+              consume(_RKLAMMER);
+              consume(_IN);
+
+              collexpr := comp_expr([ef_accept_equal]);
+              do_typecheckpass(collexpr);
+              elemdef := get_for_in_element_type(collexpr);
+              if not assigned(elemdef) or (elemdef = generrordef) or
+                 (elemdef.typ <> recorddef) then
+                begin
+                  Message(parser_e_illegal_expression);
+                  collexpr.free;
+                  exit(cerrornode.create);
+                end;
+              recdef := trecorddef(elemdef);
+
+              { collect field syms }
+              fieldcount := 0;
+              setlength(fieldsyms, recdef.symtable.symlist.count);
+              for i := 0 to recdef.symtable.symlist.count-1 do
+                begin
+                  sym := tsym(recdef.symtable.symlist[i]);
+                  if sym.typ = fieldvarsym then
+                    begin
+                      fieldsyms[fieldcount] := tfieldvarsym(sym);
+                      inc(fieldcount);
+                    end;
+                end;
+              setlength(fieldsyms, fieldcount);
+              if tcount <> fieldcount then
+                begin
+                  Message(parser_e_illegal_expression);
+                  collexpr.free;
+                  exit(cerrornode.create);
+                end;
+
+              consume(_DO);
+
+              { block scope for destructured variables }
+              forblockst:=nil;
+              if assigned(current_procinfo) then
+                begin
+                  forblockst:=tblocksymtable.create(symtablestack.top);
+                  symtablestack.push(forblockst);
+                end;
+
+              { hidden loop variable holds each collection element }
+              str(current_tokenpos.line, uniq);
+              if symtablestack.top.symtabletype in [localsymtable,blocksymtable] then
+                itempvs := clocalvarsym.create('$forTup'+uniq, vs_value, elemdef, [])
+              else
+                itempvs := cstaticvarsym.create('$forTup'+uniq, vs_value, elemdef, []);
+              itempvs.register_sym;
+              symtablestack.top.insertsym(itempvs);
+              if itempvs.typ = staticvarsym then
+                cnodeutils.insertbssdata(tstaticvarsym(itempvs));
+              include(itempvs.varoptions, vo_is_loop_counter);
+              hdef := elemdef;
+
+              { user variables (skip _ wildcards) }
+              for i := 0 to tcount-1 do
+                begin
+                  if tnames[i]='_' then
+                    continue;
+                  if symtablestack.top.symtabletype in [localsymtable,blocksymtable] then
+                    uservs := clocalvarsym.create(tnames[i], vs_value, fieldsyms[i].vardef, [])
+                  else
+                    uservs := cstaticvarsym.create(tnames[i], vs_value, fieldsyms[i].vardef, []);
+                  uservs.register_sym;
+                  symtablestack.top.insertsym(uservs);
+                  if uservs.typ = staticvarsym then
+                    cnodeutils.insertbssdata(tstaticvarsym(uservs));
+                  uservs.varstate := vs_initialised;
+                end;
+
+              orig_hloopvar := cloadnode.create(itempvs, itempvs.owner);
+              typecheckpass(orig_hloopvar);
+              set_varstate(orig_hloopvar, vs_written, []);
+              set_varstate(orig_hloopvar, vs_read, [vsf_must_be_valid]);
+
+              hbody := statement;
+              exclude(itempvs.varoptions, vo_is_loop_counter);
+
+              // wrap body: prepend field assignments, then original body
+              wrapblk := internalstatements(wraplast);
+              for i := 0 to tcount-1 do
+                begin
+                  if (tnames[i]='_') or
+                     not searchsym(upper(tnames[i]), sym, st_unused) then
+                    continue;
+                  addstatement(wraplast,
+                    cassignmentnode.create(
+                      cloadnode.create(sym, sym.owner),
+                      csubscriptnode.create(fieldsyms[i],
+                        cloadnode.create(itempvs, itempvs.owner))));
+                end;
+              if assigned(hbody) then
+                addstatement(wraplast, hbody);
+              wrappedbody := wrapblk;
+
+              result := create_for_in_loop(orig_hloopvar, wrappedbody, collexpr);
+              collexpr.free;
+
+              { pop block scope and wrap in blocknode }
+              if assigned(forblockst) then
+                begin
+                  symtablestack.pop(forblockst);
+                  if not assigned(current_procinfo.procdef.blocklocalsymtables) then
+                    current_procinfo.procdef.blocklocalsymtables:=tfpobjectlist.create(true);
+                  current_procinfo.procdef.blocklocalsymtables.add(forblockst);
+                  wrappedbody:=cblocknode.create(cstatementnode.create(result,nil));
+                  wrappedbody.fileinfo:=result.fileinfo;
+                  tblocknode(wrappedbody).blocksymtable:=forblockst;
+                  result:=wrappedbody;
+                end;
+            end;
+
+
       var
          hloopvar: tnode;
          vs : tabstractnormalvarsym;
@@ -875,6 +1312,14 @@ implementation
                begin
                  Message(parser_e_syntax_error);
                  result := cerrornode.create;
+                 exit;
+               end;
+
+             { tuple destructuring: for var (x, y, ...) in expr do body }
+             if (m_tuples in current_settings.modeswitches) and
+                (current_scanner.token = _LKLAMMER) then
+               begin
+                 result := for_in_destructure_loop;
                  exit;
                end;
 
@@ -1973,6 +2418,18 @@ implementation
         old_block_type : tblock_type;
         statements     : tstatementnode;
         tempnode        : ttempcreatenode;
+        tcsym          : tstaticvarsym;
+        { destructuring state }
+        names : array of string;
+        namecount : longint;
+        blk : tblocknode;
+        laststmt : tstatementnode;
+        recdef : trecorddef;
+        sym : tsym;
+        fieldsyms : array of tfieldvarsym;
+        fieldcount : longint;
+        j : longint;
+        destruct_var : tabstractnormalvarsym;
       begin
         result := nil;
         consume(_VAR);
@@ -1984,6 +2441,86 @@ implementation
           begin
             Message(parser_e_syntax_error);
             result := cerrornode.create;
+            exit;
+          end;
+
+        { destructuring: var (name1, name2, ...) := tuple_expr }
+        if current_scanner.token = _LKLAMMER then
+          begin
+            consume(_LKLAMMER);
+            namecount := 0;
+            setlength(names, 4);
+            repeat
+              if current_scanner.token <> _ID then
+                begin
+                  Message(parser_e_syntax_error);
+                  result := cerrornode.create;
+                  exit;
+                end;
+              if namecount >= length(names) then
+                setlength(names, length(names)*2);
+              names[namecount] := current_scanner.orgpattern;
+              inc(namecount);
+              consume(_ID);
+            until not try_to_consume(_COMMA);
+            consume(_RKLAMMER);
+            consume(_ASSIGNMENT);
+            initexpr := expr(true);
+            do_typecheckpass(initexpr);
+            if not assigned(initexpr.resultdef) or
+               (initexpr.resultdef.typ <> recorddef) then
+              begin
+                Message(parser_e_illegal_expression);
+                initexpr.free;
+                result := cerrornode.create;
+                exit;
+              end;
+            recdef := trecorddef(initexpr.resultdef);
+            fieldcount := 0;
+            setlength(fieldsyms, recdef.symtable.symlist.count);
+            for j := 0 to recdef.symtable.symlist.count-1 do
+              begin
+                sym := tsym(recdef.symtable.symlist[j]);
+                if sym.typ = fieldvarsym then
+                  begin
+                    fieldsyms[fieldcount] := tfieldvarsym(sym);
+                    inc(fieldcount);
+                  end;
+              end;
+            setlength(fieldsyms, fieldcount);
+            if namecount <> fieldcount then
+              begin
+                Message(parser_e_illegal_expression);
+                initexpr.free;
+                result := cerrornode.create;
+                exit;
+              end;
+            { temp := initexpr; var_i := temp.f_i }
+            blk := internalstatements(laststmt);
+            tempnode := ctempcreatenode.create(recdef, recdef.size, tt_persistent, false);
+            addstatement(laststmt, tempnode);
+            addstatement(laststmt,
+              cassignmentnode.create(ctemprefnode.create(tempnode), initexpr));
+            for j := 0 to namecount-1 do
+              begin
+                if names[j]='_' then
+                  continue;
+                if symtablestack.top.symtabletype in [localsymtable,blocksymtable] then
+                  destruct_var := clocalvarsym.create(names[j], vs_value, fieldsyms[j].vardef, [])
+                else
+                  destruct_var := cstaticvarsym.create(names[j], vs_value, fieldsyms[j].vardef, []);
+                destruct_var.register_sym;
+                symtablestack.top.insertsym(destruct_var);
+                destruct_var.varstate := vs_initialised;
+                if destruct_var.typ = staticvarsym then
+                  cnodeutils.insertbssdata(tstaticvarsym(destruct_var));
+                addstatement(laststmt,
+                  cassignmentnode.create(
+                    cloadnode.create(destruct_var, destruct_var.owner),
+                    csubscriptnode.create(fieldsyms[j], ctemprefnode.create(tempnode))));
+              end;
+            addstatement(laststmt, ctempdeletenode.create_normal_temp(tempnode));
+            result := blk;
             exit;
           end;
 
@@ -2031,6 +2568,26 @@ implementation
                      not(m_multi_var_init in current_settings.modeswitches) then
                     Message(parser_e_initialized_only_one_var);
                   block_type := old_block_type;
+                  { Aggregate literal (array/record) init: reuse the typed
+                    constant parser via a hidden static sym, then copy it
+                    into the inline var at the declaration point. The plain
+                    expression parser cannot handle (a, b, c) notation. }
+                  if (sc.count = 1) and
+                     (current_scanner.token = _LKLAMMER) and
+                     ((hdef.typ = arraydef) or (hdef.typ = recorddef)) then
+                    begin
+                      tcsym := cstaticvarsym.create('$inlinetc_'+tsym(sc[0]).realname,
+                                                    vs_const, hdef, []);
+                      include(tcsym.symoptions, sp_internal);
+                      symtablestack.top.insertsym(tcsym);
+                      read_typed_const(current_asmdata.asmlists[al_typedconsts],
+                                       tcsym, false, false);
+                      tabstractnormalvarsym(sc[0]).varstate := vs_initialised;
+                      result := cassignmentnode.create(
+                        cloadnode.create(tsym(sc[0]), tsym(sc[0]).owner),
+                        cloadnode.create(tcsym, tcsym.owner));
+                      exit;
+                    end;
                   initexpr := expr(true);
                   if sc.count = 1 then
                     begin
@@ -2328,6 +2885,135 @@ implementation
         end;
       end;
 
+    { Detects ( id, id, ... ) := tuple_expr destructuring assignment at
+      the start of a statement. Uses scanner token recording to peek.
+      Returns a block of per-field assignments if the pattern matches,
+      otherwise nil with scanner state restored via replay. }
+    function try_tuple_destructure_assign : tnode;
+      var
+        buf : tdynamicarray;
+        names : array of string;
+        namecount : longint;
+        match : boolean;
+        initexpr : tnode;
+        recdef : trecorddef;
+        sym : tsym;
+        lookst : tsymtable;
+        fieldsyms : array of tfieldvarsym;
+        fieldcount : longint;
+        i : longint;
+        tempnode : ttempcreatenode;
+        blk : tblocknode;
+        laststmt : tstatementnode;
+        lhs : tnode;
+      begin
+        result:=nil;
+        if current_scanner.is_recording_tokens then
+          exit;
+        buf:=tdynamicarray.create(64);
+        current_scanner.startrecordtokens(buf);
+        consume(_LKLAMMER);
+        namecount:=0;
+        setlength(names,4);
+        match:=true;
+        while current_scanner.token=_ID do
+          begin
+            if namecount>=length(names) then
+              setlength(names,length(names)*2);
+            names[namecount]:=current_scanner.orgpattern;
+            inc(namecount);
+            consume(_ID);
+            if current_scanner.token=_RKLAMMER then
+              break;
+            if current_scanner.token<>_COMMA then
+              begin
+                match:=false;
+                break;
+              end;
+            consume(_COMMA);
+          end;
+        if match and (current_scanner.token=_RKLAMMER) then
+          begin
+            consume(_RKLAMMER);
+            match:=current_scanner.token=_ASSIGNMENT;
+          end
+        else
+          match:=false;
+        current_scanner.stoprecordtokens;
+        if not match or (namecount<2) then
+          begin
+            current_scanner.startreplaytokens(buf,false);
+            exit;
+          end;
+        { consumed already: (, ids, commas, ), := not yet consumed but flags done.
+          Replay gets us back, then re-consume to eat them properly }
+        current_scanner.startreplaytokens(buf,false);
+        consume(_LKLAMMER);
+        for i:=0 to namecount-1 do
+          begin
+            consume(_ID);
+            if i<namecount-1 then
+              consume(_COMMA);
+          end;
+        consume(_RKLAMMER);
+        consume(_ASSIGNMENT);
+
+        initexpr:=expr(true);
+        do_typecheckpass(initexpr);
+        if not assigned(initexpr.resultdef) or
+           (initexpr.resultdef.typ<>recorddef) then
+          begin
+            Message(parser_e_illegal_expression);
+            initexpr.free;
+            result:=cerrornode.create;
+            exit;
+          end;
+        recdef:=trecorddef(initexpr.resultdef);
+        fieldcount:=0;
+        setlength(fieldsyms,recdef.symtable.symlist.count);
+        for i:=0 to recdef.symtable.symlist.count-1 do
+          begin
+            sym:=tsym(recdef.symtable.symlist[i]);
+            if sym.typ=fieldvarsym then
+              begin
+                fieldsyms[fieldcount]:=tfieldvarsym(sym);
+                inc(fieldcount);
+              end;
+          end;
+        setlength(fieldsyms,fieldcount);
+        if namecount<>fieldcount then
+          begin
+            Message(parser_e_illegal_expression);
+            initexpr.free;
+            result:=cerrornode.create;
+            exit;
+          end;
+        blk:=internalstatements(laststmt);
+        tempnode:=ctempcreatenode.create(recdef,recdef.size,tt_persistent,false);
+        addstatement(laststmt,tempnode);
+        addstatement(laststmt,
+          cassignmentnode.create(ctemprefnode.create(tempnode),initexpr));
+        for i:=0 to namecount-1 do
+          begin
+            if names[i]='_' then
+              continue;
+            if not searchsym(upper(names[i]),sym,lookst) then
+              begin
+                Message1(sym_e_id_not_found,names[i]);
+                continue;
+              end;
+            if sym.typ in [localvarsym,staticvarsym,paravarsym] then
+              tabstractnormalvarsym(sym).varstate:=vs_initialised;
+            lhs:=cloadnode.create(sym,sym.owner);
+            addstatement(laststmt,
+              cassignmentnode.create(
+                lhs,
+                csubscriptnode.create(fieldsyms[i],ctemprefnode.create(tempnode))));
+          end;
+        addstatement(laststmt,ctempdeletenode.create_normal_temp(tempnode));
+        result:=blk;
+      end;
+
     function statement : tnode;
       var
          p,
@@ -2559,6 +3245,8 @@ implementation
              code:=if_statement;
            _CASE :
              code:=case_statement;
+           _MATCH :
+             code:=match_statement;
            _REPEAT :
              code:=repeat_statement;
            _WHILE :
@@ -2621,6 +3309,14 @@ implementation
                Message(scan_f_end_of_file);
          else
            begin
+             { (a, b) := tuple_expr destructuring to existing vars }
+             if (m_tuples in current_settings.modeswitches) and
+                (current_scanner.token=_LKLAMMER) then
+               begin
+                 code:=try_tuple_destructure_assign;
+                 if assigned(code) then
+                   exit(code);
+               end;
              { don't typecheck yet, because that will also simplify, which may
                result in not detecting certain kinds of syntax errors --
                see mantis #15594 }
@@ -2932,6 +3628,7 @@ implementation
         case current_scanner.token of
         _IF: p1:=if_statement(true);
         _CASE: p1:=case_statement(true);
+        _MATCH: p1:=match_statement(true);
         _TRY: p1:=try_statement(true);
         else
           result:=false;

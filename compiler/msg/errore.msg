@@ -498,7 +498,7 @@ scan_e_improperly_indented_multiline_string=02120_E_Incorrectly indented multi-l
 #
 # Parser
 #
-# 03376 is the last used one
+# 03377 is the last used one
 #
 % \section{Parser messages}
 % This section lists all parser messages. The parser takes care of the
@@ -1728,11 +1728,13 @@ parser_w_with_shadowed_field=03376_W_Field "$1" in WITH entry shadows an earlier
 % Two entries in the same \var{with} clause expose a field with the same name.
 % The later entry hides the earlier one, which is most likely unintended.
 %
+parser_e_tuple_needs_type=03377_E_Tuple fields need type annotation, e.g. (x, y, z: Integer)
+%
 % \end{description}
 %
 # Type Checking
 #
-# 04134 is the last used one
+# 04136 is the last used one
 #
 % \section{Type checking errors}
 % This section lists all errors that can occur when type checking is
@@ -2194,6 +2196,13 @@ type_e_cannot_determine_size_of_wasm_reference_type=04133_E_WebAssembly referenc
 % WebAssembly reference types are opaque, meaning neither their size, nor their bit pattern can be observed.
 type_e_ordinal_or_pointer_expr_expected=04134_E_Ordinal or pointer expression expected
 % The expression must be of an ordinal or pointer type.
+type_e_tuples_not_comparable=04135_E_Tuples have different shapes and cannot be compared
+% The two tuple operands have different field counts or field types,
+% so ordering comparison is not possible.
+type_e_tuple_index_must_be_const=04136_E_Tuple index must be a compile-time constant
+% Tuple fields can have different types, so the result type of t[i]
+% cannot be determined when i is a variable. Use a constant index
+% (t[0], t[1]) or named access (t._1, t._2).
 %
 % \end{description}
 #

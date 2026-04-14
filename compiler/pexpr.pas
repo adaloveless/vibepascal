@@ -84,6 +84,7 @@ implementation
        ;
 
     function sub_expr(pred_level:Toperator_precedence;flags:texprflags;factornode:tnode):tnode;forward;
+    function exit_tuple_body(out block:tnode;out single_expr:tnode):boolean;forward;
 
     const
        { true, if the inherited call is anonymous }
@@ -276,6 +277,82 @@ implementation
        end;
 
 
+     { Walks a Write/WriteLn callparanode chain and expands any tuple
+       arguments into per-field subscript nodes so that WriteLn(t)
+       becomes WriteLn(t._1, t._2, ...). Returns the (possibly new)
+       head of the chain. }
+     function expand_tuple_write_paras(head:tnode):tnode;
+       var
+         cur,prev,next,newhead,tail : tcallparanode;
+         recdef : trecorddef;
+         sym : tsym;
+         fsym : tfieldvarsym;
+         i : longint;
+         sub : tnode;
+         first_new,last_new : tcallparanode;
+       begin
+         result:=head;
+         prev:=nil;
+         cur:=tcallparanode(head);
+         while assigned(cur) do
+           begin
+             next:=tcallparanode(cur.right);
+             { skip colon-format params }
+             if cpf_is_colon_para in cur.callparaflags then
+               begin
+                 prev:=cur;
+                 cur:=next;
+                 continue;
+               end;
+             typecheckpass(cur.left);
+             if assigned(cur.left.resultdef) and
+                (cur.left.resultdef.typ=recorddef) and
+                (df_tuple in cur.left.resultdef.defoptions) then
+               begin
+                 recdef:=trecorddef(cur.left.resultdef);
+                 { build chain with fields prepended so that Write
+                   (which consumes back-to-front) prints them in order }
+                 first_new:=nil;
+                 for i:=0 to recdef.symtable.symlist.count-1 do
+                   begin
+                     sym:=tsym(recdef.symtable.symlist[i]);
+                     if sym.typ<>fieldvarsym then
+                       continue;
+                     fsym:=tfieldvarsym(sym);
+                     sub:=csubscriptnode.create(fsym,cur.left.getcopy);
+                     { separator between fields (before non-first) }
+                     if i>0 then
+                       first_new:=ccallparanode.create(
+                         cstringconstnode.createstr(', '),
+                         first_new);
+                     first_new:=ccallparanode.create(sub,first_new);
+                   end;
+                 last_new:=first_new;
+                 if assigned(last_new) then
+                   while assigned(last_new.right) do
+                     last_new:=tcallparanode(last_new.right);
+                 if assigned(first_new) then
+                   begin
+                     last_new.right:=next;
+                     if assigned(prev) then
+                       prev.right:=first_new
+                     else
+                       result:=first_new;
+                     cur.left.free;
+                     cur.left:=nil;
+                     cur.right:=nil;
+                     cur.free;
+                     cur:=first_new;
+                     prev:=last_new;
+                     cur:=next;
+                     continue;
+                   end;
+               end;
+             prev:=cur;
+             cur:=next;
+           end;
+       end;
+
      function statement_syssym(l : tinlinenumber) : tnode;
       var
         p1,p2,paras  : tnode;
@@ -283,6 +360,8 @@ implementation
         prev_in_args : boolean;
         def : tdef;
         exit_procinfo: tprocinfo;
+        tuple_block  : tnode;
+        tuple_last   : tstatementnode;
       begin
         prev_in_args:=in_args;
         case l of
@@ -314,17 +393,38 @@ implementation
           in_exit :
             begin
               statement_syssym:=nil;
+              p1:=nil;
+              tuple_block:=nil;
               if try_to_consume(_LKLAMMER) then
                 begin
                   if not (m_mac in current_settings.modeswitches) then
                     begin
                       if not(try_to_consume(_RKLAMMER)) then
                         begin
-                          p1:=comp_expr([ef_accept_equal]);
-                          consume(_RKLAMMER);
-                          if not assigned(current_procinfo) or
-                             (current_procinfo.procdef.proctypeoption in [potype_constructor,potype_destructor]) or
-                             is_void(current_procinfo.procdef.returndef) then
+                          { tuple Exit shorthand: Exit(a,b,...) or Exit(n:v,...) }
+                          if (m_tuples in current_settings.modeswitches) and
+                             assigned(current_procinfo) and
+                             (current_procinfo.procdef.returndef.typ=recorddef) and
+                             (df_tuple in current_procinfo.procdef.returndef.defoptions) then
+                            begin
+                              if exit_tuple_body(tuple_block,p1) then
+                                begin
+                                  tuple_last:=laststatement(tblocknode(tuple_block));
+                                  addstatement(tuple_last,cexitnode.create(nil));
+                                  statement_syssym:=tuple_block;
+                                  p1:=nil;
+                                end;
+                              { else single expression, p1 was set and _RKLAMMER consumed }
+                            end
+                          else
+                            begin
+                              p1:=comp_expr([ef_accept_equal]);
+                              consume(_RKLAMMER);
+                            end;
+                          if assigned(p1) and
+                             (not assigned(current_procinfo) or
+                              (current_procinfo.procdef.proctypeoption in [potype_constructor,potype_destructor]) or
+                              is_void(current_procinfo.procdef.returndef)) then
                             begin
                               Message(parser_e_void_function);
                               { recovery }
@@ -396,7 +496,7 @@ implementation
 
           in_leave :
             begin
-              if m_mac in current_settings.modeswitches then
+              if [m_mac,m_match]*current_settings.modeswitches<>[] then
                 statement_syssym:=cbreaknode.create
               else
                 begin
@@ -834,6 +934,9 @@ implementation
                begin
                  paras:=parse_paras(true,false,_RKLAMMER);
                  consume(_RKLAMMER);
+                 if (m_tuples in current_settings.modeswitches) and
+                    assigned(paras) then
+                   paras:=expand_tuple_write_paras(tnode(paras));
                end
               else
                paras:=nil;
@@ -2320,6 +2423,18 @@ implementation
                    typecheckpass(p1);
                  end;
 
+               { tuple[N] indexed access - route to vecnode }
+               if (m_tuples in current_settings.modeswitches) and
+                  assigned(p1.resultdef) and
+                  (p1.resultdef.typ=recorddef) and
+                  (df_tuple in p1.resultdef.defoptions) then
+                 begin
+                   consume(_LECKKLAMMER);
+                   p2:=comp_expr([ef_accept_equal]);
+                   consume(_RECKKLAMMER);
+                   p1:=cvecnode.create(p1,p2);
+                 end
+               else
                if is_class_or_interface_or_object(p1.resultdef) or
                   is_dispinterface(p1.resultdef) or
                   is_record(p1.resultdef) or
@@ -3757,6 +3872,182 @@ implementation
                          Factor_Read_Set
          ---------------------------------------------}
 
+         { Peeks whether the tokens right after _LKLAMMER start a named
+           tuple literal (ID ':'). Uses scanner token recording; skipped
+           if an outer recording is already active. }
+         function is_named_tuple_literal_ahead:boolean;
+           var
+             peekbuf : tdynamicarray;
+           begin
+             result:=false;
+             if current_scanner.is_recording_tokens then
+               exit;
+             if current_scanner.token<>_ID then
+               exit;
+             peekbuf:=tdynamicarray.create(32);
+             current_scanner.startrecordtokens(peekbuf);
+             consume(_ID);
+             current_scanner.stoprecordtokens;
+             result:=current_scanner.token=_COLON;
+             current_scanner.startreplaytokens(peekbuf,false);
+           end;
+
+
+         { Parses a named tuple literal body after _LKLAMMER was consumed
+           and the first token is an identifier starting a 'name:' pair.
+           Builds a temp tuple record with user-chosen field names and
+           the parsed expression types. Consumes _RKLAMMER. }
+         function named_tuple_lit_as_tempref:tnode;
+           var
+             names : array of TIDString;
+             exprs : array of tnode;
+             count : longint;
+             i : longint;
+             recdef : trecorddef;
+             elemdef : tdef;
+             blk : tblocknode;
+             laststmt : tstatementnode;
+             tempnode : ttempcreatenode;
+             fieldsym : tsym;
+           begin
+             count:=0;
+             setlength(names,4);
+             setlength(exprs,4);
+             repeat
+               if count>=length(names) then
+                 begin
+                   setlength(names,length(names)*2);
+                   setlength(exprs,length(exprs)*2);
+                 end;
+               names[count]:=current_scanner.orgpattern;
+               consume(_ID);
+               consume(_COLON);
+               exprs[count]:=comp_expr([ef_accept_equal]);
+               inc(count);
+             until not try_to_consume(_COMMA);
+             consume(_RKLAMMER);
+
+             { promote common literal types }
+             for i:=0 to count-1 do
+               begin
+                 typecheckpass(exprs[i]);
+                 elemdef:=exprs[i].resultdef;
+                 if is_integer(elemdef) and
+                    (torddef(elemdef).ordtype in [s8bit,u8bit,s16bit,u16bit]) then
+                   elemdef:=s32inttype
+                 else if is_conststring_array(elemdef) or is_char(elemdef) then
+                   begin
+                     if m_default_unicodestring in current_settings.modeswitches then
+                       elemdef:=cunicodestringtype
+                     else if m_default_ansistring in current_settings.modeswitches then
+                       elemdef:=getansistringdef
+                     else
+                       elemdef:=cshortstringtype;
+                   end;
+                 if elemdef<>exprs[i].resultdef then
+                   begin
+                     exprs[i]:=ctypeconvnode.create_internal(exprs[i],elemdef);
+                     typecheckpass(exprs[i]);
+                   end;
+               end;
+
+             recdef:=make_tuple_recdef;
+             for i:=0 to count-1 do
+               add_tuple_field(recdef,names[i],exprs[i].resultdef);
+             trecordsymtable(recdef.symtable).addalignmentpadding;
+
+             blk:=internalstatements(laststmt);
+             tempnode:=ctempcreatenode.create(recdef,recdef.size,tt_persistent,false);
+             addstatement(laststmt,tempnode);
+             for i:=0 to count-1 do
+               begin
+                 fieldsym:=tsym(trecordsymtable(recdef.symtable).find(upper(names[i])));
+                 addstatement(laststmt,
+                   cassignmentnode.create(
+                     csubscriptnode.create(fieldsym,ctemprefnode.create(tempnode)),
+                     exprs[i]));
+               end;
+             addstatement(laststmt,ctempdeletenode.create_normal_temp(tempnode));
+             addstatement(laststmt,ctemprefnode.create(tempnode));
+             result:=blk;
+           end;
+
+
+         { Given a first expression parsed right after _LKLAMMER and the
+           comma still pending, parses remaining comma-separated expressions
+           up to _RKLAMMER and returns a block that evaluates to a temp
+           tuple record holding (first_expr, rest...). Used by both array
+           constructor elements and plain (e1, e2, ...) factors. }
+         function tuple_lit_as_tempref(first_expr:tnode):tnode;
+         var
+           exprs : array of tnode;
+           exprcount : longint;
+           i : longint;
+           recdef : trecorddef;
+           blk : tblocknode;
+           laststmt : tstatementnode;
+           tempnode : ttempcreatenode;
+           fieldsym : tsym;
+           elemdef : tdef;
+         begin
+           setlength(exprs,4);
+           exprs[0]:=first_expr;
+           exprcount:=1;
+           while try_to_consume(_COMMA) do
+             begin
+               if exprcount>=length(exprs) then
+                 setlength(exprs,length(exprs)*2);
+               exprs[exprcount]:=comp_expr([ef_accept_equal]);
+               inc(exprcount);
+             end;
+           consume(_RKLAMMER);
+
+           { promote common literal types so [(1,'a'),(2,'b')] matches
+             declared types like array-of-(Integer, String) }
+           for i:=0 to exprcount-1 do
+             begin
+               typecheckpass(exprs[i]);
+               elemdef:=exprs[i].resultdef;
+               if is_integer(elemdef) and
+                  (torddef(elemdef).ordtype in [s8bit,u8bit,s16bit,u16bit]) then
+                 elemdef:=s32inttype
+               else if is_conststring_array(elemdef) or is_char(elemdef) then
+                 begin
+                   if m_default_unicodestring in current_settings.modeswitches then
+                     elemdef:=cunicodestringtype
+                   else if m_default_ansistring in current_settings.modeswitches then
+                     elemdef:=getansistringdef
+                   else
+                     elemdef:=cshortstringtype;
+                 end;
+               if elemdef<>exprs[i].resultdef then
+                 begin
+                   exprs[i]:=ctypeconvnode.create_internal(exprs[i],elemdef);
+                   typecheckpass(exprs[i]);
+                 end;
+             end;
+
+           recdef:=make_tuple_recdef;
+           for i:=0 to exprcount-1 do
+             add_tuple_field(recdef,'_'+tostr(i+1),exprs[i].resultdef);
+           trecordsymtable(recdef.symtable).addalignmentpadding;
+
+           blk:=internalstatements(laststmt);
+           tempnode:=ctempcreatenode.create(recdef,recdef.size,tt_persistent,false);
+           addstatement(laststmt,tempnode);
+           for i:=0 to exprcount-1 do
+             begin
+               fieldsym:=tsym(trecordsymtable(recdef.symtable).find('_'+tostr(i+1)));
+               addstatement(laststmt,
+                 cassignmentnode.create(
+                   csubscriptnode.create(fieldsym,ctemprefnode.create(tempnode)),
+                   exprs[i]));
+             end;
+           addstatement(laststmt,ctempdeletenode.create_normal_temp(tempnode));
+           addstatement(laststmt,ctemprefnode.create(tempnode));
+           result:=blk;
+         end;
+
          { Read a set between [] }
          function factor_read_set:tnode;
          var
@@ -3772,7 +4063,18 @@ implementation
              buildp:=carrayconstructornode.create(nil,buildp)
            else
             repeat
-              p1:=comp_expr([ef_accept_equal]);
+              if (m_tuples in current_settings.modeswitches) and
+                 (current_scanner.token=_LKLAMMER) then
+                begin
+                  consume(_LKLAMMER);
+                  p1:=comp_expr([ef_accept_equal]);
+                  if current_scanner.token=_COMMA then
+                    p1:=tuple_lit_as_tempref(p1)
+                  else
+                    consume(_RKLAMMER);
+                end
+              else
+                p1:=comp_expr([ef_accept_equal]);
               if try_to_consume(_POINTPOINT) then
                 begin
                   p2:=comp_expr([ef_accept_equal]);
@@ -4347,8 +4649,24 @@ implementation
              _LKLAMMER :
                begin
                  consume(_LKLAMMER);
-                 p1:=comp_expr([ef_accept_equal]);
-                 consume(_RKLAMMER);
+                 { named tuple literal ( name: expr, name: expr, ... )? }
+                 if (m_tuples in current_settings.modeswitches) and
+                    is_named_tuple_literal_ahead then
+                   begin
+                     p1:=named_tuple_lit_as_tempref;
+                   end
+                 else
+                   begin
+                     p1:=comp_expr([ef_accept_equal]);
+                     if (m_tuples in current_settings.modeswitches) and
+                        (current_scanner.token=_COMMA) then
+                       begin
+                         { positional tuple literal: (e1, e2, ...) }
+                         p1:=tuple_lit_as_tempref(p1);
+                       end
+                     else
+                       consume(_RKLAMMER);
+                   end;
                  { it's not a good solution
                    but (a+b)^ makes some problems  }
                  if current_scanner.token in postfixoperator_tokens then
@@ -5076,6 +5394,241 @@ implementation
       end;
 
 
+    { Builds a block of per-field assignments for a tuple literal
+      ( e1, e2, ... ) or ( name: e1, name: e2, ... ) assigned to lhs.
+      Consumes ( ... ). lhs must have resultdef set to a df_tuple record. }
+    function tuple_lit_assignment(lhs:tnode):tnode;
+      var
+        recdef     : trecorddef;
+        fieldsyms  : array of tfieldvarsym;
+        fieldcount : longint;
+        exprcount  : longint;
+        i          : longint;
+        e          : tnode;
+        blk        : tblocknode;
+        laststmt   : tstatementnode;
+        sym        : tsym;
+        is_named   : boolean;
+        peekbuf    : tdynamicarray;
+        fname      : TIDString;
+        field      : tfieldvarsym;
+      begin
+        recdef:=trecorddef(lhs.resultdef);
+        fieldcount:=0;
+        setlength(fieldsyms,recdef.symtable.symlist.count);
+        for i:=0 to recdef.symtable.symlist.count-1 do
+          begin
+            sym:=tsym(recdef.symtable.symlist[i]);
+            if sym.typ=fieldvarsym then
+              begin
+                fieldsyms[fieldcount]:=tfieldvarsym(sym);
+                inc(fieldcount);
+              end;
+          end;
+        setlength(fieldsyms,fieldcount);
+
+        consume(_LKLAMMER);
+
+        { disambiguate positional vs named: peek at _ID _COLON prefix.
+          Skip peek when already recording (generic decl body) to avoid
+          nested-record internalerror; assume positional in that case. }
+        is_named:=false;
+        if (current_scanner.token=_ID) and not current_scanner.is_recording_tokens then
+          begin
+            peekbuf:=tdynamicarray.create(32);
+            current_scanner.startrecordtokens(peekbuf);
+            consume(_ID);
+            current_scanner.stoprecordtokens;
+            is_named:=current_scanner.token=_COLON;
+            current_scanner.startreplaytokens(peekbuf,false);
+          end;
+
+        blk:=internalstatements(laststmt);
+        exprcount:=0;
+        if is_named then
+          repeat
+            fname:=current_scanner.pattern;
+            consume(_ID);
+            consume(_COLON);
+            e:=comp_expr([ef_accept_equal]);
+            field:=nil;
+            for i:=0 to fieldcount-1 do
+              if upper(fieldsyms[i].name)=fname then
+                begin
+                  field:=fieldsyms[i];
+                  break;
+                end;
+            if assigned(field) then
+              addstatement(laststmt,
+                cassignmentnode.create(
+                  csubscriptnode.create(field,lhs.getcopy),
+                  e))
+            else
+              begin
+                Message1(sym_e_illegal_field,fname);
+                e.free;
+              end;
+            inc(exprcount);
+          until not try_to_consume(_COMMA)
+        else
+          repeat
+            e:=comp_expr([ef_accept_equal]);
+            if exprcount<fieldcount then
+              addstatement(laststmt,
+                cassignmentnode.create(
+                  csubscriptnode.create(fieldsyms[exprcount],lhs.getcopy),
+                  e))
+            else
+              e.free;
+            inc(exprcount);
+          until not try_to_consume(_COMMA);
+        consume(_RKLAMMER);
+
+        lhs.free;
+
+        if exprcount<>fieldcount then
+          Message(parser_e_illegal_expression);
+
+        result:=blk;
+      end;
+
+
+    { Used by Exit(...) when the current function returns a tuple. Assumes
+      _LKLAMMER was already consumed. Tries to interpret the body as a
+      tuple literal that should be assigned to Result; if the body is a
+      single expression, returns false with single_expr set so the caller
+      can fall through to the normal single-value Exit path. In both
+      cases _RKLAMMER is consumed. }
+    function exit_tuple_body(out block:tnode;out single_expr:tnode):boolean;
+      var
+        recdef     : trecorddef;
+        fieldsyms  : array of tfieldvarsym;
+        fieldcount : longint;
+        exprcount  : longint;
+        i          : longint;
+        e          : tnode;
+        blk        : tblocknode;
+        laststmt   : tstatementnode;
+        sym        : tsym;
+        is_named   : boolean;
+        peekbuf    : tdynamicarray;
+        fname      : TIDString;
+        field      : tfieldvarsym;
+        first_expr : tnode;
+
+      function resultref:tnode;
+        begin
+          result:=cloadnode.create(current_procinfo.procdef.funcretsym,
+            current_procinfo.procdef.funcretsym.owner);
+        end;
+
+      begin
+        result:=false;
+        block:=nil;
+        single_expr:=nil;
+        recdef:=trecorddef(current_procinfo.procdef.returndef);
+
+        fieldcount:=0;
+        setlength(fieldsyms,recdef.symtable.symlist.count);
+        for i:=0 to recdef.symtable.symlist.count-1 do
+          begin
+            sym:=tsym(recdef.symtable.symlist[i]);
+            if sym.typ=fieldvarsym then
+              begin
+                fieldsyms[fieldcount]:=tfieldvarsym(sym);
+                inc(fieldcount);
+              end;
+          end;
+        setlength(fieldsyms,fieldcount);
+
+        { named tuple literal? peek _ID _COLON, but only if not inside an
+          outer recording (generic decl body) to avoid nested-record ICE }
+        is_named:=false;
+        if (current_scanner.token=_ID) and not current_scanner.is_recording_tokens then
+          begin
+            peekbuf:=tdynamicarray.create(32);
+            current_scanner.startrecordtokens(peekbuf);
+            consume(_ID);
+            current_scanner.stoprecordtokens;
+            is_named:=current_scanner.token=_COLON;
+            current_scanner.startreplaytokens(peekbuf,false);
+          end;
+
+        if is_named then
+          begin
+            blk:=internalstatements(laststmt);
+            exprcount:=0;
+            repeat
+              fname:=current_scanner.pattern;
+              consume(_ID);
+              consume(_COLON);
+              e:=comp_expr([ef_accept_equal]);
+              field:=nil;
+              for i:=0 to fieldcount-1 do
+                if upper(fieldsyms[i].name)=fname then
+                  begin
+                    field:=fieldsyms[i];
+                    break;
+                  end;
+              if assigned(field) then
+                addstatement(laststmt,
+                  cassignmentnode.create(
+                    csubscriptnode.create(field,resultref),
+                    e))
+              else
+                begin
+                  Message1(sym_e_illegal_field,fname);
+                  e.free;
+                end;
+              inc(exprcount);
+            until not try_to_consume(_COMMA);
+            consume(_RKLAMMER);
+            if exprcount<>fieldcount then
+              Message(parser_e_illegal_expression);
+            block:=blk;
+            result:=true;
+            exit;
+          end;
+
+        { not named: parse first expression, decide by next token }
+        first_expr:=comp_expr([ef_accept_equal]);
+        if current_scanner.token<>_COMMA then
+          begin
+            consume(_RKLAMMER);
+            single_expr:=first_expr;
+            exit;
+          end;
+
+        { positional tuple literal: first_expr -> field 0, continue }
+        blk:=internalstatements(laststmt);
+        if fieldcount>0 then
+          addstatement(laststmt,
+            cassignmentnode.create(
+              csubscriptnode.create(fieldsyms[0],resultref),
+              first_expr))
+        else
+          first_expr.free;
+        exprcount:=1;
+        consume(_COMMA);
+        repeat
+          e:=comp_expr([ef_accept_equal]);
+          if exprcount<fieldcount then
+            addstatement(laststmt,
+              cassignmentnode.create(
+                csubscriptnode.create(fieldsyms[exprcount],resultref),
+                e))
+          else
+            e.free;
+          inc(exprcount);
+        until not try_to_consume(_COMMA);
+        consume(_RKLAMMER);
+        if exprcount<>fieldcount then
+          Message(parser_e_illegal_expression);
+        block:=blk;
+        result:=true;
+      end;
+
+
     function expr(dotypecheck : boolean) : tnode;
 
       var
@@ -5105,19 +5658,33 @@ implementation
            _ASSIGNMENT :
              begin
                 consume(_ASSIGNMENT);
-                if assigned(p1.resultdef) then
-                  if (p1.resultdef.typ=procvardef) then
-                    getprocvardef:=tprocvardef(p1.resultdef)
-                  else if is_invokable(p1.resultdef) then
-                    getfuncrefdef:=tobjectdef(p1.resultdef);
-                p2:=sub_expr(opcompare,[ef_accept_equal],nil);
-                if assigned(getprocvardef) then
-                  handle_procvar(getprocvardef,p2)
-                else if assigned(getfuncrefdef) then
-                  handle_funcref(getfuncrefdef,p2);
-                getprocvardef:=nil;
-                getfuncrefdef:=nil;
-                p1:=cassignmentnode.create(p1,p2);
+                { tuple literal RHS? rewrite as per-field assignments }
+                if (m_tuples in current_settings.modeswitches) and
+                   (current_scanner.token=_LKLAMMER) and
+                   (not assigned(p1.resultdef)) then
+                  do_typecheckpass(p1);
+                if (m_tuples in current_settings.modeswitches) and
+                   (current_scanner.token=_LKLAMMER) and
+                   assigned(p1.resultdef) and
+                   (p1.resultdef.typ=recorddef) and
+                   (df_tuple in p1.resultdef.defoptions) then
+                  p1:=tuple_lit_assignment(p1)
+                else
+                  begin
+                    if assigned(p1.resultdef) then
+                      if (p1.resultdef.typ=procvardef) then
+                        getprocvardef:=tprocvardef(p1.resultdef)
+                      else if is_invokable(p1.resultdef) then
+                        getfuncrefdef:=tobjectdef(p1.resultdef);
+                    p2:=sub_expr(opcompare,[ef_accept_equal],nil);
+                    if assigned(getprocvardef) then
+                      handle_procvar(getprocvardef,p2)
+                    else if assigned(getfuncrefdef) then
+                      handle_funcref(getfuncrefdef,p2);
+                    getprocvardef:=nil;
+                    getfuncrefdef:=nil;
+                    p1:=cassignmentnode.create(p1,p2);
+                  end;
              end;
            _PLUSASN :
              begin
