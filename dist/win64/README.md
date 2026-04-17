@@ -1,6 +1,26 @@
 # vibepascal Win64 Cross-Built Drop
 
-## Latest: `vibepascal-win64-e63f4e1231-v7.tar.gz` (2026-04-17, ~17MB)
+## Latest: `vibepascal-win64-41717f9142-v8.tar.gz` (2026-04-17, ~18MB)
+
+Delphi-compatible reference-to type aliases (`TProc`, `TFunc`,
+`TPredicate`) now ship in `System.SysUtils` for Win64, unblocking
+commonx code that references them unqualified.
+
+- `units/x86_64-win64/sysutils.ppu`: adds `TProc`, `TProc<T>`,
+  `TProc<T1,T2>`, `TProc<T1,T2,T3>`, `TProc<T1,T2,T3,T4>`,
+  `TFunc<TResult>` and all 4 generic-arity siblings,
+  `TPredicate<T>`. Non-generic `TProc` coexists with its generic
+  arity siblings of the same bare name.
+- Compiler change (commit 41717f9142): `{$mode objfpc}` now allows
+  a non-generic typesym and generic arity siblings to share a bare
+  name, matching Delphi's `TProc`/`TProc<T>` pattern.
+- All dependent Win64 packages rebuilt against the new
+  sysutils.ppu: rtl-objpas, rtl-generics, fcl-base, rtl-extra,
+  winunits-base.
+- Compiler binary `bin/ppcx64.exe` rebuilt (v3.3.1 [2026/04/17],
+  PE32+, 4.9MB) with the generic-arity coexistence fix.
+
+## Previous: `vibepascal-win64-e63f4e1231-v7.tar.gz` (2026-04-17, ~17MB)
 
 Pre-emptive winapi unit drop per Knox's v6 shopping list. Ships all 11
 HIGH-priority units pre-built for `x86_64-win64`:
