@@ -1,6 +1,18 @@
 # vibepascal Win64 Cross-Built Drop
 
-## Latest: `vibepascal-win64-a041fa7430-v2.tar.gz` (2026-04-17, ~16MB)
+## Latest: `vibepascal-win64-4f10a8abba-v3.tar.gz` (2026-04-17, ~16MB)
+
+Adds `dateutils.ppu`, `strutils.ppu`, and `contnrs.ppu` on top of v2 —
+unblocks `commonx/systemx.pas` compile (hard dep on `dateutils`).
+All binaries statically link RTL (only kernel32 + user32 imports). See
+the in-tarball README for full details + reproducible build recipe.
+
+Contains everything in v2, plus:
+- `packages/rtl-objpas/x86_64-win64/dateutils.ppu` + `system.timespan.ppu`
+- `packages/rtl-objpas/x86_64-win64/strutils.ppu`
+- `packages/fcl-base/x86_64-win64/contnrs.ppu`
+
+## Previous: `vibepascal-win64-a041fa7430-v2.tar.gz` (2026-04-17, ~16MB)
 
 Cross-compiled from `lazdev` (Linux x86_64) using FPC's internal PE-COFF assembler + internal linker.
 **No mingw-w64 or external binutils required on the host.**
