@@ -327,6 +327,91 @@ uses
       end;
 
 
+    { Test whether an already-realized interface (from a class's
+      implementedinterfaces list) satisfies a self-referential generic
+      interface constraint such as `T: IFoo<T>`.  At constraint-check
+      time the constraint carries an unfinished specialization whose
+      generic params point at the outer generic's placeholder typesyms
+      (e.g. the T of TBar<T>), while the class's implemented interface
+      is the fully-specialized form (e.g. IFoo<TCommand>).  Pointer
+      equality therefore fails.  Match by: (1) shared root generic,
+      (2) per-position equality after substituting outer placeholders
+      with the corresponding specialization arguments. }
+    function impl_intf_matches_constraint(impldef,constraintdef:tdef;
+                                          outergenericdef:tstoreddef;
+                                          outerparamlist:tfpobjectlist):boolean;
+      var
+        i,k : longint;
+        impl_obj,cons_obj : tobjectdef;
+        impl_param,cons_param,subst_param : tdef;
+        matched : boolean;
+      begin
+        { fast path - pointer equality is the common case }
+        if impldef=constraintdef then
+          exit(true);
+        result:=false;
+        if not assigned(impldef) or not assigned(constraintdef) then
+          exit;
+        if (impldef.typ<>objectdef) or (constraintdef.typ<>objectdef) then
+          exit;
+        impl_obj:=tobjectdef(impldef);
+        cons_obj:=tobjectdef(constraintdef);
+        { both must be generic specializations of the same root generic }
+        if not (df_specialization in impl_obj.defoptions) or
+           not (df_specialization in cons_obj.defoptions) then
+          exit;
+        if not assigned(impl_obj.genericdef) or
+           (impl_obj.genericdef<>cons_obj.genericdef) then
+          exit;
+        if not assigned(impl_obj.genericparas) or
+           not assigned(cons_obj.genericparas) or
+           (impl_obj.genericparas.count<>cons_obj.genericparas.count) then
+          exit;
+        if not assigned(outergenericdef) or
+           not assigned(outergenericdef.genericparas) or
+           not assigned(outerparamlist) or
+           (outergenericdef.genericparas.count<>outerparamlist.count) then
+          exit;
+        for i:=0 to cons_obj.genericparas.count-1 do
+          begin
+            impl_param:=get_generic_param_def(tsym(impl_obj.genericparas[i]));
+            cons_param:=get_generic_param_def(tsym(cons_obj.genericparas[i]));
+            if impl_param=cons_param then
+              continue;
+            { try substitution: if the constraint-side stores a
+              placeholder (undefined-typed typesym, often produced by
+              specialization_phase2 when the specialization argument
+              was itself an outer generic parameter), treat it as a
+              reference to outerparamlist[i].  This handles
+              self-referential constraints such as TBar<T: IFoo<T>>. }
+            matched:=false;
+            if (cons_param.typ=undefineddef) and
+               (i<outerparamlist.count) then
+              begin
+                subst_param:=get_generic_param_def(tsym(outerparamlist[i]));
+                if subst_param=impl_param then
+                  matched:=true;
+              end;
+            { fallback: direct substitution by generic-param typedef
+              identity (handles non-undefined outer placeholders). }
+            if not matched then
+              for k:=0 to outergenericdef.genericparas.count-1 do
+                begin
+                  subst_param:=get_generic_param_def(tsym(outergenericdef.genericparas[k]));
+                  if subst_param=cons_param then
+                    begin
+                      if get_generic_param_def(tsym(outerparamlist[k]))=impl_param then
+                        matched:=true;
+                      break;
+                    end;
+                end;
+            if not matched then
+              exit;
+          end;
+        result:=true;
+      end;
+
+
     function check_generic_constraints(genericdef:tstoreddef;paramlist:tfpobjectlist;poslist:tfplist):boolean;
       var
         i,j,
@@ -478,7 +563,7 @@ uses
                                   while assigned(objdef) do
                                     begin
                                       for j:=0 to objdef.implementedinterfaces.count-1 do
-                                        if timplementedinterface(objdef.implementedinterfaces[j]).intfdef=formalobjdef.childof then
+                                        if impl_intf_matches_constraint(timplementedinterface(objdef.implementedinterfaces[j]).intfdef,formalobjdef.childof,genericdef,paramlist) then
                                           begin
                                             intffound:=true;
                                             break;
