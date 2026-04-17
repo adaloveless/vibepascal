@@ -36,7 +36,7 @@ uses
   { node }
   node,
   { symtable }
-  symtype,symdef,symbase;
+  symtype,symdef,symsym,symbase;
 
     procedure generate_specialization(var tt:tdef;enforce_unit:boolean;parse_class_parent:boolean;const _prettyname:string;parsedtype:tdef;const symname:string;parsedpos:tfileposinfo);inline;
     procedure generate_specialization(var tt:tdef;enforce_unit:boolean;parse_class_parent:boolean;const _prettyname:string;const symname:string;symtable:tsymtable);inline;
@@ -48,6 +48,7 @@ uses
     function parse_generic_parameters(allowconstraints:boolean):tfphashobjectlist;
     function parse_generic_specialization_types(paramlist:tfpobjectlist;poslist:tfplist;out prettyname,specializename:ansistring):boolean;
     procedure insert_generic_parameter_types(def:tstoreddef;genericdef:tstoreddef;genericlist:tfphashobjectlist;isfwd:boolean);
+    procedure inherit_generic_method_constraints(pd:tprocdef;aprocsym:tprocsym);
     procedure maybe_insert_generic_rename_symbol(const name:tidstring;genericlist:tfphashobjectlist);
     function generate_generic_name(const name:tidstring;const specializename:ansistring;const owner_hierarchy:ansistring):tidstring;
     procedure split_generic_name(const name:tidstring;out nongeneric:string;out count:longint);
@@ -75,7 +76,7 @@ uses
   { global }
   globals,tokens,verbose,finput,constexp,
   { symtable }
-  symconst,symsym,symtable,defcmp,defutil,procinfo,
+  symconst,symtable,defcmp,defutil,procinfo,
   { modules }
   fmodule,
   { node }
@@ -2647,6 +2648,80 @@ uses
             def.genericparas.add(genericlist.nameofindex(i),generictype);
           end;
        end;
+
+    procedure inherit_generic_method_constraints(pd:tprocdef;aprocsym:tprocsym);
+      { Copy generic-parameter constraint typedefs from a matching forward
+        declaration of a generic method into a freshly parsed impl-side
+        procdef. In Delphi canonical form, `function T.M<T>(...)` cannot
+        repeat the constraint syntax at the impl site, so the impl's
+        generic typesyms come out of parse_generic_parameters with bare
+        undefineddef typedefs. Without this inheritance, specializing an
+        inner generic that itself has constraints (e.g. `IHolder<T>` where
+        `IHolder<T: class>`) fails with "Class type expected, but got T".
+
+        We locate a matching forward decl procdef (same aprocsym, same
+        arity, same param names) whose genericparas carry constraint
+        typedefs, and reassign the impl's typesym typedefs to the forward
+        decl's constraint typedefs. The old impl undefineddef was the
+        shared singleton cundefinedtype, so no ownership transfer is
+        needed. }
+      var
+        i,j : longint;
+        fwpd : tprocdef;
+        fwsym,
+        currsym : tsym;
+        fwtype,
+        currtype : ttypesym;
+        fwdef,
+        currdef : tstoreddef;
+        names_match : boolean;
+      begin
+        if not assigned(pd) or not assigned(aprocsym) then
+          exit;
+        if not assigned(pd.genericparas) or (pd.genericparas.count=0) then
+          exit;
+        for j:=0 to aprocsym.ProcdefList.count-1 do
+          begin
+            fwpd:=tprocdef(aprocsym.ProcdefList[j]);
+            if (fwpd=pd) or not fwpd.is_generic then
+              continue;
+            if not assigned(fwpd.genericparas) then
+              continue;
+            if fwpd.genericparas.count<>pd.genericparas.count then
+              continue;
+            names_match:=true;
+            for i:=0 to fwpd.genericparas.count-1 do
+              if fwpd.genericparas.nameofindex(i)<>pd.genericparas.nameofindex(i) then
+                begin
+                  names_match:=false;
+                  break;
+                end;
+            if not names_match then
+              continue;
+            { matching forward decl found — inherit each constrained
+              typedef from the decl into the impl's fresh typesym. }
+            for i:=0 to fwpd.genericparas.count-1 do
+              begin
+                fwsym:=tsym(fwpd.genericparas[i]);
+                currsym:=tsym(pd.genericparas[i]);
+                if (fwsym.typ<>typesym) or (currsym.typ<>typesym) then
+                  continue;
+                fwtype:=ttypesym(fwsym);
+                currtype:=ttypesym(currsym);
+                fwdef:=tstoreddef(fwtype.typedef);
+                currdef:=tstoreddef(currtype.typedef);
+                if not assigned(fwdef) or not assigned(currdef) then
+                  continue;
+                { only replace when the impl param has no constraint of
+                  its own (canonical Delphi impl form) and the decl does. }
+                if (currdef.typ=undefineddef) and
+                    not (df_genconstraint in currdef.defoptions) and
+                    (df_genconstraint in fwdef.defoptions) then
+                  currtype.typedef:=fwdef;
+              end;
+            exit;
+          end;
+      end;
 
     procedure maybe_insert_generic_rename_symbol(const name:tidstring;genericlist:tfphashobjectlist);
       var

@@ -716,6 +716,15 @@ implementation
                  (
                    ((currsym.typ=typesym) and (df_genconstraint in currtype.typedef.defoptions)) or
                    (currsym.typ=constsym)
+                 ) and
+                 not (
+                   { skip when the impl inherited its typedef pointer from
+                     the forward decl via inherit_generic_method_constraints
+                     — that constraint is implementation-synthesised, not
+                     user-repeated }
+                   (currsym.typ=typesym) and
+                   (fwsym.typ=typesym) and
+                   (ttypesym(currsym).typedef=ttypesym(fwsym).typedef)
                  ) then
                 begin
                   if currsym.typ=constsym then

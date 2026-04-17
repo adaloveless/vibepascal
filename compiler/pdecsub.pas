@@ -639,6 +639,7 @@ implementation
         old_current_specializedef: tstoreddef;
         lasttoken,lastidtoken: ttoken;
         genericparams : tfphashobjectlist;
+        is_generic_method_impl : boolean;
 
         procedure parse_operator_name;
          begin
@@ -938,6 +939,7 @@ implementation
         genericparams:=nil;
         hadspecialize:=false;
         addgendummy:=false;
+        is_generic_method_impl:=false;
 
         { ensure that we don't insert into a withsymtable or blocksymtable
           (can happen with anonymous functions inside begin..end blocks) }
@@ -1067,7 +1069,10 @@ implementation
                     if assigned(srsym) then
                      begin
                        if srsym.typ=procsym then
-                         aprocsym:=tprocsym(srsym)
+                         begin
+                           aprocsym:=tprocsym(srsym);
+                           is_generic_method_impl:=true;
+                         end
                        else
                        if (srsym.typ=typesym) and
                           (ttypesym(srsym).typedef.typ in [objectdef,recorddef]) then
@@ -1280,6 +1285,17 @@ implementation
                 genericparams.free;
                 genericparams:=nil;
                 symtablestack.pop(pd.parast);
+                { For a generic method impl parsed in Delphi canonical form the
+                  impl-side generic params carry no constraints (the language
+                  forbids repeating "<T: class>" here). Inherit the constraint
+                  typedefs from the matching forward declaration so the body
+                  can specialize inner generics whose parameters have
+                  constraints (e.g. IHolder<T> where IHolder<T: class>). }
+                if is_generic_method_impl and
+                   assigned(aprocsym) and
+                   assigned(pd.genericparas) and
+                   (pd.genericparas.count>0) then
+                  inherit_generic_method_constraints(pd,aprocsym);
                 parse_generic:=true;
                 { also generate a dummy symbol if none exists already }
                 if assigned(astruct) then
