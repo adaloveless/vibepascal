@@ -2283,6 +2283,12 @@ uses
         constraintdata : tgenericconstraintdata;
         old_block_type : tblock_type;
         fileinfo : tfileposinfo;
+        { Temporary symtable that holds typeparam typesyms as they are
+          parsed, so a self-referential constraint like
+          `TBar<T: IFoo<T>>` can resolve `T` inside its own constraint.
+          Delphi accepts this idiom; without this temp scope, the parser
+          cannot find `T` because the typesym has no owner yet. }
+        constraint_scope : tstt_exceptsymtable;
       begin
         result:=tfphashobjectlist.create(false);
         firstidx:=0;
@@ -2291,6 +2297,12 @@ uses
         block_type:=bt_type;
         allowconst:=true;
         is_const:=false;
+        constraint_scope:=nil;
+        if allowconstraints then
+          begin
+            constraint_scope:=tstt_exceptsymtable.create;
+            symtablestack.push(constraint_scope);
+          end;
         repeat
           if allowconst and try_to_consume(_CONST) then
             begin
@@ -2308,6 +2320,12 @@ uses
               generictype.visibility:=vis_strictprivate;
               include(generictype.symoptions,sp_generic_para);
               result.add(current_scanner.orgpattern,generictype);
+              { Make this typeparam visible to subsequent constraint
+                parsing so self-referential constraints resolve. Skip
+                const params -- they cannot appear in a type
+                constraint expression. }
+              if assigned(constraint_scope) and not is_const then
+                constraint_scope.insertsym(generictype);
             end;
           consume(_ID);
           fileinfo:=current_tokenpos;
@@ -2517,6 +2535,21 @@ uses
               ttypesym(result[i]).typedef:=cundefineddef.create(false);
               ttypesym(result[i]).typedef.typesym:=ttypesym(result[i]);
             end;
+        { tear down the temporary constraint scope: pop it from the
+          stack, detach the typesyms (so they are not freed with the
+          scope -- they will be re-homed by insert_generic_parameter_types
+          into the real def's parast/symtable), then dispose the scope. }
+        if assigned(constraint_scope) then
+          begin
+            symtablestack.pop(constraint_scope);
+            for i:=0 to result.count-1 do
+              if tsym(result[i]).owner=constraint_scope then
+                begin
+                  constraint_scope.SymList.Extract(result[i]);
+                  tsym(result[i]).Owner:=nil;
+                end;
+            constraint_scope.free;
+          end;
         block_type:=old_block_type;
       end;
 
