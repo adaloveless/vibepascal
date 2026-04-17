@@ -1,6 +1,24 @@
 # vibepascal Win64 Cross-Built Drop
 
-## Latest: `vibepascal-win64-aa8e085ff4-v4.tar.gz` (2026-04-17, ~17MB)
+## Latest: `vibepascal-win64-624c9a7b04-v5.tar.gz` (2026-04-17, ~17MB)
+
+Adds `tlhelp32.ppu` and `activex.ppu` under a new
+`packages/winunits-base/x86_64-win64/` directory. Picks up where Knox's
+compile chain left off at trunk r5463 + FPC_commonx r5464.
+
+**Important**: the `tlhelp32.ppu` here is built from a new desktop
+source (`packages/winunits-base/src/tlhelp32.pp`) that imports from
+`kernel32.dll` with `stdcall` -- this is the correct desktop ABI. The
+existing `packages/winceunits/src/tlhelp32.pas` is WinCE-only (imports
+from `toolhelp.dll`, `cdecl`) and will fail at runtime on Win64 desktop.
+Do not add winceunits to your Win64 search path.
+
+Contains everything in v4, plus:
+- `packages/winunits-base/x86_64-win64/tlhelp32.ppu` (built from new
+  source `packages/winunits-base/src/tlhelp32.pp`)
+- `packages/winunits-base/x86_64-win64/activex.ppu`
+
+## Previous: `vibepascal-win64-aa8e085ff4-v4.tar.gz` (2026-04-17, ~17MB)
 
 Adds `syncobjs.ppu`, `inifiles.ppu`, `fmtbcd.ppu`, and `objects.ppu`
 on top of v3. `syncobjs` is the hard blocker that stalled Knox's
