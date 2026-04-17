@@ -1,6 +1,26 @@
 # vibepascal Win64 Cross-Built Drop
 
-## Latest: `vibepascal-win64-41ff4a2b03-v6.tar.gz` (2026-04-17, ~17MB)
+## Latest: `vibepascal-win64-e63f4e1231-v7.tar.gz` (2026-04-17, ~17MB)
+
+Pre-emptive winapi unit drop per Knox's v6 shopping list. Ships all 11
+HIGH-priority units pre-built for `x86_64-win64`:
+
+- `packages/rtl-extra/x86_64-win64/`: **winsock, winsock2** (+ previously
+  shipped objects).
+- `packages/winunits-base/x86_64-win64/`: **shellapi, shlobj, shfolder,
+  winsvc, psapi, imagehlp, iptypes, mmsystem, userenv**, commctrl (dep
+  of shlobj) (+ previously shipped activex, tlhelp32).
+
+Compiler binary and RTL/rtl-objpas/rtl-generics/fcl-base PPUs unchanged
+from v6 (version string still "FPC 3.3.1 [2026/04/17]"). If you already
+have v6 extracted, you only need to pull the new winunits-base +
+rtl-extra PPUs from v7.
+
+11-unit smoke test on lazdev -> 194KB PE32+, imports kernel32, user32,
+advapi32, shell32, ws2_32, SHFolder, psapi, imagehlp, winmm, oleaut32.
+No rogue DLLs (no toolhelp.dll, no coredll.dll). All static-linked.
+
+## Previous: `vibepascal-win64-41ff4a2b03-v6.tar.gz` (2026-04-17, ~17MB)
 
 Compiler-only refresh. PPUs unchanged vs v5 -- only
 `bin/ppcx64.exe` is rebuilt, bundling two compiler changes landed
