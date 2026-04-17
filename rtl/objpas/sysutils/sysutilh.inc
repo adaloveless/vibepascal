@@ -466,6 +466,25 @@ Type
   TPlatforms = set of TOSVersion.TPlatform;
   TDelphiPlatforms = set of TOSVersion.TDelphiPlatform;
 
+{ Delphi-compatible reference-to type aliases (System.SysUtils).
+  Requires {$modeswitch functionreferences} at the unit level. The
+  non-generic TProc plus its generic arity siblings rely on the
+  compiler allowing arity-based overloading of the same bare name. }
+type
+  TProc                      = reference to procedure;
+  generic TProc<T>           = reference to procedure(Arg1: T);
+  generic TProc<T1,T2>       = reference to procedure(Arg1: T1; Arg2: T2);
+  generic TProc<T1,T2,T3>    = reference to procedure(Arg1: T1; Arg2: T2; Arg3: T3);
+  generic TProc<T1,T2,T3,T4> = reference to procedure(Arg1: T1; Arg2: T2; Arg3: T3; Arg4: T4);
+
+  generic TFunc<TResult>              = reference to function: TResult;
+  generic TFunc<T,TResult>            = reference to function(Arg1: T): TResult;
+  generic TFunc<T1,T2,TResult>        = reference to function(Arg1: T1; Arg2: T2): TResult;
+  generic TFunc<T1,T2,T3,TResult>     = reference to function(Arg1: T1; Arg2: T2; Arg3: T3): TResult;
+  generic TFunc<T1,T2,T3,T4,TResult>  = reference to function(Arg1: T1; Arg2: T2; Arg3: T3; Arg4: T4): TResult;
+
+  generic TPredicate<T> = reference to function(Arg1: T): Boolean;
+
   Function GetCompiledArchitecture : TOSVersion.TArchitecture;
   Function GetCompiledPlatform : TOSVersion.TPlatform;
 

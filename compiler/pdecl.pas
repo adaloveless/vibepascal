@@ -1075,16 +1075,19 @@ implementation
                       ttypesym(sym).typedef.owner:=sym.owner;
                     end
                   else
-                    { this is not allowed in non-Delphi modes }
-                    if not (m_delphi in current_settings.modeswitches) then
-                      Message1(sym_e_duplicate_id,genorgtypename)
-                    else
-                      begin
-                        { we need to find this symbol even if it's a variable or
-                          something else when doing an inline specialization }
+                    begin
+                      { allow generic-arity overloading in all modes: an
+                        existing symbol with the bare name may be either
+                        a previous generic-dummy beacon (same generic,
+                        different arity) or a non-generic type with the
+                        same base name. In either case register the new
+                        arity as an additional dummy entry so inline
+                        specializations and arity-based lookup work.
+                        This matches Delphi's TProc/TProc<T>/... pattern. }
+                      if not (sp_generic_dummy in sym.symoptions) then
                         Include(sym.symoptions,sp_generic_dummy);
-                        add_generic_dummysym(sym,'');
-                      end;
+                      add_generic_dummysym(sym,'');
+                    end;
                 end
               else
                 begin

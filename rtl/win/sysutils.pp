@@ -28,6 +28,7 @@ interface
 {$ENDIF}
 {$modeswitch typehelpers}
 {$modeswitch advancedrecords}
+{$modeswitch functionreferences}
 
 {$IFDEF FPC_DOTTEDUNITS}
 uses

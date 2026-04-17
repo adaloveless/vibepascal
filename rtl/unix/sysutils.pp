@@ -28,6 +28,7 @@ interface
 
 {$modeswitch typehelpers}
 {$modeswitch advancedrecords}
+{$modeswitch functionreferences}
 
 {$if (defined(BSD) or defined(SUNOS)) and defined(FPC_USE_LIBC)}
 {$define USE_VFORK}

@@ -3742,6 +3742,21 @@ implementation
                        not (m_delphi in current_settings.modeswitches) and
                        not isspecialize and
                        (
+                         { only redirect through the dummy resolver when the
+                           sym is still a "dummy" beacon (undefineddef
+                           typesym or empty procsym). A non-generic sym
+                           that happens to share a name with generic arity
+                           siblings (e.g. TProc / TProc<T>) has a fully
+                           resolved typedef and must be used directly. }
+                         (
+                           (srsym.typ=typesym) and
+                           (ttypesym(srsym).typedef.typ=undefineddef)
+                         ) or (
+                           (srsym.typ=procsym) and
+                           (tprocsym(srsym).procdeflist.count=0)
+                         )
+                       ) and
+                       (
                          not parse_generic or
                          not (
                            assigned(current_structdef) and
