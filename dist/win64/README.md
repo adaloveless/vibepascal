@@ -1,6 +1,6 @@
 # vibepascal Win64 Cross-Built Drop
 
-## Latest: `vibepascal-win64-a041fa7430.tar.gz` (2026-04-17, ~6MB)
+## Latest: `vibepascal-win64-a041fa7430-v2.tar.gz` (2026-04-17, ~16MB)
 
 Cross-compiled from `lazdev` (Linux x86_64) using FPC's internal PE-COFF assembler + internal linker.
 **No mingw-w64 or external binutils required on the host.**
@@ -8,7 +8,12 @@ Cross-compiled from `lazdev` (Linux x86_64) using FPC's internal PE-COFF assembl
 Contains:
 - `bin/ppcx64.exe` — Win64-native vibepascal compiler (FPC 3.3.1 [2026/04/14], PE32+)
 - `units/x86_64-win64/*.ppu` + `*.o` — Win64 RTL (90 units)
+- `packages/rtl-objpas/x86_64-win64/` — variants, varutils, rtti (needed by rtl-generics)
+- `packages/rtl-generics/x86_64-win64/` — generics.collections, generics.defaults, generics.helpers, generics.hashes, generics.memoryexpanders, generics.strings
 - `README.md` — usage notes
+
+## Previous: `vibepascal-win64-a041fa7430.tar.gz` (2026-04-17, ~6MB)
+Same compiler + RTL as v2, but no packages. Kept for reference — use v2 for commonx port work.
 
 ## Source snapshot
 - Branch: `main`, commit `a041fa7430` (post-merge of generic-method constraint-propagation fix)
@@ -17,10 +22,23 @@ Contains:
 Extract alongside your FPC installation, e.g. `C:\vibepascal\`. Then:
 
 ```
-C:\vibepascal\bin\ppcx64.exe -Fu"C:\vibepascal\units\x86_64-win64" stringx.pas
+C:\vibepascal\bin\ppcx64.exe ^
+  -Fu"C:\vibepascal\units\x86_64-win64" ^
+  -Fu"C:\vibepascal\packages\rtl-objpas\x86_64-win64" ^
+  -Fu"C:\vibepascal\packages\rtl-generics\x86_64-win64" ^
+  -Mdelphi stringx.pas
 ```
 
-Or set `FPCDIR=C:\vibepascal` and your `fpc.cfg` search paths to pick up `units\x86_64-win64`.
+Or set `FPCDIR=C:\vibepascal` and your `fpc.cfg` search paths to pick up each of those unit directories.
+
+### Package dependency order (for reference)
+```
+rtl (system, sysutils, classes, ...)
+  -> rtl-objpas/variants, varutils
+     -> rtl-objpas/rtti
+        -> rtl-generics/generics.memoryexpanders, generics.strings, generics.hashes,
+                        generics.defaults, generics.helpers, generics.collections
+```
 
 ## Build recipe (reproduce on any Linux host)
 
@@ -32,7 +50,28 @@ make rtl_all CPU_TARGET=x86_64 OS_TARGET=win64 \
 cd compiler
 make compiler CPU_TARGET=x86_64 OS_TARGET=win64 \
   FPC=./ppcx64 OPT="-Apecoff -Xi"
-# -> ./ppcx64.exe (PE32+ Win64)
+cd ..
+# -> ./compiler/ppcx64.exe (PE32+ Win64)
+
+# Packages are built unit-by-unit (fpmake isn't cross-ready on this tree).
+# rtl-objpas needs -Fisrc/inc -Fisrc/win to locate wvarutil.inc on Win64:
+cd packages/rtl-objpas && mkdir -p units/x86_64-win64
+PPCX=$PWD/../../compiler/ppcx64
+RTLWIN=$PWD/../../rtl/units/x86_64-win64
+$PPCX -Apecoff -Xi -Twin64 -Px86_64 \
+  -Fu$RTLWIN -Fisrc/inc -Fisrc/win \
+  -FUunits/x86_64-win64 src/inc/variants.pp
+$PPCX -Apecoff -Xi -Twin64 -Px86_64 \
+  -Fu$RTLWIN -Fuunits/x86_64-win64 -Fisrc/inc -Fisrc/win -Fisrc/x86_64 \
+  -FUunits/x86_64-win64 src/inc/rtti.pp
+cd ../rtl-generics && mkdir -p units/x86_64-win64
+RTLOBJ=$PWD/../rtl-objpas/units/x86_64-win64
+for u in generics.memoryexpanders generics.strings generics.hashes \
+         generics.defaults generics.helpers generics.collections; do
+  $PPCX -Apecoff -Xi -Twin64 -Px86_64 \
+    -Fu$RTLWIN -Fu$RTLOBJ -Fuunits/x86_64-win64 \
+    -Fisrc/inc -FUunits/x86_64-win64 src/$u.pas
+done
 ```
 
 `-Apecoff` = internal PE-COFF assembler writer
