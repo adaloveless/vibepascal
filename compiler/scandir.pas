@@ -645,8 +645,34 @@ unit scandir;
       end;
 
     procedure dir_inline;
+      var
+        hs : string;
+        state : char;
       begin
-        do_localswitch(cs_do_inline);
+        (* Accept ON/OFF/+/- and Delphi-compat AUTO (treated as ON). *)
+        state:=' ';
+        if current_scanner.c = ' ' then
+          begin
+            current_scanner.skipspace;
+            if current_scanner.c in ['+','-'] then
+              state:=current_scanner.c
+            else
+              begin
+                hs:=current_scanner.readid;
+                if hs = 'ON' then
+                  state:='+'
+                else if hs = 'OFF' then
+                  state:='-'
+                else if hs = 'AUTO' then
+                  state:='+';
+              end;
+          end
+        else
+          state:=current_scanner.c;
+        if not (state in ['+','-']) then
+          Message(scan_e_wrong_switch_toggle)
+        else
+          recordpendinglocalswitch(cs_do_inline, state);
       end;
 
     procedure dir_interfaces;
