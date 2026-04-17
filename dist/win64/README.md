@@ -1,6 +1,21 @@
 # vibepascal Win64 Cross-Built Drop
 
-## Latest: `vibepascal-win64-4f10a8abba-v3.tar.gz` (2026-04-17, ~16MB)
+## Latest: `vibepascal-win64-aa8e085ff4-v4.tar.gz` (2026-04-17, ~17MB)
+
+Adds `syncobjs.ppu`, `inifiles.ppu`, `fmtbcd.ppu`, and `objects.ppu`
+on top of v3. `syncobjs` is the hard blocker that stalled Knox's
+`UT_Commonx` regression past `systemx.pas` line 60; the other three
+cover the outstanding items on his `v3_package_request.txt` shopping
+list plus future-proofing for Turbo Vision compat. See the in-tarball
+README for details.
+
+Contains everything in v3, plus:
+- `packages/fcl-base/x86_64-win64/syncobjs.ppu`
+- `packages/fcl-base/x86_64-win64/inifiles.ppu`
+- `packages/rtl-objpas/x86_64-win64/fmtbcd.ppu`
+- `packages/rtl-extra/x86_64-win64/objects.ppu`
+
+## Previous: `vibepascal-win64-4f10a8abba-v3.tar.gz` (2026-04-17, ~16MB)
 
 Adds `dateutils.ppu`, `strutils.ppu`, and `contnrs.ppu` on top of v2 —
 unblocks `commonx/systemx.pas` compile (hard dep on `dateutils`).
