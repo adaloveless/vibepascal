@@ -1,6 +1,23 @@
 # vibepascal Win64 Cross-Built Drop
 
-## Latest: `vibepascal-win64-624c9a7b04-v5.tar.gz` (2026-04-17, ~17MB)
+## Latest: `vibepascal-win64-41ff4a2b03-v6.tar.gz` (2026-04-17, ~17MB)
+
+Compiler-only refresh. PPUs unchanged vs v5 -- only
+`bin/ppcx64.exe` is rebuilt, bundling two compiler changes landed
+since v5:
+
+- **commit 41ff4a2b03**: `m_inline_var` enabled in `{$mode delphi}`.
+  Delphi-compat inline variable declarations (`for var X := A to B do`
+  and `var X := expr;` as statements) now work under `{$mode delphi}`.
+  Unblocks ~3,450 occurrences across 250+ files in FPC_commonx.
+- **commit fe2849d7a7**: `{$INLINE AUTO}` accepted as Delphi-compat
+  alias for `{$INLINE ON}`.
+
+PPUs from v5 are byte-identical (compiler version string unchanged).
+No need to re-download any non-compiler content if you already have v5
+extracted -- just swap `bin/ppcx64.exe`.
+
+## Previous: `vibepascal-win64-624c9a7b04-v5.tar.gz` (2026-04-17, ~17MB)
 
 Adds `tlhelp32.ppu` and `activex.ppu` under a new
 `packages/winunits-base/x86_64-win64/` directory. Picks up where Knox's
