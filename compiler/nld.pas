@@ -308,7 +308,10 @@ implementation
       begin
         inherited derefimpl;
         symtableentry:=tsym(symtableentryderef.resolve);
-        symtable:=symtableentry.owner;
+        if assigned(symtableentry) then
+          symtable:=symtableentry.owner
+        else
+          symtable:=nil;
         fprocdef:=tprocdef(fprocdefderef.resolve);
       end;
 

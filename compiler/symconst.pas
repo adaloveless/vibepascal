@@ -255,7 +255,9 @@ type
     {  never use the typename for this type, always expand full definition }
     df_llvm_no_typename,
     { record def that backs an anonymous tuple type }
-    df_tuple
+    df_tuple,
+    { localst must be stored because an inline proc's deref data references its symbols }
+    df_localst_cross_referenced
   );
   tdefoptions=set of tdefoption;
 

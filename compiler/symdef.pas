@@ -6451,7 +6451,8 @@ implementation
 
     function tprocdef.store_localst: boolean;
       begin
-        result:=has_inlininginfo or (df_generic in defoptions);
+        result:=has_inlininginfo or (df_generic in defoptions) or
+                (df_localst_cross_referenced in defoptions);
       end;
 
 
@@ -7357,6 +7358,11 @@ implementation
 
 
     procedure tprocdef.buildderefimpl;
+      var
+         old_symlist_count, si: longint;
+         sym: tsym;
+         ownerst: tsymtable;
+         ownerpd: tprocdef;
       begin
          inherited buildderefimpl;
 
@@ -7370,8 +7376,39 @@ implementation
          { inline tree }
          if has_inlininginfo then
            begin
+             old_symlist_count:=current_module.symlist.count;
              funcretsymderef.build(funcretsym);
              inlininginfo^.code.buildderefimpl;
+             { Check for symbols newly registered from non-stored localsts.
+               When an inline proc's node tree references a symbol from
+               another proc's local symtable, that symbol gets registered
+               in the module's symlist. If the other proc has
+               store_localst=false, its localst won't be written to the PPU,
+               leaving nil slots at read time. Force storage of those
+               localsts. }
+             for si:=old_symlist_count to current_module.symlist.count-1 do
+               begin
+                 if not assigned(current_module.symlist[si]) then
+                   continue;
+                 sym:=tsym(current_module.symlist[si]);
+                 if not assigned(sym.owner) then
+                   continue;
+                 ownerst:=sym.owner;
+                 if (ownerst.symtabletype=localsymtable) and
+                    assigned(ownerst.defowner) and
+                    (ownerst.defowner is tprocdef) then
+                   begin
+                     ownerpd:=tprocdef(ownerst.defowner);
+                     if not (df_localst_cross_referenced in ownerpd.defoptions) and
+                        not ownerpd.has_inlininginfo and
+                        not (df_generic in ownerpd.defoptions) then
+                       begin
+                         include(ownerpd.defoptions,df_localst_cross_referenced);
+                         tlocalsymtable(ownerpd.localst).buildderef;
+                         tlocalsymtable(ownerpd.localst).buildderefimpl;
+                       end;
+                   end;
+               end;
            end;
       end;
 
