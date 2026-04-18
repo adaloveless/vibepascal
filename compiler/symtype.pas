@@ -1038,13 +1038,39 @@ implementation
                 begin
                   idx:=BEtoN(unaligned(PInt32(@data[i{..i+3}])^));
                   inc(i,4);
+                  if (idx<0) or (idx>=pm.deflist.count) then
+                    begin
+                      writeln('DEREF BUG: defid=',idx,' out of range 0..',pm.deflist.count-1,
+                        ' in module ',pm.modulename^,' (current=',current_module.modulename^,
+                        ' dataidx=',dataidx,')');
+                      internalerror(2026041801);
+                    end;
                   result:=tdef(pm.deflist[idx]);
+                  if not assigned(result) then
+                    begin
+                      writeln('DEREF BUG: deflist[',idx,']=nil in module ',pm.modulename^,
+                        ' (current=',current_module.modulename^,' dataidx=',dataidx,')');
+                      internalerror(2026041802);
+                    end;
                 end;
               deref_symid :
                 begin
                   idx:=BEtoN(unaligned(PInt32(@data[i{..i+3}])^));
                   inc(i,4);
+                  if (idx<0) or (idx>=pm.symlist.count) then
+                    begin
+                      writeln('DEREF BUG: symid=',idx,' out of range 0..',pm.symlist.count-1,
+                        ' in module ',pm.modulename^,' (current=',current_module.modulename^,
+                        ' dataidx=',dataidx,')');
+                      internalerror(2026041803);
+                    end;
                   result:=tsym(pm.symlist[idx]);
+                  if not assigned(result) then
+                    begin
+                      writeln('DEREF BUG: symlist[',idx,']=nil in module ',pm.modulename^,
+                        ' (current=',current_module.modulename^,' dataidx=',dataidx,')');
+                      internalerror(2026041804);
+                    end;
                 end;
               deref_nil :
                 begin
