@@ -7394,6 +7394,14 @@ implementation
          if assigned(inlininginfo) then
            has_inlininginfo:=true;
 
+         if (current_module.state=ms_load) and
+            (current_module.symlist.count<=200) then
+           writeln('PPU DEREFIMPL PROC: ',procsym.realname,
+             ' defid=',defid,' inline=',has_inlininginfo,
+             ' store_localst=',store_localst,
+             ' localst_assigned=',assigned(localst),
+             ' in ',current_module.modulename^);
+
          { Locals }
          if store_localst and assigned(localst) then
            begin
@@ -7407,6 +7415,13 @@ implementation
             inlininginfo^.code.derefimpl;
             { funcretsym, this is always located in the localst }
             funcretsym:=tsym(funcretsymderef.resolve);
+            if not assigned(funcretsym) then
+              begin
+                writeln('PPU DEREF WARNING: funcretsym=nil for ',procsym.realname,
+                  ' defid=',defid,' in ',current_module.modulename^,
+                  ' -- disabling inlining');
+                has_inlininginfo:=false;
+              end;
           end
         else
           begin

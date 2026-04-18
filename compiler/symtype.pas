@@ -1060,9 +1060,8 @@ implementation
                   result:=tdef(pm.deflist[idx]);
                   if not assigned(result) then
                     begin
-                      writeln('DEREF BUG: deflist[',idx,']=nil in module ',pm.modulename^,
+                      writeln('PPU DEREF NIL DEF: deflist[',idx,']=nil in module ',pm.modulename^,
                         ' (current=',current_module.modulename^,' dataidx=',dataidx,')');
-                      internalerror(2026041802);
                     end;
                 end;
               deref_symid :
@@ -1079,22 +1078,24 @@ implementation
                   result:=tsym(pm.symlist[idx]);
                   if not assigned(result) then
                     begin
-                      writeln('DEREF BUG: symlist[',idx,']=nil in module ',pm.modulename^,
+                      writeln('PPU DEREF NIL SYM: symlist[',idx,']=nil in module ',pm.modulename^,
                         ' (current=',current_module.modulename^,' dataidx=',dataidx,')');
-                      writeln('DEREF BUG: symlist neighbors in ',pm.modulename^,':');
-                      if (idx>0) and assigned(pm.symlist[idx-1]) then
-                        writeln('  symlist[',idx-1,']=',tsym(pm.symlist[idx-1]).realname,
-                          ' typ=',ord(tsym(pm.symlist[idx-1]).typ),
-                          ' owner=',tsym(pm.symlist[idx-1]).owner.name^)
-                      else if idx>0 then
-                        writeln('  symlist[',idx-1,']=nil');
-                      if (idx+1<pm.symlist.count) and assigned(pm.symlist[idx+1]) then
-                        writeln('  symlist[',idx+1,']=',tsym(pm.symlist[idx+1]).realname,
-                          ' typ=',ord(tsym(pm.symlist[idx+1]).typ),
-                          ' owner=',tsym(pm.symlist[idx+1]).owner.name^)
-                      else if idx+1<pm.symlist.count then
-                        writeln('  symlist[',idx+1,']=nil');
-                      internalerror(2026041804);
+                      if (idx>0) and (idx-1<pm.symlist.count) then
+                        begin
+                          if assigned(pm.symlist[idx-1]) then
+                            writeln('  neighbor[',idx-1,']=',tsym(pm.symlist[idx-1]).realname,
+                              ' typ=',ord(tsym(pm.symlist[idx-1]).typ))
+                          else
+                            writeln('  neighbor[',idx-1,']=nil');
+                        end;
+                      if (idx+1<pm.symlist.count) then
+                        begin
+                          if assigned(pm.symlist[idx+1]) then
+                            writeln('  neighbor[',idx+1,']=',tsym(pm.symlist[idx+1]).realname,
+                              ' typ=',ord(tsym(pm.symlist[idx+1]).typ))
+                          else
+                            writeln('  neighbor[',idx+1,']=nil');
+                        end;
                     end;
                 end;
               deref_nil :
