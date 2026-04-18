@@ -1076,6 +1076,19 @@ implementation
                     begin
                       writeln('DEREF BUG: symlist[',idx,']=nil in module ',pm.modulename^,
                         ' (current=',current_module.modulename^,' dataidx=',dataidx,')');
+                      writeln('DEREF BUG: symlist neighbors in ',pm.modulename^,':');
+                      if (idx>0) and assigned(pm.symlist[idx-1]) then
+                        writeln('  symlist[',idx-1,']=',tsym(pm.symlist[idx-1]).realname,
+                          ' typ=',ord(tsym(pm.symlist[idx-1]).typ),
+                          ' owner=',tsym(pm.symlist[idx-1]).owner.name^)
+                      else if idx>0 then
+                        writeln('  symlist[',idx-1,']=nil');
+                      if (idx+1<pm.symlist.count) and assigned(pm.symlist[idx+1]) then
+                        writeln('  symlist[',idx+1,']=',tsym(pm.symlist[idx+1]).realname,
+                          ' typ=',ord(tsym(pm.symlist[idx+1]).typ),
+                          ' owner=',tsym(pm.symlist[idx+1]).owner.name^)
+                      else if idx+1<pm.symlist.count then
+                        writeln('  symlist[',idx+1,']=nil');
                       internalerror(2026041804);
                     end;
                 end;

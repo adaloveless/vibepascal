@@ -1709,26 +1709,45 @@ var
       procedure check_symlist_nil;
         var
           nil_count, si: longint;
+          sym: tsym;
+          has_nils: boolean;
         begin
           nil_count:=0;
+          has_nils:=false;
           for si:=0 to current_module.symlist.count-1 do
             begin
               if not assigned(current_module.symlist[si]) then
                 begin
                   inc(nil_count);
-                  writeln('PPU WRITE DIAG: symlist[',si,']=nil in module ',current_module.modulename^);
+                  has_nils:=true;
                 end
               else if not tsym(current_module.symlist[si]).is_registered then
-                begin
-                  inc(nil_count);
-                  writeln('PPU WRITE DIAG: symlist[',si,'] unregistered (symid=',
-                    tsym(current_module.symlist[si]).symid,') in module ',current_module.modulename^,
-                    ' typ=',ord(tsym(current_module.symlist[si]).typ));
-                end;
+                inc(nil_count);
             end;
           if nil_count>0 then
-            writeln('PPU WRITE DIAG: module ',current_module.modulename^,
-              ' has ',nil_count,' nil/unregistered syms out of ',current_module.symlist.count,' total');
+            begin
+              writeln('PPU WRITE DIAG: module ',current_module.modulename^,
+                ' has ',nil_count,' nil/unregistered syms out of ',current_module.symlist.count,' total');
+              if has_nils then
+                begin
+                  writeln('PPU WRITE DIAG: full symlist dump for ',current_module.modulename^,':');
+                  for si:=0 to current_module.symlist.count-1 do
+                    begin
+                      if not assigned(current_module.symlist[si]) then
+                        writeln('  [',si,'] NIL')
+                      else
+                        begin
+                          sym:=tsym(current_module.symlist[si]);
+                          write('  [',si,'] ',sym.realname,' typ=',ord(sym.typ));
+                          if assigned(sym.owner) and assigned(sym.owner.name) then
+                            write(' owner=',sym.owner.name^);
+                          if not sym.is_registered then
+                            write(' UNREG(symid=',sym.symid,')');
+                          writeln;
+                        end;
+                    end;
+                end;
+            end;
         end;
 
       begin
