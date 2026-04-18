@@ -4633,6 +4633,7 @@ procedure read_arguments(cmd:TCmdStr);
       {$ifdef i386}
         def_system_macro('CPUI386');
         def_system_macro('CPU32');
+        def_system_macro('CPU32BITS');
         def_system_macro('CPUX86');
         def_system_macro('FPC_HAS_TYPE_EXTENDED');
         def_system_macro('FPC_HAS_TYPE_DOUBLE');
@@ -4644,6 +4645,7 @@ procedure read_arguments(cmd:TCmdStr);
         def_system_macro('CPU68K');
         def_system_macro('CPUM68K');
         def_system_macro('CPU32');
+        def_system_macro('CPU32BITS');
         def_system_macro('FPC_CURRENCY_IS_INT64');
         def_system_macro('FPC_COMP_IS_INT64');
       {$endif}
@@ -4652,6 +4654,7 @@ procedure read_arguments(cmd:TCmdStr);
         def_system_macro('CPUPOWERPC');
         def_system_macro('CPUPOWERPC32');
         def_system_macro('CPU32');
+        def_system_macro('CPU32BITS');
         def_system_macro('FPC_CURRENCY_IS_INT64');
         def_system_macro('FPC_COMP_IS_INT64');
       {$endif}
@@ -4660,6 +4663,7 @@ procedure read_arguments(cmd:TCmdStr);
         def_system_macro('CPUPOWERPC');
         def_system_macro('CPUPOWERPC64');
         def_system_macro('CPU64');
+        def_system_macro('CPU64BITS');
         def_system_macro('FPC_CURRENCY_IS_INT64');
         def_system_macro('FPC_COMP_IS_INT64');
       {$endif}
@@ -4668,6 +4672,7 @@ procedure read_arguments(cmd:TCmdStr);
         def_system_macro('CPUX86_64');
         def_system_macro('CPUAMD64');
         def_system_macro('CPU64');
+        def_system_macro('CPU64BITS');
         def_system_macro('CPUX64');
         { not supported for now, afaik (FK)
          def_system_macro('FPC_HAS_TYPE_FLOAT128'); }
@@ -4686,6 +4691,7 @@ procedure read_arguments(cmd:TCmdStr);
         def_system_macro('CPUSPARC');
         def_system_macro('CPUSPARC32');
         def_system_macro('CPU32');
+        def_system_macro('CPU32BITS');
         def_system_macro('FPC_CURRENCY_IS_INT64');
         def_system_macro('FPC_COMP_IS_INT64');
       {$endif}
@@ -4694,6 +4700,7 @@ procedure read_arguments(cmd:TCmdStr);
         def_system_macro('CPUSPARCGEN');
         def_system_macro('CPUSPARC64');
         def_system_macro('CPU64');
+        def_system_macro('CPU64BITS');
         def_system_macro('FPC_CURRENCY_IS_INT64');
         def_system_macro('FPC_COMP_IS_INT64');
       {$endif}
@@ -4701,6 +4708,7 @@ procedure read_arguments(cmd:TCmdStr);
       {$ifdef arm}
         def_system_macro('CPUARM');
         def_system_macro('CPU32');
+        def_system_macro('CPU32BITS');
         def_system_macro('FPC_CURRENCY_IS_INT64');
         def_system_macro('FPC_COMP_IS_INT64');
       {$endif arm}
@@ -4715,6 +4723,7 @@ procedure read_arguments(cmd:TCmdStr);
       {$ifdef jvm}
         def_system_macro('CPUJVM');
         def_system_macro('CPU32');
+        def_system_macro('CPU32BITS');
         def_system_macro('FPC_CURRENCY_IS_INT64');
         def_system_macro('FPC_COMP_IS_INT64');
       {$endif jvm}
@@ -4725,6 +4734,7 @@ procedure read_arguments(cmd:TCmdStr);
         def_system_macro('CPUMIPS32');
         def_system_macro('CPUMIPSEL32');
         def_system_macro('CPU32');
+        def_system_macro('CPU32BITS');
         if target_info.system <> system_mipsel_ps1 then begin
           def_system_macro('FPC_HAS_TYPE_DOUBLE');
           def_system_macro('FPC_HAS_TYPE_SINGLE');
@@ -4746,6 +4756,7 @@ procedure read_arguments(cmd:TCmdStr);
         def_system_macro('CPUMIPS32');
         def_system_macro('CPUMIPSEB32');
         def_system_macro('CPU32');
+        def_system_macro('CPU32BITS');
         def_system_macro('FPC_HAS_TYPE_DOUBLE');
         def_system_macro('FPC_HAS_TYPE_SINGLE');
         def_system_macro('FPC_INCLUDE_SOFTWARE_INT64_TO_DOUBLE');
@@ -4762,6 +4773,7 @@ procedure read_arguments(cmd:TCmdStr);
         def_system_macro('CPUMIPSEB64');
         def_system_macro('CPUMIPS64EB');
         def_system_macro('CPU64');
+        def_system_macro('CPU64BITS');
         def_system_macro('FPC_INCLUDE_SOFTWARE_INT64_TO_DOUBLE');
         def_system_macro('FPC_CURRENCY_IS_INT64');
         def_system_macro('FPC_COMP_IS_INT64');
@@ -4776,6 +4788,7 @@ procedure read_arguments(cmd:TCmdStr);
         def_system_macro('CPUMIPSEL64');
         def_system_macro('CPUMIPS64EL');
         def_system_macro('CPU64');
+        def_system_macro('CPU64BITS');
         def_system_macro('FPC_HAS_TYPE_DOUBLE');
         def_system_macro('FPC_HAS_TYPE_SINGLE');
         def_system_macro('FPC_INCLUDE_SOFTWARE_INT64_TO_DOUBLE');
@@ -4818,6 +4831,7 @@ procedure read_arguments(cmd:TCmdStr);
       {$ifdef aarch64}
         def_system_macro('CPUAARCH64');
         def_system_macro('CPU64');
+        def_system_macro('CPU64BITS');
         def_system_macro('FPC_CURRENCY_IS_INT64');
         def_system_macro('FPC_COMP_IS_INT64');
       {$endif aarch64}
@@ -4826,6 +4840,7 @@ procedure read_arguments(cmd:TCmdStr);
         def_system_macro('CPURISCV');
         def_system_macro('CPURISCV32');
         def_system_macro('CPU32');
+        def_system_macro('CPU32BITS');
         def_system_macro('FPC_CURRENCY_IS_INT64');
         def_system_macro('FPC_COMP_IS_INT64');
         def_system_macro('FPC_REQUIRES_PROPER_ALIGNMENT');
@@ -4835,6 +4850,7 @@ procedure read_arguments(cmd:TCmdStr);
         def_system_macro('CPURISCV');
         def_system_macro('CPURISCV64');
         def_system_macro('CPU64');
+        def_system_macro('CPU64BITS');
         def_system_macro('FPC_CURRENCY_IS_INT64');
         def_system_macro('FPC_COMP_IS_INT64');
         def_system_macro('FPC_REQUIRES_PROPER_ALIGNMENT');
@@ -4843,6 +4859,7 @@ procedure read_arguments(cmd:TCmdStr);
       {$ifdef xtensa}
         def_system_macro('CPUXTENSA');
         def_system_macro('CPU32');
+        def_system_macro('CPU32BITS');
         def_system_macro('FPC_CURRENCY_IS_INT64');
         def_system_macro('FPC_COMP_IS_INT64');
         def_system_macro('FPC_REQUIRES_PROPER_ALIGNMENT');
@@ -4859,6 +4876,7 @@ procedure read_arguments(cmd:TCmdStr);
         def_system_macro('CPUWASM');
         def_system_macro('CPUWASM32');
         def_system_macro('CPU32');
+        def_system_macro('CPU32BITS');
         def_system_macro('FPC_CURRENCY_IS_INT64');
         def_system_macro('FPC_COMP_IS_INT64');
       {$endif wasm32}
@@ -4867,6 +4885,7 @@ procedure read_arguments(cmd:TCmdStr);
         def_system_macro('CPULOONGARCH');
         def_system_macro('CPULOONGARCH64');
         def_system_macro('CPU64');
+        def_system_macro('CPU64BITS');
         def_system_macro('FPC_CURRENCY_IS_INT64');
         def_system_macro('FPC_COMP_IS_INT64');
         def_system_macro('FPC_REQUIRES_PROPER_ALIGNMENT');
