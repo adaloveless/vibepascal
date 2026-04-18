@@ -23,7 +23,7 @@ unit fppu;
 
 {$i fpcdefs.inc}
 
-{ $define DEBUG_UNIT_CRC_CHANGES}
+{$define DEBUG_UNIT_CRC_CHANGES}
 
 { close ppufiles on system that are
   short on file handles like DOS system PM }
@@ -461,6 +461,12 @@ var
         interface_crc:=ppufile.header.interface_checksum;
         indirect_crc:=ppufile.header.indirect_checksum;
         change_endian:=ppufile.change_endian;
+{$ifdef DEBUG_UNIT_CRC_CHANGES}
+        if modulename^='SYSTEM' then
+          Comment(V_Normal,'  openppu SYSTEM header CRCs: impl='+hexstr(crc,8)+
+            ' intf='+hexstr(interface_crc,8)+' ind='+hexstr(indirect_crc,8)+
+            ' file='+ppufilename);
+{$endif}
       { Show Debug info }
         if ppufiletime<>-1 then
           Message1(unit_u_ppu_time,filetimestring(ppufiletime))
@@ -954,6 +960,13 @@ var
                ppufile.putlongint(longint(hp.interface_checksum));
                ppufile.putlongint(longint(hp.indirect_checksum));
                ppufile.do_crc:=oldcrc;
+{$ifdef DEBUG_UNIT_CRC_CHANGES}
+               if u.modulename^='SYSTEM' then
+                 Comment(V_Normal,'  writeusedunit SYSTEM for '+realmodulename^+
+                   ': impl='+hexstr(hp.checksum,8)+' intf='+hexstr(hp.interface_checksum,8)+
+                   ' ind='+hexstr(hp.indirect_checksum,8)+
+                   ' crc_final='+BoolToStr(u.crc_final,'T','F'));
+{$endif}
                { Combine all indirect checksums from units used by this unit.
                  The indirect_crc contains the classes+records of this unit as well. }
                if intf then
@@ -1403,6 +1416,12 @@ var
            pu.checksum:=checksum;
            pu.interface_checksum:=intfchecksum;
            pu.indirect_checksum:=indchecksum;
+{$ifdef DEBUG_UNIT_CRC_CHANGES}
+           if upper(hs)='SYSTEM' then
+             Comment(V_Normal,'  readloadunit SYSTEM stored in '+realmodulename^+
+               ': impl='+hexstr(checksum,8)+' intf='+hexstr(intfchecksum,8)+
+               ' ind='+hexstr(indchecksum,8));
+{$endif}
          end;
         in_interface:=false;
       end;
@@ -2280,12 +2299,17 @@ var
             begin
               Message2(unit_u_recompile_crc_change,realmodulename^,pu.u.ppufilename,@queuecomment);
   {$ifdef DEBUG_UNIT_CRC_CHANGES}
-              if (pu.u.interface_crc<>pu.interface_checksum) then
-                Comment(V_Normal,'  intfcrc change: '+hexstr(pu.u.interface_crc,8)+' for '+pu.u.ppufilename+' <> '+hexstr(pu.interface_checksum,8)+' in unit '+realmodulename^)
-              else if (pu.u.indirect_crc<>pu.indirect_checksum) then
-                Comment(V_Normal,'  indcrc change: '+hexstr(pu.u.indirect_crc,8)+' for '+pu.u.ppufilename+' <> '+hexstr(pu.indirect_checksum,8)+' in unit '+realmodulename^)
-              else
-                Comment(V_Normal,'  implcrc change: '+hexstr(pu.u.crc,8)+' for '+pu.u.ppufilename+' <> '+hexstr(pu.checksum,8)+' in unit '+realmodulename^);
+              Comment(V_Normal,'  CRC mismatch detail for '+pu.u.ppufilename+' used by '+realmodulename^+':');
+              Comment(V_Normal,'    intfcrc: loaded='+hexstr(pu.u.interface_crc,8)+' stored='+hexstr(pu.interface_checksum,8)+
+                BoolToStr(pu.u.interface_crc<>pu.interface_checksum,' MISMATCH',''));
+              Comment(V_Normal,'    indcrc:  loaded='+hexstr(pu.u.indirect_crc,8)+' stored='+hexstr(pu.indirect_checksum,8)+
+                BoolToStr(pu.u.indirect_crc<>pu.indirect_checksum,' MISMATCH',''));
+              Comment(V_Normal,'    implcrc: loaded='+hexstr(pu.u.crc,8)+' stored='+hexstr(pu.checksum,8)+
+                BoolToStr(pu.u.crc<>pu.checksum,' MISMATCH',''));
+              Comment(V_Normal,'    flags: crc_final='+BoolToStr(pu.u.crc_final,'T','F')+
+                ' intf_compiled='+BoolToStr(pu.u.interface_compiled,'T','F')+
+                ' do_reload='+BoolToStr(pu.u.do_reload,'T','F')+
+                ' state='+pu.u.statestr);
   {$endif DEBUG_UNIT_CRC_CHANGES}
               recompile_reason:=rr_crcchanged;
               {$IFDEF DEBUG_PPU_CYCLES}
