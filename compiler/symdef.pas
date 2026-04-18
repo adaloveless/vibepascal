@@ -1424,7 +1424,7 @@ implementation
       { parser }
       pgenutil,
       { module }
-      fmodule,ppu,
+      fmodule,finput,ppu,
       { other }
       aasmbase,
       gendef,
@@ -6789,9 +6789,21 @@ implementation
           begin
             localst:=tlocalsymtable.create(self,level);
             tlocalsymtable(localst).ppuload(ppufile);
+            if (current_module.state=ms_load) and
+               (current_module.symlist.count<=200) then
+              writeln('PPU PROCDEF LOAD: localst LOADED defid=',defid,
+                ' in ',current_module.modulename^,
+                ' (inline=',has_inlininginfo,',generic=',df_generic in defoptions,')');
           end
          else
-          localst:=nil;
+          begin
+            localst:=nil;
+            if (current_module.state=ms_load) and
+               (current_module.symlist.count<=200) then
+              writeln('PPU PROCDEF LOAD: localst SKIPPED defid=',defid,
+                ' in ',current_module.modulename^,
+                ' (inline=',has_inlininginfo,',generic=',df_generic in defoptions,')');
+          end;
          { inline stuff }
          if has_inlininginfo then
            inlininginfo^.code:=ppuloadnodetree(ppufile);

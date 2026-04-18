@@ -637,7 +637,12 @@ implementation
         if assigned(registered_in_module) then
           begin
             if symid>=0 then
-              tmodule(registered_in_module).symlist[symid]:=nil;
+              begin
+                if tmodule(registered_in_module).state=ms_load then
+                  writeln('PPU DESTROY DURING LOAD: symlist[',symid,']=',realname,
+                    ' typ=',ord(typ),' in module ',tmodule(registered_in_module).modulename^);
+                tmodule(registered_in_module).symlist[symid]:=nil;
+              end;
           end;
         stringdispose(deprecatedmsg);
         RefList.Free;

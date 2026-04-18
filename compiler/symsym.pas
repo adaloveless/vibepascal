@@ -545,7 +545,7 @@ implementation
        systems,
        { symtable }
        defutil,symtable,
-       fmodule,
+       fmodule,finput,
        { tree }
        node,
        { aasm }
@@ -656,6 +656,10 @@ implementation
          SymId:=ppufile.getlongint;
          current_module.symlist[SymId]:=self;
          registered_in_module:=current_module;
+         if (current_module.state=ms_load) and
+            (current_module.symlist.count<=200) then
+           writeln('PPU SYM REG: [',SymId,'] ',realname,' typ=',ord(st),
+             ' in ',current_module.modulename^);
          ppufile.getposinfo(fileinfo);
          visibility:=tvisibility(ppufile.getbyte);
          ppufile.getset(tppuset2(symoptions));
