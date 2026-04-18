@@ -1710,7 +1710,7 @@ var
         var
           nil_count, si: longint;
           sym: tsym;
-          has_nils: boolean;
+          has_nils, do_dump: boolean;
         begin
           nil_count:=0;
           has_nils:=false;
@@ -1724,27 +1724,27 @@ var
               else if not tsym(current_module.symlist[si]).is_registered then
                 inc(nil_count);
             end;
+          do_dump:=has_nils or (current_module.symlist.count<=200);
           if nil_count>0 then
+            writeln('PPU WRITE DIAG: module ',current_module.modulename^,
+              ' has ',nil_count,' nil/unregistered syms out of ',current_module.symlist.count,' total');
+          if do_dump and (current_module.symlist.count>0) then
             begin
-              writeln('PPU WRITE DIAG: module ',current_module.modulename^,
-                ' has ',nil_count,' nil/unregistered syms out of ',current_module.symlist.count,' total');
-              if has_nils then
+              writeln('PPU WRITE DIAG: symlist dump for ',current_module.modulename^,
+                ' (',current_module.symlist.count,' entries):');
+              for si:=0 to current_module.symlist.count-1 do
                 begin
-                  writeln('PPU WRITE DIAG: full symlist dump for ',current_module.modulename^,':');
-                  for si:=0 to current_module.symlist.count-1 do
+                  if not assigned(current_module.symlist[si]) then
+                    writeln('  [',si,'] NIL')
+                  else
                     begin
-                      if not assigned(current_module.symlist[si]) then
-                        writeln('  [',si,'] NIL')
-                      else
-                        begin
-                          sym:=tsym(current_module.symlist[si]);
-                          write('  [',si,'] ',sym.realname,' typ=',ord(sym.typ));
-                          if assigned(sym.owner) and assigned(sym.owner.name) then
-                            write(' owner=',sym.owner.name^);
-                          if not sym.is_registered then
-                            write(' UNREG(symid=',sym.symid,')');
-                          writeln;
-                        end;
+                      sym:=tsym(current_module.symlist[si]);
+                      write('  [',si,'] ',sym.realname,' typ=',ord(sym.typ));
+                      if assigned(sym.owner) and assigned(sym.owner.name) then
+                        write(' owner=',sym.owner.name^);
+                      if not sym.is_registered then
+                        write(' UNREG(symid=',sym.symid,')');
+                      writeln;
                     end;
                 end;
             end;
@@ -2097,6 +2097,35 @@ var
          discardppu;
       end;
 
+      procedure ppu_read_check_symlist(amodule: tmodule; const phase: shortstring);
+        var
+          si, nil_count: longint;
+          sym: tsym;
+        begin
+          nil_count:=0;
+          for si:=0 to amodule.symlist.count-1 do
+            if not assigned(amodule.symlist[si]) then
+              inc(nil_count);
+          if nil_count>0 then
+            begin
+              writeln('PPU READ DIAG [',phase,']: module ',amodule.modulename^,
+                ' has ',nil_count,' nil symlist entries out of ',amodule.symlist.count);
+              for si:=0 to amodule.symlist.count-1 do
+                begin
+                  if not assigned(amodule.symlist[si]) then
+                    writeln('  [',si,'] NIL')
+                  else
+                    begin
+                      sym:=tsym(amodule.symlist[si]);
+                      write('  [',si,'] ',sym.realname,' typ=',ord(sym.typ));
+                      if assigned(sym.owner) and assigned(sym.owner.name) then
+                        write(' owner=',sym.owner.name^);
+                      writeln;
+                    end;
+                end;
+            end;
+        end;
+
       function tppumodule.load_usedunits: boolean;
       { self is a ppu (or in a package) }
       begin
@@ -2119,6 +2148,8 @@ var
           symlist.count:=ppufile.header.symlistsize;
           globalsymtable:=tglobalsymtable.create(realmodulename^,moduleid);
           tstoredsymtable(globalsymtable).ppuload(ppufile);
+
+          ppu_read_check_symlist(self,'A:after-intf-ppuload');
 
           if ppufile.readentry<>ibexportedmacros then
             Message(unit_f_ppu_read_error);
@@ -2145,6 +2176,8 @@ var
             internalerror(2026022316);
         end;
 
+        ppu_read_check_symlist(self,'B:after-impl-deps');
+
         if not ppu_waitingfor_crc then
           begin
             ppu_waitingfor_crc:=true;
@@ -2156,6 +2189,8 @@ var
                 tstaticsymtable(localsymtable).ppuload(ppufile);
               end;
 
+            ppu_read_check_symlist(self,'C:after-impl-ppuload');
+
             { we can now dereference all pointers to the implementation parts }
             tstoredsymtable(globalsymtable).derefimpl(false);
             { we've just loaded the localsymtable from the ppu file, so everything
@@ -2163,6 +2198,8 @@ var
               there) }
             if assigned(localsymtable) then
               tstoredsymtable(localsymtable).derefimpl(false);
+
+            ppu_read_check_symlist(self,'D:after-derefimpl');
 
             remove_waitforunit_cycles;
 
