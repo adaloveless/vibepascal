@@ -655,6 +655,7 @@ implementation
 {$endif symansistr}
          SymId:=ppufile.getlongint;
          current_module.symlist[SymId]:=self;
+         registered_in_module:=current_module;
          ppufile.getposinfo(fileinfo);
          visibility:=tvisibility(ppufile.getbyte);
          ppufile.getset(tppuset2(symoptions));
@@ -774,6 +775,7 @@ implementation
           begin
             tmod.symlist.Add(self);
             SymId:=tmod.symlist.Count-1;
+            registered_in_module:=tmod;
           end
         else
           SymId:=symid_registered_nost;

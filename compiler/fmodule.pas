@@ -849,8 +849,15 @@ implementation
             deflist.free;
             deflist := nil;
           end;
-        symlist.free;
-        symlist := nil;
+        if assigned(symlist) then
+          begin
+            for i:=0 to symlist.Count-1 do
+              if assigned(symlist[i]) and
+                 (tsym(symlist[i]).registered_in_module=self) then
+                tsym(symlist[i]).registered_in_module:=nil;
+            symlist.free;
+            symlist := nil;
+          end;
         ptrdefs.free;
         ptrdefs := nil;
         arraydefs.free;

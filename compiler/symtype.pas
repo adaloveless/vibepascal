@@ -128,6 +128,7 @@ interface
       protected
        function registered : boolean;
       public
+         registered_in_module : tmodulebase;
          fileinfo   : tfileposinfo;
          { size of fileinfo is 10 bytes, so if a >word aligned type would follow,
            two bytes of memory would be wasted, so we put two one byte fields over here }
@@ -628,10 +629,16 @@ implementation
          visibility:=vis_public;
          deprecatedmsg:=nil;
          symid:=symid_not_registered;
+         registered_in_module:=nil;
       end;
 
     destructor  Tsym.destroy;
       begin
+        if assigned(registered_in_module) then
+          begin
+            if symid>=0 then
+              tmodule(registered_in_module).symlist[symid]:=nil;
+          end;
         stringdispose(deprecatedmsg);
         RefList.Free;
         RefList := nil;

@@ -1706,6 +1706,31 @@ var
               ' total (symlistsize=',current_module.symlist.count,')');
         end;
 
+      procedure check_symlist_nil;
+        var
+          nil_count, si: longint;
+        begin
+          nil_count:=0;
+          for si:=0 to current_module.symlist.count-1 do
+            begin
+              if not assigned(current_module.symlist[si]) then
+                begin
+                  inc(nil_count);
+                  writeln('PPU WRITE DIAG: symlist[',si,']=nil in module ',current_module.modulename^);
+                end
+              else if not tsym(current_module.symlist[si]).is_registered then
+                begin
+                  inc(nil_count);
+                  writeln('PPU WRITE DIAG: symlist[',si,'] unregistered (symid=',
+                    tsym(current_module.symlist[si]).symid,') in module ',current_module.modulename^,
+                    ' typ=',ord(tsym(current_module.symlist[si]).typ));
+                end;
+            end;
+          if nil_count>0 then
+            writeln('PPU WRITE DIAG: module ',current_module.modulename^,
+              ' has ',nil_count,' nil/unregistered syms out of ',current_module.symlist.count,' total');
+        end;
+
       begin
          Message1(unit_u_ppu_write,realmodulename^);
 
@@ -1915,6 +1940,7 @@ var
          ppufile.header.deflistsize:=current_module.deflist.count;
          ppufile.header.symlistsize:=current_module.symlist.count;
          check_deflist_unreg;
+         check_symlist_nil;
          ppufile.writeheader;
 
 {$ifdef Test_Double_checksum_write}
