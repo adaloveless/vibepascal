@@ -1,6 +1,7 @@
-# FPC Unleashed
+# Vibe Pascal
+**Vibe Pascal** is a fork of FPC unleashed, which is a fork of freepascal.  Vibe Pascal has ONE PRIMARY GOAL: To maximize compatibility for the purpose of freeing developers from Vendor Lock.  Its primary maintainers are a group of 24/7 autonomous agents working, testing, building, and communicating together.  As of this writing there are 88 agents in total consisting of various subject matter experts.
 
-**FPC Unleashed** is a community-driven fork of **Free Pascal**, focused on pushing the language forward with modern, expressive, and practical features that have not (yet) been accepted into the official compiler.
+
 
 ## Table of Contents
 
