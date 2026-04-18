@@ -1679,6 +1679,33 @@ var
 
 
     procedure tppumodule.writeppu;
+
+      procedure check_deflist_unreg;
+        var
+          unreg_count, di: longint;
+        begin
+          unreg_count:=0;
+          for di:=0 to current_module.deflist.count-1 do
+            begin
+              if not assigned(current_module.deflist[di]) then
+                begin
+                  inc(unreg_count);
+                  writeln('PPU WRITE DIAG: deflist[',di,']=nil in module ',current_module.modulename^);
+                end
+              else if not tdef(current_module.deflist[di]).is_registered then
+                begin
+                  inc(unreg_count);
+                  writeln('PPU WRITE DIAG: deflist[',di,'] unregistered (defid=',
+                    tdef(current_module.deflist[di]).defid,') in module ',current_module.modulename^,
+                    ' typ=',ord(tdef(current_module.deflist[di]).typ));
+                end;
+            end;
+          if unreg_count>0 then
+            writeln('PPU WRITE DIAG: module ',current_module.modulename^,
+              ' has ',unreg_count,' unregistered/nil defs out of ',current_module.deflist.count,
+              ' total (symlistsize=',current_module.symlist.count,')');
+        end;
+
       begin
          Message1(unit_u_ppu_write,realmodulename^);
 
@@ -1887,6 +1914,7 @@ var
          ppufile.header.common.flags:=headerflags;
          ppufile.header.deflistsize:=current_module.deflist.count;
          ppufile.header.symlistsize:=current_module.symlist.count;
+         check_deflist_unreg;
          ppufile.writeheader;
 
 {$ifdef Test_Double_checksum_write}
