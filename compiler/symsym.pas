@@ -759,6 +759,7 @@ implementation
     procedure tstoredsym.register_sym;
       var
         tmod : tmodule;
+        ownerpd : tprocdef;
       begin
         if registered then
           exit;
@@ -783,6 +784,27 @@ implementation
           end
         else
           SymId:=symid_registered_nost;
+        { Cross-reference promotion: if this local sym belongs to a procdef whose
+          localst would not otherwise be stored, flag the procdef so its localst
+          gets written during the normal ppuwrite flow. Without this, the sym's
+          SymId slot is nil at PPU read time because the localst is skipped.
+          Do NOT call buildderef here — the global buildderefimpl walk at write
+          time will pick up the flag via store_localst and handle it safely.
+          Only promote procdefs in the current module — foreign procdefs'
+          localsts are already decided by their own PPU. }
+        if assigned(owner) and
+           (owner.symtabletype=localsymtable) and
+           assigned(owner.defowner) and
+           (owner.defowner is tprocdef) and
+           (tmod=current_module) then
+          begin
+            ownerpd:=tprocdef(owner.defowner);
+            if not ownerpd.has_inlininginfo and
+               not (df_generic in ownerpd.defoptions) and
+               not (df_localst_cross_referenced in ownerpd.defoptions) and
+               assigned(ownerpd.localst) then
+              include(ownerpd.defoptions, df_localst_cross_referenced);
+          end;
       end;
 
 {****************************************************************************
