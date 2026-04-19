@@ -6790,20 +6790,24 @@ implementation
           begin
             localst:=tlocalsymtable.create(self,level);
             tlocalsymtable(localst).ppuload(ppufile);
+{$ifdef DEBUG_PPU_LIST_DIAGS}
             if (current_module.state=ms_load) and
                (current_module.symlist.count<=200) then
               writeln('PPU PROCDEF LOAD: localst LOADED defid=',defid,
                 ' in ',current_module.modulename^,
                 ' (inline=',has_inlininginfo,',generic=',df_generic in defoptions,')');
+{$endif DEBUG_PPU_LIST_DIAGS}
           end
          else
           begin
             localst:=nil;
+{$ifdef DEBUG_PPU_LIST_DIAGS}
             if (current_module.state=ms_load) and
                (current_module.symlist.count<=200) then
               writeln('PPU PROCDEF LOAD: localst SKIPPED defid=',defid,
                 ' in ',current_module.modulename^,
                 ' (inline=',has_inlininginfo,',generic=',df_generic in defoptions,')');
+{$endif DEBUG_PPU_LIST_DIAGS}
           end;
          { inline stuff }
          if has_inlininginfo then
@@ -7431,6 +7435,7 @@ implementation
          if assigned(inlininginfo) then
            has_inlininginfo:=true;
 
+{$ifdef DEBUG_PPU_LIST_DIAGS}
          if (current_module.state=ms_load) and
             (current_module.symlist.count<=200) then
            writeln('PPU DEREFIMPL PROC: ',procsym.realname,
@@ -7438,6 +7443,7 @@ implementation
              ' store_localst=',store_localst,
              ' localst_assigned=',assigned(localst),
              ' in ',current_module.modulename^);
+{$endif DEBUG_PPU_LIST_DIAGS}
 
          { Locals }
          if store_localst and assigned(localst) then
@@ -7454,9 +7460,11 @@ implementation
             funcretsym:=tsym(funcretsymderef.resolve);
             if not assigned(funcretsym) then
               begin
+{$ifdef DEBUG_PPU_LIST_DIAGS}
                 writeln('PPU DEREF WARNING: funcretsym=nil for ',procsym.realname,
                   ' defid=',defid,' in ',current_module.modulename^,
                   ' -- disabling inlining');
+{$endif DEBUG_PPU_LIST_DIAGS}
                 has_inlininginfo:=false;
               end;
           end

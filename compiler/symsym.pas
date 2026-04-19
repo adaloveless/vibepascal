@@ -656,10 +656,12 @@ implementation
          SymId:=ppufile.getlongint;
          current_module.symlist[SymId]:=self;
          registered_in_module:=current_module;
+{$ifdef DEBUG_PPU_LIST_DIAGS}
          if (current_module.state=ms_load) and
             (current_module.symlist.count<=200) then
            writeln('PPU SYM REG: [',SymId,'] ',realname,' typ=',ord(st),
              ' in ',current_module.modulename^);
+{$endif DEBUG_PPU_LIST_DIAGS}
          ppufile.getposinfo(fileinfo);
          visibility:=tvisibility(ppufile.getbyte);
          ppufile.getset(tppuset2(symoptions));

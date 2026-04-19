@@ -36,6 +36,14 @@
   {$define cpawaremessages}
 {$endif}
 
+{ DEBUG_PPU_LIST_DIAGS enables runtime nil/unregistered scans and verbose
+  sym/def registration logging on PPU read/write paths (fppu, symsym, symdef).
+  Off by default after v20+v25 fixed the PPU writer nil-symlist crashes. The
+  remaining reports are harmless noise (unused unique_id'd defs; see
+  WORKING_MEMORY Cycle 169). Re-enable only when diagnosing a new PPU
+  regression. }
+{ $define DEBUG_PPU_LIST_DIAGS}
+
 {$ifdef DEBUG_ALL_OPT}
   { for aopt unit }
   {$define DEBUG_OPTALLOC}

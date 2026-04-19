@@ -24,6 +24,7 @@ unit fppu;
 {$i fpcdefs.inc}
 
 {$define DEBUG_UNIT_CRC_CHANGES}
+{ DEBUG_PPU_LIST_DIAGS is declared in fpcdefs.inc (off by default). }
 
 { close ppufiles on system that are
   short on file handles like DOS system PM }
@@ -1699,6 +1700,7 @@ var
 
     procedure tppumodule.writeppu;
 
+{$ifdef DEBUG_PPU_LIST_DIAGS}
       procedure check_deflist_unreg;
         var
           unreg_count, di: longint;
@@ -1768,6 +1770,7 @@ var
                 end;
             end;
         end;
+{$endif DEBUG_PPU_LIST_DIAGS}
 
       begin
          Message1(unit_u_ppu_write,realmodulename^);
@@ -1977,8 +1980,10 @@ var
          ppufile.header.common.flags:=headerflags;
          ppufile.header.deflistsize:=current_module.deflist.count;
          ppufile.header.symlistsize:=current_module.symlist.count;
+{$ifdef DEBUG_PPU_LIST_DIAGS}
          check_deflist_unreg;
          check_symlist_nil;
+{$endif DEBUG_PPU_LIST_DIAGS}
          ppufile.writeheader;
 
 {$ifdef Test_Double_checksum_write}
@@ -2116,6 +2121,7 @@ var
          discardppu;
       end;
 
+{$ifdef DEBUG_PPU_LIST_DIAGS}
       procedure ppu_read_check_symlist(amodule: tmodule; const phase: shortstring);
         var
           si, nil_count: longint;
@@ -2144,6 +2150,7 @@ var
                 end;
             end;
         end;
+{$endif DEBUG_PPU_LIST_DIAGS}
 
       function tppumodule.load_usedunits: boolean;
       { self is a ppu (or in a package) }
@@ -2168,7 +2175,9 @@ var
           globalsymtable:=tglobalsymtable.create(realmodulename^,moduleid);
           tstoredsymtable(globalsymtable).ppuload(ppufile);
 
+{$ifdef DEBUG_PPU_LIST_DIAGS}
           ppu_read_check_symlist(self,'A:after-intf-ppuload');
+{$endif DEBUG_PPU_LIST_DIAGS}
 
           if ppufile.readentry<>ibexportedmacros then
             Message(unit_f_ppu_read_error);
@@ -2195,7 +2204,9 @@ var
             internalerror(2026022316);
         end;
 
+{$ifdef DEBUG_PPU_LIST_DIAGS}
         ppu_read_check_symlist(self,'B:after-impl-deps');
+{$endif DEBUG_PPU_LIST_DIAGS}
 
         if not ppu_waitingfor_crc then
           begin
@@ -2208,7 +2219,9 @@ var
                 tstaticsymtable(localsymtable).ppuload(ppufile);
               end;
 
+{$ifdef DEBUG_PPU_LIST_DIAGS}
             ppu_read_check_symlist(self,'C:after-impl-ppuload');
+{$endif DEBUG_PPU_LIST_DIAGS}
 
             { we can now dereference all pointers to the implementation parts }
             tstoredsymtable(globalsymtable).derefimpl(false);
@@ -2218,7 +2231,9 @@ var
             if assigned(localsymtable) then
               tstoredsymtable(localsymtable).derefimpl(false);
 
+{$ifdef DEBUG_PPU_LIST_DIAGS}
             ppu_read_check_symlist(self,'D:after-derefimpl');
+{$endif DEBUG_PPU_LIST_DIAGS}
 
             remove_waitforunit_cycles;
 
