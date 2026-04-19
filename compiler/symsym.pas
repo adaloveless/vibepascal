@@ -762,6 +762,9 @@ implementation
       var
         tmod : tmodule;
         ownerpd : tprocdef;
+{$ifdef DEBUG_CROSS_MODULE_REGISTER}
+        owner_name, owner_kind, mod_name : string;
+{$endif DEBUG_CROSS_MODULE_REGISTER}
       begin
         if registered then
           exit;
@@ -772,11 +775,44 @@ implementation
               begin
                 comment(v_error,'Symbol '+realname+' from module '+tmod.mainsource+' registered with current module '+current_module.mainsource);
               end;
+{$ifdef DEBUG_CROSS_MODULE_REGISTER}
+            { Trace the silent fallback path: foreign sym whose owner symtable
+              has moduleid that get_module() can't resolve. This was the suspected
+              cause of Knox's v25 cold-compile EAV (commonx betterobject chain). }
+            if not assigned(tmod) then
+              begin
+                if assigned(owner.name) then owner_name:=owner.name^ else owner_name:='<no-name>';
+                case owner.symtabletype of
+                  globalsymtable: owner_kind:='globalsymtable';
+                  staticsymtable: owner_kind:='staticsymtable';
+                  localsymtable: owner_kind:='localsymtable';
+                  parasymtable: owner_kind:='parasymtable';
+                  recordsymtable: owner_kind:='recordsymtable';
+                  objectsymtable: owner_kind:='objectsymtable';
+                else
+                  owner_kind:='other';
+                end;
+                if assigned(current_module) then mod_name:=current_module.modulename^ else mod_name:='<no-current-mod>';
+                writeln('CROSS-MOD REG: sym=',realname,' typ=',ord(typ),
+                  ' owner=',owner_name,'(',owner_kind,',moduleid=',owner.moduleid,')',
+                  ' tmod=NIL -> falling back to current_module=',mod_name);
+              end;
+{$endif DEBUG_CROSS_MODULE_REGISTER}
             if not assigned(tmod) then
               tmod:=current_module;
           end
         else
           tmod:=current_module;
+{$ifdef DEBUG_CROSS_MODULE_REGISTER}
+        if assigned(owner) and assigned(current_module) and assigned(tmod) and (tmod<>current_module) then
+          begin
+            if assigned(owner.name) then owner_name:=owner.name^ else owner_name:='<no-name>';
+            writeln('CROSS-MOD REG: sym=',realname,' typ=',ord(typ),
+              ' owner=',owner_name,'(moduleid=',owner.moduleid,')',
+              ' registered into FOREIGN module=',tmod.modulename^,
+              ' current_module=',current_module.modulename^);
+          end;
+{$endif DEBUG_CROSS_MODULE_REGISTER}
         { Register in current_module }
         if assigned(tmod) then
           begin

@@ -44,6 +44,14 @@
   regression. }
 { $define DEBUG_PPU_LIST_DIAGS}
 
+{ DEBUG_CROSS_MODULE_REGISTER traces the silent fallback path in
+  tstoredsym.register_sym where find_module_from_symtable returns nil and the
+  foreign sym ends up being added to current_module.symlist. This is the
+  suspected cause of the v25 cold-compile EAV reported by Knox 2026-04-19
+  (commonx/Signals.pas + betterobject + typex chain). Off by default. Enable
+  to capture which syms hit this path during a failing compile. }
+{$define DEBUG_CROSS_MODULE_REGISTER}
+
 {$ifdef DEBUG_ALL_OPT}
   { for aopt unit }
   {$define DEBUG_OPTALLOC}
