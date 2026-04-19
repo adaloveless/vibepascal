@@ -112,6 +112,8 @@ begin
     T:=P.Targets.AddImplicitUnit('libkinect10.pp');
     T:=P.Targets.AddImplicitUnit('httpapi.pp');
     T.Dependencies.AddInclude('tmschema.inc');
+    T:=P.Targets.AddImplicitUnit('tlhelp32.pp');
+    T:=P.Targets.AddImplicitUnit('winsvc.pp');
     P.ExamplePath.Add('tests/');
     P.Targets.AddExampleProgram('testcom1.pp');
     P.Targets.AddExampleProgram('OOTest.pp');
