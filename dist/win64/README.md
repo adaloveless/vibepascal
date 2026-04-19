@@ -1,6 +1,41 @@
 # vibepascal Win64 Cross-Built Drop
 
-## Latest: `vibepascal-win64-41717f9142-v8.tar.gz` (2026-04-17, ~18MB)
+## Latest: `vibepascal-win64-972fcebdd2-v27-diag.tar.gz` (2026-04-19, ~99MB)
+
+**Diagnostic-only refresh** built specifically for Knox's v25
+cold-compile EAV investigation (commonx Signals.pas / betterobject /
+typex chain). Compiler binary `bin/ppcx64.exe` rebuilt from commit
+`972fcebdd2` with a new define `DEBUG_CROSS_MODULE_REGISTER` enabled
+at build time.
+
+When `tstoredsym.register_sym`'s silent fallback path triggers
+(foreign sym whose owner symtable's `moduleid` cannot be resolved by
+`find_module_from_symtable`), the compiler now prints a `CROSS-MOD
+REG: ...` line to stdout naming the sym, owner symtable kind, owner
+moduleid, and the current_module the sym was spliced into. This is
+the suspected origin of the v25 EAV.
+
+PPU output is bit-identical to v26 -- only stdout differs in the
+narrow conditions above. All v26 RTL/package PPUs are reused
+unchanged. Knox should drop this over his v26 install, re-run the
+cold-compile probe with `-vt`, and ship back any `CROSS-MOD REG:`
+lines captured before the crash.
+
+See `vibepascal-win64/README-v27-diag.txt` inside the tarball for
+full instructions.
+
+## Previous: `vibepascal-win64-d726f8a8fb-v26.tar.gz` (2026-04-18, ~99MB)
+
+Stock `tlhelp32.ppu` and `winsvc.ppu` added to the Win64 RTL drop;
+both were missing from v25.
+
+## Previous: `vibepascal-win64-c3b80721ad-v25.tar.gz` (2026-04-18, ~99MB)
+
+PPU writer nil-symlist crash fix for non-inline procs with
+cross-referenced locals. **Cold-compile EAV regression introduced
+here -- see v27-diag above for the active investigation.**
+
+## Previous: `vibepascal-win64-41717f9142-v8.tar.gz` (2026-04-17, ~18MB)
 
 Delphi-compatible reference-to type aliases (`TProc`, `TFunc`,
 `TPredicate`) now ship in `System.SysUtils` for Win64, unblocking
