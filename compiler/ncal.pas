@@ -339,6 +339,21 @@ implementation
        constructor create(def : tobjectdef);
      end;
 
+    const
+      { Hard cap on recursive inline expansion depth (pass1_inline calling itself
+        through firstpass(inlineblock) on inner inline calls). The natural cap is
+        heuristics_favors_inlining, but pathological self-recursive inline procs
+        (e.g. a property getter that reads its own property and is marked inline)
+        can defeat the heuristic. Without this cap the compiler hits EStackOverflow
+        on Win64 (488MB reserve) or SIGSEGV on Linux (8MB) before the heuristic
+        kicks in. 256 is well above any legitimate inline expansion depth and far
+        below the stack budget on any platform we target. }
+      MAX_INLINE_EXPANSION_DEPTH = 256;
+
+    var
+      inline_expansion_depth : longint;
+      inline_expansion_error_emitted : boolean;
+
 
 {****************************************************************************
                              HELPERS
@@ -5692,6 +5707,31 @@ implementation
                assigned(tprocdef(procdefinition).inlininginfo^.code)) then
           internalerror(200412021);
 
+        { Hard depth cap to convert pathological self-recursive inline expansions
+          (e.g. inline property getter that reads its own property) into a clean
+          compile error instead of an EStackOverflow or SIGSEGV. }
+        inc(inline_expansion_depth);
+        if inline_expansion_depth > MAX_INLINE_EXPANSION_DEPTH then
+          begin
+            if not inline_expansion_error_emitted then
+              begin
+                Comment(V_Error,'Recursive inline expansion of "'+
+                  tprocdef(procdefinition).customprocname([pno_proctypeoption,pno_paranames,pno_ownername,pno_noclassmarker])+
+                  '" exceeds depth limit ('+tostr(MAX_INLINE_EXPANSION_DEPTH)+
+                  '); suspected self-recursive inline procedure (compile aborted to avoid stack overflow)');
+                inline_expansion_error_emitted:=true;
+              end;
+            dec(inline_expansion_depth);
+            { Fall back to a normal call. Disable inlining on this procdef for the
+              rest of compilation so the noisy duplicate from successive callers
+              re-running check_inlining stays suppressed. }
+            exclude(procdefinition.procoptions,po_inline);
+            exclude(callnodeflags,cnf_do_inline);
+            include(transientflags,tnf_pass1_done);
+            result:=nil;
+            exit;
+          end;
+
         inlinelocals:=TFPObjectList.create(true);
 
         { inherit flags }
@@ -5782,6 +5822,8 @@ implementation
         writeln('**************************',tprocdef(procdefinition).mangledname);
         printnode(output,result);
 {$endif DEBUGINLINE}
+
+        dec(inline_expansion_depth);
       end;
 
 end.
