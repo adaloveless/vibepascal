@@ -231,12 +231,22 @@ implementation
       cpubase,cgbase,procinfo,
       pass_1;
 
+    const
+      { Cycle guard: upper bound on walker recursion depth.
+        488MB stack reserve on ppcx64.exe accommodates ~480k frames before
+        EStackOverflow. A cyclic AST (child -> ancestor) drives perform/process_children
+        into unbounded mutual recursion; this cap catches that with an internal error
+        instead of a stack fault. 131072 is ~25x the deepest synthetic stressor (cy289)
+        and still leaves ~3/4 of the reserve unused. }
+      MAX_FOREACH_DEPTH = 131072;
+
     type
       ForEachNodeContext = object
         procmethod: tforeachprocmethod;
         f: staticforeachnodefunction;
         arg: pointer;
         res: boolean;
+        depth: longint;
         procedure perform(var n: tnode);
         procedure process_children(n: tnode);
         procedure process_casenode(n: tcasenode);
@@ -249,13 +259,19 @@ implementation
       begin
         if not assigned(n) then
           exit;
+        inc(depth);
+        if depth > MAX_FOREACH_DEPTH then
+          internalerror(2026042301);
         if procmethod=pm_preprocess then
           process_children(n);
 
         fr:=f(n,arg);
         res:=(fr in [fen_true, fen_norecurse_true]) or res;
         if fr in [fen_norecurse_false, fen_norecurse_true] then
-          exit;
+          begin
+            dec(depth);
+            exit;
+          end;
 
         if procmethod in [pm_postprocess,pm_postandagain] then
           begin
@@ -266,6 +282,7 @@ implementation
                 res:=(fr in [fen_true, fen_norecurse_true]) or res;
               end;
           end;
+        dec(depth);
       end;
 
 
@@ -373,6 +390,7 @@ implementation
         fen.f := f;
         fen.arg := arg;
         fen.res := false;
+        fen.depth := 0;
         fen.perform(n);
         result := fen.res;
       end;
