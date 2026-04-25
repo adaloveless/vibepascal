@@ -1062,6 +1062,9 @@ implementation
                     begin
                       writeln('PPU DEREF NIL DEF: deflist[',idx,']=nil in module ',pm.modulename^,
                         ' (current=',current_module.modulename^,' dataidx=',dataidx,')');
+                      Message1(unit_f_ppu_invalid_entry,
+                        'nil def deref defid='+tostr(idx)+' in unit '+pm.modulename^+
+                        ' -- delete '+pm.modulename^+'.ppu and rebuild that unit');
                     end;
                 end;
               deref_symid :
@@ -1096,6 +1099,9 @@ implementation
                           else
                             writeln('  neighbor[',idx+1,']=nil');
                         end;
+                      Message1(unit_f_ppu_invalid_entry,
+                        'nil sym deref symid='+tostr(idx)+' in unit '+pm.modulename^+
+                        ' -- delete '+pm.modulename^+'.ppu and rebuild that unit');
                     end;
                 end;
               deref_nil :
