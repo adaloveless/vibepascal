@@ -48,7 +48,7 @@ implementation
        cpubase,aasmtai,aasmdata,aasmbase,
        { symtable }
        symconst,symbase,symtype,symdef,symsym,symtable,defutil,defcmp,
-       paramgr,
+       paramgr,procdefutil,
        { pass 1 }
        pass_1,htypechk,
        nutils,ngenutil,nbas,nadd,ncal,nmem,nset,ncnv,ncon,nld,nflw,ninl,
@@ -2665,6 +2665,27 @@ implementation
                   if not(nf_explicit in initexpr.flags) and is_integer(hdef) and
                      (torddef(hdef).ordtype in [s8bit,u8bit,s16bit,u16bit]) then
                     hdef := s32inttype;
+                  { A bare procedure-typed expression (anonymous-procedure
+                    literal `procedure(...) begin ... end`, or a named-routine
+                    address taken without enclosing context) yields a
+                    `tprocdef`, which is not assignable to a variable and not
+                    callable through a load.  Promote to the equivalent
+                    funcref/procvar so the inferred inline variable becomes a
+                    callable function reference.  Mirrors Delphi's TProc-style
+                    inference for `var commit := procedure(...) begin ... end;`.
+
+                    Anonymous procedures (closures) need a function-reference
+                    interface (objectdef with oo_is_invokable) so closure
+                    capture works the same as for an explicit
+                    `reference to procedure(...)` declaration.  Bare named
+                    routines fall back to a plain procvar pointer. }
+                  if assigned(hdef) and (hdef.typ = procdef) then
+                    begin
+                      if po_anonymous in tprocdef(hdef).procoptions then
+                        hdef := funcref_intf_for_proc_at(tabstractprocdef(hdef), initexpr.fileinfo)
+                      else
+                        hdef := tprocvardef.getreusableprocaddr(tabstractprocdef(hdef), pc_normal);
+                    end;
                   for i := 0 to sc.count - 1 do
                     begin
                       tabstractnormalvarsym(sc[i]).vardef := hdef;

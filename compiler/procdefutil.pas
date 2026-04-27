@@ -38,6 +38,13 @@ function create_outline_procdef(const basesymname: string; astruct: tabstractrec
 procedure convert_to_funcref_intf(const n:tidstring;var def:tdef);
 function adjust_funcref(var def:tdef;sym,dummysym:tsym):boolean;
 
+{ Synthesize (or fetch a cached) function-reference interface for an arbitrary
+  procdef/procvardef -- used by inline-var inference to give an anonymous
+  procedure literal a closure-capable type. The suffix is derived from the
+  given fileinfo so that the synthesized funcref interface is reused across
+  multiple references at the same source position. }
+function funcref_intf_for_proc_at(pd:tabstractprocdef;const fileinfo:tfileposinfo):tobjectdef;
+
 { functionality related to capturing local variables for anonymous functions }
 
 function get_or_create_capturer(pd:tprocdef):tsym;
@@ -285,6 +292,15 @@ implementation
               messagepos1(sympos,type_e_type_is_not_completly_defined,sym.realname);
             end;
         end;
+    end;
+
+
+  function funcref_intf_for_proc(pd:tabstractprocdef;const suffix:string):tobjectdef;forward;
+
+
+  function funcref_intf_for_proc_at(pd:tabstractprocdef;const fileinfo:tfileposinfo):tobjectdef;
+    begin
+      result:=funcref_intf_for_proc(pd,fileinfo_to_suffix(fileinfo));
     end;
 
 
