@@ -3564,6 +3564,7 @@ type
 
             cputype:=tcputype(tokenreadenum(sizeof(tcputype)));
             optimizecputype:=tcputype(tokenreadenum(sizeof(tcputype)));
+            asmcputype:=tcputype(tokenreadenum(sizeof(tcputype)));
             fputype:=tfputype(tokenreadenum(sizeof(tfputype)));
             asmmode:=tasmmode(tokenreadenum(sizeof(tasmmode)));
             interfacetype:=tinterfacetypes(tokenreadenum(sizeof(tinterfacetypes)));
@@ -3651,6 +3652,7 @@ type
 
             tokenwriteenum(cputype,sizeof(tcputype));
             tokenwriteenum(optimizecputype,sizeof(tcputype));
+            tokenwriteenum(asmcputype,sizeof(tcputype));
             tokenwriteenum(fputype,sizeof(tfputype));
             tokenwriteenum(asmmode,sizeof(tasmmode));
             tokenwriteenum(interfacetype,sizeof(tinterfacetypes));
@@ -5832,7 +5834,15 @@ type
                 begin
                   in_multiline_string:=(c='`');
                   if in_multiline_string then
-                    backtick:=true
+                    begin
+                      backtick:=true;
+                      style:=qsBacktick;
+                      if not had_multiline_string then
+                        begin
+                          multiline_start_line:=current_filepos.line;
+                          multiline_start_column:=current_filepos.column;
+                        end;
+                    end
                   else
                     style:=qsNone;
                   first_multiline:=in_multiline_string and (last_c in [#0,#32,#61]);

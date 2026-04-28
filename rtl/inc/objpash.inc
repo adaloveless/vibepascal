@@ -32,11 +32,11 @@
     type
       TextFile = Text;
 
-      PGuid = ^TGuid;
+      PGUID = ^TGUID;
 
-      { TGuid }
+      { TGUID }
 
-      TGuid = packed record
+      TGUID = packed record
       Public
         class operator =(const aLeft, aRight: TGUID): Boolean;
         class operator <>(const aLeft, aRight: TGUID): Boolean; inline;
@@ -249,6 +249,8 @@
           function SetMonitorData(aData,aCheckOld : Pointer) : Pointer; inline;
           function GetMonitorData: Pointer; inline;
        {$ENDIF}
+       strict private
+          class procedure InitZeroedInstance(instance : pointer);
        protected
           function GetDisposed : Boolean; inline;
           Property Disposed : Boolean Read GetDisposed;
@@ -260,8 +262,8 @@
              AllocateObjectHook : TObjectHook;
              DestroyObjectHook : TObjectHook;
        {$ENDIF}
-       public
-          const SystemHasExtendedRTTI = {$IFDEF ENABLE_DELPHI_RTTI}True{$ELSE}False{$ENDIF};
+       //public
+       //   const SystemHasExtendedRTTI = {$IFDEF ENABLE_DELPHI_RTTI}True{$ELSE}False{$ENDIF};
 
        public
           { please don't change the order of virtual methods, because

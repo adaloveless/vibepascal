@@ -45,6 +45,7 @@ type
     function IsRoot(aParent : TMarkdownContainerBlock) : Boolean;
   public
     function LineEndsBlock(aBlock: TMarkdownContainerBlock; aLine: TMarkdownLine): Boolean; override;
+    function EndsList: Boolean; override;
     function HandlesLine(aParent : TMarkdownContainerBlock; aLine: TMarkdownLine): boolean; override;
     function processLine(aParent : TMarkdownContainerBlock; aLine : TMarkdownLine; aContext : TMarkdownBlockProcessingContext) : Boolean; override;
   end;
@@ -100,6 +101,7 @@ type
   { TThematicBreakProcessor }
 
   TThematicBreakProcessor = class(TMarkdownBlockProcessor)
+    function EndsList: Boolean; override;
     function HandlesLine(aParent : TMarkdownContainerBlock; aLine: TMarkdownLine): boolean; override;
     function processLine(aParent : TMarkdownContainerBlock; aLine : TMarkdownLine; aContext : TMarkdownBlockProcessingContext) : Boolean; override;
   end;
@@ -124,6 +126,7 @@ type
     FTerminal: string;
   Public
     function LineEndsBlock(aBlock: TMarkdownContainerBlock; aLine: TMarkdownLine): Boolean; override;
+    function EndsList: Boolean; override;
     function HandlesLine(aParent : TMarkdownContainerBlock; aLine: TMarkdownLine): boolean; override;
     function processLine(aParent : TMarkdownContainerBlock; aLine : TMarkdownLine; aContext : TMarkdownBlockProcessingContext) : Boolean; override;
   end;
@@ -132,6 +135,7 @@ type
 
   TMarkdownHeadingProcessor = class(TMarkdownBlockProcessor)
     FLen : Integer;
+    function EndsList: Boolean; override;
     function HandlesLine(aParent : TMarkdownContainerBlock; aLine: TMarkdownLine): boolean; override;
     function processLine(aParent : TMarkdownContainerBlock; aLine : TMarkdownLine; aContext : TMarkdownBlockProcessingContext) : Boolean; override;
   end;
@@ -149,6 +153,18 @@ type
   public
     class var
       DefaultStrict : Boolean;
+    function HandlesLine(aParent : TMarkdownContainerBlock; aLine: TMarkdownLine): boolean; override;
+    function processLine(aParent : TMarkdownContainerBlock; aLine : TMarkdownLine; aContext : TMarkdownBlockProcessingContext) : Boolean; override;
+  end;
+
+  { TFrontmatterProcessor }
+
+  TFrontmatterProcessor = class(TMarkdownBlockProcessor)
+  private
+    FFrontMatterType: TFrontMatterType;
+    FTerminal: String;
+  public
+    class var lenient: Boolean;
     function HandlesLine(aParent : TMarkdownContainerBlock; aLine: TMarkdownLine): boolean; override;
     function processLine(aParent : TMarkdownContainerBlock; aLine : TMarkdownLine; aContext : TMarkdownBlockProcessingContext) : Boolean; override;
   end;
@@ -238,6 +254,11 @@ begin
     aLine.advance(1);
 end;
 
+
+function TMarkdownQuoteProcessor.EndsList: Boolean;
+begin
+  Result:=True;
+end;
 
 function TMarkdownQuoteProcessor.HandlesLine(aParent: TMarkdownContainerBlock; aLine: TMarkdownLine): boolean;
 
@@ -354,6 +375,11 @@ end;
   TMarkdownHeadingProcessor
   ---------------------------------------------------------------------}
 
+function TMarkdownHeadingProcessor.EndsList: Boolean;
+begin
+  Result:=True;
+end;
+
 function TMarkdownHeadingProcessor.HandlesLine(aParent: TMarkdownContainerBlock; aLine: TMarkdownLine): boolean;
 var
   ls : string;
@@ -405,7 +431,7 @@ function TUListProcessor.LineEndsBlock(aBlock: TMarkdownContainerBlock; aLine: T
 var
   lBlock : TMarkdownContainerBlock;
   lList : TMarkdownListBlock absolute lBlock;
-
+  lProc : TMarkdownBlockProcessor;
 begin
   lBlock:=aBlock;
   Result:=aBlock.line<>aLine.LineNo;
@@ -418,6 +444,18 @@ begin
       begin
 //      aLine.Advance(lList.LastIndent);
       Result:=False;
+      { A non-indented block that "interrupts" a list (CommonMark) ends it.
+        Without this, e.g. a heading at column 0 following a top-level list
+        would be parsed as a child of the last list item. }
+      if aLine.LeadingWhitespace <= lList.BaseIndent then
+        for lProc in Parser.Processors do
+          if (lProc.ClassType <> ClassType)
+             and lProc.EndsList
+             and lProc.HandlesLine(aBlock, aLine) then
+            begin
+            Result:=True;
+            Break;
+            end;
       end;
 end;
 
@@ -729,6 +767,11 @@ begin
   Result:=true;
 end;
 
+
+function TFencedCodeBlockProcessor.EndsList: Boolean;
+begin
+  Result:=True;
+end;
 
 function TFencedCodeBlockProcessor.HandlesLine(aParent: TMarkdownContainerBlock; aLine: TMarkdownLine): boolean;
 
@@ -1092,6 +1135,11 @@ end;
   TThematicBreakProcessor
   ---------------------------------------------------------------------}
 
+function TThematicBreakProcessor.EndsList: Boolean;
+begin
+  Result:=True;
+end;
+
 function TThematicBreakProcessor.HandlesLine(aParent: TMarkdownContainerBlock; aLine: TMarkdownLine): boolean;
 
 var
@@ -1117,9 +1165,70 @@ begin
   Result:=true;
 end;
 
+{ ---------------------------------------------------------------------
+  TFrontmatterProcessor
+  ---------------------------------------------------------------------}
+
+function TFrontmatterProcessor.HandlesLine(aParent: TMarkdownContainerBlock; aLine: TMarkdownLine): boolean;
+
+var
+  S : String;
+
+begin
+  Result := False;
+  if aLine.LineNo <> 1 then
+    Exit;
+  S := aLine.Remainder;
+  if Lenient then
+    S:=TrimRight(S);
+  if length(s)<>3 then
+    exit;
+  Result:=True;
+  case S of
+  '---':
+    FFrontMatterType := fmtYAML;
+  '+++':
+    FFrontMatterType := fmtTOML;
+  ';;;':
+    FFrontMatterType := fmtJSON;
+  else
+    Result:=False;
+  end;
+  if Result then
+    FTerminal:=S;
+end;
+
+function TFrontmatterProcessor.processLine(aParent: TMarkdownContainerBlock; aLine: TMarkdownLine; aContext: TMarkdownBlockProcessingContext): Boolean;
+
+var
+  lBlock : TMarkdownFrontmatterBlock;
+  lLine : TMarkdownLine;
+
+begin
+  lBlock := TMarkdownFrontmatterBlock.Create(aParent, aLine.LineNo);
+  lBlock.FrontMatterType := FFrontMatterType;
+  while True do
+    begin
+    lLine := PeekLine;
+    if lLine = nil then
+      Break;
+    if lLine.Remainder.Trim = FTerminal then
+      begin
+      NextLine;
+      Break;
+      end;
+    lLine := NextLine;
+    lBlock.Content.Add(lLine.Remainder);
+    end;
+  if aParent is TMarkdownDocument then
+    TMarkdownDocument(aParent).Frontmatter := lBlock;
+  Result := True;
+end;
+
 Procedure RegisterDefaultProcessors;
 
 begin
+  TFrontmatterProcessor.Register('frontmatter');
   TMarkdownQuoteProcessor.Register('quote');
   // Must be registered before thematic break
   TSeTextHeaderProcessor.register('setextheader');
@@ -1134,6 +1243,7 @@ begin
 end;
 
 initialization
+  TFrontmatterProcessor.Lenient:=False;
   TTableProcessor.DefaultStrict:=True;
   RegisterDefaultProcessors;
 end.

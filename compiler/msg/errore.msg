@@ -2203,6 +2203,11 @@ type_e_tuple_index_must_be_const=04136_E_Tuple index must be a compile-time cons
 % Tuple fields can have different types, so the result type of t[i]
 % cannot be determined when i is a variable. Use a constant index
 % (t[0], t[1]) or named access (t._1, t._2).
+type_e_stringcast_size_mismatch=04137_E_Cannot cast string of length $1 to ordinal type "$2" (size $3 bytes)
+% When casting a string literal to an ordinal type in unleashed mode, the
+% string length must match the size of the target type exactly: 1 char for
+% Byte/ShortInt, 2 chars for Word/SmallInt, 4 chars for DWord/LongInt,
+% 8 chars for QWord/Int64.
 %
 % \end{description}
 #
@@ -3588,7 +3593,7 @@ unit_w_unsupported_esp_idf_version=10071_W_Unsupported esp-idf version
 #
 #  Options
 #
-# 11070 is the last used one
+# 11071 is the last used one
 #
 # BeginOfTeX
 %
@@ -3762,6 +3767,8 @@ option_e_win16_unsupported_memory_model=11069_W_Unsupported memory model $1 for 
 % i8086-win16 system only supports large and huge memory models.
 option_n_win16_set_default_large_memory_model=11070_N_Setting memory model for Win16 system to "large"
 % i8086-win16 requires at least large memory model.
+option_e_avr_cvt_unsupported=11071_E_CVT option not supported for $1
+% The CVT option is not supported by the selected MCU
 %
 % \end{description}
 # EndOfTeX
@@ -4090,6 +4097,7 @@ F*0*_Only options valid for the default or selected platform are listed.
 6*2Avasm_Use vasm to assemble
 8*2Anasm_Assemble using Nasm
 8*2Anasmobj_Assemble using Nasm
+8*2Aomf Assemble using internal OMF object writer
 A*2Aas_Assemble using GNU AS
 A*2Aas-darwin_Assemble using GNU AS for Darwin targets
 A*2Aclang_Assemble using clang
@@ -4125,6 +4133,7 @@ Z*2Az80asm_Assemble using z80asm
 **2Ca<x>_Select ABI; see fpc -i or fpc -ia for possible values
 **2Cb_Generate code for a big-endian variant of the target architecture
 **2Cc<x>_Set default calling convention to <x>
+V*2CC_Use compact vector table
 V*2Cd<x>_Discard selected RTL startup sections (use with caution)
 V*3Cdc_Discard initializing data. Data defaults to noinit section
 V*3Cdj_Discard jump to PASCALMAIN. Use only if PASCALMAIN follows directly after startup code
@@ -4607,6 +4616,7 @@ W*2XlS<x>_LLVM utilities suffix (e.g. -17 in case llvm-mc is called llvm-mc-17)
 **2XLA_Define library substitutions for linking
 **2XLD_Exclude default order of standard libraries
 **2XLO_Define order of library linking
+**2XLL_Link using ld.lld GNU compatible LLVM linker (Linux and some BSD targets, experimental)
 **2Xm_Generate link map
 **2XM<x>_Set the name of the 'main' program routine (default is 'main')
 **2Xn_Use target system native linker instead of GNU ld (Solaris, AIX)

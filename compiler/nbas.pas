@@ -936,7 +936,7 @@ implementation
 
     function tblocknode.pass_1 : tnode;
       var
-         hp : tstatementnode;
+         php,hp,chp : tstatementnode;
          FirstNode: Boolean;
          //count : longint;
       begin
@@ -944,6 +944,8 @@ implementation
          expectloc:=LOC_VOID;
          //count:=0;
          hp:=tstatementnode(left);
+         php:=nil;
+         chp:=nil;
          FirstNode := True;
          while assigned(hp) do
            begin
@@ -953,6 +955,7 @@ implementation
                      problems, so we have to be a little bit hacky if we want
                      to remove nothing nodes }
                    codegenerror:=false;
+                   chp:=tstatementnode(hp);
                    firstpass(tnode(hp));
                    { If the first node gets deleted, left must be updated,
                      otherwise it will be a dangling pointer }
@@ -964,13 +967,20 @@ implementation
                          set FirstNode to false }
                        FirstNode := False;
                        left := hp;
+                     end
+                   else if (chp<>hp) then
+                     begin
+                       { If FirstPass modified HP,
+                         we must update php.right }
+                       if assigned(php) then
+                         php.right:=hp;
                      end;
-
                    if assigned(hp.left) then
                      hp.expectloc:=hp.left.expectloc;
                 end;
               expectloc:=hp.expectloc;
               //inc(count);
+              php:=hp;
               hp:=tstatementnode(hp.right);
            end;
       end;

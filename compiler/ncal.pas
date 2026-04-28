@@ -87,13 +87,11 @@ interface
           procedure add_init_statement(n:tnode);
           procedure add_done_statement(n:tnode);
           procedure convert_carg_array_of_const;
-          procedure order_parameters;
           function heuristics_favors_inlining:boolean;
-          procedure check_inlining;
-          function  pass1_normal:tnode;
           procedure register_created_object_types;
           function get_expect_loc: tcgloc;
           function  handle_compilerproc: tnode;
+          procedure set_para_callnode(n : tcallnode);
 
        protected
           function safe_call_self_node: tnode;
@@ -102,7 +100,7 @@ interface
           procedure gen_syscall_para(para: tcallparanode); virtual;
           procedure objc_convert_to_message_send;virtual;
 
-       protected
+       public
           { inlining support }
           inlinelevel             : PtrUInt;
           inlinelocals            : TFPObjectList;
@@ -122,7 +120,9 @@ interface
           function  replaceparaload(var n: tnode; arg: pointer): foreachnoderesult;
           procedure createlocaltemps(p:TObject;arg:pointer);
           function  optimize_funcret_assignment(inlineblock: tblocknode): tnode;
-          function  pass1_inline:tnode;
+          procedure check_inlining;
+          function doinlining: boolean;
+          procedure order_parameters;
        protected
           pushedparasize : longint;
           { Objective-C support: force the call node to call the routine with
@@ -238,9 +238,11 @@ interface
        private
           fcontains_stack_tainting_call_cached,
           ffollowed_by_stack_tainting_call_cached : boolean;
-       protected
           { the call node the para node belongs to }
-          callnode : tcallnode;
+          _callnode : tcallnode;
+          function getcallnode : tcallnode;
+	  procedure setcallnode(calln : tcallnode);
+       protected
           procedure handlemanagedbyrefpara(orgparadef: tdef);virtual;
           { on some targets, value parameters that are passed by reference must
             be copied to a temp location by the caller (and then a reference to
@@ -279,6 +281,7 @@ interface
           { a refcounted into a non-refcounted type                     }
           function can_be_inlined: boolean;
 
+          property callnode : tcallnode read getcallnode write setcallnode;
           property paravalue : tnode read left write left;
           property nextpara : tnode read right write right;
           { third is reused to store the parameter name (only while parsing
@@ -338,22 +341,6 @@ implementation
        objinfo : tobjectdef;
        constructor create(def : tobjectdef);
      end;
-
-    const
-      { Hard cap on recursive inline expansion depth (pass1_inline calling itself
-        through firstpass(inlineblock) on inner inline calls). The natural cap is
-        heuristics_favors_inlining, but pathological self-recursive inline procs
-        (e.g. a property getter that reads its own property and is marked inline)
-        can defeat the heuristic. Without this cap the compiler hits EStackOverflow
-        on Win64 (488MB reserve) or SIGSEGV on Linux (8MB) before the heuristic
-        kicks in. 256 is well above any legitimate inline expansion depth and far
-        below the stack budget on any platform we target. }
-      MAX_INLINE_EXPANSION_DEPTH = 256;
-
-    var
-      inline_expansion_depth : longint;
-      inline_expansion_error_emitted : boolean;
-
 
 {****************************************************************************
                              HELPERS
@@ -688,6 +675,21 @@ implementation
 {****************************************************************************
                              TCALLPARANODE
  ****************************************************************************}
+    function tcallparanode.getcallnode : tcallnode;
+
+    begin
+      if assigned(_callnode) and not (_callnode is tcallnode) then
+        internalerror(2026033001);
+      getcallnode:=_callnode;
+    end;
+
+    procedure tcallparanode.setcallnode(calln : tcallnode);
+
+    begin
+      if assigned(calln) and not (calln is tcallnode) then
+        internalerror(2026033002);
+      _callnode:=calln;
+    end;
 
     procedure tcallparanode.handlemanagedbyrefpara(orgparadef: tdef);
       var
@@ -1120,7 +1122,8 @@ implementation
              not is_array_of_const(parasym.vardef)) or
             not(callnode.procdefinition.proccalloption in cdecl_pocalls)) and
            paramanager.push_addr_param(vs_value,parasym.vardef,
-                      callnode.procdefinition.proccalloption) then
+                      callnode.procdefinition.proccalloption) and
+           not(cnf_do_inline in callnode.callnodeflags) then
           copy_value_by_ref_para;
 
         if assigned(fparainit) then
@@ -2870,7 +2873,7 @@ implementation
 
     function tcallnode.handle_compilerproc: tnode;
       var
-        para: TCallParaNode;
+        para, encodingnode: TCallParaNode;
         maxlennode, outnode, valnode: TNode;
         MaxStrLen: Int64;
         StringLiteral, name: string;
@@ -2933,7 +2936,13 @@ implementation
                                       valnode := ttypeconvnode(valnode).left;
                                     end;
 
-                                  if is_constintnode(valnode) then
+                                  encodingnode:=GetParaFromIndex(0);
+
+                                  if is_constintnode(valnode) and
+                                  { for now replace only nodes if no encoding is passed/encoding is zero }
+                                    (not(assigned(encodingnode)) or
+                                    (is_constintnode(encodingnode.left) and
+                                    (tordconstnode(encodingnode.left).value=0))) then
                                     begin
                                       MaxStrLen := TOrdConstNode(maxlennode).value.svalue;
 
@@ -4018,6 +4027,18 @@ implementation
       end;
 
 
+    procedure tcallnode.set_para_callnode(n : tcallnode);
+      var
+        pt : tcallparanode;
+      begin
+        pt:=tcallparanode(left);
+        while assigned(pt) do
+          begin
+            pt.callnode:=n;
+            pt:=tcallparanode(pt.right);
+          end;
+      end;
+
     function tcallnode.pass_typecheck:tnode;
 
       function is_undefined_recursive(def:tdef):boolean;
@@ -4034,7 +4055,7 @@ implementation
       var
         candidates : tcallcandidates;
         ccflags : tcallcandidatesflags;
-        hpt,tmp : tnode;
+        hpt: tnode;
         pt : tcallparanode;
         lastpara : longint;
         paraidx,
@@ -4045,19 +4066,26 @@ implementation
         statements : tstatementnode;
         converted_result_data : ttempcreatenode;
         calltype: tdispcalltype;
-        invokesym : tsym;
+
+        
+      procedure maybe_reset_para_callnode;
+        begin
+          if assigned(result) then
+            set_para_callnode(nil);
+        end;
+
       begin
         result:=nil;
 
         { determine length of parameter list }
-        pt:=tcallparanode(left);
         paralength:=0;
+        pt:=tcallparanode(left);
         while assigned(pt) do
-         begin
-           pt.callnode:=self;
-           inc(paralength);
-           pt:=tcallparanode(pt.right);
-         end;
+          begin
+            inc(paralength);
+            pt:=tcallparanode(pt.right);
+          end;
+        set_para_callnode(self);
 
         { determine the type of the parameters }
         if assigned(left) then
@@ -4152,11 +4180,13 @@ implementation
                     if symtableprocentry.Name='SQR' then
                       begin
                         result:=cinlinenode.createintern(in_sqr_real,false,tcallparanode(left).left.getcopy);
+                        set_para_callnode(nil);
                         exit;
                       end;
                     if symtableprocentry.Name='ABS' then
                       begin
                         result:=cinlinenode.createintern(in_abs_real,false,tcallparanode(left).left.getcopy);
+                        set_para_callnode(nil);
                         exit;
                       end;
                   end;
@@ -4229,6 +4259,7 @@ implementation
                          end;
                      end;
                    candidates.done;
+                   maybe_reset_para_callnode;
                    exit;
                  end;
 
@@ -4406,17 +4437,20 @@ implementation
                if assigned(tcallparanode(left).right) then
                 begin
                   hpt:=geninlinenode(tinlinenumber(tprocdef(procdefinition).extnumber),is_const,left);
+                  set_para_callnode(nil);
                   left:=nil;
                 end
                else
                 begin
                   hpt:=geninlinenode(tinlinenumber(tprocdef(procdefinition).extnumber),is_const,tcallparanode(left).left);
+                  set_para_callnode(nil);
                   tcallparanode(left).left:=nil;
                 end;
              end
             else
              hpt:=geninlinenode(tinlinenumber(tprocdef(procdefinition).extnumber),is_const,nil);
             result:=hpt;
+            maybe_reset_para_callnode;
             exit;
           end;
 
@@ -4475,6 +4509,7 @@ implementation
                  begin
                    CGMessage(cg_h_inherited_ignored);
                    result:=cnothingnode.create;
+                   maybe_reset_para_callnode;
                    exit;
                  end
                else
@@ -4613,6 +4648,7 @@ implementation
 
             { don't free reused nodes }
             methodpointer:=nil;
+            maybe_reset_para_callnode;
             parameters:=nil;
           end;
 
@@ -4629,6 +4665,7 @@ implementation
             (procdefinition.parast.symtablelevel>normal_function_level) and
             (current_procinfo.procdef.parast.symtablelevel>normal_function_level) then
           current_procinfo.add_captured_sym(tprocdef(procdefinition).procsym,procdefinition,fileinfo);
+        maybe_reset_para_callnode;
       end;
 
 
@@ -4663,6 +4700,7 @@ implementation
                 Inc(indexcount);
               end;
             hpcurr.init_contains_stack_tainting_call_cache;
+            hpcurr.ffollowed_by_stack_tainting_call_cached:=false;
             hpcurr:=tcallparanode(hpcurr.right);
           end;
         hpcurr:=tcallparanode(left);
@@ -4890,7 +4928,16 @@ implementation
       end;
 
 
-    function tcallnode.pass_1 : tnode;
+    function tcallnode.doinlining: boolean;
+      begin
+        result:=not((po_inline in procdefinition.procoptions) and
+          (procdefinition.typ=procdef) and
+          ((pio_inline_not_possible in tprocdef(procdefinition).implprocoptions) or
+           not(cnf_do_inline in callnodeflags)))
+      end;
+
+
+    function tcallnode.pass_1: tnode;
 
       procedure mark_unregable_parameters;
         var
@@ -4935,7 +4982,13 @@ implementation
       var
         para: tcallparanode;
       begin
-         result:=nil;
+         result:=simplify(false);
+
+         if assigned(result) then
+           begin
+             set_para_callnode(nil);
+             exit;
+           end;
 
          { as pass_1 is never called on the methodpointer node, we must check
            here that it's not a helper type }
@@ -4980,6 +5033,7 @@ implementation
              if para=nil then
                begin
                  result:=cnothingnode.create;
+                 set_para_callnode(nil);
                  exit;
                end;
            end;
@@ -5050,26 +5104,7 @@ implementation
             ([cnf_member_call,cnf_inherited] * callnodeflags <> []) then
            current_procinfo.ConstructorCallingConstructor:=true;
 
-         { Continue with checking a normal call or generate the inlined code }
-         if cnf_do_inline in callnodeflags then
-           result:=pass1_inline
-         else
-           begin
-             if (po_inline in procdefinition.procoptions) and not(po_compilerproc in procdefinition.procoptions) and
-                (procdefinition.typ=procdef) and
-                not (pio_inline_not_possible in tprocdef(procdefinition).implprocoptions) then
-               begin
-                 Message1(cg_n_no_inline,tprocdef(procdefinition).customprocname([pno_proctypeoption, pno_paranames,pno_ownername, pno_noclassmarker, pno_prettynames]));
-               end;
-             mark_unregable_parameters;
-             result:=pass1_normal;
-           end;
-      end;
-
-
-    function tcallnode.pass1_normal : tnode;
-      begin
-         result:=nil;
+         mark_unregable_parameters;
 
          { calculate the parameter info for the procdef }
          procdefinition.init_paraloc_info(callerside);
@@ -5641,189 +5676,9 @@ implementation
         result:=ctypeconvnode.create_internal(tassignmentnode(resassign).right.getcopy,hp2.resultdef);
         node_reset_flags(result,[],[tnf_pass1_done]);
         firstpass(result);
-      end;
-
-
-    { this procedure removes the user code flag because it prevents optimizations }
-    function removeusercodeflag(var n : tnode; arg : pointer) : foreachnoderesult;
-      begin
-        result:=fen_false;
-        if nf_usercode_entry in n.flags then
-          begin
-            exclude(n.flags,nf_usercode_entry);
-            result:=fen_norecurse_true;
-          end;
-      end;
-
-
-    function setinlinelevel(var n:tnode; arg:pointer):foreachnoderesult;
-      begin
-        if n.nodetype=calln then
-          tcallnode(n).inlinelevel:=PtrUInt(arg);
-        result:=fen_false;
-      end;
-
-
-    { reference symbols that are imported from another unit }
-    function importglobalsyms(var n:tnode; arg:pointer):foreachnoderesult;
-      var
-        sym : tsym;
-      begin
-        result:=fen_false;
-        if n.nodetype=loadn then
-          begin
-            sym:=tloadnode(n).symtableentry;
-            if sym.typ=staticvarsym then
-              begin
-                if FindUnitSymtable(tloadnode(n).symtable).moduleid<>current_module.moduleid then
-                  current_module.addimportedsym(sym);
-              end
-            else if (sym.typ=constsym) and (tconstsym(sym).consttyp in [constwresourcestring,constresourcestring]) then
-              begin
-                if tloadnode(n).symtableentry.owner.moduleid<>current_module.moduleid then
-                  current_module.addimportedsym(sym);
-              end;
-          end
-        else if (n.nodetype=calln) then
-          begin
-            if (assigned(tcallnode(n).procdefinition)) and
-               (tcallnode(n).procdefinition.typ=procdef) and
-               (findunitsymtable(tcallnode(n).procdefinition.owner).moduleid<>current_module.moduleid) then
-              current_module.addimportedsym(tprocdef(tcallnode(n).procdefinition).procsym);
-          end;
-      end;
-
-
-    function tcallnode.pass1_inline:tnode;
-      var
-        n,
-        body : tnode;
-        para : tcallparanode;
-        inlineblock,
-        inlinecleanupblock : tblocknode;
-      begin
-        result:=nil;
-        if not(assigned(tprocdef(procdefinition).inlininginfo) and
-               assigned(tprocdef(procdefinition).inlininginfo^.code)) then
-          internalerror(200412021);
-
-        { Hard depth cap to convert pathological self-recursive inline expansions
-          (e.g. inline property getter that reads its own property) into a clean
-          compile error instead of an EStackOverflow or SIGSEGV. }
-        inc(inline_expansion_depth);
-        if inline_expansion_depth > MAX_INLINE_EXPANSION_DEPTH then
-          begin
-            if not inline_expansion_error_emitted then
-              begin
-                Comment(V_Error,'Recursive inline expansion of "'+
-                  tprocdef(procdefinition).customprocname([pno_proctypeoption,pno_paranames,pno_ownername,pno_noclassmarker])+
-                  '" exceeds depth limit ('+tostr(MAX_INLINE_EXPANSION_DEPTH)+
-                  '); suspected self-recursive inline procedure (compile aborted to avoid stack overflow)');
-                inline_expansion_error_emitted:=true;
-              end;
-            dec(inline_expansion_depth);
-            { Fall back to a normal call. Disable inlining on this procdef for the
-              rest of compilation so the noisy duplicate from successive callers
-              re-running check_inlining stays suppressed. }
-            exclude(procdefinition.procoptions,po_inline);
-            exclude(callnodeflags,cnf_do_inline);
-            include(transientflags,tnf_pass1_done);
-            result:=nil;
-            exit;
-          end;
-
-        inlinelocals:=TFPObjectList.create(true);
-
-        { inherit flags }
-        current_procinfo.flags:=current_procinfo.flags+
-          ((procdefinition as tprocdef).inlininginfo^.flags*inherited_inlining_flags);
-
-        { Create new code block for inlining }
-        inlineblock:=internalstatements(inlineinitstatement);
-        { make sure that valid_for_assign() returns false for this block
-          (otherwise assigning values to the block will result in assigning
-           values to the inlined function's result) }
-        include(inlineblock.flags,nf_no_lvalue);
-        inlinecleanupblock:=internalstatements(inlinecleanupstatement);
-
-        if assigned(callinitblock) then
-          addstatement(inlineinitstatement,callinitblock.getcopy);
-
-        { replace complex parameters with temps }
-        createinlineparas;
-
-        { create a copy of the body and replace parameter loads with the parameter values }
-        body:=tprocdef(procdefinition).inlininginfo^.code.getcopy;
-        foreachnodestatic(pm_postprocess,body,@removeusercodeflag,nil);
-        foreachnodestatic(pm_postprocess,body,@importglobalsyms,nil);
-        foreachnodestatic(pm_postprocess,body,@setinlinelevel,pointer(inlinelevel+1));
-        foreachnode(pm_preprocess,body,@replaceparaload,@fileinfo);
-
-        { Concat the body and finalization parts }
-        addstatement(inlineinitstatement,body);
-        addstatement(inlineinitstatement,inlinecleanupblock);
-        inlinecleanupblock:=nil;
-
-        if assigned(callcleanupblock) then
-          addstatement(inlineinitstatement,callcleanupblock.getcopy);
-
-        { the last statement of the new inline block must return the
-          location and type of the function result.
-          This is not needed when the result is not used, also the tempnode is then
-          already destroyed  by a tempdelete in the callcleanupblock tree }
-        if not is_void(resultdef) and
-           (cnf_return_value_used in callnodeflags) then
-          begin
-            if assigned(funcretnode) then
-              addstatement(inlineinitstatement,funcretnode.getcopy)
-            else
-              begin
-                para:=tcallparanode(left);
-                while assigned(para) do
-                  begin
-                    if (vo_is_hidden_para in para.parasym.varoptions) and
-                       (vo_is_funcret in para.parasym.varoptions) then
-                      begin
-                        addstatement(inlineinitstatement,para.left.getcopy);
-                        break;
-                      end;
-                    para:=tcallparanode(para.right);
-                  end;
-              end;
-          end;
-
-        typecheckpass(tnode(inlineblock));
-        doinlinesimplify(tnode(inlineblock));
-        firstpass(tnode(inlineblock));
-        result:=inlineblock;
-
-        { if the function result is used then verify that the blocknode
-          returns the same result type as the original callnode }
-        if (cnf_return_value_used in callnodeflags) and
-           (result.resultdef<>resultdef) then
-          internalerror(200709171);
-
-        { free the temps for the locals }
-        inlinelocals.free;
-        inlinelocals:=nil;
-        inlineinitstatement:=nil;
-        inlinecleanupstatement:=nil;
-
-        n:=optimize_funcret_assignment(inlineblock);
-        if assigned(n) then
-          begin
-            inlineblock.free;
-            inlineblock := nil;
-            result:=n;
-          end;
-
-{$ifdef DEBUGINLINE}
-        writeln;
-        writeln('**************************',tprocdef(procdefinition).mangledname);
-        printnode(output,result);
-{$endif DEBUGINLINE}
-
-        dec(inline_expansion_depth);
+        if assigned(result) then
+          set_para_callnode(nil);
       end;
 
 end.
+
