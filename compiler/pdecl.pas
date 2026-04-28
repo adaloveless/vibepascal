@@ -265,7 +265,7 @@ implementation
                      try_to_consume(_COMMA));
            orgname:=names[0];
            filepos:=positions[0];
-           isgeneric:=not (m_delphi in current_settings.modeswitches) and (namecount=1) and (current_scanner.idtoken=_GENERIC);
+           isgeneric:=not (m_implicit_generics in current_settings.modeswitches) and (namecount=1) and (current_scanner.idtoken=_GENERIC);
            case current_scanner.token of
 
              _EQ:
@@ -968,7 +968,7 @@ implementation
 
            { fpc generic declaration? }
            if first then
-             had_generic:=not(m_delphi in current_settings.modeswitches) and try_to_consume(_GENERIC);
+             had_generic:=not(m_implicit_generics in current_settings.modeswitches) and try_to_consume(_GENERIC);
            isgeneric:=had_generic;
 
            typename:=current_scanner.pattern;
@@ -976,7 +976,7 @@ implementation
            consume(_ID);
 
            { delphi generic declaration? }
-           if (m_delphi in current_settings.modeswitches) then
+           if (m_implicit_generics in current_settings.modeswitches) then
              isgeneric:=current_scanner.token=_LSHARPBRACKET;
 
            { Generic type declaration? }
@@ -1075,19 +1075,22 @@ implementation
                       ttypesym(sym).typedef.owner:=sym.owner;
                     end
                   else
-                    begin
-                      { allow generic-arity overloading in all modes: an
-                        existing symbol with the bare name may be either
-                        a previous generic-dummy beacon (same generic,
-                        different arity) or a non-generic type with the
-                        same base name. In either case register the new
-                        arity as an additional dummy entry so inline
-                        specializations and arity-based lookup work.
-                        This matches Delphi's TProc/TProc<T>/... pattern. }
-                      if not (sp_generic_dummy in sym.symoptions) then
-                        Include(sym.symoptions,sp_generic_dummy);
-                      add_generic_dummysym(sym,'');
-                    end;
+                    { in implicit-generics mode allow generic-arity overloading:
+                      an existing symbol with the bare name may be a previous
+                      generic-dummy beacon (same generic, different arity) or a
+                      non-generic type with the same base name. In either case
+                      register the new arity as an additional dummy entry so
+                      inline specializations and arity-based lookup work. This
+                      matches Delphi's TProc/TProc<T>/... pattern. Outside of
+                      implicit-generics mode, this is a duplicate id. }
+                    if not (m_implicit_generics in current_settings.modeswitches) then
+                      Message1(sym_e_duplicate_id,genorgtypename)
+                    else
+                      begin
+                        if not (sp_generic_dummy in sym.symoptions) then
+                          Include(sym.symoptions,sp_generic_dummy);
+                        add_generic_dummysym(sym,'');
+                      end;
                 end
               else
                 begin
@@ -1192,7 +1195,7 @@ implementation
                 without the generic suffix, so it can be found easily when
                 parsing method implementations }
               if isgeneric and assigned(sym) and
-                  not (m_delphi in current_settings.modeswitches) and
+                  not (m_implicit_generics in current_settings.modeswitches) and
                   (ttypesym(sym).typedef.typ=undefineddef) then
                 begin
                   { don't free the undefineddef as the defids rely on the count
@@ -1437,7 +1440,7 @@ implementation
                generictypelist := nil;
              end;
 
-           if not (m_delphi in current_settings.modeswitches) and
+           if not (m_implicit_generics in current_settings.modeswitches) and
                (current_scanner.token=_ID) and (current_scanner.idtoken=_GENERIC) then
              begin
                had_generic:=true;
@@ -1554,7 +1557,7 @@ implementation
          repeat
            orgname:=current_scanner.orgpattern;
            filepos:=current_tokenpos;
-           isgeneric:=not (m_delphi in current_settings.modeswitches) and (current_scanner.token=_ID) and (current_scanner.idtoken=_GENERIC);
+           isgeneric:=not (m_implicit_generics in current_settings.modeswitches) and (current_scanner.token=_ID) and (current_scanner.idtoken=_GENERIC);
            consume(_ID);
            case current_scanner.token of
              _EQ:

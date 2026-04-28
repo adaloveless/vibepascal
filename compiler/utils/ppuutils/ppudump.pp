@@ -262,6 +262,8 @@ const
   thus widecharsize seems to always be 2 bytes }
 
   widecharsize : longint = 2;
+
+var
   cpu : tsystemcpu = cpu_no;
 
 { This type is defined in scanner.pas unit }
@@ -612,9 +614,10 @@ const
   end;
 {$POP}
 
-const has_errors : boolean = false;
-      has_warnings : boolean = false;
-      has_more_infos : boolean = false;
+var
+  has_errors : boolean = false;
+  has_warnings : boolean = false;
+  has_more_infos : boolean = false;
 
 procedure SetHasErrors;
 begin
@@ -2384,6 +2387,7 @@ const
         'Discard code initializing the zero register and stack pointer', {cs_link_discard_zeroreg_sp}
         'Discard initializing data', {cs_link_discard_copydata}
         'Discard jump to PASCALMAIN', {cs_link_discard_jmp_main}
+        'Link compact vector table startup code',
         'Link-Time Optimization disabled for system unit', {cs_lto_nosystem}
         'Assemble on target OS', {cs_assemble_on_target}
         'Use a memory model to support >2GB static data on 64 Bit target', {cs_large}
@@ -2500,7 +2504,9 @@ const
          'm_inline_var',          { allow inline variable declarations inside statement blocks }
          'm_multi_var_init',      { allow initializing multiple variables in one declaration }
          'm_tuples',              { allow anonymous tuple types as function return types and related literals }
-         'm_match'                { match statement with first-match and fallthrough modes }
+         'm_match',               { match statement with first-match and fallthrough modes }
+         'm_stringordcast',       { compile-time fold of string literal typecast to ordinal (DWORD('abcd')) }
+         'm_implicit_generics'    { Delphi-style generic syntax: 'generic'/'specialize' keywords optional, <T> allowed }
        );
        { optimizer }
        optimizerswitchname : array[toptimizerswitch] of string[50] =
@@ -4606,6 +4612,7 @@ begin
                begin
                  writeln([space,'       FieldAlign : ',shortint(getbyte)]);
                  writeln([space,'      RecordAlign : ',shortint(getbyte)]);
+                 writeln([space,'  ExplRecordAlign : ',shortint(getbyte)]);
                  writeln([space,'         PadAlign : ',shortint(getbyte)]);
                  writeln([space,'UseFieldAlignment : ',shortint(getbyte)]);
                  writeln([space,'   RecordAlignMin : ',shortint(getbyte)]);
@@ -5356,7 +5363,6 @@ var
   startpara,
   nrfile,i  : longint;
   para      : string;
-const
   error_on_more : boolean = false;
 begin
   if paramcount<1 then

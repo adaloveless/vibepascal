@@ -238,6 +238,7 @@ interface
          cs_link_pre_binutils_2_19,
          cs_link_vlink,
          cs_link_discard_start,cs_link_discard_zeroreg_sp,cs_link_discard_copydata,cs_link_discard_jmp_main,
+         cs_link_cvt,
          { disable LTO for the system unit (needed to work around linker bugs on macOS) }
          cs_lto_nosystem,
          cs_assemble_on_target,
@@ -564,7 +565,9 @@ interface
          m_inline_var,          { allow inline variable declarations inside statement blocks }
          m_multi_var_init,      { allow initializing multiple variables in one declaration }
          m_tuples,              { allow anonymous tuple types as function return types and related literals }
-         m_match                { match statement with first-match and fallthrough modes }
+         m_match,               { match statement with first-match and fallthrough modes }
+         m_stringordcast,       { compile-time fold of string literal typecast to ordinal (DWORD('abcd')) }
+         m_implicit_generics    { Delphi-style generic syntax: 'generic'/'specialize' keywords optional, <T> allowed }
        );
        tmodeswitches = set of tmodeswitch;
 
@@ -779,7 +782,9 @@ interface
          'INLINEVARS',
          'MULTIVARINIT',
          'TUPLES',
-         'MATCH'
+         'MATCH',
+         'STRINGORDCAST',
+         'IMPLICITGENERICS'
          );
 
 

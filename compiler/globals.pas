@@ -57,7 +57,7 @@ interface
           m_property,m_default_inline,m_except,m_advanced_records,
           m_array_operators,m_prefixed_attributes,m_underscoreisseparator,
           m_function_references,m_anonymous_functions,m_multiline_strings,
-          m_inline_var];
+          m_inline_var,m_implicit_generics];
        delphiunicodemodeswitches = delphimodeswitches + [m_systemcodepage,m_default_unicodestring];
        fpcmodeswitches =
          [m_fpc,m_string_pchar,m_nested_comment,m_repeat_forward,
@@ -70,7 +70,7 @@ interface
        unleashedmodeswitches = objfpcmodeswitches+[m_default_ansistring,m_underscoreisseparator,m_duplicate_names,
         m_advanced_records,m_array_operators,m_anonymous_functions,m_function_references,
         m_statement_expressions,m_array_equality,m_inline_var,m_tuples,m_match,m_multiline_strings,
-        m_multi_var_init,m_unleashed];
+        m_multi_var_init,m_stringordcast,m_unleashed];
        tpmodeswitches =
          [m_tp7,m_tp_procvar,m_duplicate_names];
 {$ifdef gpc_mode}
@@ -124,9 +124,11 @@ interface
        CP_UTF16BE = 1201;
        CP_NONE  = 65535;
 
+    var
        { by default no local variable trashing }
        localvartrashing: longint = -1;
 
+    const
        nroftrashvalues = 4;
        trashintvalues: array[0..nroftrashvalues-1] of int64 = ($5555555555555555,$AAAAAAAAAAAAAAAA,$EFEFEFEFEFEFEFEF,0);
 
@@ -468,7 +470,6 @@ Const
 
        cgbackend: tcgbackend;
 
-    const
        Inside_asm_statement : boolean = false;
 
        global_unit_count : word = 0;
@@ -491,16 +492,20 @@ Const
        sinclairql_vlink_experimental: boolean = true; { temporary }
 {$endif defined(m68k)}
 
+    const
        { default name of the C-style "main" procedure of the library/program }
        { (this will be prefixed with the target_info.cprefix)                }
        defaultmainaliasname = 'main';
+
+    var
        mainaliasname : string = defaultmainaliasname;
 
+    const
        custom_attribute_suffix = 'ATTRIBUTE';
 
+    var
       LTOExt: TCmdStr = '';
 
-    const
       default_settings : TSettings = (
         alignment : (
           procalign : 0;
@@ -713,7 +718,6 @@ Const
 {$endif defined(LLVM) and not defined(GENERIC_CPU)}
       );
 
-    var
       starttime  : real;
       startsystime : TSystemTime;
 
@@ -1698,7 +1702,7 @@ implementation
      pinitdoneentry=^tinitdoneentry;
 
 
-   const
+   var
      initdoneprocs : TFPList = nil;
 
 

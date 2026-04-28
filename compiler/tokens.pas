@@ -376,7 +376,7 @@ type
   ptokenidx=^ttokenidx;
   ttokenidx=array[tokenlenmin..tokenlenmax,'A'..'Z'] of tokenidxrec;
 
-const
+var
   arraytokeninfo : ttokenarray =(
       (str:''              ;special:true ;keyword:[m_none];op:NOTOKEN),
     { Operators which can be overloaded }
@@ -677,6 +677,7 @@ const
 
 
 {$ifdef jvm}
+const
   { reserved JVM tokens: keywords, true/false, and "null"; the commented out
     ones are also Pascal keywords in all modes }
   njvmtokens = 40;
