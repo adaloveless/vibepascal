@@ -658,6 +658,7 @@ implementation
                   begin
                     stmt:=expr(true);
                     resultdef:=branch_type(resultdef,stmt.resultdef);
+                    consume(_END);
                   end
                 else
                   stmt:=statements_til_end;
