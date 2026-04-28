@@ -243,8 +243,6 @@ interface
           function getcallnode : tcallnode;
 	  procedure setcallnode(calln : tcallnode);
        protected
-          { the call node the para node belongs to }
-          callnode : tcallnode;
           procedure handlemanagedbyrefpara(orgparadef: tdef);virtual;
           { on some targets, value parameters that are passed by reference must
             be copied to a temp location by the caller (and then a reference to

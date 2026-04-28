@@ -36,6 +36,7 @@ unit optcall;
   implementation
 
     uses
+      cutils,
       cclasses,
       verbose,globals,
       defutil,defcmp,
@@ -46,6 +47,33 @@ unit optcall;
       fmodule,
       pass_1,
       nbas,ncal,nld;
+
+    const
+      { Hard cap on inline expansions per single do_optinline pass, ported
+        from cy299 commit 6d5cf25528 (formerly in ncal.pas tcallnode.pass1_inline).
+        heuristics_favors_inlining is the natural cap, but pathological
+        self-recursive inline procs (e.g. an inline property getter that reads
+        its own property) defeat it. Without this cap, ppcx64 falls back to
+        nutils.MAX_FOREACH_DEPTH (131072) only after copying the inline body
+        ~13000 times, blowing memory long before that.
+
+        Architecture note: in the new optcall.pas/doinline + walker design
+        (replacing the old ncal.pas/pass1_inline + firstpass(inlineblock)
+        synchronous recursion), expansions happen through the foreachnodestatic
+        walker descending into inlined bodies. The walker depth is not exposed
+        to callbacks, so we use a non-decrementing total-expansion counter
+        per do_optinline call. 4096 is high enough to never trip on legitimate
+        per-procedure inline workload, low enough to corner self-recursive
+        pathology (where each expansion grows the tree linearly) before the
+        nutils cycle-guard fires. Reset at do_optinline entry.
+
+        Also protects against Lex's BBU 129-inline-method PPU writer
+        threshold class of pathological inlining. }
+      MAX_INLINE_EXPANSIONS_PER_OPTINLINE = 4096;
+
+    var
+      inline_expansion_count : longint;
+      inline_expansion_error_emitted : boolean;
 
     { this procedure removes the user code flag because it prevents optimizations }
     function removeusercodeflag(var n : tnode; arg : pointer) : foreachnoderesult;
@@ -134,6 +162,29 @@ unit optcall;
         if not(assigned(tprocdef(callnode.procdefinition).inlininginfo) and
           assigned(tprocdef(callnode.procdefinition).inlininginfo^.code)) then
           internalerror(200412021);
+
+        { Hard expansion cap: convert pathological self-recursive inline
+          expansions into a clean compile error instead of memory exhaustion
+          + nutils.MAX_FOREACH_DEPTH cycle-guard fallback (cy299). }
+        inc(inline_expansion_count);
+        if inline_expansion_count > MAX_INLINE_EXPANSIONS_PER_OPTINLINE then
+          begin
+            if not inline_expansion_error_emitted then
+              begin
+                Comment(V_Error,'Recursive inline expansion of "'+
+                  tprocdef(callnode.procdefinition).customprocname([pno_proctypeoption,pno_paranames,pno_ownername,pno_noclassmarker])+
+                  '" exceeds expansion limit ('+tostr(MAX_INLINE_EXPANSIONS_PER_OPTINLINE)+
+                  '); suspected self-recursive inline procedure (compile aborted to avoid stack overflow)');
+                inline_expansion_error_emitted:=true;
+              end;
+            { Disable inlining on this procdef for the rest of compilation
+              so successive callers do not re-emit the same error. The
+              original callnode falls through to a normal call. }
+            exclude(tprocdef(callnode.procdefinition).procoptions,po_inline);
+            exclude(callnode.callnodeflags,cnf_do_inline);
+            include(callnode.transientflags,tnf_pass1_done);
+            exit;
+          end;
 
         callnode.inlinelocals:=TFPObjectList.create(true);
 
@@ -234,6 +285,8 @@ unit optcall;
     procedure do_optinline(var rootnode: tnode;out changed: boolean);
       begin
         changed:=false;
+        inline_expansion_count:=0;
+        inline_expansion_error_emitted:=false;
 {$ifdef EXTDEBUG_INLINE}
         writeln('************************ Tree before inlining ******************************');
         printnode(rootnode);

@@ -46,6 +46,20 @@ type
   TCastErrorFromMode = (CastErrorFromNA, CastErrorFromClass, CastErrorFromExternalInterface);
   TCastErrorToMode = (CastErrorToNA, CastErrorToClass, CastErrorToComInterface, CastErrorToCorbaInterface);
 
+{ vibepascal preserved (v25-v31): simple ShortString variant referenced by
+  except.inc SysInitExceptions. Restored after the cy449 fpc-unleashed merge
+  dropped these var defs but kept the references in except.inc. Coexists with
+  upstream's structured CastError record below. }
+{$IFDEF FPC_HAS_FEATURE_THREADING}
+threadvar
+  CastErrorFrom : ShortString;
+  CastErrorTo : ShortString;
+{$ELSE}
+var
+  CastErrorFrom : ShortString = '';
+  CastErrorTo : ShortString = '';
+{$ENDIF}
+
 {$IFDEF FPC_HAS_FEATURE_THREADING}
 threadvar
 {$ELSE}

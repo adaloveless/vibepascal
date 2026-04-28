@@ -1075,22 +1075,22 @@ implementation
                       ttypesym(sym).typedef.owner:=sym.owner;
                     end
                   else
-                    { in implicit-generics mode allow generic-arity overloading:
-                      an existing symbol with the bare name may be a previous
-                      generic-dummy beacon (same generic, different arity) or a
-                      non-generic type with the same base name. In either case
-                      register the new arity as an additional dummy entry so
-                      inline specializations and arity-based lookup work. This
-                      matches Delphi's TProc/TProc<T>/... pattern. Outside of
-                      implicit-generics mode, this is a duplicate id. }
-                    if not (m_implicit_generics in current_settings.modeswitches) then
-                      Message1(sym_e_duplicate_id,genorgtypename)
-                    else
-                      begin
-                        if not (sp_generic_dummy in sym.symoptions) then
-                          Include(sym.symoptions,sp_generic_dummy);
-                        add_generic_dummysym(sym,'');
-                      end;
+                    { vibepascal cy432 (re-applied cy450 post-merge): allow
+                      generic-arity overloading unconditionally. An existing
+                      symbol with the bare name may be a previous generic-dummy
+                      beacon (same generic, different arity) or a non-generic
+                      type with the same base name. In either case register the
+                      new arity as an additional dummy entry so inline
+                      specializations and arity-based lookup work. This matches
+                      Delphi's TProc/TProc<T>/... pattern AND is required by
+                      vibepascal RTL sysutilh.inc TProc<T1>/<T1,T2>/... in
+                      objfpc mode. The cy449 merge re-gated this under
+                      m_implicit_generics; cy450 ungates it again. }
+                    begin
+                      if not (sp_generic_dummy in sym.symoptions) then
+                        Include(sym.symoptions,sp_generic_dummy);
+                      add_generic_dummysym(sym,'');
+                    end;
                 end
               else
                 begin
