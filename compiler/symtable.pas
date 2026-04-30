@@ -499,7 +499,7 @@ implementation
       { symtable }
       symutil,defutil,defcmp,objcdef,
       { module }
-      fmodule,
+      fmodule,finput,
       { codegen }
       procinfo,
       { ppu }
@@ -855,6 +855,8 @@ implementation
           which then already need to contain a resolved typedef field (PFV) }
         for i:=0 to SymList.Count-1 do
           begin
+            if current_module.state=ms_compile then
+              exit;
             sym:=tstoredsym(SymList[i]);
             if (sym.typ=typesym) and
                (not only_registered or
@@ -864,6 +866,8 @@ implementation
         { interface definitions }
         for i:=0 to DefList.Count-1 do
           begin
+            if current_module.state=ms_compile then
+              exit;
             def:=tstoreddef(DefList[i]);
             if not only_registered or
                def.is_registered then
@@ -872,6 +876,8 @@ implementation
         { interface symbols }
         for i:=0 to SymList.Count-1 do
           begin
+            if current_module.state=ms_compile then
+              exit;
             sym:=tstoredsym(SymList[i]);
             if (not only_registered or
                 sym.is_registered) and
@@ -889,6 +895,8 @@ implementation
         { implementation definitions }
         for i:=0 to DefList.Count-1 do
           begin
+            if current_module.state=ms_compile then
+              exit;
             def:=tstoreddef(DefList[i]);
             if not only_registered or
                def.is_registered then

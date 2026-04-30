@@ -2312,11 +2312,15 @@ var
 
             { we can now dereference all pointers to the implementation parts }
             tstoredsymtable(globalsymtable).derefimpl(false);
+            if state=ms_compile then
+              exit(false);
             { we've just loaded the localsymtable from the ppu file, so everything
               in it was registered by definition (otherwise it wouldn't have been in
               there) }
             if assigned(localsymtable) then
               tstoredsymtable(localsymtable).derefimpl(false);
+            if state=ms_compile then
+              exit(false);
 
 {$ifdef DEBUG_PPU_LIST_DIAGS}
             ppu_read_check_symlist(self,'D:after-derefimpl');
@@ -2325,6 +2329,9 @@ var
             remove_waitforunit_cycles;
 
           end;
+
+        if state=ms_compile then
+          exit(false);
 
         { the implementation uses were just connected,
           the scc_tree_crc_wait is outdated.
@@ -2338,6 +2345,9 @@ var
         if not ppu_check_used_crcs then
           exit(false);
         ppu_waitingfor_crc:=false;
+
+        if state=ms_compile then
+          exit(false);
 
         derefunitimportsyms;
 
@@ -2644,6 +2654,10 @@ var
         do_recompile:=true;
         do_reload:=true;
         state:=ms_compile;
+        { Auto-delete corrupt PPU files so recompile produces a fresh one }
+        if (reason=rr_ppucorrupt) and (ppufilename<>'') and
+           FileExists(ppufilename,false) then
+          DeleteFile(ppufilename);
       end;
 
     procedure tppumodule.post_load_or_compile(from_module : tmodule);

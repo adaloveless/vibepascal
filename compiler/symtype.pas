@@ -1060,6 +1060,14 @@ implementation
                   result:=tdef(pm.deflist[idx]);
                   if not assigned(result) then
                     begin
+                      if pm.state=ms_load then
+                        begin
+                          writeln('PPU corruption detected in unit ',pm.modulename^,
+                            ' (defid=',idx,'), scheduling recompile');
+                          pm.state:=ms_compile;
+                          pm.recompile_reason:=rr_ppucorrupt;
+                          exit;
+                        end;
                       writeln('PPU DEREF NIL DEF: deflist[',idx,']=nil in module ',pm.modulename^,
                         ' (current=',current_module.modulename^,' dataidx=',dataidx,')');
                       Message1(unit_f_ppu_invalid_entry,
@@ -1081,6 +1089,14 @@ implementation
                   result:=tsym(pm.symlist[idx]);
                   if not assigned(result) then
                     begin
+                      if pm.state=ms_load then
+                        begin
+                          writeln('PPU corruption detected in unit ',pm.modulename^,
+                            ' (symid=',idx,'), scheduling recompile');
+                          pm.state:=ms_compile;
+                          pm.recompile_reason:=rr_ppucorrupt;
+                          exit;
+                        end;
                       writeln('PPU DEREF NIL SYM: symlist[',idx,']=nil in module ',pm.modulename^,
                         ' (current=',current_module.modulename^,' dataidx=',dataidx,')');
                       if (idx>0) and (idx-1<pm.symlist.count) then

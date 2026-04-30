@@ -58,7 +58,8 @@ interface
         rr_sourcenewer,
         rr_build,
         rr_crcchanged,
-        rr_buildcycle
+        rr_buildcycle,
+        rr_ppucorrupt
       );
 
 {$ifdef VER3_2}
