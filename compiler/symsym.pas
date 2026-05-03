@@ -814,7 +814,22 @@ implementation
           end;
 {$endif DEBUG_CROSS_MODULE_REGISTER}
         { Register in current_module }
-        if assigned(tmod) then
+        { Refuse to mutate a foreign module's symlist when its PPU is already
+          finalized -- adding a slot here would mismatch the on-disk PPU at
+          read time (deref encodes deref_unit + deref_symid pointing to a
+          slot beyond the PPU's symlist count, causing nil sym deref).
+          See cy515 GOD directive monf1ygj: BBU's 129 inline methods triggered
+          this when consumer units (e.g. FILEPROXY) compiled against a
+          finalized BBU.ppu. Mark as registered_nost; tderef.build will then
+          encode deref_nil and the consumer's auto-rebuild (cy471) recovers. }
+        if assigned(tmod) and
+           (tmod<>current_module) and
+           (tmod.state in [ms_compiled,ms_processed,ms_compiled_waitcrc,ms_compiling_waitfinish]) then
+          begin
+            SymId:=symid_registered_nost;
+            registered_in_module:=nil;
+          end
+        else if assigned(tmod) then
           begin
             tmod.symlist.Add(self);
             SymId:=tmod.symlist.Count-1;

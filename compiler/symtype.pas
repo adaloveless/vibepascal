@@ -942,56 +942,72 @@ implementation
         st   : TSymtable;
         data : array[0..255] of byte;
         idx : word;
+        encode_as_nil : boolean;
 
       begin
         { skip length byte }
         len:=1;
+        encode_as_nil:=false;
         if assigned(s) then
          begin
 { TODO: ugly hack}
            if s is tsym then
              begin
-               { if it has been registered but it wasn't put in a symbol table,
-                 this symbol shouldn't be written to a ppu }
-               if tsym(s).SymId=symid_registered_nost then
-                 do_internal_error(2015102504);
                if not tsym(s).registered then
                  tsym(s).register_sym;
-               st:=FindUnitSymtable(tsym(s).owner)
+               { if it has been registered but it wasn't put in a symbol table,
+                 this symbol shouldn't be written to a ppu (cy515: post-fix the
+                 register_sym path may set symid_registered_nost when refusing
+                 to mutate a finalized foreign module's symlist -- encode as
+                 deref_nil so the consumer's auto-rebuild handles the gap) }
+               if tsym(s).SymId=symid_registered_nost then
+                 encode_as_nil:=true
+               else
+                 st:=FindUnitSymtable(tsym(s).owner)
              end
            else if s is tdef then
              begin
-               { same as above }
-               if tdef(s).defid=defid_registered_nost then
-                 do_internal_error(2015102501);
                if tdef(s).typ=errordef then
                  do_internal_error(2024011501);
                if not tdef(s).registered then
                  tdef(s).register_def;
-               st:=FindUnitSymtable(tdef(s).owner);
+               { same as above }
+               if tdef(s).defid=defid_registered_nost then
+                 encode_as_nil:=true
+               else
+                 st:=FindUnitSymtable(tdef(s).owner);
              end
            else
              // Unknown object type
              do_internal_error(2016090204);
-           if not st.iscurrentunit then
+           if not encode_as_nil then
              begin
-               { register that the unit is needed for resolving }
-               data[len]:=ord(deref_unit);
-               idx:=current_module.derefidx_unit(st.moduleid);
-               unaligned(PUint16(@data[len+1{..len+2}])^):=NtoBE(uint16(idx));
-               inc(len,3);
-             end;
-           if s is tsym then
-             begin
-               data[len]:=ord(deref_symid);
-               unaligned(PInt32(@data[len+1{..len+4}])^):=NtoBE(int32(tsym(s).symid));
-               inc(len,5);
+               if not st.iscurrentunit then
+                 begin
+                   { register that the unit is needed for resolving }
+                   data[len]:=ord(deref_unit);
+                   idx:=current_module.derefidx_unit(st.moduleid);
+                   unaligned(PUint16(@data[len+1{..len+2}])^):=NtoBE(uint16(idx));
+                   inc(len,3);
+                 end;
+               if s is tsym then
+                 begin
+                   data[len]:=ord(deref_symid);
+                   unaligned(PInt32(@data[len+1{..len+4}])^):=NtoBE(int32(tsym(s).symid));
+                   inc(len,5);
+                 end
+               else
+                 begin
+                   data[len]:=ord(deref_defid);
+                   unaligned(PInt32(@data[len+1{..len+4}])^):=NtoBE(int32(tdef(s).defid));
+                   inc(len,5);
+                 end;
              end
            else
              begin
-               data[len]:=ord(deref_defid);
-               unaligned(PInt32(@data[len+1{..len+4}])^):=NtoBE(int32(tdef(s).defid));
-               inc(len,5);
+               { nil pointer (registered_nost fallback) }
+               data[len]:=ord(deref_nil);
+               inc(len);
              end;
          end
         else

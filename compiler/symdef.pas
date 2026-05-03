@@ -2724,7 +2724,17 @@ implementation
        else
          tmod:=current_module;
        { Register in current_module }
-       if assigned(tmod) then
+       { Refuse to mutate a foreign module's deflist when its PPU is already
+         finalized -- adding a slot would mismatch on-disk PPU. See cy515
+         GOD directive monf1ygj (counterpart to symsym.pas register_sym fix). }
+       if assigned(tmod) and
+          (tmod<>current_module) and
+          (tmod.state in [ms_compiled,ms_processed,ms_compiled_waitcrc,ms_compiling_waitfinish]) then
+         begin
+           DefId:=defid_registered_nost;
+           registered_in_module:=nil;
+         end
+       else if assigned(tmod) then
          begin
            exclude(defoptions,df_not_registered_no_free);
            for gst:=low(tgetsymtable) to high(tgetsymtable) do
