@@ -4,6 +4,14 @@
 
 Started in 2026, ths project is "ALL GAS NO BRAKES".  2026 is that kind of year.  Rapid acceleration, possibly sometimes into a concrete, brick wall... but pedal to the floor none the less. Apologies if the agents are working in the main branch... sync/fork at your own risk... recommend having agents of your own to resolve issues.  Dozens of commits daily... dozens of upstream syncs daily from fpc/and fpc uleashed.  Maybe they're running agents there too now? I dunno.  It's all gas, no brakes over here!  Time to break free from the chains of the past.   That's what we're about!
 
+Some notable features that have been human observed:
+1. Tightened compatibility with with regard to generics in particular, especially when returning generics from functions e.g. function (foo: string): TSomegeneric<string> 
+2. Tightened compatibility with regard to Anonymous procedures and functions
+3. Tightened compatibility with multi-line string literals.
+4. Tightened compatibility with records, record initializers/finalizers.
+5. Tightened compatibility with compiler directives
+6. Like FPC-unleashed, compiler is less about "modes" and more about "just make it work, no fuss".  Unsure how this affects the deep legacy systems, e.g. Amiga.
+
 This README documents the upstream FPC Unleashed feature set we inherit. Vibe Pascal extends this with defensive PPU loader hardening, inline-variable type inference for anonymous procedures, recursive-inline expansion depth caps, and Win64 dist tarballs with `fpcres` + utilities pre-built.
 
 ---
