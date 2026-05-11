@@ -762,12 +762,28 @@ implementation
       var
         tmod : tmodule;
         ownerpd : tprocdef;
+        persistent_owner : tsymtable;
 {$ifdef DEBUG_CROSS_MODULE_REGISTER}
         owner_name, owner_kind, mod_name : string;
 {$endif DEBUG_CROSS_MODULE_REGISTER}
       begin
         if registered then
           exit;
+        { Block-scoped inline-var symtables are compile-time scopes only and
+          are not serialized to PPUs. If an inline tree registers one of their
+          symbols, writing the module symid without writing the owner table
+          leaves a nil slot when the PPU is loaded. Rehome the symbol into the
+          enclosing persistent procedure table before assigning a module symid. }
+        if assigned(owner) and (owner.symtabletype=blocksymtable) then
+          begin
+            persistent_owner:=owner.blockparentst;
+            while assigned(persistent_owner) and
+                  (persistent_owner.symtabletype=blocksymtable) do
+              persistent_owner:=persistent_owner.blockparentst;
+            if assigned(persistent_owner) and
+               (persistent_owner.symtabletype in [localsymtable,parasymtable]) then
+              ChangeOwner(persistent_owner);
+          end;
         if assigned(owner) then
           begin
             tmod:=find_module_from_symtable(owner);

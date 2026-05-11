@@ -2708,9 +2708,23 @@ implementation
        gst : tgetsymtable;
        st : tsymtable;
        tmod : tmodule;
+       persistent_owner : tsymtable;
      begin
        if registered then
          exit;
+       { Block-scoped inline-var symtables are not persisted in PPUs. Defs
+         created under such a scope must be written through the enclosing
+         persistent procedure table if a deref registers them for storage. }
+       if assigned(owner) and (owner.symtabletype=blocksymtable) then
+         begin
+           persistent_owner:=owner.blockparentst;
+           while assigned(persistent_owner) and
+                 (persistent_owner.symtabletype=blocksymtable) do
+             persistent_owner:=persistent_owner.blockparentst;
+           if assigned(persistent_owner) and
+              (persistent_owner.symtabletype in [localsymtable,parasymtable]) then
+             ChangeOwner(persistent_owner);
+         end;
        if assigned(owner) then
          begin
            tmod:=find_module_from_symtable(owner);
@@ -7393,6 +7407,12 @@ implementation
              old_symlist_count:=current_module.symlist.count;
              funcretsymderef.build(funcretsym);
              inlininginfo^.code.buildderefimpl;
+             { Inline tree derefs can register block-scoped inline locals after
+               the first localst build above. Such entries are rehomed to
+               localst by register_sym/register_def, so build the newly
+               registered localst derefs before the module derefdata is written. }
+             if store_localst and assigned(localst) then
+               tlocalsymtable(localst).buildderef_registered;
              { Check for symbols newly registered from non-stored local/parameter tables.
                When an inline proc's node tree references a symbol from
                another proc's local or parameter symtable, that symbol gets registered

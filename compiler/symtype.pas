@@ -943,6 +943,7 @@ implementation
         data : array[0..255] of byte;
         idx : word;
         encode_as_nil : boolean;
+        persistent_owner : TSymtable;
 
       begin
         { skip length byte }
@@ -953,6 +954,17 @@ implementation
 { TODO: ugly hack}
            if s is tsym then
              begin
+               if assigned(tsym(s).owner) and
+                  (tsym(s).owner.symtabletype=blocksymtable) then
+                 begin
+                   persistent_owner:=tsym(s).owner.blockparentst;
+                   while assigned(persistent_owner) and
+                         (persistent_owner.symtabletype=blocksymtable) do
+                     persistent_owner:=persistent_owner.blockparentst;
+                   if assigned(persistent_owner) and
+                      (persistent_owner.symtabletype in [localsymtable,parasymtable]) then
+                     tsym(s).ChangeOwner(persistent_owner);
+                 end;
                if not tsym(s).registered then
                  tsym(s).register_sym;
                { if it has been registered but it wasn't put in a symbol table,
@@ -969,6 +981,17 @@ implementation
              begin
                if tdef(s).typ=errordef then
                  do_internal_error(2024011501);
+               if assigned(tdef(s).owner) and
+                  (tdef(s).owner.symtabletype=blocksymtable) then
+                 begin
+                   persistent_owner:=tdef(s).owner.blockparentst;
+                   while assigned(persistent_owner) and
+                         (persistent_owner.symtabletype=blocksymtable) do
+                     persistent_owner:=persistent_owner.blockparentst;
+                   if assigned(persistent_owner) and
+                      (persistent_owner.symtabletype in [localsymtable,parasymtable]) then
+                     tdef(s).ChangeOwner(persistent_owner);
+                 end;
                if not tdef(s).registered then
                  tdef(s).register_def;
                { same as above }
@@ -1453,4 +1476,3 @@ finalization
 {$endif MEMDEBUG}
 
 end.
-
