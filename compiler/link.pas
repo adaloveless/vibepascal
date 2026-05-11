@@ -1738,17 +1738,31 @@ Implementation
         objdata: TObjData;
         ScriptLexer: TScriptLexer;
         stmt:TStaticLibrary;
+        fn: TCmdStr;
       begin
 { TODO: Cleanup ignoring of   FPC generated libimp*.a files}
         { Don't load import libraries }
         if copy(ExtractFileName(para),1,6)='libimp' then
           exit;
-        Comment(V_Tried,'Opening library '+para);
-        objreader:=CArObjectreader.createAr(para,true);
+        fn:=para;
+        if not FileExists(FixFileName(fn),false) then
+          begin
+            { GNU ld scripts commonly combine SEARCH_DIR entries with bare
+              INPUT/GROUP members.  Resolve those members before opening them,
+              otherwise direct object payloads outside the current directory are
+              silently absent from the internal linker symbol table. }
+            if not FindLibraryFile(para,'','',fn) and
+               (ExtractFileExt(para)=target_info.objext) then
+              fn:=FindObjectFile(para,'',false);
+          end
+        else
+          fn:=ScriptFixFileName(fn);
+        Comment(V_Tried,'Opening library '+fn);
+        objreader:=CArObjectreader.createAr(fn,true);
         if ErrorCount>0 then
           exit;
         if objreader.isarchive then
-          TFPObjectList(FGroupStack.Last).Add(TStaticLibrary.Create(para,objreader,CObjInput))
+          TFPObjectList(FGroupStack.Last).Add(TStaticLibrary.Create(fn,objreader,CObjInput))
         else
           if CObjInput.CanReadObjData(objreader) then
             begin
