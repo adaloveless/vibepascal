@@ -837,16 +837,16 @@ implementation
           end
         else
           SymId:=symid_registered_nost;
-        { Cross-reference promotion: if this local sym belongs to a procdef whose
+        { Cross-reference promotion: if this local/parameter sym belongs to a procdef whose
           localst would not otherwise be stored, flag the procdef so its localst
           gets written during the normal ppuwrite flow. Without this, the sym's
-          SymId slot is nil at PPU read time because the localst is skipped.
+          SymId slot is nil at PPU read time because the owning proc context is skipped.
           Do NOT call buildderef here — the global buildderefimpl walk at write
           time will pick up the flag via store_localst and handle it safely.
           Only promote procdefs in the current module — foreign procdefs'
           localsts are already decided by their own PPU. }
         if assigned(owner) and
-           (owner.symtabletype=localsymtable) and
+           (owner.symtabletype in [localsymtable,parasymtable]) and
            assigned(owner.defowner) and
            (owner.defowner is tprocdef) and
            (tmod=current_module) then

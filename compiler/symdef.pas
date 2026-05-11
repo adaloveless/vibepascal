@@ -7393,11 +7393,11 @@ implementation
              old_symlist_count:=current_module.symlist.count;
              funcretsymderef.build(funcretsym);
              inlininginfo^.code.buildderefimpl;
-             { Check for symbols newly registered from non-stored localsts.
+             { Check for symbols newly registered from non-stored local/parameter tables.
                When an inline proc's node tree references a symbol from
-               another proc's local symtable, that symbol gets registered
+               another proc's local or parameter symtable, that symbol gets registered
                in the module's symlist. If the other proc has
-               store_localst=false, its localst won't be written to the PPU,
+               store_localst=false, its procedure context won't be written to the PPU,
                leaving nil slots at read time. Force storage of those
                localsts. }
              for si:=old_symlist_count to current_module.symlist.count-1 do
@@ -7408,14 +7408,15 @@ implementation
                  if not assigned(sym.owner) then
                    continue;
                  ownerst:=sym.owner;
-                 if (ownerst.symtabletype=localsymtable) and
+                 if (ownerst.symtabletype in [localsymtable,parasymtable]) and
                     assigned(ownerst.defowner) and
                     (ownerst.defowner is tprocdef) then
                    begin
                      ownerpd:=tprocdef(ownerst.defowner);
                      if not (df_localst_cross_referenced in ownerpd.defoptions) and
                         not ownerpd.has_inlininginfo and
-                        not (df_generic in ownerpd.defoptions) then
+                        not (df_generic in ownerpd.defoptions) and
+                        assigned(ownerpd.localst) then
                        begin
                          include(ownerpd.defoptions,df_localst_cross_referenced);
                          tlocalsymtable(ownerpd.localst).buildderef;
