@@ -942,7 +942,17 @@ begin
       else
         NewType := ftString;
 {$IFDEF MYSQL50_UP}
-      if AField^.charsetnr = 63 then begin //BINARY vs. AnsiChar, VARBINARY vs. VARCHAR
+      if ASize = 0 then begin
+        // MySQL-wire-compatible servers (ClickHouse, BigQuery proxy, etc.) report
+        // length 0 for natively-unbounded text/binary columns. Map to memo/blob
+        // so LoadBlobIntoBuffer uses the wire-reported Lengths[i] per row instead
+        // of clipping to a zero-byte fielddef buffer in LoadField.
+        if AField^.charsetnr = 63 then
+          NewType := ftBlob
+        else
+          NewType := ftMemo;
+      end
+      else if AField^.charsetnr = 63 then begin //BINARY vs. AnsiChar, VARBINARY vs. VARCHAR
         if NewType = ftFixedChar then
           NewType := ftBytes
         else
@@ -953,7 +963,10 @@ begin
         // INFO tables sometimes report not multiple of mbmaxlen. issue #40186
         NewSize := (ASize + FConnectionCharsetInfo.mbmaxlen - 1) div FConnectionCharsetInfo.mbmaxlen;
 {$ELSE}
-      NewSize := ASize;
+      if ASize = 0 then
+        NewType := ftMemo
+      else
+        NewSize := ASize;
 {$ENDIF}
       end;
     FIELD_TYPE_TINY_BLOB..FIELD_TYPE_BLOB:
