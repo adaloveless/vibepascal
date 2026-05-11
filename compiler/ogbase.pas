@@ -3175,6 +3175,62 @@ implementation
             end;
         end;
 
+        procedure ResolveDirectObjectDefinitions(const stage:string);
+        var
+          i,
+          j,
+          k       : longint;
+          objdata : TObjData;
+          exesym  : TExeSymbol;
+          candidate,
+          objsym  : TObjSymbol;
+          duplicate : boolean;
+        begin
+          for i:=0 to UnresolvedExeSymbols.Count-1 do
+            begin
+              exesym:=TExeSymbol(UnresolvedExeSymbols[i]);
+              if not assigned(exesym) or
+                 (exesym.State<>symstate_undefined) then
+                continue;
+
+              candidate:=nil;
+              duplicate:=false;
+              for j:=0 to ObjDataList.Count-1 do
+                begin
+                  objdata:=TObjData(ObjDataList[j]);
+                  for k:=0 to objdata.ObjSymbolList.Count-1 do
+                    begin
+                      objsym:=TObjSymbol(objdata.ObjSymbolList[k]);
+                      if (objsym.name=exesym.name) and
+                         assigned(objsym.objsection) and
+                         (objsym.bind in [AB_GLOBAL,AB_PRIVATE_EXTERN]) then
+                        begin
+                          if assigned(candidate) then
+                            begin
+                              duplicate:=true;
+                              break;
+                            end
+                          else
+                            candidate:=objsym;
+                        end;
+                    end;
+                  if duplicate then
+                    break;
+                end;
+
+              if assigned(candidate) and not duplicate then
+                begin
+                  exesym.ObjSymbol:=candidate;
+                  exesym.State:=symstate_defined;
+                  candidate.ExeSymbol:=exesym;
+                  if candidate.bind=AB_PRIVATE_EXTERN then
+                    candidate.bind:=AB_LOCAL;
+                  Comment(V_Debug,'Resolved external '+exesym.name+
+                    ' by direct object scan '+stage);
+                end;
+            end;
+        end;
+
         procedure LoadLibrary(lib:TStaticLibrary);
           var
             j,k,oldcount: longint;
@@ -3264,6 +3320,7 @@ implementation
             ObjData:=TObjData(ObjDataList[i]);
             LoadObjDataSymbols(ObjData);
           end;
+        ResolveDirectObjectDefinitions('after objects');
         PackUnresolvedExeSymbols('in objects');
 
         { Step 2, Find unresolved symbols in the libraries }
@@ -3271,6 +3328,7 @@ implementation
         for i:=0 to StaticLibraryList.Count-1 do
           LoadLibrary(TStaticLibrary(StaticLibraryList[i]));
 
+        ResolveDirectObjectDefinitions('after static libraries');
         PackUnresolvedExeSymbols('after static libraries');
 
         { Step 3, handle symbols provided in script }
