@@ -3236,6 +3236,7 @@ implementation
             j,k,oldcount: longint;
             members: TFPObjectList;
             exesym: TExeSymbol;
+            objdata: TObjData;
             objinput: TObjInput;
           begin
             case lib.Kind of
@@ -3292,13 +3293,26 @@ implementation
                 end;
               lkObject:
                 { TODO: ownership of objdata }
-                //if lib.objdata.is_dynamic then
-                  Load_DynamicObject(lib.objdata,lib.AsNeeded);
-                {else
+                if not assigned(lib.FPayload) then
+                  exit
+                else if target_info.system in systems_all_windows then
                   begin
-                    AddObjData(lib.objdata);
-                    LoadObjDataSymbols(lib.objdata);
-                  end;}
+                    objdata:=lib.objdata;
+                    AddObjData(objdata);
+                    LoadObjDataSymbols(objdata);
+                    { AddObjData transfers ownership to ObjDataList. }
+                    lib.FPayload:=nil;
+                  end
+                else
+                  begin
+                    //if lib.objdata.is_dynamic then
+                    Load_DynamicObject(lib.objdata,lib.AsNeeded);
+                    {else
+                      begin
+                        AddObjData(lib.objdata);
+                        LoadObjDataSymbols(lib.objdata);
+                      end;}
+                  end;
             end;
           end;
 
