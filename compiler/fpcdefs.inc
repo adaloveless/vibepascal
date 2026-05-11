@@ -57,6 +57,13 @@
   repro emits CROSS-MOD REG lines. }
 { $define DEBUG_CROSS_MODULE_REGISTER}
 
+{ DEBUG_C387_LINK_DIAGS traces the Win64 internal linker path for the C387
+  generic-specialization unresolved-symbol family (IHolder<T>,
+  TClassFactory<T>, and related commonx helper symbols). Off by default; enable
+  only in a diagnostic compiler when a direct-object exact exported symbol is
+  still reported undefined at link time. }
+{ $define DEBUG_C387_LINK_DIAGS}
+
 {$ifdef DEBUG_ALL_OPT}
   { for aopt unit }
   {$define DEBUG_OPTALLOC}
@@ -479,4 +486,3 @@
   {$define symansistr}
   {$define SUPPORT_GET_FRAME}
 {$endif}
-

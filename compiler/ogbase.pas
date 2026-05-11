@@ -2978,6 +2978,14 @@ implementation
         VTEntryList,
         VTInheritList : TFPObjectList;
 
+{$ifdef DEBUG_C387_LINK_DIAGS}
+        function IsC387LinkDiagSymbol(const s:string):boolean; forward;
+        function C387ObjSymbolPlace(objsym:TObjSymbol):string; forward;
+        procedure TraceC387LinkObjSymbol(const stage:string;objsym:TObjSymbol;exesym:TExeSymbol); forward;
+        procedure TraceC387LinkExeSymbol(const stage:string;exesym:TExeSymbol); forward;
+        procedure TraceC387LinkUnresolved(const stage:string); forward;
+{$endif DEBUG_C387_LINK_DIAGS}
+
         procedure LoadObjDataSymbols(ObjData:TObjData);
         var
           j      : longint;
@@ -3040,6 +3048,10 @@ implementation
 
               { Search for existing exesymbol }
               exesym:=texesymbol(FExeSymbolList.Find(objsym.name));
+{$ifdef DEBUG_C387_LINK_DIAGS}
+              if IsC387LinkDiagSymbol(objsym.name) then
+                TraceC387LinkObjSymbol('load '+ObjData.Name,objsym,exesym);
+{$endif DEBUG_C387_LINK_DIAGS}
               if not assigned(exesym) then
                 begin
                   exesym:=texesymbol.Create(FExeSymbolList,objsym.name);
@@ -3172,8 +3184,82 @@ implementation
                 else
                   internalerror(2019050510);
               end;
+{$ifdef DEBUG_C387_LINK_DIAGS}
+              if IsC387LinkDiagSymbol(objsym.name) then
+                TraceC387LinkObjSymbol('post-load '+ObjData.Name,objsym,exesym);
+{$endif DEBUG_C387_LINK_DIAGS}
             end;
         end;
+
+{$ifdef DEBUG_C387_LINK_DIAGS}
+        function IsC387LinkDiagSymbol(const s:string):boolean;
+        begin
+          result:=(Pos('IHOLDER$1',s)>0) or
+                  (Pos('TCLASSFACTORY',s)>0) or
+                  (Pos('LOCKI$$',s)>0) or
+                  (Pos('PARSESTRINGH$',s)>0) or
+                  (Pos('STRINGARRAYTOSTRINGLISTH$',s)>0) or
+                  (Pos('PARSESTRINGNOTINH$',s)>0) or
+                  (Pos('STRINGTOSTRINGLISTH$',s)>0) or
+                  (Pos('NVPSTR$',s)>0) or
+                  (Pos('NEWSTRINGLISTH$',s)>0);
+        end;
+
+        function C387ObjSymbolPlace(objsym:TObjSymbol):string;
+        begin
+          if not assigned(objsym) then
+            exit('<nil objsym>');
+          result:=objsym.ObjData.Name;
+          if assigned(objsym.objsection) then
+            result:=result+' '+objsym.objsection.FullName
+          else
+            result:=result+' <nil section>';
+        end;
+
+        procedure TraceC387LinkObjSymbol(const stage:string;objsym:TObjSymbol;exesym:TExeSymbol);
+        var
+          s : string;
+        begin
+          if not assigned(objsym) then
+            begin
+              Comment(V_Warning,'C387LINK '+stage+' objsym=<nil>');
+              exit;
+            end;
+          WriteStr(s,'C387LINK ',stage,' obj=',C387ObjSymbolPlace(objsym),
+            ' sym=',objsym.name,' bind=',objsym.bind,' typ=',objsym.typ,
+            ' offset=',objsym.offset,' size=',objsym.size);
+          if assigned(exesym) then
+            WriteStr(s,s,' exe_state=',exesym.state)
+          else
+            s:=s+' exe_state=<new>';
+          Comment(V_Warning,s);
+        end;
+
+        procedure TraceC387LinkExeSymbol(const stage:string;exesym:TExeSymbol);
+        var
+          s : string;
+        begin
+          if not assigned(exesym) or not IsC387LinkDiagSymbol(exesym.name) then
+            exit;
+          WriteStr(s,'C387LINK ',stage,' exe=',exesym.name,
+            ' state=',exesym.state);
+          if assigned(exesym.ObjSymbol) then
+            WriteStr(s,s,' target=',C387ObjSymbolPlace(exesym.ObjSymbol),
+              ' target_bind=',exesym.ObjSymbol.bind,
+              ' target_typ=',exesym.ObjSymbol.typ)
+          else
+            s:=s+' target=<nil>';
+          Comment(V_Warning,s);
+        end;
+
+        procedure TraceC387LinkUnresolved(const stage:string);
+        var
+          n : longint;
+        begin
+          for n:=0 to UnresolvedExeSymbols.Count-1 do
+            TraceC387LinkExeSymbol(stage,TExeSymbol(UnresolvedExeSymbols[n]));
+        end;
+{$endif DEBUG_C387_LINK_DIAGS}
 
         procedure ResolveDirectObjectDefinitions(const stage:string);
         var
@@ -3205,6 +3291,10 @@ implementation
                          assigned(objsym.objsection) and
                          (objsym.bind in [AB_GLOBAL,AB_PRIVATE_EXTERN]) then
                         begin
+{$ifdef DEBUG_C387_LINK_DIAGS}
+                          if IsC387LinkDiagSymbol(exesym.name) then
+                            TraceC387LinkObjSymbol('direct-scan candidate '+stage,objsym,exesym);
+{$endif DEBUG_C387_LINK_DIAGS}
                           if assigned(candidate) then
                             begin
                               duplicate:=true;
@@ -3227,7 +3317,20 @@ implementation
                     candidate.bind:=AB_LOCAL;
                   Comment(V_Debug,'Resolved external '+exesym.name+
                     ' by direct object scan '+stage);
+{$ifdef DEBUG_C387_LINK_DIAGS}
+                  if IsC387LinkDiagSymbol(exesym.name) then
+                    TraceC387LinkExeSymbol('direct-scan resolved '+stage,exesym);
+{$endif DEBUG_C387_LINK_DIAGS}
+                end
+{$ifdef DEBUG_C387_LINK_DIAGS}
+              else if IsC387LinkDiagSymbol(exesym.name) then
+                begin
+                  if duplicate then
+                    TraceC387LinkExeSymbol('direct-scan duplicate '+stage,exesym)
+                  else
+                    TraceC387LinkExeSymbol('direct-scan no-candidate '+stage,exesym);
                 end;
+{$endif DEBUG_C387_LINK_DIAGS}
             end;
         end;
 
@@ -3298,6 +3401,9 @@ implementation
                 else if target_info.system in systems_all_windows then
                   begin
                     objdata:=lib.objdata;
+{$ifdef DEBUG_C387_LINK_DIAGS}
+                    Comment(V_Warning,'C387LINK load lkObject '+objdata.Name);
+{$endif DEBUG_C387_LINK_DIAGS}
                     AddObjData(objdata);
                     LoadObjDataSymbols(objdata);
                     { AddObjData transfers ownership to ObjDataList. }
@@ -3334,16 +3440,28 @@ implementation
             ObjData:=TObjData(ObjDataList[i]);
             LoadObjDataSymbols(ObjData);
           end;
+{$ifdef DEBUG_C387_LINK_DIAGS}
+        TraceC387LinkUnresolved('unresolved before direct-scan after objects');
+{$endif DEBUG_C387_LINK_DIAGS}
         ResolveDirectObjectDefinitions('after objects');
         PackUnresolvedExeSymbols('in objects');
+{$ifdef DEBUG_C387_LINK_DIAGS}
+        TraceC387LinkUnresolved('unresolved after pack in objects');
+{$endif DEBUG_C387_LINK_DIAGS}
 
         { Step 2, Find unresolved symbols in the libraries }
         firstarchive:=true;
         for i:=0 to StaticLibraryList.Count-1 do
           LoadLibrary(TStaticLibrary(StaticLibraryList[i]));
 
+{$ifdef DEBUG_C387_LINK_DIAGS}
+        TraceC387LinkUnresolved('unresolved before direct-scan after static libraries');
+{$endif DEBUG_C387_LINK_DIAGS}
         ResolveDirectObjectDefinitions('after static libraries');
         PackUnresolvedExeSymbols('after static libraries');
+{$ifdef DEBUG_C387_LINK_DIAGS}
+        TraceC387LinkUnresolved('unresolved after pack after static libraries');
+{$endif DEBUG_C387_LINK_DIAGS}
 
         { Step 3, handle symbols provided in script }
         for i:=0 to FProvidedObjSymbols.count-1 do
@@ -3356,6 +3474,9 @@ implementation
             objsym.exesymbol.State:=symstate_defined;
           end;
         PackUnresolvedExeSymbols('after defining symbols provided by link script');
+{$ifdef DEBUG_C387_LINK_DIAGS}
+        TraceC387LinkUnresolved('unresolved after script provides');
+{$endif DEBUG_C387_LINK_DIAGS}
 
         { Step 4, Match common symbols or add to the globals }
         firstcommon:=true;
@@ -3392,6 +3513,9 @@ implementation
               end;
           end;
         PackUnresolvedExeSymbols('after defining COMMON symbols');
+{$ifdef DEBUG_C387_LINK_DIAGS}
+        TraceC387LinkUnresolved('unresolved after COMMON');
+{$endif DEBUG_C387_LINK_DIAGS}
 
         { Find entry symbol and print in map }
         if (EntryName<>'') then
