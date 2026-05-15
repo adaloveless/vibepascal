@@ -241,6 +241,7 @@ interface
 implementation
 
     uses
+       SysUtils,
        crefs,
        verbose,
        fmodule
@@ -1109,9 +1110,19 @@ implementation
                         end;
                       writeln('PPU DEREF NIL DEF: deflist[',idx,']=nil in module ',pm.modulename^,
                         ' (current=',current_module.modulename^,' dataidx=',dataidx,')');
+                      { Auto-delete the corrupt PPU so the next build regenerates it cleanly,
+                        and report a clear actionable error -- never ask the user to manually
+                        delete files. }
+                      if (pm.ppufilename<>'') and FileExists(pm.ppufilename) then
+                        begin
+                          writeln('PPU auto-deleted: ',pm.ppufilename);
+                          SysUtils.DeleteFile(pm.ppufilename);
+                        end;
+                      pm.state:=ms_compile;
+                      pm.recompile_reason:=rr_ppucorrupt;
                       Message1(unit_f_ppu_invalid_entry,
                         'nil def deref defid='+tostr(idx)+' in unit '+pm.modulename^+
-                        ' -- delete '+pm.modulename^+'.ppu and rebuild that unit');
+                        ' -- auto-deleted stale '+pm.modulename^+'.ppu, rerun the build');
                     end;
                 end;
               deref_symid :
@@ -1154,9 +1165,19 @@ implementation
                           else
                             writeln('  neighbor[',idx+1,']=nil');
                         end;
+                      { Auto-delete the corrupt PPU so the next build regenerates it cleanly,
+                        and report a clear actionable error -- never ask the user to manually
+                        delete files. }
+                      if (pm.ppufilename<>'') and FileExists(pm.ppufilename) then
+                        begin
+                          writeln('PPU auto-deleted: ',pm.ppufilename);
+                          SysUtils.DeleteFile(pm.ppufilename);
+                        end;
+                      pm.state:=ms_compile;
+                      pm.recompile_reason:=rr_ppucorrupt;
                       Message1(unit_f_ppu_invalid_entry,
                         'nil sym deref symid='+tostr(idx)+' in unit '+pm.modulename^+
-                        ' -- delete '+pm.modulename^+'.ppu and rebuild that unit');
+                        ' -- auto-deleted stale '+pm.modulename^+'.ppu, rerun the build');
                     end;
                 end;
               deref_nil :
