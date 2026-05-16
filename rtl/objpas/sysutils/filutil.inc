@@ -645,13 +645,13 @@ end;
 
 {$endif not SYSUTILS_HAS_UNICODESTR_FILEUTIL_IMPL}
 
-Procedure FindClose(Var f: TRawByteSearchRec);
+Procedure FindClose(Var f: TRawByteSearchRec); overload;
 begin
   InternalFindClose(f.FindHandle{$ifdef SEARCHREC_USEFINDDATA},f.FindData{$endif});
 end;
 
 
-Procedure FindClose(Var f: TUnicodeSearchRec);
+Procedure FindClose(Var f: TUnicodeSearchRec); overload;
 begin
   InternalFindClose(f.FindHandle{$ifdef SEARCHREC_USEFINDDATA},f.FindData{$endif});
 end;

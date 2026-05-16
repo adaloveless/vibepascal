@@ -182,7 +182,7 @@ function FlushFileBuffers(hFile:HANDLE):WINBOOL; external 'kernel32' name 'Flush
 function DeviceIoControl(hDevice:HANDLE; dwIoControlCode:DWORD; lpInBuffer:LPVOID; nInBufferSize:DWORD; lpOutBuffer:LPVOID;nOutBufferSize:DWORD; lpBytesReturned:LPDWORD; lpOverlapped:LPOVERLAPPED):WINBOOL; external 'kernel32' name 'DeviceIoControl';
 function SetEndOfFile(hFile:HANDLE):WINBOOL; external 'kernel32' name 'SetEndOfFile';
 function SetFilePointer(hFile:HANDLE; lDistanceToMove:LONG; lpDistanceToMoveHigh:PLONG; dwMoveMethod:DWORD):DWORD; external 'kernel32' name 'SetFilePointer';
-function FindClose(hFindFile:HANDLE):WINBOOL; external 'kernel32' name 'FindClose';
+function FindClose(hFindFile:HANDLE):WINBOOL; external 'kernel32' name 'FindClose'; overload;
 function GetFileTime(hFile:HANDLE; lpCreationTime:LPFILETIME; lpLastAccessTime:LPFILETIME; lpLastWriteTime:LPFILETIME):WINBOOL; external 'kernel32' name 'GetFileTime';
 function SetFileTime(hFile:HANDLE; lpCreationTime:LPFILETIME; lpLastAccessTime:LPFILETIME; lpLastWriteTime:LPFILETIME):WINBOOL; external 'kernel32' name 'SetFileTime';
 function CloseHandle(hObject:HANDLE):WINBOOL; external 'kernel32' name 'CloseHandle';
