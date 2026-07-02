@@ -97,6 +97,10 @@ interface
           defowner  : TDefEntry; { for records and objects }
           { enclosing symtable for blocksymtable scope; nil for all other types }
           blockparentst : TSymtable;
+          { unique per-blocksymtable id (0 for non-block symtables); disambiguates
+            mangled names of identically-named static inline vars in sibling
+            main-body / init-section blocks (mr3q62te) }
+          blockid   : longint;
           moduleid  : longint;
           refcount  : smallint;
           currentvisibility : tvisibility;

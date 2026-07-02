@@ -511,6 +511,7 @@ implementation
 
     var
       dupnr : longint; { unique number for duplicate symbols }
+      blocksymtable_uid : longint; { monotonic id handed to each blocksymtable (mr3q62te) }
 
 {*****************************************************************************
                              TStoredSymtable
@@ -2902,6 +2903,10 @@ implementation
         inherited create('');
         symtabletype:=blocksymtable;
         blockparentst:=aparentst;
+        { assign a unique id so identically-named static inline vars in sibling
+          main-body / init-section blocks get distinct mangled names (mr3q62te) }
+        inc(blocksymtable_uid);
+        blockid:=blocksymtable_uid;
         dbg_begin_label:=nil;
         dbg_end_label:=nil;
         { Inherit the nesting level from the enclosing symtable so that

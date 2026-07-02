@@ -1668,6 +1668,19 @@ implementation
         if not assigned(st) then
          internalerror(200204212);
         repeat
+          { inline block-scoped statics (a Delphi `var x` declared in a nested
+            block of a program main body / unit init section, given static
+            storage) are owned by a blocksymtable, which is not itself
+            name-scoped; walk up to the enclosing persistent symtable,
+            contributing a per-block id so identically-named statics in sibling
+            blocks get distinct mangled names (mr3q62te) }
+          while st.symtabletype=blocksymtable do
+            begin
+              prefix:='$blk'+tostr(st.blockid)+prefix;
+              st:=st.blockparentst;
+              if not assigned(st) then
+                internalerror(200204212);
+            end;
           { sub procedures }
           while (st.symtabletype in [localsymtable,parasymtable]) do
            begin

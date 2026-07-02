@@ -98,6 +98,21 @@ implementation
           result:=olddef;
       end;
 
+    { An inline block variable (Delphi `var x := ...` in a begin/end block) is
+      normally given local (stack) storage.  But a block declared in a PROGRAM
+      MAIN BODY (or a unit init/final section) resolves -- through its enclosing
+      blocksymtable chain -- to the proginit staticsymtable at
+      main_program_level, not to a localsymtable.  The main body is not a
+      parentfp-reachable frame, so a nested anonymous procedure that captures
+      such a var must reference it directly as a global; give those vars static
+      storage, mirroring a top-level main-body inline var (mr3q62te). }
+    function inlinevar_needs_static_storage(st: tsymtable): boolean;
+      begin
+        while assigned(st) and (st.symtabletype=blocksymtable) do
+          st:=st.blockparentst;
+        result:=assigned(st) and not(st.symtabletype in [localsymtable,parasymtable]);
+      end;
+
     function if_statement(is_expr:boolean=false) : tnode;
       function statementorexpr : tnode; inline;
         begin
@@ -1242,10 +1257,10 @@ implementation
 
               { hidden loop variable holds each collection element }
               str(current_tokenpos.line, uniq);
-              if symtablestack.top.symtabletype in [localsymtable,blocksymtable] then
-                itempvs := clocalvarsym.create('$forTup'+uniq, vs_value, elemdef, [])
+              if inlinevar_needs_static_storage(symtablestack.top) then
+                itempvs := cstaticvarsym.create('$forTup'+uniq, vs_value, elemdef, [])
               else
-                itempvs := cstaticvarsym.create('$forTup'+uniq, vs_value, elemdef, []);
+                itempvs := clocalvarsym.create('$forTup'+uniq, vs_value, elemdef, []);
               itempvs.register_sym;
               symtablestack.top.insertsym(itempvs);
               if itempvs.typ = staticvarsym then
@@ -1258,10 +1273,10 @@ implementation
                 begin
                   if tnames[i]='_' then
                     continue;
-                  if symtablestack.top.symtabletype in [localsymtable,blocksymtable] then
-                    uservs := clocalvarsym.create(tnames[i], vs_value, fieldsyms[i].vardef, [])
+                  if inlinevar_needs_static_storage(symtablestack.top) then
+                    uservs := cstaticvarsym.create(tnames[i], vs_value, fieldsyms[i].vardef, [])
                   else
-                    uservs := cstaticvarsym.create(tnames[i], vs_value, fieldsyms[i].vardef, []);
+                    uservs := clocalvarsym.create(tnames[i], vs_value, fieldsyms[i].vardef, []);
                   uservs.register_sym;
                   symtablestack.top.insertsym(uservs);
                   if uservs.typ = staticvarsym then
@@ -1359,10 +1374,10 @@ implementation
                end;
 
              { Create the loop variable – type may be set explicitly or inferred. }
-             if symtablestack.top.symtabletype in [localsymtable,blocksymtable] then
-               vs := clocalvarsym.create(current_scanner.orgpattern, vs_value, generrordef, [])
+             if inlinevar_needs_static_storage(symtablestack.top) then
+               vs := cstaticvarsym.create(current_scanner.orgpattern, vs_value, generrordef, [])
              else
-               vs := cstaticvarsym.create(current_scanner.orgpattern, vs_value, generrordef, []);
+               vs := clocalvarsym.create(current_scanner.orgpattern, vs_value, generrordef, []);
              vs.register_sym;
              symtablestack.top.insertsym(vs);
              consume(_ID);
@@ -2524,10 +2539,10 @@ implementation
               begin
                 if names[j]='_' then
                   continue;
-                if symtablestack.top.symtabletype in [localsymtable,blocksymtable] then
-                  destruct_var := clocalvarsym.create(names[j], vs_value, fieldsyms[j].vardef, [])
+                if inlinevar_needs_static_storage(symtablestack.top) then
+                  destruct_var := cstaticvarsym.create(names[j], vs_value, fieldsyms[j].vardef, [])
                 else
-                  destruct_var := cstaticvarsym.create(names[j], vs_value, fieldsyms[j].vardef, []);
+                  destruct_var := clocalvarsym.create(names[j], vs_value, fieldsyms[j].vardef, []);
                 destruct_var.register_sym;
                 symtablestack.top.insertsym(destruct_var);
                 destruct_var.varstate := vs_initialised;
@@ -2555,11 +2570,13 @@ implementation
         try
           { --- collect one or more variable names -------------------------------- }
           repeat
-            { blocksymtable is always inside a procedure (local scope) }
-            if symtablestack.top.symtabletype in [localsymtable,blocksymtable] then
-              vs := clocalvarsym.create(current_scanner.orgpattern, vs_value, generrordef, [])
+            { A block-nested inline var normally gets local storage, but a block
+              in the program main body / unit init section needs static storage
+              (see inlinevar_needs_static_storage; mr3q62te). }
+            if inlinevar_needs_static_storage(symtablestack.top) then
+              vs := cstaticvarsym.create(current_scanner.orgpattern, vs_value, generrordef, [])
             else
-              vs := cstaticvarsym.create(current_scanner.orgpattern, vs_value, generrordef, []);
+              vs := clocalvarsym.create(current_scanner.orgpattern, vs_value, generrordef, []);
             vs.register_sym;
             symtablestack.top.insertsym(vs);
             sc.add(vs);
