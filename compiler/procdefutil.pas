@@ -595,6 +595,7 @@ implementation
       symstodo : TFPList;
       i : longint;
       sym : tsym;
+      symowner : tsymtable;
       fieldsym : tfieldvarsym;
       fieldname : tsymstr;
       fielddef : tdef;
@@ -622,8 +623,14 @@ implementation
           while i<symstodo.count do
             begin
               sym:=tsym(symstodo[i]);
-              if (sym.owner=curpd.localst) or
-                  (sym.owner=curpd.parast) then
+              { vibepascal: an inline block-scoped var is owned by a blocksymtable,
+                not directly by curpd.localst. Resolve up to the enclosing
+                persistent local/para symtable before matching (God mr3q62te). }
+              symowner:=sym.owner;
+              while assigned(symowner) and (symowner.symtabletype=blocksymtable) do
+                symowner:=symowner.blockparentst;
+              if (symowner=curpd.localst) or
+                  (symowner=curpd.parast) then
                 begin
                   {$ifdef DEBUG_CAPTURER}writeln('Symbol ',sym.name,' captured from ',curpd.procsym.name);{$endif}
                   { the symbol belongs to the current procdef, so add a field to
@@ -743,14 +750,20 @@ implementation
     var
       pd : tprocdef absolute arg;
       sym : tsym;
+      symowner : tsymtable;
     begin
       result:=fen_false;
       if n.nodetype<>loadn then
         exit;
       sym:=tsym(tloadnode(n).symtableentry);
-      if not (sym.owner.symtabletype in [parasymtable,localsymtable]) then
+      { vibepascal: an inline block-scoped var is owned by a blocksymtable;
+        resolve up to the enclosing persistent local/para symtable (God mr3q62te) }
+      symowner:=sym.owner;
+      while assigned(symowner) and (symowner.symtabletype=blocksymtable) do
+        symowner:=symowner.blockparentst;
+      if not assigned(symowner) or not (symowner.symtabletype in [parasymtable,localsymtable]) then
         exit;
-      if sym.owner.symtablelevel>normal_function_level then begin
+      if symowner.symtablelevel>normal_function_level then begin
         pd.add_captured_sym(sym,tloadnode(n).resultdef,n.fileinfo);
         result:=fen_true;
       end;
@@ -1188,6 +1201,7 @@ implementation
       fpsym,
       selfsym,
       sym : tsym;
+      infoowner : tsymtable;
       info : pcapturedsyminfo;
       pi : tprocinfo;
       mapping : tsym_mapping;
@@ -1309,8 +1323,16 @@ implementation
                       info^.sym:=outerself;
                       info^.def:=tabstractvarsym(outerself).vardef;
                     end
-                  else if info^.sym.owner.defowner<>owner.procdef then
-                    owner.procdef.add_captured_sym(info^.sym,info^.def,info^.fileinfo);
+                  else
+                    begin
+                      { vibepascal: resolve inline block-scoped owners so the
+                        "belongs to owner.procdef" test is accurate (God mr3q62te) }
+                      infoowner:=info^.sym.owner;
+                      while assigned(infoowner) and (infoowner.symtabletype=blocksymtable) do
+                        infoowner:=infoowner.blockparentst;
+                      if infoowner.defowner<>owner.procdef then
+                        owner.procdef.add_captured_sym(info^.sym,info^.def,info^.fileinfo);
+                    end;
                 end;
             end;
           { delete the original self parameter }
@@ -1590,7 +1612,7 @@ implementation
       end;
 
     var
-      i: longint;
+      i,j: longint;
       capturer : tobjectdef;
       tocapture,
       capturedsyms : tfplist;
@@ -1598,6 +1620,7 @@ implementation
       mapping : pconvert_mapping;
       selfsym,
       sym : tsym;
+      bst : tsymtable;
     begin
       {$ifdef DEBUG_CAPTURER}writeln('Converting captured symbols of ',pd.procsym.name);{$endif}
 
@@ -1708,6 +1731,26 @@ implementation
                 if capturedsyms.indexof(sym)<0 then
                   tocapture.add(sym);
             end;
+
+          { vibepascal: inline block-scoped vars live in blocksymtables, not in
+            localst.symlist. Include any that were captured so their references
+            in THIS (owning) routine are rewritten to go through the capturer;
+            otherwise the outer write lands on the dead stack slot while the
+            anonymous function reads the nil capturer field (God mr3q62te). }
+          if assigned(pd.blocklocalsymtables) then
+            for j:=0 to pd.blocklocalsymtables.count-1 do
+              begin
+                bst:=tsymtable(pd.blocklocalsymtables[j]);
+                for i:=0 to bst.symlist.count-1 do
+                  begin
+                    sym:=tsym(bst.symlist[i]);
+                    if sym.typ<>localvarsym then
+                      continue;
+                    if assigned(tabstractnormalvarsym(sym).capture_sym) then
+                      if capturedsyms.indexof(sym)<0 then
+                        tocapture.add(sym);
+                  end;
+              end;
 
           for i:=0 to pd.parast.symlist.count-1 do
             begin

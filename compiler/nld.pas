@@ -365,6 +365,8 @@ implementation
 
 
     function tloadnode.pass_typecheck:tnode;
+      var
+        capturest : tsymtable;
       begin
          result:=nil;
          case symtableentry.typ of
@@ -403,15 +405,24 @@ implementation
                tabstractvarsym(symtableentry).IncRefCountBy(1);
                resultdef:=tabstractvarsym(symtableentry).vardef;
                { Nested variable? The we need to load the framepointer of
-                 the parent procedure }
+                 the parent procedure.
+                 vibepascal: an inline block-scoped var lives in a blocksymtable
+                 whose defowner is not the procedure. Resolve up to the enclosing
+                 persistent local/para symtable so capture set-up sees the real
+                 owning procedure; otherwise the var is silently not captured and
+                 reads as nil/garbage inside an anonymous function (God mr3q62te). }
+               capturest:=symtable;
+               while assigned(capturest) and (capturest.symtabletype=blocksymtable) do
+                 capturest:=capturest.blockparentst;
                if assigned(current_procinfo) and
-                  (symtable.symtabletype in [localsymtable,parasymtable]) and
-                  (symtable.symtablelevel<>current_procinfo.procdef.parast.symtablelevel) then
+                  assigned(capturest) and
+                  (capturest.symtabletype in [localsymtable,parasymtable]) and
+                  (capturest.symtablelevel<>current_procinfo.procdef.parast.symtablelevel) then
                  begin
                    if assigned(left) then
                      internalerror(200309289);
-                   left:=cloadparentfpnode.create(tprocdef(symtable.defowner),lpf_forload);
-                   current_procinfo.set_needs_parentfp(tprocdef(symtable.defowner).parast.symtablelevel);
+                   left:=cloadparentfpnode.create(tprocdef(capturest.defowner),lpf_forload);
+                   current_procinfo.set_needs_parentfp(tprocdef(capturest.defowner).parast.symtablelevel);
                    { reference this as a captured symbol }
                    current_procinfo.add_captured_sym(symtableentry,resultdef,fileinfo);
                    { reference in nested procedures, variable needs to be in memory }
