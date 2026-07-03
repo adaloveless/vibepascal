@@ -690,7 +690,18 @@ uses
             typeparam:=factor(false,[ef_accept_equal]);
             { determine if the typeparam node is a valid type or const }
             validparam:=typeparam.nodetype in tgeneric_param_nodes;
-            if validparam then
+            if validparam and not assigned(typeparam.resultdef) then
+              begin
+                { C396: a nested type-argument that resolved to a non-generic
+                  symbol shadowing a generic of the same name (e.g. Classes.TList
+                  shadowing Generics.Collections.TList<T> via uses-order) is not a
+                  generic type, so it was never specialized and its resultdef is
+                  nil; dereferencing it below would AV (C396). Report a clean
+                  "specialization is only supported for generic types" error. }
+                Message(parser_e_special_onlygenerics);
+                result:=false;
+              end
+            else if validparam then
               begin
                 if tstoreddef(typeparam.resultdef).is_generic and
                     not is_or_belongs_to_current_genericdef(typeparam.resultdef) and
