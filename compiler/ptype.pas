@@ -482,7 +482,6 @@ implementation
 
        function handle_dummysym(sym:tsym):tdef;
          begin
-           writeln('DEBUG handle_dummysym for ',sym.name);
            sym:=resolve_generic_dummysym(sym.name);
            if assigned(sym) and
                not (sp_generic_dummy in sym.symoptions) and
@@ -490,7 +489,6 @@ implementation
              result:=ttypesym(sym).typedef
            else
              begin
-               writeln('DEBUG handle_dummysym err: assigned=',assigned(sym),' has_dummy=',assigned(sym) and (sp_generic_dummy in sym.symoptions),' is_typesym=',assigned(sym) and (sym.typ=typesym));
                Message(parser_e_no_generics_as_types);
                result:=generrordef;
              end;

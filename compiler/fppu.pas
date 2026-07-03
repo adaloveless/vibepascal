@@ -23,7 +23,10 @@ unit fppu;
 
 {$i fpcdefs.inc}
 
-{$define DEBUG_UNIT_CRC_CHANGES}
+{ DEBUG_UNIT_CRC_CHANGES disabled cy1074 (Otto): the $ifdef blocks below traced
+  SYSTEM unit PPU CRCs to stdout on EVERY compile (via Comment V_Normal), polluting
+  every consumer build log. Re-enable only for local unit-CRC debugging. }
+{ $define DEBUG_UNIT_CRC_CHANGES}
 { DEBUG_PPU_LIST_DIAGS is declared in fpcdefs.inc (off by default). }
 
 { close ppufiles on system that are
