@@ -113,6 +113,31 @@ implementation
         result:=assigned(st) and not(st.symtabletype in [localsymtable,parasymtable]);
       end;
 
+    { When a begin/end or for-loop block is opened while a `with` or try/except
+      scope is on top of the symtable stack, symtablestack.top is that
+      transparent, non-name-scoped with/except symtable.  Using it as a block
+      symtable's blockparentst makes make_mangledname (symdef.pas) and the
+      anonymous-capture machinery walk onto a symtable that is neither
+      local/para nor static/global -> internalerror(200204175) as soon as an
+      inline var declared in the block is captured by an anon procedure.
+      Resolve blockparentst to the nearest ENCLOSING PERSISTENT symtable
+      instead, by skipping with/except frames on the stack; the with/except
+      symtable stays pushed for normal name resolution during the parse
+      regardless of blockparentst (IE 200204175, cy1077). }
+    function block_parent_symtable: tsymtable;
+      var
+        item : psymtablestackitem;
+      begin
+        item:=symtablestack.stack;
+        while assigned(item) and
+              (item^.symtable.symtabletype in [withsymtable,exceptsymtable]) do
+          item:=item^.next;
+        if assigned(item) then
+          result:=item^.symtable
+        else
+          result:=symtablestack.top;
+      end;
+
     function if_statement(is_expr:boolean=false) : tnode;
       function statementorexpr : tnode; inline;
         begin
@@ -1251,7 +1276,7 @@ implementation
               forblockst:=nil;
               if assigned(current_procinfo) then
                 begin
-                  forblockst:=tblocksymtable.create(symtablestack.top);
+                  forblockst:=tblocksymtable.create(block_parent_symtable);
                   symtablestack.push(forblockst);
                 end;
 
@@ -1369,7 +1394,7 @@ implementation
              forblockst:=nil;
              if assigned(current_procinfo) then
                begin
-                 forblockst:=tblocksymtable.create(symtablestack.top);
+                 forblockst:=tblocksymtable.create(block_parent_symtable);
                  symtablestack.push(forblockst);
                end;
 
@@ -3546,7 +3571,7 @@ implementation
                current_procinfo.parsing_main_block:=false
              else
                begin
-                 blockst:=tblocksymtable.create(symtablestack.top);
+                 blockst:=tblocksymtable.create(block_parent_symtable);
                  symtablestack.push(blockst);
                end;
            end;
