@@ -1,15 +1,13 @@
-{ %FAIL }
 { C396 regression: a non-generic type (Classes.TList) shadowing a generic of
   the same name (Generics.Collections.TList<T>) via uses-order, used with
-  specialization syntax in a NESTED type-argument position, must be REJECTED
-  with a clean error ("Specialization is only supported for generic types")
-  instead of crashing the compiler with an EAccessViolation (exit 217).
-  Before the pgenutil.pas fix, parse_generic_specialization_types_internal
-  dereferenced a nil resultdef here and AV'd. See Otto/FPCDeveloper C396.
-  NOTE: the transparent fix (make the unqualified nested TList<...> resolve to
-  the generic and COMPILE) is the follow-up; until then the accepted forms are
-  to qualify Generics.Collections.TList<...> or order Generics.Collections
-  after Classes in the uses clause. }
+  specialization syntax in a NESTED type-argument position, must COMPILE and
+  resolve to the generic dummy.
+  Before Fix B (pgenutil.pas), parse_generic_specialization_types_internal
+  dereferenced a nil resultdef and AV'd (exit 217).
+  Before Fix A (pexpr.pas), the same construct emitted a clean
+  "Specialization is only supported for generic types" error because the
+  shadowed generic dummy was not visible to factor_handle_sym.
+  See Otto/FPCDeveloper C396. }
 program tgeneric132;
 {$mode delphi}
 uses Generics.Collections, Classes;
