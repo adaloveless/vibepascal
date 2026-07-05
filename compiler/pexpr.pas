@@ -3565,6 +3565,11 @@ implementation
            tokenpos: tfileposinfo;
            spezcontext : tspecializationcontext;
            cufflags : tconsume_unitsym_flags;
+           dummy: tsym;
+           dummytable: TSymtable;
+           uu: tused_unit;
+           hi: THashedIDString;
+           tmpsym: tsym;
          begin
            { allow post fix operators }
            again:=true;
@@ -3773,6 +3778,40 @@ implementation
                      begin
                        srsymtable:=nil;
                        wasgenericdummy:=true;
+                     end;
+                 end;
+
+               { C396 Fix A: if a concrete typesym shadows a same-name generic dummy
+                 and is followed by '<', redirect to the dummy so factor_handle_sym's
+                 existing specialization gate fires. }
+               if assigned(srsym) and
+                   (srsym.typ=typesym) and
+                   not (sp_generic_dummy in srsym.symoptions) and
+                   (current_scanner.token in [_LT,_LSHARPBRACKET]) then
+                 begin
+                   { search used units' globalsymtables directly: the generic dummy
+                     may be shadowed out of normal symtablestack visibility }
+                   dummy:=nil;
+                   dummytable:=nil;
+                   hi.id:=srsym.name;
+                   uu:=tused_unit(current_module.used_units.first);
+                   while assigned(uu) do
+                     begin
+                       if assigned(uu.u.globalsymtable) then
+                         begin
+                           tmpsym:=tsym(uu.u.globalsymtable.FindWithHash(hi));
+                           if assigned(tmpsym) and (sp_generic_dummy in tmpsym.symoptions) then
+                             begin
+                               dummy:=tmpsym;
+                               dummytable:=uu.u.globalsymtable;
+                             end;
+                         end;
+                       uu:=tused_unit(uu.next);
+                     end;
+                   if assigned(dummy) and assigned(dummytable) then
+                     begin
+                       srsym:=dummy;
+                       srsymtable:=dummytable;
                      end;
                  end;
 
