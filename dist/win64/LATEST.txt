@@ -1,0 +1,17 @@
+# vibepascal Win64 dist — stable "latest" pointer
+# Maintained by FPCDeveloper (Otto). Updated on every Win64 compiler ship.
+# Auto-update scripts: pull LATEST.txt first (cheap), then fetch the tarball it names
+# -- or just always fetch vibepascal-latest-win64-bin.tar.gz (byte copy of the
+# versioned tarball below) and read VERSION.txt inside it.
+
+version: v50
+source_commit: 9be85ed827
+dist_commit: 74590756f8
+versioned_tarball: vibepascal-v50-9be85ed-win64-bin.tar.gz
+latest_tarball: vibepascal-latest-win64-bin.tar.gz
+tarball_md5: b8e548faa194ed5cb6801e03252e4d8b
+tarball_sha256: 2f112ef75154fd1d4f1947ce5d0ccea20c4c6fd92cca7bbbedbf1b53c42dcc70
+ppcx64_exe_md5: 42c8f9e4bed8ba2ae5ae296fac05a4d7
+ppcx64_exe_sha256: 65dc0e60c6ef818ea9433a74435d069e9c870fe164baef6ec23c576bb0b8e096
+date: 2026-07-11
+notes: v50 = -Munleashed string-const overload fix (m_stringordcast restricted to explicit casts; resolves fpdbgrsp 4137) atop v49 SizeOf/High(Char) delphiunicode preproc fix + v48 string/char Delphi parity. Compiler-only refresh; drops on the v48 unit set.
