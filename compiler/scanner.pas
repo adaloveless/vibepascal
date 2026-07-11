@@ -2078,6 +2078,18 @@ type
                       if searchsym(storedpattern,srsym,srsymtable) then
                         begin
                           try_consume_nestedsym(srsym,srsymtable);
+                          { system.Char resolves to widechar under m_default_unicodestring,
+                            but the RTL Char symbol is baked to ansichar -- remap per mode
+                            like the normal parser (pbase.pas), else compile-time
+                            SizeOf/High(Char) disagree with codegen (God mrgfsmn0) }
+                          if (storedpattern='CHAR') and assigned(srsym) and
+                             (srsym.typ=typesym) and (srsym.owner=systemunit) then
+                            begin
+                              if m_default_unicodestring in current_settings.modeswitches then
+                                searchsym('WIDECHAR',srsym,srsymtable)
+                              else
+                                searchsym('ANSICHAR',srsym,srsymtable);
+                            end;
                           l:=0;
                           if assigned(srsym) then
                             case srsym.typ of
@@ -2129,6 +2141,15 @@ type
                       if searchsym(storedpattern,srsym,srsymtable) then
                         begin
                           try_consume_nestedsym(srsym,srsymtable);
+                          { remap system.Char per mode -- see SIZEOF above (God mrgfsmn0) }
+                          if (storedpattern='CHAR') and assigned(srsym) and
+                             (srsym.typ=typesym) and (srsym.owner=systemunit) then
+                            begin
+                              if m_default_unicodestring in current_settings.modeswitches then
+                                searchsym('WIDECHAR',srsym,srsymtable)
+                              else
+                                searchsym('ANSICHAR',srsym,srsymtable);
+                            end;
                           hdef:=nil;
                           hs:='';
                           l:=0;
