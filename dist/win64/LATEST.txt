@@ -6,7 +6,7 @@
 
 version: v51
 source_commit: b14bf278ae
-dist_commit: 757e4b60b3
+dist_commit: 084c818ed5
 versioned_tarball: vibepascal-v51-b14bf2-win64-bin.tar.gz
 latest_tarball: vibepascal-latest-win64-bin.tar.gz
 tarball_md5: 16611cfc63bfee9046e426daa54c0bdd
