@@ -5539,16 +5539,24 @@ type
     procedure tscannerfile.postprocessutf8multiline(len,quote_pos,quote_count : integer);
     var
       malformed : boolean;
-      start, i,stripcol,col,newlen : integer;
+      start, i,stripcol,col,newlen,reallen : integer;
       crlf : boolean;
       tmp : tcompilerwidestring;
       ch : tcompilerwidechar;
     begin
+      { vibepascal cy1092 (God mrig72jt): this routine was upstream-broken and
+        ALWAYS crashed (EAccessViolation) for a non-ASCII ('''') multiline
+        string: the caller's len is the stale ASCII count (reset to 0 by the
+        utf-8 conversion), widestring indices are 0-based (not 1-based), the
+        loop appended to patternw instead of tmp, and the trailing-CR/LF trim
+        then dereferenced tmp.data[0] with tmp.data=nil. Rewritten to mirror
+        postprocessmultiline's logic on patternw's real 0-based length. The
+        len parameter is now unused (kept for signature stability). }
       stripcol:=quote_pos;
       malformed:=false;
       newlen:=0;
       col:=0;
-      start:=1;
+      start:=0;
       initwidestring(tmp);
       { Strip initial cr/lf }
       Case current_settings.lineendingtype of
@@ -5556,22 +5564,27 @@ type
         le_crlf : inc(start,2);
         le_source :
           begin
-          inc(start);
-          if (getcharwidestring(patternw,1)=13) and (getcharwidestring(patternw,start)=10) then
+          if (getlengthwidestring(patternw)>0) and
+             (getcharwidestring(patternw,0)=13) and
+             (getlengthwidestring(patternw)>1) and
+             (getcharwidestring(patternw,1)=10) then
+            inc(start,2)
+          else
             inc(start);
           end;
         le_platform : inc(start,length(target_info.newline));
       end;
+      reallen:=getlengthwidestring(patternw);
       { we don't need the last added quotes }
-      dec(len,quote_count-1);
-      for I:=Start to len do
+      dec(reallen,quote_count-1);
+      for I:=Start to reallen-1 do
         begin
         ch:=getcharwidestring(patternw,i);
         inc(col);
         if (col>stripcol) or (ch=10) or (ch=13) then
           begin
           inc(newlen);
-          concatwidestringchar(patternw,ch);
+          concatwidestringchar(tmp,ch);
           end
         else
           begin
@@ -5592,18 +5605,26 @@ type
           col:=0;
         end;
       // remove last CR/LF
-      ch:=getcharwidestring(tmp,newlen);
-      if (ch=10) or (ch=13) then
+      if (newlen>0) and
+         ((getcharwidestring(tmp,newlen-1)=10) or (getcharwidestring(tmp,newlen-1)=13)) then
         begin
         Case current_settings.lineendingtype of
           le_cr,le_lf : dec(newlen);
-          le_crlf : dec(newlen,2);
-          le_platform : dec(newlen,length(target_info.newline));
+          le_crlf :
+            if newlen>=2 then
+              dec(newlen,2)
+            else
+              newlen:=0;
+          le_platform :
+            if newlen>=length(target_info.newline) then
+              dec(newlen,length(target_info.newline))
+            else
+              newlen:=0;
           le_source :
             begin
-            crlf:=getcharwidestring(tmp,newlen)=10;
+            crlf:=getcharwidestring(tmp,newlen-1)=10;
             dec(newlen);
-            if crlf and (newLen>0) and (getcharwidestring(tmp,newlen)=13) then
+            if crlf and (newlen>0) and (getcharwidestring(tmp,newlen-1)=13) then
               dec(newlen);
             end;
         end;
