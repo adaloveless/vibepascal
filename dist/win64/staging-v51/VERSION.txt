@@ -1,0 +1,29 @@
+VibePascal v51 Win64 compiler -- non-ASCII multiline-string ICE fix; meaningful indentation error (God mrig72jt)
+Source commit: b14bf278ae (Merge cy1092: fix non-ASCII multiline-string ICE -- meaningful indentation error; God mrig72jt)
+Fix commit:    1b77f76836 (scanner.pas: rewrite postprocessutf8multiline -- non-ASCII ''' multiline strings no longer ICE)
+Built: 2026-07-13 on lazdev (cross-compiled -Apecoff -Xi from the Linux x86_64 stage2==stage3 fixpoint ba5c0e3f)
+ppcx64.exe md5:    0dec9ca28a06f7cf95544cf3420f1fc4
+ppcx64.exe sha256: 6607d0a2d1ec7ba9a9cb86b2b2870c83b4b35b4e58e8d692ac3cf30814f8f126
+
+Fixes (this release):
+- A triple-quote (''') multiline string containing ANY non-ASCII character (wide-string path:
+  sourcecodepage=CP_UTF8, e.g. {$mode delphiunicode} or {$codepage utf8}) no longer crashes the
+  compiler with an internal EAccessViolation. The scanner's postprocessutf8multiline was
+  upstream-broken: it used the stale ASCII length (reset to 0 by the utf-8 conversion), indexed
+  the 0-based widestring 1-based, appended into the wrong buffer, then dereferenced a nil buffer.
+- A badly-INDENTED non-ASCII multiline string now yields the existing meaningful error
+  "Incorrectly indented multi-line string (need N whitespace chars) starting at line L, column C"
+  instead of an internal compiler error (God mrig72jt).
+- Properly-indented non-ASCII multiline strings now compile with codepoint-exact content
+  (indentation-stripped per the closing-quote column, as for ASCII strings).
+- Backtick (`) multiline strings and ASCII-only ''' strings are unchanged.
+
+Upstream-broken routine (byte-identical to fpc-unleashed/main at fix time; fixed forward in
+vibepascal per Policy #40). Carries v50 m_stringordcast explicit-casts-only + v49 compile-time
+{$if SizeOf/High(Char)} + v48 String/Char Delphi parity.
+Verified on Linux x86_64: isolated A/B (baseline v50 232e773f vs fix) -- 4 ICE variants flip
+(2 bad-indent -> clean error, 2 good-indent -> compile+run content-exact); full tests/test/ A/B
+(1973 tests) = ZERO regression; new guards tests/test/tmultilinestring38 ({%fail} clean error) +
+tmultilinestring39 (run, content-exact); stage2==stage3 byte-identical fixpoint (ba5c0e3f);
+vp_win64_smoke PASS exit 0 on the production binary.
+Win64 RUNTIME verification pending downstream (cannot exec a Win64 binary on the Linux build host).

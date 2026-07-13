@@ -4,14 +4,14 @@
 # -- or just always fetch vibepascal-latest-win64-bin.tar.gz (byte copy of the
 # versioned tarball below) and read VERSION.txt inside it.
 
-version: v50
-source_commit: 9be85ed827
-dist_commit: 74590756f8
-versioned_tarball: vibepascal-v50-9be85ed-win64-bin.tar.gz
+version: v51
+source_commit: b14bf278ae
+dist_commit: 757e4b60b3
+versioned_tarball: vibepascal-v51-b14bf2-win64-bin.tar.gz
 latest_tarball: vibepascal-latest-win64-bin.tar.gz
-tarball_md5: b8e548faa194ed5cb6801e03252e4d8b
-tarball_sha256: 2f112ef75154fd1d4f1947ce5d0ccea20c4c6fd92cca7bbbedbf1b53c42dcc70
-ppcx64_exe_md5: 42c8f9e4bed8ba2ae5ae296fac05a4d7
-ppcx64_exe_sha256: 65dc0e60c6ef818ea9433a74435d069e9c870fe164baef6ec23c576bb0b8e096
-date: 2026-07-11
-notes: v50 = -Munleashed string-const overload fix (m_stringordcast restricted to explicit casts; resolves fpdbgrsp 4137) atop v49 SizeOf/High(Char) delphiunicode preproc fix + v48 string/char Delphi parity. Compiler-only refresh; drops on the v48 unit set.
+tarball_md5: 16611cfc63bfee9046e426daa54c0bdd
+tarball_sha256: 984124599f0d7382a5808743d1ce013a74d508663e188cd1abbbfb327c6713ff
+ppcx64_exe_md5: 0dec9ca28a06f7cf95544cf3420f1fc4
+ppcx64_exe_sha256: 6607d0a2d1ec7ba9a9cb86b2b2870c83b4b35b4e58e8d692ac3cf30814f8f126
+date: 2026-07-13
+notes: v51 = non-ASCII multiline-string ICE fix (postprocessutf8multiline rewrite; bad indentation now yields the meaningful "Incorrectly indented multi-line string" error instead of an internal compiler error; God mrig72jt) atop v50 -Munleashed string-const overload fix + v49 SizeOf/High(Char) delphiunicode preproc fix + v48 string/char Delphi parity. Compiler-only refresh; drops on the v48 unit set.
