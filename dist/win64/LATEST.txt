@@ -6,7 +6,7 @@
 
 version: v52
 source_commit: b2809861b1
-dist_commit: f00ab608ca
+dist_commit: 01065d39d1
 versioned_tarball: vibepascal-v52-b2809861-win64-bin.tar.gz
 latest_tarball: vibepascal-latest-win64-bin.tar.gz
 units_tarball: vibepascal-v52-win64-units.tar.gz
