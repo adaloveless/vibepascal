@@ -4,14 +4,14 @@
 # -- or just always fetch vibepascal-latest-win64-bin.tar.gz (byte copy of the
 # versioned tarball below) and read VERSION.txt inside it.
 
-version: v51
-source_commit: b14bf278ae
-dist_commit: 084c818ed5
-versioned_tarball: vibepascal-v51-b14bf2-win64-bin.tar.gz
+version: v52
+source_commit: 34660520ec
+dist_commit: PENDING
+versioned_tarball: vibepascal-v52-346605-win64-bin.tar.gz
 latest_tarball: vibepascal-latest-win64-bin.tar.gz
-tarball_md5: 16611cfc63bfee9046e426daa54c0bdd
-tarball_sha256: 984124599f0d7382a5808743d1ce013a74d508663e188cd1abbbfb327c6713ff
-ppcx64_exe_md5: 0dec9ca28a06f7cf95544cf3420f1fc4
-ppcx64_exe_sha256: 6607d0a2d1ec7ba9a9cb86b2b2870c83b4b35b4e58e8d692ac3cf30814f8f126
-date: 2026-07-13
-notes: v51 = non-ASCII multiline-string ICE fix (postprocessutf8multiline rewrite; bad indentation now yields the meaningful "Incorrectly indented multi-line string" error instead of an internal compiler error; God mrig72jt) atop v50 -Munleashed string-const overload fix + v49 SizeOf/High(Char) delphiunicode preproc fix + v48 string/char Delphi parity. Compiler-only refresh; drops on the v48 unit set.
+tarball_md5: 09accdbd7ed1652200d3fa5b5ac273bc
+tarball_sha256: 6438812f87f63713c69106371fe97fde84e55ed28080d918d1ad587d723f506d
+ppcx64_exe_md5: 9ae877a616a04bab2cb9d71b800118c3
+ppcx64_exe_sha256: 5181dae2fe310dbdf4468e33d3c03c73044c7f60a67b4eb04ebcc56884e8be0c
+date: 2026-07-16
+notes: v52 = DelphiUnicode qualified System.PChar/PPChar/PPPChar aliases now resolve to PWideChar/PPWideChar/PPPWideChar (parser pbase.pas + compile-time {$if} scanner.pas paths), matching the implicit uachar/uuchar unqualified aliases; previously a qualified System.PChar resolved to the ANSI 1-byte declaration. Also fixes the fcl-db MySQL connector: FIELD_TYPE_NULL -> ftVariant, and a new PreserveEmbeddedNullText property maps embedded-NUL text columns to ftMemo instead of a NUL-truncated ftString. Atop v51 non-ASCII multiline-string ICE fix + v50 -Munleashed string-const overload fix + v49 SizeOf/High(Char) delphiunicode preproc fix + v48 string/char Delphi parity. Compiler-only binary refresh; drops on the v48 unit set. A separate mysqlconn overlay carries the rebuilt connector units for DB consumers.
