@@ -534,8 +534,10 @@ implementation
                           if searchsym_in_module(tunitsym(srsym).module,current_scanner.pattern+custom_attribute_suffix,srsym,srsymtable) then
                             exit(true);
                         end;
-                      { system.char? (char=widechar comes from the implicit
-                        uachar/uuchar unit -> override) }
+                      { System.Char/System.PChar? These aliases come from the
+                        implicit uachar/uuchar unit, so qualified System
+                        references must be redirected to the matching real
+                        System type. }
                       if (current_scanner.pattern='CHAR') and
                          (tmodule(tunitsym(srsym).module).globalsymtable=systemunit) then
                         begin
@@ -544,6 +546,18 @@ implementation
                           else
                             searchsym_in_module(tunitsym(srsym).module,'ANSICHAR',srsym,srsymtable)
                         end
+                      else if (m_default_unicodestring in current_settings.modeswitches) and
+                              (tmodule(tunitsym(srsym).module).globalsymtable=systemunit) and
+                              (current_scanner.pattern='PCHAR') then
+                        searchsym_in_module(tunitsym(srsym).module,'PWIDECHAR',srsym,srsymtable)
+                      else if (m_default_unicodestring in current_settings.modeswitches) and
+                              (tmodule(tunitsym(srsym).module).globalsymtable=systemunit) and
+                              (current_scanner.pattern='PPCHAR') then
+                        searchsym_in_module(tunitsym(srsym).module,'PPWIDECHAR',srsym,srsymtable)
+                      else if (m_default_unicodestring in current_settings.modeswitches) and
+                              (tmodule(tunitsym(srsym).module).globalsymtable=systemunit) and
+                              (current_scanner.pattern='PPPCHAR') then
+                        searchsym_in_module(tunitsym(srsym).module,'PPPWIDECHAR',srsym,srsymtable)
                       else
                         if (cuf_allow_specialize in flags) and (current_scanner.idtoken=_SPECIALIZE) then
                           begin

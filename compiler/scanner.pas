@@ -1717,8 +1717,10 @@ type
                       end;
                     case current_scanner.preproc_token of
                       _ID:
-                        { system.char? (char=widechar comes from the implicit
-                          uachar/uuchar unit -> override) }
+                        { System.Char/System.PChar? These aliases come from the
+                          implicit uachar/uuchar unit, so qualified System
+                          references must be redirected to the matching real
+                          System type. }
                         if (current_scanner.preproc_pattern='CHAR') and
                            (tmodule(tunitsym(srsym).module).globalsymtable=systemunit) then
                           begin
@@ -1727,6 +1729,18 @@ type
                             else
                               searchsym_in_module(tunitsym(srsym).module,'ANSICHAR',srsym,srsymtable)
                           end
+                        else if (m_default_unicodestring in current_settings.modeswitches) and
+                                (tmodule(tunitsym(srsym).module).globalsymtable=systemunit) and
+                                (current_scanner.preproc_pattern='PCHAR') then
+                          searchsym_in_module(tunitsym(srsym).module,'PWIDECHAR',srsym,srsymtable)
+                        else if (m_default_unicodestring in current_settings.modeswitches) and
+                                (tmodule(tunitsym(srsym).module).globalsymtable=systemunit) and
+                                (current_scanner.preproc_pattern='PPCHAR') then
+                          searchsym_in_module(tunitsym(srsym).module,'PPWIDECHAR',srsym,srsymtable)
+                        else if (m_default_unicodestring in current_settings.modeswitches) and
+                                (tmodule(tunitsym(srsym).module).globalsymtable=systemunit) and
+                                (current_scanner.preproc_pattern='PPPCHAR') then
+                          searchsym_in_module(tunitsym(srsym).module,'PPPWIDECHAR',srsym,srsymtable)
                         else
                           searchsym_in_module(tunitsym(srsym).module,current_scanner.preproc_pattern,srsym,srsymtable);
                       _STRING:

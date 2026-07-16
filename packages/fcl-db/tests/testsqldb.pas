@@ -10,7 +10,7 @@ interface
 
 uses
   Classes, sqldb, SysUtils, fpcunit, testregistry,
-  sqldbtoolsunit,toolsunit, db;
+  sqldbtoolsunit,toolsunit, db, TypInfo;
 
 type
 
@@ -63,6 +63,7 @@ type
     Procedure TestPrepareCount;
     Procedure TestPrepareCount2;
     Procedure TestNullTypeParam;
+    Procedure TestMySQLNullResultFields;
     procedure TestChangeSQLCloseUnprepare;
     procedure TestChangeSQLCloseUnprepareDisabled;
   end;
@@ -868,6 +869,43 @@ begin
     SQLDBConnector.Connection.OnLog:=Nil;
   end;
 end;
+
+procedure TTestTSQLQuery.TestMySQLNullResultFields;
+var
+  EmbeddedNull: UTF8String;
+  PreserveProp: PPropInfo;
+begin
+  if SQLServerType<>ssMySQL then
+    Ignore(STestNotApplicable);
+  PreserveProp:=GetPropInfo(SQLDBConnector.Connection.ClassInfo,'PreserveEmbeddedNullText');
+  AssertTrue('MySQL connection must publish PreserveEmbeddedNullText',Assigned(PreserveProp));
+  AssertEquals('PreserveEmbeddedNullText must default to False',0,
+    GetOrdProp(SQLDBConnector.Connection,PreserveProp));
+  SetOrdProp(SQLDBConnector.Connection,PreserveProp,1);
+  try
+    with SQLDBConnector.Query do
+      begin
+      SQL.Text:='select 1 as before_null, NULL as null_value, '+
+        'CONVERT(0x410042 USING utf8) as embedded_null, 2 as after_null';
+      Open;
+      AssertEquals('Bare NULL result column must be retained',4,FieldCount);
+      AssertEquals('Column before bare NULL',1,Fields[0].AsInteger);
+      AssertTrue('Bare NULL result field must use ftVariant',Fields[1].DataType=ftVariant);
+      AssertTrue('Bare NULL result value must be NULL',Fields[1].IsNull);
+      AssertTrue('Length-preserving text must use ftMemo',Fields[2].DataType=ftMemo);
+      EmbeddedNull:=Fields[2].AsUTF8String;
+      AssertEquals('Embedded-NUL text byte length',3,Length(EmbeddedNull));
+      AssertEquals('Embedded-NUL text first byte',Ord('A'),Ord(EmbeddedNull[1]));
+      AssertEquals('Embedded-NUL text middle byte',0,Ord(EmbeddedNull[2]));
+      AssertEquals('Embedded-NUL text last byte',Ord('B'),Ord(EmbeddedNull[3]));
+      AssertEquals('Column after text must retain its wire index',2,Fields[3].AsInteger);
+      Close;
+      end;
+  finally
+    SetOrdProp(SQLDBConnector.Connection,PreserveProp,0);
+  end;
+end;
+
 procedure TTestTSQLQuery.TestChangeSQLCloseUnprepare;
 begin
   with SQLDBConnector.GetNDataset(10) as TSQLQuery do

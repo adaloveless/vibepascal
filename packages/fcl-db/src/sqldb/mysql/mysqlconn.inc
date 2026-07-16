@@ -174,6 +174,7 @@ Type
   TConnectionName = class (TSQLConnection)
   private
     FSkipLibraryVersionCheck : Boolean;
+    FPreserveEmbeddedNullText : Boolean;
     FHostInfo: String;
     FServerInfo: String;
     FMySQL : PMySQL;
@@ -252,6 +253,7 @@ Type
     property ServerStatus : String read GetServerStatus;
   published
     Property SkipLibraryVersionCheck : Boolean Read FSkipLibraryVersionCheck Write FSkipLibraryVersionCheck;
+    Property PreserveEmbeddedNullText : Boolean Read FPreserveEmbeddedNullText Write FPreserveEmbeddedNullText default False;
     property DatabaseName;
     property HostName;
     property KeepConnection;
@@ -883,6 +885,12 @@ begin
   ASize := AField^.length;
   NewSize := 0;
   case AField^.ftype of
+    FIELD_TYPE_NULL:
+      begin
+      { A bare NULL expression has no more specific server-side type.  Keep
+        the result column as a variant field instead of silently dropping it. }
+      NewType := ftVariant;
+      end;
     FIELD_TYPE_LONGLONG:
       begin
       NewType := ftLargeint;
@@ -935,6 +943,16 @@ begin
       end;
     FIELD_TYPE_VAR_STRING, FIELD_TYPE_STRING, FIELD_TYPE_ENUM, FIELD_TYPE_SET:
       begin
+{$IFDEF MYSQL50_UP}
+      if FPreserveEmbeddedNullText and (AField^.charsetnr <> 63) then
+{$ELSE}
+      if FPreserveEmbeddedNullText then
+{$ENDIF}
+        { TStringField buffers are NUL-terminated and cannot represent an
+          embedded NUL.  TMemoField uses the length-aware blob path. }
+        NewType := ftMemo
+      else
+        begin
       // Since mysql server version 5.0.3 string-fields with a length of more
       // then 256 characters are suported
       if AField^.ftype = FIELD_TYPE_STRING then
@@ -968,6 +986,7 @@ begin
       else
         NewSize := ASize;
 {$ENDIF}
+        end;
       end;
     FIELD_TYPE_TINY_BLOB..FIELD_TYPE_BLOB:
       begin
@@ -1465,6 +1484,7 @@ begin
   FConnOptions := [sqEscapeRepeat, sqEscapeSlash, sqImplicitTransaction, sqLastInsertID];
   FieldNameQuoteChars:=SingleBackQoutes;
   FMySQL := Nil;
+  FPreserveEmbeddedNullText := False;
 end;
 
 {$IFNDEF MYSQL50_UP}
