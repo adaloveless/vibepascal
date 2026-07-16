@@ -5,7 +5,7 @@
 Install or update VibePascal through `C:\Lazarus\auto-update.bat`.
 The v52 release is a matched pair:
 
-- `vibepascal-v52-b2809861-win64-bin.tar.gz`
+- `vibepascal-v52-34660520-win64-bin.tar.gz`
 - `vibepascal-v52-win64-units.tar.gz`
 
 The compiler fixes qualified `System.PChar`, `System.PPChar`, and

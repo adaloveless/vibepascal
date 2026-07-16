@@ -5,13 +5,13 @@
 # versioned tarball below) and read VERSION.txt inside it.
 
 version: v52
-source_commit: b2809861b1
+source_commit: 34660520ec
 dist_commit: 01065d39d1
-versioned_tarball: vibepascal-v52-b2809861-win64-bin.tar.gz
+versioned_tarball: vibepascal-v52-34660520-win64-bin.tar.gz
 latest_tarball: vibepascal-latest-win64-bin.tar.gz
 units_tarball: vibepascal-v52-win64-units.tar.gz
-tarball_md5: 8e364fe9458060d620225a1fe29fac45
-tarball_sha256: 8dfab8e5a280de4947321469ebeb9f98542eb2b3b52927062b5e3efed1dd4a10
+tarball_md5: ee9caadcbec1a2d42d4a6a4d4a3c8f95
+tarball_sha256: 2a783e20b599274589c4a791382dfd5f1917109096dda4824ce8f138dacc8f54
 units_tarball_md5: cc8d2e1f4456a363fd40c07a487a281c
 units_tarball_sha256: 6e33f24ad06f35cf41a5032689a316ba1e7254f948250451044940a0a6c9bb97
 ppcx64_exe_md5: 4adebe8d1536081eb65a522965d5f8bc

@@ -1,5 +1,6 @@
 VibePascal v52 Win64 compiler and units -- DelphiUnicode PChar aliases and MySQL text variants
-Source commit: b2809861b17bb7de4057cdf0379e49b7681c4e97
+Source commit: 34660520ecaa05ad0030a388ff10ce0b7dd83397
+Regression commit: 7ace6eab07 (no-space class declaration coverage)
 Compiler fix:  34660520ecaa05ad0030a388ff10ce0b7dd83397
 Built: 2026-07-16 on Windows x86_64, self-hosted from the published v51 compiler
 ppcx64.exe sha256: 580313971FEC0319F58092354836E6E06232BB4DE63B4130BE32845CC05BA1BB
