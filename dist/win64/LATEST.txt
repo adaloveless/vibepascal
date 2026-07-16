@@ -6,7 +6,7 @@
 
 version: v52
 source_commit: 34660520ec
-dist_commit: PENDING
+dist_commit: f00ab608ca
 versioned_tarball: vibepascal-v52-346605-win64-bin.tar.gz
 latest_tarball: vibepascal-latest-win64-bin.tar.gz
 tarball_md5: 09accdbd7ed1652200d3fa5b5ac273bc
