@@ -1,28 +1,24 @@
-# vibepascal Win64 Cross-Built Drop
+# VibePascal Win64 distribution
 
-## Latest: `vibepascal-win64-972fcebdd2-v27-diag.tar.gz` (2026-04-19, ~99MB)
+## Latest: v52 (2026-07-16)
 
-**Diagnostic-only refresh** built specifically for Knox's v25
-cold-compile EAV investigation (commonx Signals.pas / betterobject /
-typex chain). Compiler binary `bin/ppcx64.exe` rebuilt from commit
-`972fcebdd2` with a new define `DEBUG_CROSS_MODULE_REGISTER` enabled
-at build time.
+Install or update VibePascal through `C:\Lazarus\auto-update.bat`.
+The v52 release is a matched pair:
 
-When `tstoredsym.register_sym`'s silent fallback path triggers
-(foreign sym whose owner symtable's `moduleid` cannot be resolved by
-`find_module_from_symtable`), the compiler now prints a `CROSS-MOD
-REG: ...` line to stdout naming the sym, owner symtable kind, owner
-moduleid, and the current_module the sym was spliced into. This is
-the suspected origin of the v25 EAV.
+- `vibepascal-v52-b2809861-win64-bin.tar.gz`
+- `vibepascal-v52-win64-units.tar.gz`
 
-PPU output is bit-identical to v26 -- only stdout differs in the
-narrow conditions above. All v26 RTL/package PPUs are reused
-unchanged. Knox should drop this over his v26 install, re-run the
-cold-compile probe with `-vt`, and ship back any `CROSS-MOD REG:`
-lines captured before the crash.
+The compiler fixes qualified `System.PChar`, `System.PPChar`, and
+`System.PPPChar` in DelphiUnicode mode. The freshly rebuilt unit archive
+contains 1,803 PPUs, including MySQL connector support for retaining bare
+NULL result columns and length-preserving text with embedded NUL bytes.
 
-See `vibepascal-win64/README-v27-diag.txt` inside the tarball for
-full instructions.
+Do not install the compiler archive alone. The connector PPUs and their RTL
+dependencies are one coherent build, and mixing them with the old v33 units
+causes PPU checksum failures. `LATEST.txt` contains the release hashes and is
+the authoritative updater pointer.
+
+The sections below are retained as historical release notes.
 
 ## Previous: `vibepascal-win64-d726f8a8fb-v26.tar.gz` (2026-04-18, ~99MB)
 

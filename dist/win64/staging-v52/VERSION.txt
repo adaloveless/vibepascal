@@ -1,0 +1,30 @@
+VibePascal v52 Win64 compiler and units -- DelphiUnicode PChar aliases and MySQL text variants
+Source commit: b2809861b17bb7de4057cdf0379e49b7681c4e97
+Compiler fix:  34660520ecaa05ad0030a388ff10ce0b7dd83397
+Built: 2026-07-16 on Windows x86_64, self-hosted from the published v51 compiler
+ppcx64.exe sha256: 580313971FEC0319F58092354836E6E06232BB4DE63B4130BE32845CC05BA1BB
+
+Fixes in this release:
+- In DelphiUnicode mode, qualified System.PChar, System.PPChar, and
+  System.PPPChar resolve to the wide aliases, matching the already-wide
+  unqualified Char/PChar family and Delphi's two-byte Char semantics.
+- MySQL connector result metadata retains a bare NULL column as ftVariant.
+- MySQL connector classes publish PreserveEmbeddedNullText. When enabled,
+  non-binary text fields use the length-aware memo path so embedded NUL bytes
+  do not truncate the value or shift subsequent RDTP/database fields.
+- A regression test covers the exact no-whitespace spelling TName=class plus
+  forward, generic, inherited-generic, class-of, and anonymous-method-adjacent
+  declarations. All compile and run successfully.
+
+Distribution requirements:
+- The v52 compiler archive and v52 units archive are one matched release.
+- The units archive is a fresh v52 build (1803 PPUs), not a v33 overlay.
+- Install through C:\Lazarus\auto-update.bat. The updater must extract both
+  archives; a compiler-only update leaves stale fcl-db connector PPUs.
+
+Validation:
+- Full Win64 self-host compiler cycle: passed.
+- Full RTL/package/utility build: passed.
+- tests/test/tsystempchardu.pp: compile and runtime passed (prints "ok").
+- tests/test/tclassnospaceu.pp: compile and runtime passed.
+- Fresh mysql40conn through mysql80conn outputs: 8 PPUs, 8 objects, 8 RSJs.

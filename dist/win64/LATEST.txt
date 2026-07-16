@@ -5,13 +5,16 @@
 # versioned tarball below) and read VERSION.txt inside it.
 
 version: v52
-source_commit: 34660520ec
+source_commit: b2809861b1
 dist_commit: f00ab608ca
-versioned_tarball: vibepascal-v52-346605-win64-bin.tar.gz
+versioned_tarball: vibepascal-v52-b2809861-win64-bin.tar.gz
 latest_tarball: vibepascal-latest-win64-bin.tar.gz
-tarball_md5: 09accdbd7ed1652200d3fa5b5ac273bc
-tarball_sha256: 6438812f87f63713c69106371fe97fde84e55ed28080d918d1ad587d723f506d
-ppcx64_exe_md5: 9ae877a616a04bab2cb9d71b800118c3
-ppcx64_exe_sha256: 5181dae2fe310dbdf4468e33d3c03c73044c7f60a67b4eb04ebcc56884e8be0c
+units_tarball: vibepascal-v52-win64-units.tar.gz
+tarball_md5: 8e364fe9458060d620225a1fe29fac45
+tarball_sha256: 8dfab8e5a280de4947321469ebeb9f98542eb2b3b52927062b5e3efed1dd4a10
+units_tarball_md5: cc8d2e1f4456a363fd40c07a487a281c
+units_tarball_sha256: 6e33f24ad06f35cf41a5032689a316ba1e7254f948250451044940a0a6c9bb97
+ppcx64_exe_md5: 4adebe8d1536081eb65a522965d5f8bc
+ppcx64_exe_sha256: 580313971fec0319f58092354836e6e06232bb4de63b4130be32845cc05ba1bb
 date: 2026-07-16
-notes: v52 = DelphiUnicode qualified System.PChar/PPChar/PPPChar aliases now resolve to PWideChar/PPWideChar/PPPWideChar (parser pbase.pas + compile-time {$if} scanner.pas paths), matching the implicit uachar/uuchar unqualified aliases; previously a qualified System.PChar resolved to the ANSI 1-byte declaration. Also fixes the fcl-db MySQL connector: FIELD_TYPE_NULL -> ftVariant, and a new PreserveEmbeddedNullText property maps embedded-NUL text columns to ftMemo instead of a NUL-truncated ftString. Atop v51 non-ASCII multiline-string ICE fix + v50 -Munleashed string-const overload fix + v49 SizeOf/High(Char) delphiunicode preproc fix + v48 string/char Delphi parity. Compiler-only binary refresh; drops on the v48 unit set. A separate mysqlconn overlay carries the rebuilt connector units for DB consumers.
+notes: v52 = DelphiUnicode qualified System.PChar/PPChar/PPPChar wide-alias fixes plus MySQL bare-NULL/embedded-NUL text preservation. Ships a coherent fresh v52 unit set (1803 PPUs), including mysql40conn through mysql80conn; this is not a compiler-only refresh and must be installed as the v52 units+bin pair by C:\Lazarus\auto-update.bat.
