@@ -3548,12 +3548,29 @@ implementation
       end;
 
 
+    { cy1096: a block containing a goto or a label must not get a try/finally
+      frame. FPC rejects jumps across an exception block ("Jump in or outside of
+      an exception block"), and a goto leaving the block would jump over the
+      finally entirely -- turning the old too-broad release into a LEAK, which
+      is strictly worse. Such blocks fall back to procedure-exit finalization,
+      i.e. exactly the previous behaviour. }
+    function contains_goto_or_label(var n: tnode; arg: pointer): foreachnoderesult;
+      begin
+        if n.nodetype in [goton,labeln] then
+          result:=fen_norecurse_true
+        else
+          result:=fen_false;
+      end;
+
+
     function statement_block(starttoken : ttoken) : tnode;
 
       var
          first,last : tnode;
          filepos : tfileposinfo;
          blockst : tblocksymtable;
+         finalcode : tnode;
+         finalstat : tstatementnode;
 
       begin
          first:=nil;
@@ -3617,6 +3634,51 @@ implementation
              if not assigned(current_procinfo.procdef.blocklocalsymtables) then
                current_procinfo.procdef.blocklocalsymtables:=tfpobjectlist.create(true);
              current_procinfo.procdef.blocklocalsymtables.add(blockst);
+           end;
+
+         { cy1096: release this block's managed inline vars at the END OF THIS
+           BLOCK rather than in the procedure epilogue. Modelled on the
+           procedure-level implicit frame in psub.read_proc_body: the
+           finalization must also run when an exception unwinds through the
+           block, or control leaves it via exit/goto/break/continue, so it goes
+           in the finally half of an implicit try/finally rather than being
+           appended as a trailing statement.
+
+           If the frame cannot be built (exceptions disabled, GC'd target,
+           assembler or except-filter routine) the table is left unmarked and
+           procdef_block_add_implicit_finalize_nodes still finalizes it at
+           procedure exit -- the previous, too-broad but non-leaking behaviour.
+           Only tables actually wrapped here are marked, so nothing is ever
+           released twice. }
+         if assigned(blockst) and
+            assigned(first) and
+            assigned(current_procinfo) and
+            (cs_implicit_exceptions in current_settings.moduleswitches) and
+            (f_exceptions in features) and
+            not(target_info.system in systems_garbage_collected_managed_types) and
+            (current_procinfo.procdef.proctypeoption<>potype_exceptfilter) and
+            not(po_assembler in current_procinfo.procdef.procoptions) and
+            cnodeutils.block_has_managed_locals(blockst) and
+            not foreachnodestatic(first,@contains_goto_or_label,nil) then
+           begin
+             finalcode:=internalstatements(finalstat);
+             cnodeutils.block_add_implicit_finalize_nodes(blockst,finalstat);
+             { A REAL (non-implicit) try/finally, not create_implicit: the
+               implicit-frame codegen path handles only exit when unwinding
+               (ncgflw, "if implicitframe ... else handle_breakcontinueexit"),
+               because the only implicit frame that ever existed was the
+               procedure-level one, which no loop can span. A block-level frame
+               CAN be crossed by break/continue, and with an implicit frame
+               their trampoline labels are jumped to but never emitted ->
+               undefined .Lj* at link time. A plain try/finally is the same
+               construct a hand-written try..finally uses and already handles
+               fallthrough, exception, exit, break, continue and goto.
+               tblocknode.left must also stay a tstatementnode chain
+               (pass_typecheck walks it via hp.right), so it goes in a
+               statement node. }
+             first:=cstatementnode.create(
+                      ctryfinallynode.create(first,finalcode),nil);
+             blockst.finalized_inline:=true;
            end;
 
          last:=cblocknode.create(first);

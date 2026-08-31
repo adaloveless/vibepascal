@@ -30,7 +30,7 @@ interface
     cclasses,globtype,
     fmodule,
     aasmbase,aasmdata,
-    node,nbas,symtype,symsym,symconst,symdef;
+    node,nbas,symbase,symtype,symsym,symconst,symdef;
 
 
   type
@@ -61,6 +61,12 @@ interface
      public
       class procedure procdef_block_add_implicit_initialize_nodes(pd: tprocdef; var stat: tstatementnode);
       class procedure procdef_block_add_implicit_finalize_nodes(pd: tprocdef; var stat: tstatementnode);
+      { cy1096: finalize the managed inline vars of ONE block-scoped symtable,
+        for emission at that block's own end instead of at procedure exit.
+        block_has_managed_locals answers whether doing so would emit anything;
+        its test mirrors local_varsyms_finalize's gate exactly. }
+      class procedure block_add_implicit_finalize_nodes(st: TSymtable; var stat: tstatementnode);
+      class function block_has_managed_locals(st: TSymtable): boolean;
       { returns true if the unit requires an initialisation section (e.g.,
         to force class constructors for the JVM target to initialise global
         records/arrays) }
@@ -165,7 +171,7 @@ implementation
       verbose,version,globals,cutils,constexp,compinnr,
       systems,procinfo,pparautl,
       aasmtai,aasmcnst,
-      symbase,symtable,defutil,
+      symtable,defutil,
       nadd,ncal,ncnv,ncon,nflw,ninl,nld,nmem,nutils,
       ppu,
       pass_1,
@@ -573,7 +579,9 @@ implementation
            begin
              if assigned(pd.blocklocalsymtables) then
                for blk_i:=0 to pd.blocklocalsymtables.count-1 do
-                 TSymtable(pd.blocklocalsymtables[blk_i]).SymList.ForEachCall(@local_varsyms_finalize,@stat);
+                 { cy1096: skip blocks already finalized at their own end }
+                 if not tblocksymtable(pd.blocklocalsymtables[blk_i]).finalized_inline then
+                   TSymtable(pd.blocklocalsymtables[blk_i]).SymList.ForEachCall(@local_varsyms_finalize,@stat);
            end;
          else
            begin
@@ -581,9 +589,45 @@ implementation
              { also finalize managed vars in block-scoped symtables (m_inline_var) }
              if assigned(pd.blocklocalsymtables) then
                for blk_i:=0 to pd.blocklocalsymtables.count-1 do
-                 TSymtable(pd.blocklocalsymtables[blk_i]).SymList.ForEachCall(@local_varsyms_finalize,@stat);
+                 { cy1096: skip blocks already finalized at their own end }
+                 if not tblocksymtable(pd.blocklocalsymtables[blk_i]).finalized_inline then
+                   TSymtable(pd.blocklocalsymtables[blk_i]).SymList.ForEachCall(@local_varsyms_finalize,@stat);
            end;
       end;
+    end;
+
+
+  { cy1096: mirrors local_varsyms_finalize's gate; counts syms that WOULD be
+    finalized, so statement_block can skip emitting an empty implicit frame. }
+  procedure count_managed_block_local(p: TObject; arg: pointer);
+    begin
+      if (tsym(p).typ=localvarsym) and
+         (tlocalvarsym(p).refs>0) and
+         not(vo_is_typed_const in tlocalvarsym(p).varoptions) and
+         not(vo_is_external in tlocalvarsym(p).varoptions) and
+         not(vo_is_funcret in tlocalvarsym(p).varoptions) and
+         (
+           not(vo_is_default_var in tabstractvarsym(p).varoptions) or
+           (tabstractvarsym(p).varspez<>vs_const)
+         ) and
+         is_managed_type(tlocalvarsym(p).vardef) then
+        inc(plongint(arg)^);
+    end;
+
+
+  class procedure tnodeutils.block_add_implicit_finalize_nodes(st: TSymtable; var stat: tstatementnode);
+    begin
+      st.SymList.ForEachCall(@local_varsyms_finalize,@stat);
+    end;
+
+
+  class function tnodeutils.block_has_managed_locals(st: TSymtable): boolean;
+    var
+      n: longint;
+    begin
+      n:=0;
+      st.SymList.ForEachCall(@count_managed_block_local,@n);
+      result:=n>0;
     end;
 
 
