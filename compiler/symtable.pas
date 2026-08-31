@@ -298,6 +298,11 @@ interface
             the debugger shows only variables visible in the current scope. }
           dbg_begin_label,
           dbg_end_label : TAsmLabel;
+          { Set when this block's managed inline vars are finalized at the
+            block's OWN end (implicit try/finally emitted by statement_block).
+            Tells procdef_block_add_implicit_finalize_nodes to skip this table
+            so they are not released a second time in the procedure epilogue. }
+          finalized_inline : boolean;
           constructor create(aparentst: TSymtable);
           function checkduplicate(var hashedid:THashedIDString;sym:TSymEntry):boolean;override;
        end;
@@ -2909,6 +2914,7 @@ implementation
         blockid:=blocksymtable_uid;
         dbg_begin_label:=nil;
         dbg_end_label:=nil;
+        finalized_inline:=false;
         { Inherit the nesting level from the enclosing symtable so that
           loop-counter validity checks (which compare symtablelevel against
           the current procedure level) still pass for inline for-loop vars. }
