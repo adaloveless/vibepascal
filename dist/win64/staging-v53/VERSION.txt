@@ -1,0 +1,63 @@
+VibePascal v53 Win64 compiler -- block-scoped release of managed inline vars (P0)
+Source commit: 9e20efe4d6912fe6a9558c442ae4fa8d5dfe3045
+Compiler fix:  65eab3325f63a99bb34feaff3087f01780b0b607
+Parent release: v52 (34660520ecaa05ad0030a388ff10ce0b7dd83397)
+Built: 2026-09-02, cross-compiled Linux x86_64 -> Win64 (-Apecoff -Xi) from the
+       self-hosted Linux compiler efd3fabbbd9780d687ad4e8ca5e9a26a
+ppcx64.exe md5:    5F1E4E2E94C785F5631E6BB3A3DF8AF0
+ppcx64.exe sha256: B870B7655072947C0661011F2A72990F7DE1EB15F9C0E317E73DBADC9285A665
+
+Fix in this release:
+- An interface (or any managed-type) inline var declared inside a nested
+  begin..end block was released in the PROCEDURE EPILOGUE instead of at the end
+  of the block that declared it, so IHolder<T> and friends outlived their block.
+  Root cause was placement, not emission: every block symtable is batched into
+  the flat procdef.blocklocalsymtables list, and
+  procdef_block_add_implicit_finalize_nodes walked that whole list once at proc
+  exit. statement_block now emits its own block's finalization at the block's
+  end, inside a real try/finally so it also runs when an exception unwinds
+  through the block or control leaves via exit/break/continue. Tables handled
+  that way are marked finalized_inline and skipped by the proc-exit sweep, so
+  nothing is ever released twice.
+
+Deliberate fallbacks (never a leak, never a double-free):
+- A block containing a goto or a label falls back to proc-exit finalization.
+  FPC rejects jumping across an exception block, and a goto that jumped over the
+  finally would turn the too-broad release into a LEAK -- strictly worse than the
+  bug. Such blocks behave exactly as before.
+- Same fallback where exceptions are unavailable (disabled, GC'd target,
+  assembler or except-filter routine).
+
+Known gap, PRE-EXISTING and unchanged by this fix (identical on v52 and v53, so
+not a regression): an inline var in the MAIN PROGRAM BODY is a staticvarsym, not
+a localvarsym, and local_varsyms_finalize gates on localvarsym -- so it is not
+released at block end there on either compiler. Inside procedures, methods and
+nested procedures, block scope now holds.
+
+Distribution requirements:
+- This is a COMPILER-BINARY-ONLY refresh on top of the v52 release.
+  Only compiler/ngenutil.pas, compiler/pstatmnt.pas and compiler/symtable.pas
+  changed since v52. No PPU format change, no RTL change, no package change.
+- Pair with vibepascal-v52-win64-units.tar.gz (the fresh v52 1803-PPU unit set).
+  Existing v52 unit installs stay valid -- units do NOT need re-pulling.
+- Install through C:\Lazarus\auto-update.bat.
+
+Validation:
+- tests/test/tgeneric133.pp (the 3-way TOO-EARLY / BLOCK-SCOPED / TOO-BROAD
+  discriminator): FAIL exit 1 -> PASS exit 0, all four cases BLOCK-SCOPED, under
+  BOTH -Mdelphiunicode AND -Munleashed.
+- tests/test/tblockscopefinal1.pp: 21-assertion structural matrix (exception
+  unwind, exit, goto, loop re-entry, break/continue, nested blocks, method,
+  nested proc, two holders per block, aliased refcount, with-block, managed
+  string, never-entered block, raise-after-block). Baseline 7 failures -> all
+  pass. Every corner asserts released-EXACTLY-ONCE, not merely released.
+- Full corpus 1978 tests, baseline vs patched: 1977 identical, the single DIFF
+  is tgeneric133 flipping to PASS. Zero regressions.
+- Self-host fixpoint: b2 == b3 byte-identical.
+- vp_win64_smoke: PASS exit 0 (SizeOf(Char)=2, High=65535, inline-var capture,
+  stringordcast) -- v48/v49/v50/v52 semantics intact.
+
+NOT verified on this host: Win64 RUNTIME behaviour. This box is Linux with no
+wine, so the .exe was PE-verified and cross-built but not executed. All semantic
+verification above was performed with the Linux compiler built from the exact
+same source commit.
