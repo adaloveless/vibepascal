@@ -4,17 +4,17 @@
 # -- or just always fetch vibepascal-latest-win64-bin.tar.gz (byte copy of the
 # versioned tarball below) and read VERSION.txt inside it.
 
-version: v52
-source_commit: 34660520ec
-dist_commit: b91177f66d
-versioned_tarball: vibepascal-v52-34660520-win64-bin.tar.gz
+version: v53
+source_commit: 9e20efe4d6
+dist_commit: ab31dbb8bf
+versioned_tarball: vibepascal-v53-9e20efe4d6-win64-bin.tar.gz
 latest_tarball: vibepascal-latest-win64-bin.tar.gz
 units_tarball: vibepascal-v52-win64-units.tar.gz
-tarball_md5: ee9caadcbec1a2d42d4a6a4d4a3c8f95
-tarball_sha256: 2a783e20b599274589c4a791382dfd5f1917109096dda4824ce8f138dacc8f54
+tarball_md5: 8ad8fbfdec6974393cc1e4ea47fd064f
+tarball_sha256: f7719b8db9c579bf497b884621a8fe7893b8c65e8b090d7a06f2c4906bb38ca6
 units_tarball_md5: cc8d2e1f4456a363fd40c07a487a281c
 units_tarball_sha256: 6e33f24ad06f35cf41a5032689a316ba1e7254f948250451044940a0a6c9bb97
-ppcx64_exe_md5: 4adebe8d1536081eb65a522965d5f8bc
-ppcx64_exe_sha256: 580313971fec0319f58092354836e6e06232bb4de63b4130be32845cc05ba1bb
-date: 2026-07-16
-notes: v52 = DelphiUnicode qualified System.PChar/PPChar/PPPChar wide-alias fixes plus MySQL bare-NULL/embedded-NUL text preservation. Ships a coherent fresh v52 unit set (1803 PPUs), including mysql40conn through mysql80conn; this is not a compiler-only refresh and must be installed as the v52 units+bin pair by C:\Lazarus\auto-update.bat.
+ppcx64_exe_md5: 5f1e4e2e94c785f5631e6bb3a3df8af0
+ppcx64_exe_sha256: b870b7655072947c0661011f2a72990f7de1eb15f9c0e317e73dbadc9285a665
+date: 2026-09-02
+notes: v53 = P0 fix -- a managed/interface inline var declared inside a nested begin..end (IHolder<T>) is now released at THAT BLOCK'S END instead of in the procedure epilogue. Compiler-binary-only refresh on top of v52; no PPU format, RTL or package change. UNITS ARE UNCHANGED FROM v52 -- pair this bin with the existing vibepascal-v52-win64-units.tar.gz; an existing v52 units install stays valid and does NOT need re-pulling, so auto-update.bat can take the ~3.4 MB bin alone. tgeneric133 PASSes exit 0 under both -Mdelphiunicode and -Munleashed. Blocks containing goto/label deliberately keep the old proc-exit finalization (never a leak, never a double-free). Known pre-existing gap, same on v52 and v53: an inline var in the MAIN PROGRAM BODY is a staticvarsym and is still not block-released.
