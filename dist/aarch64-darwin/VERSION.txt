@@ -1,0 +1,24 @@
+VibePascal v54 -- aarch64-darwin native compiler (runs on Apple Silicon macOS)
+Source commit: b7d2d9676ecf1d7d8250cd460b9c48069920513e
+Compiler fix:  b9cb8fea875670cfc48f7d83b88d4af39a28aa6e
+Parent release: v53 (9e20efe4d6912fe6a9558c442ae4fa8d5dfe3045)
+Built: 2026-09-03 on x86_64-linux
+Binary: bin/ppca64  md5 edd3b4dd66347b45add3c781291ef16f
+
+Change: an untyped INTEGER initialiser for an inline var (and for an inferred
+`for var i := ...` counter) now infers NativeInt instead of the hard-coded
+LongInt -- pointer width, so 8 bytes on a 64-bit target and 4 on a 32-bit one.
+A string/char literal initialiser now infers exactly what a bare `string`
+denotes at that point (wide under -Mdelphiunicode/-Munleashed; ShortString
+under $H-, which earlier releases got wrong).  Only types narrower than
+NativeInt are widened, so Int64/QWord keep their width; explicit typecasts
+such as byte(10) are never promoted.
+
+COMPILER BINARY ONLY.  Nothing in the RTL, the packages or the PPU format
+changed between v53 and v54, so an existing unit set for this platform stays
+valid.  Full change + validation record: dist/win64/staging-v54/VERSION.txt.
+
+RUNTIME NOT VERIFIED ON THIS PLATFORM.  The build host is x86_64-linux; this
+binary was cross-built from the identical source commit and its file format was
+verified, but it has never been executed.  Only the x86_64-linux binary (and,
+for the i386 target, its generated output) were actually run.

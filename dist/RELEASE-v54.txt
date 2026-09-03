@@ -1,0 +1,91 @@
+# VibePascal v54 -- official multi-platform release
+# God directive mtkt2shb (inferred types) + mtkt38rm (build for all platforms,
+# official release in the can).  Cut by FPCDeveloper (Otto) 2026-09-03.
+
+source_commit: b7d2d9676ecf1d7d8250cd460b9c48069920513e
+compiler_fix:  b9cb8fea875670cfc48f7d83b88d4af39a28aa6e
+parent:        v53 (9e20efe4d6912fe6a9558c442ae4fa8d5dfe3045)
+
+WHAT CHANGED
+  1. An untyped INTEGER initialiser for an inline var -- and for an inferred
+     `for var i := ...` counter -- now infers NativeInt instead of the
+     hard-coded LongInt.  `var i := -1` is pointer-width: 8 bytes in a 64-bit
+     app, 4 bytes in a 32-bit app.  Only types strictly narrower than NativeInt
+     are widened, so Int64/QWord keep their width and nothing is re-signed.
+     Explicit typecasts are never promoted: `var b := byte(10)` is still a byte.
+  2. A STRING or CHAR literal initialiser now infers exactly what a bare
+     `string` denotes at that point.  Under -Mdelphiunicode and -Munleashed
+     that is the wide string -- as the directive requires, and as v53 already
+     did.  The behaviour that actually changes is $H-, where inference used to
+     hand back a dynamic wide string even though `string` there is ShortString.
+
+  This is a COMPILER-BINARY-ONLY release on top of v53.  Only
+  compiler/defutil.pas and compiler/pstatmnt.pas changed.  No PPU format, RTL
+  or package change, so existing unit sets stay valid on every platform.
+
+PLATFORMS IN THIS RELEASE (compiler binaries, each built from the commit above)
+  win64/           vibepascal-v54-b7d2d9676e-win64-bin.tar.gz
+                   md5 027445c682f2d4c41bbd99e328107184
+                   ppcx64.exe md5 293f3c98a26ff3233d88550259ba8b1f
+                   -- also published as vibepascal-latest-win64-bin.tar.gz +
+                      LATEST.txt, which is what auto-update.bat pulls.
+  linux64/         vibepascal-v54-b7d2d9676e-linux-x86_64-bin.tar.gz
+                   md5 ffba4a1093e11c3c4ce21d7b20fb4dee
+                   ppcx64 md5 eb57aa4d7a3c1317caf5921a6ddabf7b
+  aarch64-linux/   vibepascal-v54-b7d2d9676e-aarch64-linux-bin.tar.gz
+                   md5 dc6816024b852cdf918b71b2840be9c3   (ARM64 Linux / Pi 64)
+  x86_64-darwin/   vibepascal-v54-b7d2d9676e-x86_64-darwin-bin.tar.gz
+                   md5 37e4a08658f78620f21640142830deaf   (Intel macOS)
+  aarch64-darwin/  vibepascal-v54-b7d2d9676e-aarch64-darwin-bin.tar.gz
+                   md5 a8eba50fd0f0ffbb29b303f5c5ea81bd   (Apple Silicon macOS)
+  i386-linux-cross/vibepascal-v54-b7d2d9676e-i386-linux-cross-bin.tar.gz
+                   md5 7dcb813ba179ea1dbda00bd79308e565
+                   -- a CROSS compiler: runs on x86_64-linux, emits 32-bit
+                      i386-linux.  Included because it is what proves the
+                      32-bit half of the directive (see below).
+
+NOT IN THIS RELEASE
+  arm-linux (32-bit ARM).  ppcrossarm was lost before this cycle
+  (BACKLOG_arm_linux_recovery) and there is no arm-linux RTL in the tree, so
+  rebuilding it needs the target ABI decided first -- armv7 hardfloat vs
+  softfloat.  Guessing the ABI would ship a compiler that silently produces
+  wrong binaries, so it is deliberately omitted and left with BuildMaster
+  (Bruno) to specify.  Every other platform the tree can build is present.
+
+VERIFICATION
+  Performed on x86_64-linux against a baseline compiler built from the parent
+  commit (md5 23618ea0680578c23f16059b58b71757):
+  - tests/test/tinlinevarnativeint1.pp -- 45 assertions across 13 structural
+    contexts (free proc, method, nested block, nested proc, with-block,
+    inferred for-counter, try/finally/except, while/repeat/case, explicit
+    casts, wide literals, non-literal RHS, non-integer kinds, main program
+    body): baseline 26 failures -> 0.  Under BOTH -Munleashed AND
+    -Mdelphiunicode.
+  - tests/test/tinlinevarstrinfer1.pp -- 20 assertions over $H+ and $H-, each
+    compared against what `var s: string` yields in the same spot: baseline 4
+    failures -> 0.  Both modes.
+  - Full tests/test corpus, 2098 tests, comparing compile status, run status
+    and program output, with a baseline-vs-baseline control run to identify the
+    17 tests that are nondeterministic (threading/atomics).  19 raw deltas
+    minus 17 nondeterministic = 3 real deltas, and all 3 are the intended tests
+    flipping fail -> pass.  ZERO unintended regression.  The 17 nondeterministic
+    tests were additionally confirmed to have unchanged COMPILE results.
+  - Self-host fixpoint byte-identical: stage B == stage C
+    (cb5ca5e9adb2b95f7d1ccc98ac0bc6c5).
+  - 32-BIT HALF OF THE DIRECTIVE, PROVEN BY EXECUTION: the same 45-assertion
+    matrix was compiled for i386-linux with the v54 cross compiler and RUN on
+    this host.  It reports "checks=45 fails=0 NativeInt=4" and VERDICT:PASS --
+    4 bytes in a 32-bit app against 8 in a 64-bit one, which is exactly what
+    the directive asked for.  The string matrix likewise passes 20/20 on i386.
+
+  NOT VERIFIED: runtime behaviour on win64, aarch64-linux, or either darwin.
+  This build host is x86_64-linux with no wine and no qemu, so those four
+  binaries are format-verified (PE32+ / ELF aarch64 / Mach-O x86_64 / Mach-O
+  arm64) and were cross-built from the identical source, but never executed.
+  First runtime proof for Windows is the auto-update.bat smoke.
+
+COMPATIBILITY
+  This is a deliberate semantic change.  Code that relied on an inferred
+  integer being exactly 4 bytes -- an inline var passed to a `var LongInt`
+  parameter, or an overload choice that depended on LongInt -- must now name
+  the type explicitly, e.g. `var i: longint := -1`.

@@ -1,0 +1,37 @@
+VibePascal v54 Linux x86_64 compiler -- NativeInt + default-string-type
+inference for inline vars (God directive mtkt2shb)
+Source commit: b7d2d9676ecf1d7d8250cd460b9c48069920513e
+Compiler fix:  b9cb8fea875670cfc48f7d83b88d4af39a28aa6e
+Parent release: v53 (9e20efe4d6912fe6a9558c442ae4fa8d5dfe3045)
+Built: 2026-09-03, native self-host on x86_64-linux
+ppcx64 md5:    EB57AA4D7A3C1317CAF5921A6DDABF7B
+ppcx64 sha256: (see LATEST.txt in this directory)
+
+Contents: bin/ppcx64 only -- this is a COMPILER-BINARY refresh, meant to drop
+into an existing VibePascal source/unit tree on Linux.  It carries no RTL or
+package units: nothing in the RTL, the packages or the PPU format changed
+between v53 and v54, so an existing v53 (or v52) Linux unit set stays valid.
+The Linux utility binaries (ppudump/ppumove/fpcres/...) are likewise unchanged
+and are not re-shipped; build them from the tree if you need them.
+
+This is the exact binary every v54 verification result was produced with, and
+it is the compiler that cross-built the v54 Win64 ppcx64.exe.
+
+Change in this release: an untyped INTEGER initialiser for an inline var (and
+for an inferred `for var i := ...` counter) now infers NativeInt instead of the
+hard-coded LongInt -- 8 bytes on a 64-bit target, 4 on a 32-bit one -- and a
+string/char literal initialiser now infers exactly what a bare `string` denotes
+at that point.  Only types narrower than NativeInt are widened; explicit
+typecasts are never promoted.  See dist/win64/staging-v54/VERSION.txt for the
+full change and validation record.
+
+Verified on this platform (x86_64-linux), against a baseline compiler built
+from the parent commit (23618ea0680578c23f16059b58b71757):
+- tinlinevarnativeint1.pp: 45 assertions, 13 structural contexts, baseline 26
+  failures -> 0, under both -Munleashed and -Mdelphiunicode.
+- tinlinevarstrinfer1.pp: 20 assertions over $H+/$H-, baseline 4 -> 0, both modes.
+- full tests/test corpus, 2098 tests, with a nondeterminism control run:
+  zero unintended regression.
+- self-host fixpoint byte-identical (stage B == stage C).
+The 32-bit half of the directive was verified separately with a v54 i386-linux
+cross compiler: the same 45-assertion matrix reports NativeInt=4 and PASSes.
