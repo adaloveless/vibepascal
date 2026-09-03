@@ -1,0 +1,72 @@
+VibePascal v54 Win64 compiler -- NativeInt + default-string-type inference for
+inline vars (God directive mtkt2shb)
+Source commit: b7d2d9676ecf1d7d8250cd460b9c48069920513e
+Compiler fix:  b9cb8fea875670cfc48f7d83b88d4af39a28aa6e
+Parent release: v53 (9e20efe4d6912fe6a9558c442ae4fa8d5dfe3045)
+Built: 2026-09-03, cross-compiled Linux x86_64 -> Win64 (-Apecoff -Xi) from the
+       self-hosted Linux compiler eb57aa4d7a3c1317caf5921a6ddabf7b
+ppcx64.exe md5:    293F3C98A26FF3233D88550259BA8B1F
+ppcx64.exe sha256: A5B6CEF78FF5E80943794694BDD78D1DC21A34C7BAD4D1734EA53167F0AFDA06
+
+Change in this release -- inferred types for inline vars:
+
+1. An untyped INTEGER initialiser now infers NativeInt (= PtrInt) instead of the
+   hard-coded LongInt.  `var i := -1` used to be 4 bytes on every target; it is
+   now pointer-width, so 8 bytes on a 64-bit app and still 4 on a 32-bit one.
+   The same rule applies to an inferred for-loop counter (`for var i := 0 ...`),
+   so the two cannot disagree.
+   Only types strictly NARROWER than NativeInt are widened, so Int64/QWord keep
+   their width and no value is ever lost or re-signed.  An explicit typecast is
+   still never touched: `var b := byte(10)` stays a byte.
+
+2. A STRING or CHAR literal initialiser now infers exactly what a bare `string`
+   denotes at that point (the compiler shares one helper with the `string`
+   keyword, so they cannot drift apart).  Under -Mdelphiunicode and -Munleashed
+   that is the wide/unicode string -- which is what the directive asks for, and
+   what those two modes already produced before this release.  The behaviour
+   that genuinely changes is $H-, where inference used to hand back a dynamic
+   wide string even though `string` there means ShortString.
+
+Distribution requirements:
+- This is a COMPILER-BINARY-ONLY refresh on top of the v53 release.
+  Only compiler/defutil.pas and compiler/pstatmnt.pas changed since v53.
+  No PPU format change, no RTL change, no package change.
+- Pair with vibepascal-v52-win64-units.tar.gz (the v52 1803-PPU unit set, still
+  current -- v53 and v54 are both binary-only refreshes on top of it).  Existing
+  v52/v53 unit installs stay valid and do NOT need re-pulling.
+- Install through C:\Lazarus\auto-update.bat.
+
+Validation (all performed by me on x86_64-linux, against a baseline compiler
+built from the parent commit, md5 23618ea0680578c23f16059b58b71757):
+- tests/test/tinlinevarnativeint1.pp -- 45 assertions over 13 structural
+  contexts: free procedure, method, nested begin..end, nested procedure,
+  with-block, inferred for-loop counter, try/finally/except bodies,
+  while/repeat/case bodies, explicit typecasts, wide (u32/s64) literals,
+  non-literal right-hand sides (vars, function results, untyped consts,
+  expressions), non-integer kinds (boolean/double/pointer/enum) and the MAIN
+  PROGRAM BODY.  Baseline 26 failures -> 0.  Under BOTH -Munleashed AND
+  -Mdelphiunicode.
+- tests/test/tinlinevarstrinfer1.pp -- 20 assertions across $H+ and $H-, each
+  checked against what `var s: string` yields in the same spot.  Baseline 4
+  failures (all in the $H- section) -> 0.  Both modes.
+- Full corpus tests/test, 2098 tests, compile code + run code + output hash,
+  with a baseline-vs-baseline control run to identify the 17 tests that are
+  nondeterministic (threading/atomics).  19 raw deltas - 17 nondeterministic =
+  3 real deltas, and all 3 are the intended tests flipping fail -> pass.
+  ZERO unintended regression.  The 17 nondeterministic tests were additionally
+  checked to have UNCHANGED compile results, so the noise hides nothing.
+- Self-host fixpoint: stage B == stage C byte-identical
+  (cb5ca5e9adb2b95f7d1ccc98ac0bc6c5); the shipped Linux compiler
+  eb57aa4d7a3c1317caf5921a6ddabf7b is the same compiler built through the
+  canonical make path and differs from it in 6 build-date bytes only.
+
+NOT verified on this host: Win64 RUNTIME behaviour. This box is Linux with no
+wine installed, so the .exe is PE32+-verified and cross-built from the identical
+source commit, but it has never been executed.  The first runtime proof is the
+auto-update.bat smoke on a Windows host.
+
+Compatibility note -- this is a deliberate semantic change, so code that relies
+on an inferred integer being exactly 4 bytes will notice.  An inline var passed
+to a `var LongInt` parameter, or one whose overload choice depended on LongInt,
+now selects the NativeInt/Int64 shape instead.  Write the type explicitly
+(`var i: longint := -1`) where the narrow width is load-bearing.
