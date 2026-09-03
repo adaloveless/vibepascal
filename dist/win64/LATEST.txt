@@ -4,17 +4,17 @@
 # -- or just always fetch vibepascal-latest-win64-bin.tar.gz (byte copy of the
 # versioned tarball below) and read VERSION.txt inside it.
 
-version: v53
-source_commit: 9e20efe4d6
-dist_commit: ab31dbb8bf
-versioned_tarball: vibepascal-v53-9e20efe4d6-win64-bin.tar.gz
+version: v54
+source_commit: b7d2d9676e
+dist_commit: 95a23c4384
+versioned_tarball: vibepascal-v54-b7d2d9676e-win64-bin.tar.gz
 latest_tarball: vibepascal-latest-win64-bin.tar.gz
 units_tarball: vibepascal-v52-win64-units.tar.gz
-tarball_md5: 8ad8fbfdec6974393cc1e4ea47fd064f
-tarball_sha256: f7719b8db9c579bf497b884621a8fe7893b8c65e8b090d7a06f2c4906bb38ca6
+tarball_md5: 027445c682f2d4c41bbd99e328107184
+tarball_sha256: a33906db0a84840feb82b76f06b4b317fde89f09f02aa227e40d9fd39d3ddfe6
 units_tarball_md5: cc8d2e1f4456a363fd40c07a487a281c
 units_tarball_sha256: 6e33f24ad06f35cf41a5032689a316ba1e7254f948250451044940a0a6c9bb97
-ppcx64_exe_md5: 5f1e4e2e94c785f5631e6bb3a3df8af0
-ppcx64_exe_sha256: b870b7655072947c0661011f2a72990f7de1eb15f9c0e317e73dbadc9285a665
-date: 2026-09-02
-notes: v53 = P0 fix -- a managed/interface inline var declared inside a nested begin..end (IHolder<T>) is now released at THAT BLOCK'S END instead of in the procedure epilogue. Compiler-binary-only refresh on top of v52; no PPU format, RTL or package change. UNITS ARE UNCHANGED FROM v52 -- pair this bin with the existing vibepascal-v52-win64-units.tar.gz; an existing v52 units install stays valid and does NOT need re-pulling, so auto-update.bat can take the ~3.4 MB bin alone. tgeneric133 PASSes exit 0 under both -Mdelphiunicode and -Munleashed. Blocks containing goto/label deliberately keep the old proc-exit finalization (never a leak, never a double-free). Known pre-existing gap, same on v52 and v53: an inline var in the MAIN PROGRAM BODY is a staticvarsym and is still not block-released.
+ppcx64_exe_md5: 293f3c98a26ff3233d88550259ba8b1f
+ppcx64_exe_sha256: a5b6cef78ff5e80943794694bdd78d1dc21a34c7bad4d1734ea53167f0afda06
+date: 2026-09-03
+notes: v54 = inferred types for inline vars (God directive mtkt2shb). An untyped INTEGER initialiser now infers NativeInt instead of LongInt -- `var i := -1` is 8 bytes on a 64-bit app, 4 on a 32-bit one -- and the same rule now drives an inferred `for var i := ...` counter. Only types narrower than NativeInt are widened, so Int64/QWord keep their width; explicit casts like byte(10) are still never promoted. A string/char literal initialiser now infers exactly what a bare `string` means at that point: wide under -Mdelphiunicode/-Munleashed (unchanged from v53, which already did this) and ShortString under $H- (which v53 got wrong). Compiler-binary-only refresh on top of v53; only compiler/defutil.pas and compiler/pstatmnt.pas changed. No PPU format, RTL or package change -- UNITS ARE STILL THE v52 SET, so an existing v52/v53 units install stays valid and auto-update.bat can take the ~3.4 MB bin alone. Verified on Linux: 45-assertion NativeInt matrix over 13 structural contexts and a 20-assertion string matrix over $H+/$H- both go from baseline failures to 0 under BOTH -Munleashed and -Mdelphiunicode; full 2098-test corpus with a nondeterminism control shows ZERO unintended regression; self-host fixpoint byte-identical. NOT verified: Win64 runtime (no wine on the build host). BREAKING-ish: code that relied on an inferred integer being exactly 4 bytes (a `var LongInt` argument, or LongInt-vs-Int64 overload choice) must now name the type explicitly.
