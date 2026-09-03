@@ -1126,11 +1126,13 @@ implementation
                { Infer the loop variable type from the 'from' expression. }
                if assigned(hfrom.resultdef) and (hfrom.resultdef <> generrordef) then
                  begin
-                   { Promote sub-32-bit integers to LongInt, same as
-                     inline_var_statement does for var i := expr. }
-                   if not(nf_explicit in hfrom.flags) and is_integer(hfrom.resultdef) and
-                      (torddef(hfrom.resultdef).ordtype in [s8bit,u8bit,s16bit,u16bit]) then
-                     loopvs.vardef := s32inttype
+                   { Promote sub-NativeInt integers to NativeInt, same as
+                     inline_var_statement does for var i := expr - the two
+                     must agree or `for var i := 0` and `var i := 0` would
+                     infer different widths. }
+                   if not(nf_explicit in hfrom.flags) and
+                      is_sub_nativeint(hfrom.resultdef) then
+                     loopvs.vardef := get_nativeint_def
                    else
                      loopvs.vardef := hfrom.resultdef;
                    if loopvs.typ = staticvarsym then
@@ -2703,29 +2705,27 @@ implementation
               else
                 begin
                   { String literal constants get type array[0..n] of char
-                    (cst_conststring).  Promote to the default string type
-                    so that comparisons and assignments behave as expected.
+                    (cst_conststring).  Promote to the DEFAULT STRING TYPE -
+                    i.e. exactly what a bare `string` means right here, so
+                    `var s := 'x'` and `var s: string` always agree.  That is
+                    the wide/unicode string under -Mdelphiunicode/-Munleashed,
+                    ansistring under $H+ ansi modes and shortstring under $H-
+                    (which the old hard-coded chain got wrong).
                     Single char literals are also promoted to string so
                     that var s := 'x' behaves consistently with var s := 'xx'. }
                   if is_conststring_array(hdef) or
                      (not(nf_explicit in initexpr.flags) and is_char(hdef)) then
-                    begin
-                      if m_default_unicodestring in current_settings.modeswitches then
-                        hdef := cunicodestringtype
-                      else if m_default_ansistring in current_settings.modeswitches then
-                        hdef := getansistringdef
-                      else
-                        hdef := cshortstringtype;
-                    end;
-                  { For inline var declarations, promote sub-32-bit integer
-                    types to LongInt so that e.g. var i := 10 yields a 4-byte
-                    signed integer instead of a signed byte. Skip promotion
-                    when the user wrote an explicit typecast (e.g. byte(10))
-                    - detected via nf_explicit flag preserved through
-                    constant folding by the typeconv node. }
-                  if not(nf_explicit in initexpr.flags) and is_integer(hdef) and
-                     (torddef(hdef).ordtype in [s8bit,u8bit,s16bit,u16bit]) then
-                    hdef := s32inttype;
+                    hdef := get_default_stringdef;
+                  { For inline var declarations, promote integer types narrower
+                    than the target's NativeInt to NativeInt, so that e.g.
+                    var i := -1 yields a pointer-sized signed integer (4 bytes
+                    on a 32-bit target, 8 on a 64-bit one) instead of a signed
+                    byte.  Skip promotion when the user wrote an explicit
+                    typecast (e.g. byte(10)) - detected via nf_explicit flag
+                    preserved through constant folding by the typeconv node. }
+                  if not(nf_explicit in initexpr.flags) and
+                     is_sub_nativeint(hdef) then
+                    hdef := get_nativeint_def;
                   { A bare procedure-typed expression (anonymous-procedure
                     literal `procedure(...) begin ... end`, or a named-routine
                     address taken without enclosing context) yields a

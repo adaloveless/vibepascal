@@ -77,6 +77,26 @@ interface
     {# Returns true, if definition defines an integer type }
     function is_integer(def : tdef) : boolean;
 
+    {# Returns the target's native signed integer type (NativeInt = PtrInt):
+       s32int when compiling for a 32-bit target, s64int for a 64-bit one.
+       Reads the per-target ptrsinttype, so it stays correct while cross
+       compiling (a compile-time $ifdef on the HOST cpu would not). }
+    function get_nativeint_def : tdef;
+
+    {# Returns true when def is an integer type strictly narrower than
+       NativeInt on the TARGET, i.e. one whose whole range - signed or
+       unsigned - fits in NativeInt without loss. Equal-width types are
+       excluded, so cardinal on a 32-bit target and qword on a 64-bit one are
+       never silently reinterpreted as a signed value. }
+    function is_sub_nativeint(def : tdef) : boolean;
+
+    {# Returns the string type that a bare `string` denotes under the current
+       mode and $H setting, for inferring the type of a string constant.
+       Mirrors pexpr.string_dec EXACTLY - keep the two in sync: the whole
+       point is that `var s := 'x'` and `var s: string` name the same type,
+       so any divergence here reintroduces the bug it is meant to fix. }
+    function get_default_stringdef : tdef;
+
     {# Returns true if definition is a boolean }
     function is_boolean(def : tdef) : boolean;
 
@@ -703,6 +723,43 @@ implementation
                     (torddef(def).ordtype in [u8bit,u16bit,u32bit,u64bit,
                                           s8bit,s16bit,s32bit,s64bit,
                                           customint]);
+      end;
+
+
+    { the target's NativeInt (= PtrInt) }
+    function get_nativeint_def : tdef;
+      begin
+        { psystem.create_intern_types assigns ptrsinttype per target pointer
+          size; fall back to s32int only if we are called before that ran. }
+        if assigned(ptrsinttype) then
+          result:=ptrsinttype
+        else
+          result:=s32inttype;
+      end;
+
+
+    { true if def is an integer narrower than the target's NativeInt }
+    function is_sub_nativeint(def : tdef) : boolean;
+      begin
+        result:=is_integer(def) and (def.size<get_nativeint_def.size);
+      end;
+
+
+    { the type a bare `string` denotes right here; see the interface comment }
+    function get_default_stringdef : tdef;
+      begin
+        { setmodeswitch forces $H+ whenever m_default_ansistring or
+          m_default_unicodestring is set (scanner.pas), so -Mdelphiunicode and
+          -Munleashed both land in the refcounted branch and yield unicode. }
+        if cs_refcountedstrings in current_settings.localswitches then
+          begin
+            if m_default_unicodestring in current_settings.modeswitches then
+              result:=cunicodestringtype
+            else
+              result:=cansistringtype;
+          end
+        else
+          result:=cshortstringtype;
       end;
 
 
