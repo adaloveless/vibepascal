@@ -132,15 +132,21 @@ say "stage 2c: an inferred real inline var is a Double (the v56 fix)"
 # infers the default real type instead.  The control is the PUBLISHED v55 exe
 # out of the tarball next door -- no lazdev-local artifact needed, so this stage
 # never degrades to a SKIP.
+# Counts are 52 / 49 rather than the 57 / 54 the same test reports on Linux,
+# and that difference is the point rather than a wart: five of its corners live
+# behind {$if SizeOf(Extended) > SizeOf(Double)}, and on Win64 Extended IS
+# Double (8 bytes), exactly as Delphi has it.  So on Win64 the only width this
+# fix moves is the Single one -- var a := 1.0 -- which is precisely why the
+# published v55 exe below still fails the matrix here.
 cp "$VP/tests/test/tinlinevarrealinfer1.pp" "$W/build/"
 ck "real inference -Munleashed" \
    "$( cd "$W/build" && $WINE "$PPC" -Munleashed -oreal-u.exe tinlinevarrealinfer1.pp >/dev/null 2>&1; \
        $WINE "$W/build/real-u.exe" 2>/dev/null | tr -d '\r' | tail -2 | head -1 )" \
-   "checks=57 fails=0 Double=8 folded=8"
+   "checks=52 fails=0 Double=8 folded=8"
 ck "real inference -Mdelphi" \
    "$( cd "$W/build" && $WINE "$PPC" -Mdelphi -dDELPHI_MODE -oreal-d.exe tinlinevarrealinfer1.pp >/dev/null 2>&1; \
        $WINE "$W/build/real-d.exe" 2>/dev/null | tr -d '\r' | tail -2 | head -1 )" \
-   "checks=54 fails=0 Double=8 folded=8"
+   "checks=49 fails=0 Double=8 folded=8"
 
 V55BIN=$VP/dist/win64/vibepascal-v55-eae5d3e919-win64-bin.tar.gz
 if [ ! -f "$V55BIN" ]; then
