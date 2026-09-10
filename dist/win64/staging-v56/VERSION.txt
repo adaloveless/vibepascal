@@ -1,0 +1,99 @@
+VibePascal v56 Win64 compiler -- an inferred inline var initialised from a real
+constant is a Double, whatever the constant's value happens to be
+Source commit: a187bbac34e1f61154affa5a57e93298028ffc72
+Compiler fix:  f06e46d8eb  (compiler/pstatmnt.pas, compiler/defutil.pas, compiler/ncnv.pas)
+Parent release: v55 (eae5d3e919a26a7db19937da10da1c8b610b17da)
+Built: 2026-09-10, cross-compiled Linux x86_64 -> Win64 (-Apecoff -Xi) from the
+       self-hosted Linux compiler e6de1f00eccb9b5ccf028bee7e7342ad
+ppcx64.exe md5:    13153B27FF17306EEA63CFAD0FC17AB5
+ppcx64.exe sha256: 6732D995A163213E1CD080644C3F660430E1BC34EF265BF2812A862B59DB9656
+
+WHAT WAS BROKEN
+---------------
+An inline var with no type annotation took its type from the real constant you
+initialised it with -- and that type changes with the VALUE:
+
+    var a := 1.0;      // Single   -  4 bytes,  7 digits
+    var b := 0.1;      // Extended - 10 bytes, 19 digits
+    var c := 1.0/3.0;  // Single, or Extended under {$mode delphi}
+    var d := 1/2;      // Double
+
+Four declarations side by side, four different types, and none of them the one
+you get from Delphi or from writing `var x: Double := ...` yourself.  The
+4-byte case is the one that bites: `var pi := 3.14159265358979` kept about
+seven digits, silently, and the same variable widened to fifteen the moment
+somebody edited the literal to one a Single cannot represent exactly.
+
+Lars hit the other end of it in the Lazarus IDE: code completion said one type,
+the compiler used another.
+
+WHAT CHANGED
+------------
+An un-annotated inline var initialised from a real CONSTANT now infers the
+default real type -- Double.  It is the third rule of the same family as v54's
+`var i := -1` -> NativeInt and `var s := 'x'` -> the default string type:
+inference gives you the DEFAULT type of a kind, not the narrowest one that
+happens to fit today's literal.
+
+Double rather than Extended because Extended is an x87-only 80-bit type, and
+Delphi makes Extended an alias of Double on every 64-bit target we ship.
+
+What deliberately does NOT change:
+
+  * RANGE is never lost.  1.0e400 and 1.0e-4000 keep the wider type they were
+    given -- a Double would silently hold +Inf and 0.  Precision digits can be
+    lost, because that is what asking for a Double means.
+  * A VARIABLE or a non-constant expression keeps its own type, exactly as
+    Delphi infers it.  `var m := someSingle` is still a Single.
+  * An explicit typecast still wins: `var j := single(1.0)` is a Single.
+    (Making that true was part of this fix -- see below.)
+  * Currency and Comp are untouched.
+  * `var d := 1/2` was already a Double and stays one.
+  * How real CONSTANTS themselves are typed is NOT touched.  That is stock FPC
+    behaviour driven by $MINFPCONSTPREC (default s32real) and $EXCESSPRECISION
+    (on in delphi mode), both byte-identical to upstream here, and both still
+    available to anyone who wants to ask for something else explicitly.
+
+One supporting change with a wider reach, and worth knowing about: a typecast
+to the type a real constant ALREADY has -- single(1.0), extended(0.1) -- was
+dropped by the compiler without recording that the user had asked for it, so
+the surviving constant was indistinguishable from a bare literal.  It now
+carries that mark, the way the same constant already did when the cast changed
+its type.  Nothing else in the compiler reads that mark on a constant, and the
+full test corpus is unchanged by it.
+
+VALIDATION
+----------
+Verified on isolated throwaway A/B compilers, real toolchain untouched.  The
+baseline built that way came out byte-identical to the shipped v55 Linux
+compiler (19f526bd6be0ec63fca96c4d1b77e19d), which is what makes the A/B
+trustworthy rather than merely tidy.
+
+  * tinlinevarrealinfer1.pp -- 57 checks over 10 structural contexts (free
+    procedure, method, nested block, nested procedure, with-block, for-loop
+    body, except and finally blocks, while/repeat/case, closure capture, main
+    program body), crossed with the compiler MODE, because delphi mode changes
+    how a constant fold is widened:
+        -Munleashed        baseline 37 failures -> 0 of 57
+        -Mdelphi           baseline 36 failures -> 0 of 54
+        -Mdelphiunicode    baseline 36 failures -> 0 of 54
+    Sizes AND values are checked: an inferred variable has to hold exactly what
+    the explicitly declared one holds, including when a closure captures it.
+  * tinlinevarrealinfer2.pp -- a must-FAIL test.  `for var i := 1.0 to 2.0` is
+    still rejected, cleanly, with no internal error.
+  * Full tests/test corpus, 1982 tests: 1981 SAME, 0 DIFF, after a
+    baseline-against-baseline control run that was also 0 DIFF.
+  * Self-host fixpoint: stage2 == stage3, byte-identical
+    (e6de1f00eccb9b5ccf028bee7e7342ad).
+  * The neighbouring inference rules are unmoved: tinlinevarnativeint1 45/45
+    and tinlinevarstrinfer1 20/20, both under -Munleashed and -Mdelphiunicode.
+
+UNITS
+-----
+Compiler binary only.  No PPU format, RTL or package change, so the v52 unit
+set stays valid -- an existing v52/v53/v54/v55 install can take this ~3.5 MB
+bin tarball on its own.
+
+Windows runtime evidence for these exact bytes is recorded in dist/win64/LATEST.txt.
+Nobody has yet run any VibePascal release on real Windows hardware; the runtime
+proof here is wine, which is not Windows.

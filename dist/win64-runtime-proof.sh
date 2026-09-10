@@ -126,6 +126,34 @@ else
   ck "pre-v55 in the INSTALL ROOT exits 0 (shape that cannot discriminate)" "$irc" "0"
 fi
 
+say "stage 2c: an inferred real inline var is a Double (the v56 fix)"
+# v55 and earlier typed `var x := <real constant>` from the constant itself, so
+# the width moved with the VALUE: 1.0 gave a Single, 0.1 gave an Extended.  v56
+# infers the default real type instead.  The control is the PUBLISHED v55 exe
+# out of the tarball next door -- no lazdev-local artifact needed, so this stage
+# never degrades to a SKIP.
+cp "$VP/tests/test/tinlinevarrealinfer1.pp" "$W/build/"
+ck "real inference -Munleashed" \
+   "$( cd "$W/build" && $WINE "$PPC" -Munleashed -oreal-u.exe tinlinevarrealinfer1.pp >/dev/null 2>&1; \
+       $WINE "$W/build/real-u.exe" 2>/dev/null | tr -d '\r' | tail -2 | head -1 )" \
+   "checks=57 fails=0 Double=8 folded=8"
+ck "real inference -Mdelphi" \
+   "$( cd "$W/build" && $WINE "$PPC" -Mdelphi -dDELPHI_MODE -oreal-d.exe tinlinevarrealinfer1.pp >/dev/null 2>&1; \
+       $WINE "$W/build/real-d.exe" 2>/dev/null | tr -d '\r' | tail -2 | head -1 )" \
+   "checks=54 fails=0 Double=8 folded=8"
+
+V55BIN=$VP/dist/win64/vibepascal-v55-eae5d3e919-win64-bin.tar.gz
+if [ ! -f "$V55BIN" ]; then
+  echo "  SKIP pre-v56 real-inference control -- $V55BIN is gone"
+else
+  mkdir -p "$W/v55"; tar xzf "$V55BIN" -C "$W/v55" bin/ppcx64.exe
+  cp "$VP/tests/test/tinlinevarrealinfer1.pp" "$W/v55/"
+  ( cd "$W/v55" && $WINE bin/ppcx64.exe -Munleashed -Fu"$W/vp/units/x86_64-win64" \
+        -oreal-ctl.exe tinlinevarrealinfer1.pp ) >"$W/v55/compile.log" 2>&1
+  $WINE "$W/v55/real-ctl.exe" >/dev/null 2>&1 && vrc=0 || vrc=$?
+  ck "pre-v56 control FAILS the real-inference matrix" "$vrc" "1"
+fi
+
 say "stage 3: negative control -- the harness must be able to FAIL"
 # Same source, cross-built by the preserved pre-v54 compiler.  If this exits 0
 # the whole run above is meaningless, so treat a pass here as a red flag.
