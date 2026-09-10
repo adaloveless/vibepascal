@@ -1,0 +1,64 @@
+# VibePascal v56 -- cross-platform status manifest
+# Cut by FPCDeveloper (Otto).  win64 + linux64 shipped 2026-09-10 (cy1106);
+# x86_64-darwin + aarch64-darwin shipped 2026-09-10 (cy1107).
+# This file is the authoritative answer to "which platforms have v56".
+# Per-platform detail lives in dist/<target>/VERSION.txt and inside each tarball.
+
+source_commit: a187bbac34 (merge of inlinevar-real-default)
+compiler_fix:  f06e46d8eb  (compiler/pstatmnt.pas, compiler/defutil.pas, compiler/ncnv.pas)
+parent:        v55 (eae5d3e919a26a7db19937da10da1c8b610b17da)
+
+WHAT CHANGED
+  An un-annotated inline var initialised from a real CONSTANT now infers the
+  DEFAULT REAL TYPE (Double) instead of whatever type the constant's value
+  happened to land on -- `var a := 1.0` was a 4-byte Single, `var b := 0.1` a
+  10-byte Extended, `var d := 1/2` already a Double.  Range is never traded:
+  1.0e400 and 1.0e-4000 keep their wider type.  Variables and non-constant
+  expressions keep their own type, and an explicit `single(1.0)` still wins.
+  How real CONSTANTS themselves are typed is untouched stock upstream FPC.
+
+  COMPILER-BINARY-ONLY on top of v55.  No PPU format, RTL or package change, so
+  existing v54/v55 unit sets stay valid on every platform.
+
+PLATFORMS CARRYING v56
+  win64/           vibepascal-v56-a187bbac34-win64-bin.tar.gz
+                   md5 01a3e0a0c64830ddb5e282032541f896
+                   ppcx64.exe md5 13153b27ff17306eea63cfad0fc17ab5
+                   -- also published as vibepascal-latest-win64-bin.tar.gz and
+                      named by dist/win64/LATEST.txt (the auto-update pointer)
+                   -- RUNTIME: executes under wine64.  wine is NOT Windows, and
+                      nobody has run a release on real Windows hardware.
+  linux64/         vibepascal-v56-a187bbac34-linux-x86_64-bin.tar.gz
+                   md5 bcfcd10ff7e198c411cad2b4e2ec8934
+                   ppcx64 md5 E6DE1F00ECCB9B5CCF028BEE7E7342AD
+                   -- RUNTIME: native self-host fixpoint, executed and A/B
+                      verified here.  This is the only platform with real
+                      runtime proof of the fix.
+  x86_64-darwin/   vibepascal-v56-a187bbac34-x86_64-darwin-bin.tar.gz
+                   md5 50a430d3ed77a7336685561ba4e50c97
+                   ppcx64 md5 f3a7f19bdf5da06af4afdc559c6bf5c3
+                   -- RUNTIME: NEVER EXECUTED.  Cross-built on x86_64-linux
+                      against MacOSX26.2.sdk; no macOS and no Mach-O emulator
+                      on this host.
+  aarch64-darwin/  vibepascal-v56-a187bbac34-aarch64-darwin-bin.tar.gz
+                   md5 b5ecde1814e9b5d23206e5cc5f16bce6
+                   ppca64 md5 e59dc3390af7b76b44eb49b38c8eda0e
+                   -- RUNTIME: NEVER EXECUTED, same reason.
+
+  Both darwin binaries are also staged under dist/darwin-native/ in the layout
+  build-release.sh:1137/1155 globs, so the next Lazarus Mac roll bundles v56.
+  Those staging directories are UNTRACKED by convention (they mirror the
+  tracked tarballs); a fresh clone recreates them from the tarballs above.
+
+STILL ON v55 OR OLDER
+  aarch64-linux and arm-linux carry v55; arm-linux-cross and i386-linux-cross
+  carry v54.  Each needs a cross rebuild from a187bbac34; tracked on the open
+  ledger row v55_fix_reaches_other_platforms.  The two -cross targets have no
+  confirmed consumer (BuildMaster confirmed in writing they are not in his
+  release path) and self-close 2026-10-01 if none appears.  Their packages are
+  honestly labelled -- do not read this manifest as "the fix is everywhere".
+
+  This paragraph supersedes the "STILL ON v55 OR OLDER AFTER THIS RELEASE"
+  paragraph in dist/linux64/VERSION.txt, which was written before the darwin
+  pair shipped and still names them.  That file mirrors the text inside an
+  already-published tarball and is deliberately left byte-stable.

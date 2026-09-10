@@ -1,51 +1,79 @@
-VibePascal v55 -- aarch64-darwin native compiler (runs on Apple Silicon macOS).
--FU/-FE output directories are created instead of aborting the build.
-Source commit: eae5d3e919 (merge of fix/output-dir-autocreate)
-Compiler fix:  4d10b26fe772dfbd4992cbeb53f09028f7dfee4f
-Parent release: v54 (b7d2d9676ecf1d7d8250cd460b9c48069920513e)
-Built: 2026-09-10, cross-built on x86_64-linux against MacOSX26.2.sdk
-Binary: bin/ppca64  md5 fb6eab8d624f4a6d1126bd11c461f685
+VibePascal v56 -- aarch64-darwin native compiler (runs on Apple Silicon macOS).
+An inferred inline var initialised from a real constant is a Double, whatever
+the constant's value happens to be.
+Source commit: a187bbac34 (merge of inlinevar-real-default)
+Compiler fix:  f06e46d8eb  (compiler/pstatmnt.pas, compiler/defutil.pas, compiler/ncnv.pas)
+Parent release: v55 (eae5d3e919a26a7db19937da10da1c8b610b17da)
+Built: 2026-09-10, cross-built on x86_64-linux against MacOSX26.2.sdk (osxcross ld)
+Binary: bin/ppca64  md5 e59dc3390af7b76b44eb49b38c8eda0e
+                 sha256 a2400ade463d73203082cb23237836a58394d644026ef4dd704eb7575701f3ea
 
-COMPILER BINARY ONLY.  Only compiler/options.pas changed between v54 and v55:
-no RTL change, no package change, no PPU format change, so an existing v54
-(or v53) aarch64-darwin unit set stays valid and the utility binaries are
+COMPILER BINARY ONLY.  Only compiler/{pstatmnt,defutil,ncnv}.pas changed between
+v55 and v56: no RTL change, no package change, no PPU format change, so an
+existing v54/v55 aarch64-darwin unit set stays valid and the utility binaries are
 unchanged and not re-shipped.
 
 WHAT CHANGED
-  -FE and -FU name where the COMPILER writes.  Up to and including v54 a
-  missing one was an error: -FE reported 'Path "x/" does not exist' during
-  option processing, and -FU failed later and far more obscurely at object
-  write time ("Can't create assembler file: x/hello.s").  In both cases the
-  compiler knew the path and made the user run mkdir.  v55 creates both
-  directories up front, recursively.  An IMPOSSIBLE path (a component that is
-  a plain file, a read-only parent) still stops the build with the same
-  message -- now reported only after creation has been TRIED and FAILED, so it
-  arrives early and names the directory.
+  An inline var with no type annotation used to take its type from the real
+  constant you initialised it with, and that type changes with the VALUE:
 
-  The fix shipped to Win64 first because that is where it was reported, then
-  to Linux x86_64 and aarch64-linux.  Nothing about it is OS-specific.
+      var a := 1.0;      // Single   -  4 bytes,  7 digits
+      var b := 0.1;      // Extended - 10 bytes, 19 digits
+      var c := 1.0/3.0;  // Single, or Extended under {$mode delphi}
+      var d := 1/2;      // Double
+
+  Four declarations side by side, four different types, none of them the one
+  Delphi or an explicit `var x: Double := ...` gives.  v56 infers the DEFAULT
+  real type -- Double -- in either direction.  RANGE is never traded: 1.0e400
+  and 1.0e-4000 keep their wider type, because a Double would silently hold
+  +Inf and 0.  A variable or non-constant expression still keeps its own type,
+  and an explicit `single(1.0)` still wins.  How real CONSTANTS themselves are
+  typed is NOT touched -- that is stock upstream FPC.
 
 HOW FAR THE VERIFICATION GOES ON THIS TARGET -- READ THIS BEFORE QUOTING IT
-  This binary has NEVER BEEN EXECUTED.  The build host is x86_64-linux and
-  there is no macOS on it, so nobody here can run a Mach-O.  That was equally
-  true of the v54 binary this one replaces; it is not a new gap, but it is a
-  real one and it is not going to be closed by anything on this machine.
+  This binary has NEVER BEEN EXECUTED.  The build host is x86_64-linux, there
+  is no macOS on it, and no packaged emulator on this box runs a Mach-O.  That
+  was equally true of the v55 and v54 binaries this one replaces; it is not a
+  new gap, but it is a real one and nothing on this machine will close it.
 
   What IS established:
-    - Format and architecture: runs on Apple Silicon macOS, Mach-O, checked with
-      `file` on the exact bytes in this tarball.
-    - The fix is compiled in, by Mach-O section triage against the published
-      v54 binary (md5 edd3b4dd66347b45add3c781291ef16f): __text grows 3065296 -> 3079184
-      bytes, which is the added directory-creation code, while __DATA,__const
-      is byte-identical.  The tarball is SMALLER than v54's only because the
-      symbol table shrank (27051 -> 22530 symbols); no content was lost.
+    - Format and architecture: runs on Apple Silicon macOS, Mach-O, checked with `file` on the exact
+      bytes in this tarball.
+    - The fix is compiled in, by a SINGLE-AXIS Mach-O section triage: the v55
+      source commit and the v56 source commit were each cross-built here with
+      the SAME host compiler, the SAME RTL units and the SAME flags, and only
+      then compared.  __text goes 3827988 -> 3828564, a delta of exactly
+      576 bytes -- the size of the added inference code, and nothing else.
+      The same delta reproduced under a second link mode (-CX -XX), which is
+      what makes it a measurement of the SOURCE and not of the build.
+    - Reproducibility: three independent full rebuilds of this configuration
+      were compared byte for byte.  x86_64-darwin came out byte-identical every
+      time; aarch64-darwin varies only in the linker-generated LC_UUID and one
+      byte of __LINKEDIT packing, with __text identical.
     - The BEHAVIOUR of this exact source was A/B proven elsewhere: natively on
-      x86_64-linux against the published pre-fix v54 binary, and on
-      aarch64-linux under qemu-user (baseline 4/11 corners, fixed 11/11, with
-      every emitted binary executed rather than merely linked, and both
-      must-refuse corners still refusing).
+      x86_64-linux against the published pre-fix v55 binary, 57 checks over 10
+      structural contexts, plus a %FAIL test that must keep refusing
+      `for var i := 1.0`.
 
   What is NOT established: that this binary starts, compiles, or links on a
   Mac.  If you have a macOS box, the one number worth sending back is the exit
-  code of `./bin/ppca64 -iV` (expect 0, printing 3.3.1) -- it needs no SDK
-  and no unit set to answer that.
+  code of `./bin/ppca64 -iV` (expect 0, printing 3.3.1) -- it needs no SDK and
+  no unit set to answer that.
+
+WHY THIS BINARY IS LARGER THAN v55's, AND WHAT THAT IS NOT
+  v55 shipped __text 3079184 here; this one is 3828564.  That gap is NOT code
+  the fix added -- the fix is 576 bytes, measured above.  It is a link-mode
+  difference: v56 is linked PLAIN, and v55 was smart-linked or similar.
+  Rebuilding the v55 SOURCE here with -CX -XX gives __text 3243072, most of the
+  way back to v55's 3079184, while rebuilding it plain gives 3827988.  Plain
+  was chosen deliberately -- no binary on this target can be executed here, so
+  the build that performs the fewest transformations is the one whose contents
+  can be defended.
+  Two candidate explanations were tested and RULED OUT, so they are not left
+  hanging over this number: the host cross-compiler (the August ppcrossa64 and
+  a freshly bootstrapped v56 one produce __text 3827988 from the same source,
+  to the byte), and the RTL units (this target's are unchanged since 2026-08-18;
+  it was x86_64-darwin's, not these, that BuildMaster rebuilt today).
+  The last ~5% is still unaccounted for: v55's exact flags were never recorded
+  and could not be reproduced from what is on disk.  Said here rather than
+  rounded away.
