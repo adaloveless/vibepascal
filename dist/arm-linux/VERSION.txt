@@ -1,66 +1,67 @@
-VibePascal v55 -- arm-linux NATIVE compiler (runs on 32-bit ARM Linux, e.g.
-Raspberry Pi 32-bit OS).  -FU/-FE output directories are created instead of
-aborting the build.
-Source commit: eae5d3e919 (merge of fix/output-dir-autocreate)
-Compiler fix:  4d10b26fe772dfbd4992cbeb53f09028f7dfee4f
-Parent release: v54 (b7d2d9676ecf1d7d8250cd460b9c48069920513e)
-Built: 2026-09-10, cross-built on x86_64-linux via compiler/ppcrossarm
-Binary: bin/ppcarm  md5 494305fbcdbc4e156a7357fe0940d573
+VibePascal v56 -- arm-linux native compiler (32-bit ARM, ARMHF/EABIHF; a 32-bit
+Raspberry Pi OS is the target this exists for).  An inferred inline var
+initialised from a real constant is a Double, whatever the constant's value
+happens to be.
+Source commit: a187bbac34 (merge of inlinevar-real-default)
+Compiler fix:  f06e46d8eb  (compiler/pstatmnt.pas, compiler/defutil.pas, compiler/ncnv.pas)
+Parent release: v55 (eae5d3e919a26a7db19937da10da1c8b610b17da)
+Built: 2026-09-10, cross-built on x86_64-linux via a freshly bootstrapped
+       compiler/ppcrossarm.v56hf (from a187bbac34, -dFPC_ARMHF,
+       BINUTILSPREFIX=arm-linux-gnueabihf-)
+Binary: bin/ppcarm  md5 d9fd3cb9503e86206e2fdf456b62c61a
+                    sha256 5b1bdf1e7fe57c57adb4c75dea5e051a5b0857e11ee0a2ad5d60abd635a64a92
 
-ABI: ARMHF -- ARM EABI5, HARD float (VFP).  This is the ABI of Raspberry Pi OS
-32-bit and of Debian/Ubuntu armhf.  It is NOT compatible with an armel
-(soft-float) system.  The compiler reports "Target OS: Linux for ARMHF".
-The ABI attributes are byte-identical to the v54 binary and were re-read from
-both this cycle, not quoted: Tag_CPU_arch v7, Tag_FP_arch VFPv3-D16,
-Tag_ABI_VFP_args VFP registers.  D16 (not D32) is deliberate and confirmed
-against BuildMaster's own arm component builds -- nothing about the float
-tuning changed in v55.
+COMPILER BINARY ONLY.  Only compiler/{pstatmnt,defutil,ncnv}.pas changed between
+v55 and v56: no RTL change, no package change, no PPU format change.  Pair it
+with the existing vibepascal-v54-arm-linux-units.tar.gz, which stays valid and
+is still REQUIRED -- this is a bin-only refresh, not a standalone install.
 
-COMPILER BINARY ONLY.  Only compiler/options.pas changed between v54 and v55:
-no RTL change, no package change, no PPU format change, so the existing v54
-arm-linux units tarball in this directory stays valid and is still the one to
-pair with this binary.
+ABI: ARMHF (EABIHF), hard float.  The compiler tree defaults to FPC_ARMEL, so
+this build passes -dFPC_ARMHF explicitly at BOTH stages -- the host cross
+compiler and the native one.  Building the cross stage without it produces an
+ARMEL compiler that cannot even read this tree's ARMHF system.ppu ("Can't find
+unit system"), which is what that error means if you hit it.
 
 WHAT CHANGED
-  -FE and -FU name where the COMPILER writes.  Up to and including v54 a
-  missing one was an error: -FE reported 'Path "x/" does not exist' during
-  option processing, and -FU failed later and far more obscurely at object
-  write time ("Can't create object file: x/hello.o (error code: 2)").  In both
-  cases the compiler knew the path and made the user run mkdir.  v55 creates
-  both directories up front, recursively.  An IMPOSSIBLE path still stops the
-  build with the same message -- now reported only after creation has been
-  TRIED and FAILED, so it arrives early and names the directory.
+  An inline var with no type annotation used to take its type from the real
+  constant you initialised it with, and that type changes with the VALUE:
 
-VERIFIED ON THIS TARGET, UNDER EMULATION (qemu-user, 2026-09-10)
-  A/B against the PUBLISHED pre-fix v54 binary (md5
-  da6167de452b8dfdb4f57e33ffb8c733), same source, same options, same fresh
-  directory, varying ONLY the compiler.  11 corners; every "must compile"
-  corner had its emitted ARM binary EXECUTED and required to print 42, not
-  merely linked:
+      var a := 1.0;      // Single   -  4 bytes,  7 digits
+      var b := 0.1;      // Extended - 10 bytes, 19 digits
+      var d := 1/2;      // Double
 
-    BASELINE 4/11, FIXED 11/11.
+  v56 infers the DEFAULT real type -- Double -- in either direction.  RANGE is
+  never traded: 1.0e400 and 1.0e-4000 keep their wider type.  A variable or
+  non-constant expression keeps its own type, and an explicit `single(1.0)`
+  still wins.  How real CONSTANTS themselves are typed is NOT touched.
 
-    Fixed: -FU one level, -FU three levels, -FU absolute, -FU units/sub,
-    -FE relative, -FU and -FE together, and an fpc.cfg carrying the shipped
-    -FU./units/$FPCTARGET shape (v54: "Can't create object file:
-    ./units/arm-linux/hello.o").
-    Unchanged and still passing on both: -FU on an existing dir, no options.
-    Unchanged and still REFUSING on both, non-zero and without an internal
-    error: -FU under a plain file, -FU under a read-only dir.
+VERIFIED ON THIS PLATFORM BY EXECUTION, NOT BY INSPECTION
+  The COMPILER is a 32-bit ARM binary run under qemu-arm-static on the build
+  host, and every program it produced was RUN too, not merely linked.
 
-  No semantic regression.  tinlinevarnativeint1 (NativeInt=4 on this 32-bit
-  target), tinlinevarstrinfer1 and the cy1096 block-scope finalization matrix
-  were compiled AND run under qemu by both the v54 and the v55 binary with
-  identical verdicts, and both { %FAIL } scope tests are still correctly
-  rejected by both.
+  A/B against the PUBLISHED v55 arm binary (md5 494305fbcdbc4e156a7357fe0940d573,
+  taken out of its own shipped tarball and md5-checked against that tarball's
+  VERSION.txt before it was trusted as a control):
 
-WHAT THIS IS NOT
-  qemu-user is an emulator, not a Raspberry Pi.  It runs the real shipped
-  bytes and real ARM encodings, so codegen and RTL defects surface, but nobody
-  has run any VibePascal ARM artifact on physical ARM silicon and this release
-  does not change that.
+    tinlinevarrealinfer1.pp, three modes -- mode is a real axis of this fix
+      -Munleashed        v55 52 checks / 25 fails  ->  v56 52 / 0
+      -Mdelphi           v55 49 checks / 16 fails  ->  v56 49 / 0
+      -Mdelphiunicode    v55 49 checks / 16 fails  ->  v56 49 / 0
+    The control FAILS in every mode, so a pass cannot be reached by accident.
 
-REPRODUCE IT: dist/arm-runtime-proof.sh, which now selects the highest-
-numbered tarball per target rather than a hardcoded version, and asserts the
--FU/-FE behaviour in a version-aware way (>= v55 must create the directory;
-below v55 must refuse).
+    tinlinevarrealinfer2.pp is a %FAIL test -- `for var i := 1.0` must stay
+    rejected.  BOTH compilers reject it with "Ordinal expression expected" and
+    zero internal errors.
+
+  NO REGRESSION, also by execution on the v56 compiler:
+    tinlinevarnativeint1.pp   45/45, NativeInt=4  (32-bit: the whole point of
+                                                   the v54 NativeInt rule)
+    tinlinevarstrinfer1.pp    PASS
+    tblockscopefinal1.pp      PASS -- every corner released EXACTLY ONCE
+                              (kills counted, so a double-free scores as a fail)
+    tinlinevar2 / tinlinevar3 both still correctly REJECTED
+
+  LIMIT, stated plainly: qemu-user is an emulator.  It runs the real shipped
+  bytes and real ARM encodings, so codegen and RTL defects DO surface -- but it
+  is not a Raspberry Pi.  NOBODY HAS RUN THIS ON PHYSICAL ARM HARDWARE.
+  Re-runnable: sh dist/arm-runtime-proof.sh

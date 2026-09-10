@@ -1,6 +1,7 @@
 # VibePascal v56 -- cross-platform status manifest
 # Cut by FPCDeveloper (Otto).  win64 + linux64 shipped 2026-09-10 (cy1106);
-# x86_64-darwin, aarch64-darwin and aarch64-linux shipped 2026-09-10 (cy1107).
+# x86_64-darwin, aarch64-darwin, aarch64-linux and arm-linux shipped
+# 2026-09-10 (cy1107).  Every consumer-facing target now carries v56.
 # This file is the authoritative answer to "which platforms have v56".
 # Per-platform detail lives in dist/<target>/VERSION.txt and inside each tarball.
 
@@ -55,6 +56,18 @@ PLATFORMS CARRYING v56
                       still passing.  qemu is not a Raspberry Pi: nobody has
                       run this on physical ARM hardware.
                       Re-runnable: sh dist/arm-runtime-proof.sh
+
+  arm-linux/       vibepascal-v56-a187bbac34-arm-linux-bin.tar.gz
+                   md5 3384f816a68d06188c1004c47480d19d
+                   ppcarm md5 d9fd3cb9503e86206e2fdf456b62c61a
+                   -- ARMHF/EABIHF.  Bin-only: pair with the existing
+                      vibepascal-v54-arm-linux-units.tar.gz, still REQUIRED.
+                   -- RUNTIME: EXECUTED under qemu-arm-static and A/B'd against
+                      the published v55 binary in three modes (v55 fails
+                      25/16/16 checks, v56 passes 52/49/49), NativeInt=4 on
+                      32-bit, block-scope matrix and both %FAIL tests still
+                      correct.  qemu is not a Raspberry Pi: nobody has run this
+                      on physical ARM hardware.
 
   Both darwin binaries are also staged under dist/darwin-native/ in the layout
   build-release.sh:1137/1155 globs, so the next Lazarus Mac roll bundles v56.
