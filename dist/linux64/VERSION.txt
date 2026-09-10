@@ -1,37 +1,65 @@
-VibePascal v54 Linux x86_64 compiler -- NativeInt + default-string-type
-inference for inline vars (God directive mtkt2shb)
-Source commit: b7d2d9676ecf1d7d8250cd460b9c48069920513e
-Compiler fix:  b9cb8fea875670cfc48f7d83b88d4af39a28aa6e
-Parent release: v53 (9e20efe4d6912fe6a9558c442ae4fa8d5dfe3045)
-Built: 2026-09-03, native self-host on x86_64-linux
-ppcx64 md5:    EB57AA4D7A3C1317CAF5921A6DDABF7B
-ppcx64 sha256: (see LATEST.txt in this directory)
+VibePascal v55 Linux x86_64 compiler -- -FU/-FE output directories are created
+instead of aborting the build
+Source commit: eae5d3e919 (merge of fix/output-dir-autocreate)
+Compiler fix:  4d10b26fe772dfbd4992cbeb53f09028f7dfee4f
+Parent release: v54 (b7d2d9676ecf1d7d8250cd460b9c48069920513e)
+Built: 2026-09-10, native self-host fixpoint on x86_64-linux
+ppcx64 md5:    19F526BD6BE0EC63FCA96C4D1B77E19D
 
-Contents: bin/ppcx64 only -- this is a COMPILER-BINARY refresh, meant to drop
-into an existing VibePascal source/unit tree on Linux.  It carries no RTL or
-package units: nothing in the RTL, the packages or the PPU format changed
-between v53 and v54, so an existing v53 (or v52) Linux unit set stays valid.
-The Linux utility binaries (ppudump/ppumove/fpcres/...) are likewise unchanged
-and are not re-shipped; build them from the tree if you need them.
+Contents: bin/ppcx64 only -- a COMPILER-BINARY refresh meant to drop into an
+existing VibePascal source/unit tree on Linux.  Only compiler/options.pas
+changed between v54 and v55: no RTL change, no package change, no PPU format
+change, so an existing v54 (or v53/v52) Linux unit set stays valid and the
+utility binaries (ppudump/ppumove/fpcres/...) are unchanged and not re-shipped.
 
-This is the exact binary every v54 verification result was produced with, and
-it is the compiler that cross-built the v54 Win64 ppcx64.exe.
+WHY THIS EXISTS, AND WHY IT IS LATE
+  The fix shipped to Win64 as v55 on 2026-09-10 because that is where it was
+  reported: the Win64 package's bin/fpc.cfg carries -FU./units/$FPCTARGET, so
+  the very first compile after unpacking died before the user had written a
+  line of their own code.  The Linux packages ship no fpc.cfg, so Linux users
+  did NOT hit that first-run trap -- but the underlying compiler behaviour is
+  not Windows-specific, and anyone on Linux who passes -FU or -FE explicitly
+  hit exactly the same wall.  v54 and earlier refused; v55 creates the
+  directory.  Shipping the fix only to Windows left that difference in place
+  on five other platforms for no reason other than where the report came from.
 
-Change in this release: an untyped INTEGER initialiser for an inline var (and
-for an inferred `for var i := ...` counter) now infers NativeInt instead of the
-hard-coded LongInt -- 8 bytes on a 64-bit target, 4 on a 32-bit one -- and a
-string/char literal initialiser now infers exactly what a bare `string` denotes
-at that point.  Only types narrower than NativeInt are widened; explicit
-typecasts are never promoted.  See dist/win64/staging-v54/VERSION.txt for the
-full change and validation record.
+CHANGE
+  -FE and -FU name where the COMPILER writes, so both directories are now
+  created up front, recursively, during option processing.  The existing
+  "Path ... does not exist" diagnostic is reported only after creation has
+  been TRIED and FAILED, so an impossible path (a component is a plain file,
+  a read-only parent, a bad mount) still stops the build with the same
+  message, now naming the directory.  One behaviour change: -FE on a missing
+  directory used to error and now creates it; -FU never had that diagnostic
+  at all, it failed later and more obscurely at object-write time.
 
-Verified on this platform (x86_64-linux), against a baseline compiler built
-from the parent commit (23618ea0680578c23f16059b58b71757):
-- tinlinevarnativeint1.pp: 45 assertions, 13 structural contexts, baseline 26
-  failures -> 0, under both -Munleashed and -Mdelphiunicode.
-- tinlinevarstrinfer1.pp: 20 assertions over $H+/$H-, baseline 4 -> 0, both modes.
-- full tests/test corpus, 2098 tests, with a nondeterminism control run:
-  zero unintended regression.
-- self-host fixpoint byte-identical (stage B == stage C).
-The 32-bit half of the directive was verified separately with a v54 i386-linux
-cross compiler: the same 45-assertion matrix reports NativeInt=4 and PASSes.
+VERIFIED ON THIS PLATFORM (x86_64-linux, native -- not emulated, not wine)
+  A/B against the PUBLISHED pre-fix v54 Linux binary
+  (dist/linux64/vibepascal-v54-b7d2d9676e-linux-x86_64-bin.tar.gz,
+  ppcx64 md5 EB57AA4D7A3C1317CAF5921A6DDABF7B), same source, same config,
+  same fresh directory, varying ONLY the compiler:
+    -FUoutdir, outdir absent:  v54 -> exit 1, "Can't create object file:
+                               outdir/hello.o (error code: 2)", outdir NOT
+                               created.  v55 -> exit 0, outdir created,
+                               hello linked and produced.
+    -FEoutdir, outdir absent:  v54 -> exit 1, Error: Path "outdir/" does not
+                               exist, outdir NOT created.  v55 -> exit 0,
+                               outdir created, outdir/hello linked.
+  The pre-fix control FAILS both corners, so this comparison can fail; an
+  exit-0-either-way harness would have proved nothing.
+
+  Carried from the v55 validation performed on this same binary:
+  - 11-corner -FU/-FE matrix: baseline 4/11 -> fixed 11/11, every success RUN
+    and not merely linked, and both must-refuse corners still refusing.
+  - full tests/test corpus, 1981 tests: 1981 SAME, 0 DIFF.
+  - self-host fixpoint stage3 == stage4 byte-identical (this md5); the
+    stage2->stage3 delta was exactly two bytes of embedded build date.
+  This is also the exact binary that cross-built the v55 Win64 ppcx64.exe.
+
+STILL ON v54 AFTER THIS RELEASE
+  aarch64-linux, arm-linux, arm-linux-cross, i386-linux-cross, x86_64-darwin
+  and aarch64-darwin all still ship the pre-fix v54 compiler and therefore
+  still refuse a missing -FU/-FE directory.  Each needs a cross rebuild from
+  eae5d3e919; that is tracked and not yet done.  Nothing about those packages
+  is mis-stated -- they are honestly labelled v54 -- but do not read this
+  release as "the fix is everywhere".
