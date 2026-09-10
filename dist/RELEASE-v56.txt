@@ -85,3 +85,35 @@ STILL ON v55 OR OLDER
   paragraph in dist/linux64/VERSION.txt, which was written before the darwin
   pair shipped and still names them.  That file mirrors the text inside an
   already-published tarball and is deliberately left byte-stable.
+
+IF YOU VERIFY A DARWIN COMPILER AND THE HASH DOES NOT MATCH, READ THIS FIRST
+  Added cy1107 (2026-09-10), after BuildMaster reported that careful macOS users
+  were concluding a good download was corrupt.
+
+  The two darwin md5s above describe the UNSIGNED binary as built and as it sits
+  inside the VibePascal dist tarball. They are correct for that file. But the
+  Lazarus darwin tarballs (lazarus-4.99-vp-<arch>-darwin-*.tar.gz) re-ship the
+  same compiler after build-release.sh ad-hoc signs every bundled Mach-O with
+  rcodesign; the compiler is hard-linked into the .app, so the signature rewrites
+  the top-level copy too. A signature APPENDS bytes and CHANGES the hash. So the
+  number above can never match the compiler inside a Lazarus archive, and a
+  mismatch there is expected, not corruption.
+
+  AS-SHIPPED digests after ad-hoc signing (predicted here, measured twice from
+  independent copies with rcodesign 0.27.0):
+    ppcx64   9393120 bytes  md5 6e7a99a81afe9ec57ef133aad8da478e
+    ppca64   7338576 bytes  md5 65d9531ee710499802d6a0e525866f82
+  These are a CROSS-CHECK. build-release.sh stamps its own "AS SHIPPED IN THIS
+  TARBALL" block into COMPILER_NOTES.txt after packaging (Lars, 5f2bfe125e);
+  that block is computed from the real artifact and wins if the two disagree.
+
+  SIGN UNDER THE SHIPPED FILENAME OR YOU WILL GET THE WRONG NUMBER. rcodesign
+  takes the Mach-O binary identifier from the file's NAME when the binary has
+  none embedded, and the identifier is covered by the signature. Measured on the
+  v55 x86_64 compiler: the same input bytes signed as 'ppcx64' reproduce the
+  shipped 3f10e570fcad85205276ce7fd3ce52c5 exactly, while signed as 'x64.a' they
+  give cc76dc145377b073362fa233bdd04811 -- which reads as a provenance failure
+  and is only a renamed file. aarch64 is immune: its linker already embedded an
+  identifier. Signing is deterministic and idempotent, so a correct procedure is
+  repeatable: copy the staged binary to a scratch dir UNDER ITS SHIPPED NAME,
+  sign that, compare to the archive member.
