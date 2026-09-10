@@ -108,6 +108,22 @@ else
   ck "pre-v55 control fresh-dir exit code" "$crc2" "1"
   if grep -q "Can't create object file" "$W/freshctl/compile.log"; then got=yes; else got=no; fi
   ck "pre-v55 control failed for the -FU reason" "$got" "yes"
+
+  # The CWD is the axis under test, and this corner is here to prove it.
+  # -FU./units/$FPCTARGET writes relative to the USER'S current directory, so the
+  # PRE-fix compiler passes anywhere ./units/x86_64-win64 already exists -- the
+  # install root being the obvious such place, because the units tarball just
+  # made one.  Asserting exit 0 here is not a test of the fix; it is a guard
+  # against mistaking this shape FOR one.  Measured cy1103 under wine64 on the
+  # published bytes: v54 in the install root exits 0 and builds hello.exe, same
+  # as v55, so a check run there cannot tell the two apart.  Anyone verifying
+  # v55 on real Windows hardware must stand in an EMPTY directory -- not the
+  # install root, and not a built lazarus tree, which also carries
+  # units/x86_64-win64 at its top level.
+  cp "$W/fresh/hello.pas" "$W/vp/hello.pas"
+  ( cd "$W/vp" && $WINE "$W/vp/bin/ppcx64.pre.exe" hello.pas ) \
+      >"$W/vp/compile-inroot.log" 2>&1 && irc=0 || irc=$?
+  ck "pre-v55 in the INSTALL ROOT exits 0 (shape that cannot discriminate)" "$irc" "0"
 fi
 
 say "stage 3: negative control -- the harness must be able to FAIL"
