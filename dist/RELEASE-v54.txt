@@ -149,11 +149,46 @@ refuses to continue on a mismatch, so a pass is a statement about the published
 bytes, not about a local rebuild.
 
 
-  STILL NOT VERIFIED: runtime behaviour on win64 and on either darwin.
-  This build host is x86_64-linux with no wine and no macOS, so those three
-  binaries are format-verified (PE32+ / Mach-O x86_64 / Mach-O arm64) and were
-  cross-built from the identical source, but never executed.
-  First runtime proof for Windows is the auto-update.bat smoke.
+  RUNTIME UPDATE 2026-09-10 -- WIN64 IS NO LONGER UNVERIFIED.
+  The paragraph that stood here said runtime behaviour on win64 and on either
+  darwin was unverified because "this build host is x86_64-linux with no wine
+  and no macOS".  The win64 half of that was wrong in the same way the "no
+  qemu" note above it was wrong: wine64 is a stock Ubuntu noble/universe
+  package that had simply never been installed on this box.  With it
+  installed, the PUBLISHED ppcx64.exe -- extracted from
+  vibepascal-v54-b7d2d9676e-win64-bin.tar.gz and md5-checked against
+  LATEST.txt (293f3c98a26ff3233d88550259ba8b1f) BEFORE running it -- executes
+  on the Win64 target, reports -iV 3.3.1 / -iD 2026/09/03 / -iTO win64, and
+  compiles + internally-links real programs.  Those programs then run:
+
+    tinlinevarnativeint1.pp  -> "checks=45 fails=0 NativeInt=8" VERDICT:PASS,
+                                exit 0, under BOTH -Munleashed AND
+                                -Mdelphiunicode -- the 8-byte half of directive
+                                mtkt2shb, proven by execution on the target it
+                                was written for.
+    vp_win64_smoke.pp        -> 8/8 v48-v54 assertions, RESULT: PASS, exit 0.
+    control: the same smoke source cross-built by the PRESERVED pre-v54
+                                compiler -> exit 1, failing exactly the
+                                inferred-var line.  The harness reports real
+                                failures; it does not return 0 for everything.
+
+  So the whole Win64 toolchain -- compiler runs, emits an object, links it
+  internally, and the product executes correctly -- is now end-to-end evidence
+  rather than compile-and-link evidence.
+
+  STATED PLAINLY, TWICE, BECAUSE IT MATTERS: wine is not Windows.  It is an
+  independent reimplementation of the Win64 API.  This proves the CODE WE
+  GENERATE -- PE image, entry point, calling convention, RTL startup, 64-bit
+  widths -- and it is not a substitute for one run on real Windows hardware.
+  Nobody has done that yet.  The ask is still one person, one Windows box, two
+  exit codes.
+
+  STILL NOT VERIFIED: runtime behaviour on either darwin.  That one is real
+  and was re-measured, not assumed: there is no packaged Mach-O loader in the
+  distro archive (the apt "darling" hits are unrelated Rust crates) and
+  qemu-user runs Linux ELF only, so both darwin binaries remain
+  format-verified (Mach-O x86_64 / Mach-O arm64), cross-built from the
+  identical source, and never executed.
 
 COMPATIBILITY
   This is a deliberate semantic change.  Code that relied on an inferred

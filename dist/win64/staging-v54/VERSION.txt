@@ -65,6 +65,32 @@ wine installed, so the .exe is PE32+-verified and cross-built from the identical
 source commit, but it has never been executed.  The first runtime proof is the
 auto-update.bat smoke on a Windows host.
 
+  *** ADDENDUM 2026-09-10 -- THE PARAGRAPH ABOVE IS SUPERSEDED. ***
+  It is left verbatim because it is the text inside the SHIPPED tarball
+  (md5 027445c682f2d4c41bbd99e328107184), which is deliberately NOT being
+  re-cut for a documentation change -- re-cutting it would invalidate every
+  published hash for a text edit.  Read this instead:
+
+  "no wine installed" was a fact about this box, not about the world: wine64
+  is a stock Ubuntu noble/universe package that had never been apt-installed
+  here.  It is installed now, and the PUBLISHED ppcx64.exe (md5 checked first)
+  RUNS on the Win64 target: it compiles and internally-links programs, and
+  those programs execute correctly -- tinlinevarnativeint1 reports
+  "checks=45 fails=0 NativeInt=8" VERDICT:PASS under both -Munleashed and
+  -Mdelphiunicode, and vp_win64_smoke passes 8/8 with exit 0, while a control
+  built by the preserved pre-v54 compiler correctly exits 1.
+
+  wine is not Windows -- it is an independent reimplementation of the API --
+  so this is execution evidence for the code we generate and NOT a substitute
+  for one run on real Windows hardware, which still has not happened.
+
+  Practical note for anyone unpacking this tarball: bin/fpc.cfg ends with
+  -FU./units/$FPCTARGET, and the compiler does NOT create that directory.
+  In a fresh working directory the first compile fails with "Can't create
+  object file: .\units\x86_64-win64\<name>.o (error code: 3)".  Either
+  mkdir units\x86_64-win64 first, or pass an explicit -FU.  This is a dist
+  usability bug on my side, not a compiler bug.
+
 Compatibility note -- this is a deliberate semantic change, so code that relies
 on an inferred integer being exactly 4 bytes will notice.  An inline var passed
 to a `var LongInt` parameter, or one whose overload choice depended on LongInt,
