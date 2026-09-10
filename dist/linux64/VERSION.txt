@@ -1,65 +1,83 @@
-VibePascal v55 Linux x86_64 compiler -- -FU/-FE output directories are created
-instead of aborting the build
-Source commit: eae5d3e919 (merge of fix/output-dir-autocreate)
-Compiler fix:  4d10b26fe772dfbd4992cbeb53f09028f7dfee4f
-Parent release: v54 (b7d2d9676ecf1d7d8250cd460b9c48069920513e)
+VibePascal v56 Linux x86_64 compiler -- an inferred inline var initialised from
+a real constant is a Double, whatever the constant's value happens to be
+Source commit: a187bbac34 (merge of inlinevar-real-default)
+Compiler fix:  f06e46d8eb  (compiler/pstatmnt.pas, compiler/defutil.pas, compiler/ncnv.pas)
+Parent release: v55 (eae5d3e919a26a7db19937da10da1c8b610b17da)
 Built: 2026-09-10, native self-host fixpoint on x86_64-linux
-ppcx64 md5:    19F526BD6BE0EC63FCA96C4D1B77E19D
+ppcx64 md5:    E6DE1F00ECCB9B5CCF028BEE7E7342AD
 
 Contents: bin/ppcx64 only -- a COMPILER-BINARY refresh meant to drop into an
-existing VibePascal source/unit tree on Linux.  Only compiler/options.pas
-changed between v54 and v55: no RTL change, no package change, no PPU format
-change, so an existing v54 (or v53/v52) Linux unit set stays valid and the
-utility binaries (ppudump/ppumove/fpcres/...) are unchanged and not re-shipped.
+existing VibePascal source/unit tree on Linux.  No RTL change, no package
+change, no PPU format change, so an existing v52/v53/v54/v55 Linux unit set
+stays valid and the utility binaries (ppudump/ppumove/fpcres/...) are unchanged
+and not re-shipped.
 
-WHY THIS EXISTS, AND WHY IT IS LATE
-  The fix shipped to Win64 as v55 on 2026-09-10 because that is where it was
-  reported: the Win64 package's bin/fpc.cfg carries -FU./units/$FPCTARGET, so
-  the very first compile after unpacking died before the user had written a
-  line of their own code.  The Linux packages ship no fpc.cfg, so Linux users
-  did NOT hit that first-run trap -- but the underlying compiler behaviour is
-  not Windows-specific, and anyone on Linux who passes -FU or -FE explicitly
-  hit exactly the same wall.  v54 and earlier refused; v55 creates the
-  directory.  Shipping the fix only to Windows left that difference in place
-  on five other platforms for no reason other than where the report came from.
+WHAT WAS BROKEN
+  An inline var with no type annotation took its type from the real constant
+  you initialised it with, and that type changes with the VALUE:
+
+      var a := 1.0;      // Single   -  4 bytes,  7 digits
+      var b := 0.1;      // Extended - 10 bytes, 19 digits
+      var c := 1.0/3.0;  // Single, or Extended under {$mode delphi}
+      var d := 1/2;      // Double
+
+  Four declarations side by side, four different types, none of them the one
+  Delphi or an explicit `var x: Double := ...` gives.  The 4-byte case is the
+  one that bites: `var pi := 3.14159265358979` quietly kept about seven digits,
+  and the same variable widened to fifteen as soon as somebody edited the
+  literal to one a Single cannot represent exactly.  Lars hit the other end of
+  it in the Lazarus IDE, where code completion and the compiler disagreed.
 
 CHANGE
-  -FE and -FU name where the COMPILER writes, so both directories are now
-  created up front, recursively, during option processing.  The existing
-  "Path ... does not exist" diagnostic is reported only after creation has
-  been TRIED and FAILED, so an impossible path (a component is a plain file,
-  a read-only parent, a bad mount) still stops the build with the same
-  message, now naming the directory.  One behaviour change: -FE on a missing
-  directory used to error and now creates it; -FU never had that diagnostic
-  at all, it failed later and more obscurely at object-write time.
+  An un-annotated inline var initialised from a real CONSTANT now infers the
+  default real type, Double.  It is the third rule of the family v54 started:
+  `var i := -1` -> NativeInt, `var s := 'x'` -> the default string type, and now
+  a real constant -> the default real type.  Inference gives you the DEFAULT
+  type of a kind, not the narrowest one that happens to fit today's literal.
+  Double and not Extended because Extended is an x87-only 80-bit type and
+  Delphi makes Extended an alias of Double on every 64-bit target we ship.
+
+  Deliberately unchanged:
+   - RANGE is never lost.  1.0e400 and 1.0e-4000 keep the wider type they were
+     given; a Double would silently hold +Inf and 0.  Precision digits can be
+     lost, because that is what asking for a Double means.
+   - A variable or non-constant expression keeps its own type, as Delphi infers
+     it: `var m := someSingle` is still a Single.
+   - An explicit `single(1.0)` still wins.  Making that true was part of the
+     fix: a cast to the type a constant already had used to be dropped without
+     recording that the user asked for it.
+   - Currency and Comp are untouched, and `var d := 1/2` was already a Double.
+   - How real CONSTANTS themselves are typed is NOT touched.  That is stock FPC
+     behaviour ($MINFPCONSTPREC default s32real, $EXCESSPRECISION on in delphi
+     mode), byte-identical to upstream, and still reachable explicitly.
 
 VERIFIED ON THIS PLATFORM (x86_64-linux, native -- not emulated, not wine)
-  A/B against the PUBLISHED pre-fix v54 Linux binary
-  (dist/linux64/vibepascal-v54-b7d2d9676e-linux-x86_64-bin.tar.gz,
-  ppcx64 md5 EB57AA4D7A3C1317CAF5921A6DDABF7B), same source, same config,
-  same fresh directory, varying ONLY the compiler:
-    -FUoutdir, outdir absent:  v54 -> exit 1, "Can't create object file:
-                               outdir/hello.o (error code: 2)", outdir NOT
-                               created.  v55 -> exit 0, outdir created,
-                               hello linked and produced.
-    -FEoutdir, outdir absent:  v54 -> exit 1, Error: Path "outdir/" does not
-                               exist, outdir NOT created.  v55 -> exit 0,
-                               outdir created, outdir/hello linked.
-  The pre-fix control FAILS both corners, so this comparison can fail; an
-  exit-0-either-way harness would have proved nothing.
+  Isolated throwaway A/B compilers, real toolchain untouched.  The baseline
+  built that way came out byte-identical to the published v55 Linux binary
+  (19F526BD6BE0EC63FCA96C4D1B77E19D), which is what makes the A/B trustworthy.
+   - tinlinevarrealinfer1.pp: 57 checks over 10 structural contexts (free
+     procedure, method, nested block, nested procedure, with-block, for-loop
+     body, except and finally, while/repeat/case, closure capture, main program
+     body) crossed with the MODE axis, because delphi mode widens a constant
+     fold differently:
+        -Munleashed       baseline 37 failures -> 0 of 57
+        -Mdelphi          baseline 36 failures -> 0 of 54
+        -Mdelphiunicode   baseline 36 failures -> 0 of 54
+     VALUES are asserted as well as sizes, including through a closure capture:
+     an inferred variable must hold exactly what the declared one holds.
+   - tinlinevarrealinfer2.pp (%FAIL): `for var i := 1.0 to 2.0` is still
+     rejected, cleanly, with no internal error.
+   - full tests/test corpus, 1982 tests: 1981 SAME, 0 DIFF, after a
+     baseline-against-baseline control run that was also 0 DIFF.
+   - self-host fixpoint: stage2 == stage3, byte-identical (this md5).
+   - the neighbouring inference rules are unmoved: tinlinevarnativeint1 45/45
+     and tinlinevarstrinfer1 20/20, both under -Munleashed and -Mdelphiunicode.
+  Re-run from the EXTRACTED tarball rather than the build tree, so what is
+  measured is what is shipped.
 
-  Carried from the v55 validation performed on this same binary:
-  - 11-corner -FU/-FE matrix: baseline 4/11 -> fixed 11/11, every success RUN
-    and not merely linked, and both must-refuse corners still refusing.
-  - full tests/test corpus, 1981 tests: 1981 SAME, 0 DIFF.
-  - self-host fixpoint stage3 == stage4 byte-identical (this md5); the
-    stage2->stage3 delta was exactly two bytes of embedded build date.
-  This is also the exact binary that cross-built the v55 Win64 ppcx64.exe.
-
-STILL ON v54 AFTER THIS RELEASE
-  aarch64-linux, arm-linux, arm-linux-cross, i386-linux-cross, x86_64-darwin
-  and aarch64-darwin all still ship the pre-fix v54 compiler and therefore
-  still refuse a missing -FU/-FE directory.  Each needs a cross rebuild from
-  eae5d3e919; that is tracked and not yet done.  Nothing about those packages
-  is mis-stated -- they are honestly labelled v54 -- but do not read this
-  release as "the fix is everywhere".
+STILL ON v55 OR OLDER AFTER THIS RELEASE
+  aarch64-linux, arm-linux, x86_64-darwin and aarch64-darwin carry v55, and
+  arm-linux-cross and i386-linux-cross carry v54.  None of them has this real
+  inference change yet; each needs a cross rebuild from a187bbac34.  That is
+  tracked.  Those packages are honestly labelled, but do not read this release
+  as "the fix is everywhere".
