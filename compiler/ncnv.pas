@@ -2986,6 +2986,16 @@ implementation
                          left.resultdef:=resultdef;
                          if (nf_explicit in flags) and (left.nodetype = addrn) then
                            include(taddrnode(left).addrnodeflags,anf_typedaddr);
+                         { A cast to the type the real constant already has is
+                           dropped HERE instead of being folded by simplify,
+                           so carry the explicitness over by hand: simplify's
+                           realconstn branch already does exactly this, and
+                           single(1.0) must not look different from
+                           single(0.1) to anyone asking whether the user
+                           pinned the type down. }
+                         if ([nf_explicit,nf_internal] * flags <> []) and
+                            (left.nodetype = realconstn) then
+                           include(left.flags,nf_explicit);
                          result:=left;
                          left:=nil;
                        end;

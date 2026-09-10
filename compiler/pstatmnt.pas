@@ -2726,6 +2726,28 @@ implementation
                   if not(nf_explicit in initexpr.flags) and
                      is_sub_nativeint(hdef) then
                     hdef := get_nativeint_def;
+                  { The same for real CONSTANTS: infer the DEFAULT REAL TYPE
+                    rather than whichever type the constant itself happened to
+                    land on.  $MINFPCONSTPREC defaults to s32real, so a real
+                    constant is typed by the narrowest float that represents
+                    it exactly - `var d := 1.0` inferred a SINGLE, while the
+                    inexact `var d := 0.1` right beside it inferred an
+                    EXTENDED.  Both now infer Double, which is what Delphi and
+                    an explicit `var d: Double := ...` give.
+                    Only CONSTANTS are promoted: a Single-typed variable or a
+                    non-constant expression keeps its own type, exactly as
+                    Delphi infers it.  Explicit typecasts (single(1.0)) are
+                    excluded through nf_explicit as above.  A constant whose
+                    MAGNITUDE the default real type cannot hold keeps its
+                    wider type - promoting 1.0e400 would silently store +Inf.
+                    The `for var i := ...` counter site needs no counterpart:
+                    a real bound is rejected there with "Ordinal expression
+                    expected" before any type is inferred. }
+                  if is_constrealnode(initexpr) and
+                     not(nf_explicit in initexpr.flags) and
+                     is_non_default_realdef(hdef) and
+                     real_fits_default_realdef(trealconstnode(initexpr).value_real) then
+                    hdef := get_default_realdef;
                   { A bare procedure-typed expression (anonymous-procedure
                     literal `procedure(...) begin ... end`, or a named-routine
                     address taken without enclosing context) yields a
