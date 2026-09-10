@@ -1,74 +1,64 @@
-VibePascal v55 -- aarch64-linux native compiler (runs on ARM64 Linux, e.g. a
-64-bit Raspberry Pi).  -FU/-FE output directories are created instead of
-aborting the build.
-Source commit: eae5d3e919 (merge of fix/output-dir-autocreate)
-Compiler fix:  4d10b26fe772dfbd4992cbeb53f09028f7dfee4f
-Parent release: v54 (b7d2d9676ecf1d7d8250cd460b9c48069920513e)
-Built: 2026-09-10, cross-built on x86_64-linux via compiler/ppcrossa64
-Binary: bin/ppca64  md5 7a41c2c459ebe303ecf47907d9e13f74
+VibePascal v56 -- aarch64-linux native compiler (runs on ARM64 Linux, e.g. a
+64-bit Raspberry Pi).  An inferred inline var initialised from a real constant
+is a Double, whatever the constant's value happens to be.
+Source commit: a187bbac34 (merge of inlinevar-real-default)
+Compiler fix:  f06e46d8eb  (compiler/pstatmnt.pas, compiler/defutil.pas, compiler/ncnv.pas)
+Parent release: v55 (eae5d3e919a26a7db19937da10da1c8b610b17da)
+Built: 2026-09-10, cross-built on x86_64-linux via a freshly bootstrapped
+       compiler/ppcrossa64.v56 (itself built from a187bbac34)
+Binary: bin/ppca64  md5 96241cbc8871786eb790c3c068258e33
+                    sha256 d4c3fc42fd35fa8b7496fdd17c238f70bd9bf43b3e4cdc2b2116bc271e98fbfd
 
-COMPILER BINARY ONLY.  Only compiler/options.pas changed between v54 and v55:
-no RTL change, no package change, no PPU format change.  An existing v54 (or
-v53/v52) aarch64-linux unit set stays valid, and the utility binaries are
-unchanged and not re-shipped.
+COMPILER BINARY ONLY.  Only compiler/{pstatmnt,defutil,ncnv}.pas changed between
+v55 and v56: no RTL change, no package change, no PPU format change.  An
+existing v54/v55 aarch64-linux unit set stays valid, and the utility binaries
+are unchanged and not re-shipped.
 
-WHY THIS EXISTS
-  -FE and -FU name where the COMPILER writes.  Up to and including v54 a
-  missing one was an error: -FE reported 'Path "x/" does not exist' during
-  option processing, and -FU failed later and far more obscurely at object
-  write time ("Can't create assembler file: x/hello.s").  In both cases the
-  compiler knew the path and made the user run mkdir.  v55 creates both
-  directories up front, recursively.
+WHAT CHANGED
+  An inline var with no type annotation used to take its type from the real
+  constant you initialised it with, and that type changes with the VALUE:
 
-  The fix shipped to Win64 first (2026-09-10) because that is where it was
-  reported -- the Win64 package's bin/fpc.cfg carries -FU./units/$FPCTARGET,
-  so the first compile after unpacking failed before the user had written a
-  line of their own code.  Nothing about the behaviour was Windows-specific.
-  This build carries the same fix to aarch64-linux.
+      var a := 1.0;      // Single   -  4 bytes,  7 digits
+      var b := 0.1;      // Extended - 10 bytes, 19 digits
+      var c := 1.0/3.0;  // Single, or Extended under {$mode delphi}
+      var d := 1/2;      // Double
 
-  One behaviour change: -FE on a missing directory used to error and now
-  creates it.  An IMPOSSIBLE path still stops the build with the same
-  general_e_path_does_not_exist message -- it is now reported only after
-  creation has been TRIED and FAILED, so it arrives early and names the
-  directory rather than surfacing later as an assembler-file error.
+  v56 infers the DEFAULT real type -- Double -- in either direction.  RANGE is
+  never traded: 1.0e400 and 1.0e-4000 keep their wider type, because a Double
+  would silently hold +Inf and 0.  A variable or non-constant expression keeps
+  its own type, and an explicit `single(1.0)` still wins.  How real CONSTANTS
+  themselves are typed is NOT touched -- that is stock upstream FPC.
 
-VERIFIED ON THIS TARGET, UNDER EMULATION (qemu-user, 2026-09-10)
-  A/B against the PUBLISHED pre-fix v54 aarch64 binary (md5
-  5cc202e1ee758321f9fba15aa7fb8ba8, preserved from dist and re-run this
-  cycle), same source, same options, same fresh directory, varying ONLY the
-  compiler.  11 corners; every "must compile" corner had its emitted aarch64
-  binary EXECUTED under qemu and required to print 42, not merely link:
+VERIFIED ON THIS PLATFORM BY EXECUTION, NOT BY INSPECTION
+  Every number below came from running real aarch64 instructions under
+  qemu-user-static on the build host: the COMPILER is an aarch64 binary run
+  under the emulator, and each program it produced was RUN too, not merely
+  linked.
 
-    -FU one level deep .............. v54 fail (Can't create assembler file)  v55 pass
-    -FU three levels deep ........... v54 fail                                v55 pass
-    -FE relative .................... v54 fail (Path "od2/" does not exist)   v55 pass
-    -FU and -FE together ............ v54 fail                                v55 pass
-    -FU absolute .................... v54 fail                                v55 pass
-    -FU units/sub ................... v54 fail                                v55 pass
-    -FU on an EXISTING dir .......... v54 pass                                v55 pass
-    no -FU/-FE at all ............... v54 pass                                v55 pass
-    an fpc.cfg carrying
-      -FU./units/$FPCTARGET ......... v54 fail (./units/aarch64-linux/)       v55 pass
-    -FU under a PLAIN FILE .......... v54 refuse (1)                          v55 refuse (1)
-    -FU under a READ-ONLY dir ....... v54 refuse (1)                          v55 refuse (1)
+  A/B against the PUBLISHED v55 aarch64 binary (md5 7a41c2c459ebe303ecf47907d9e13f74,
+  taken out of its own shipped tarball and md5-checked against that tarball's
+  VERSION.txt before it was trusted as a control):
 
-  BASELINE 4/11, FIXED 11/11.  The two must-refuse corners still refuse with a
-  non-zero exit and no internal error on both compilers, so the check can
-  still fail -- an all-pass harness would prove nothing.  Identical shape to
-  the x86_64 result the fix commit records (4/11 -> 11/11).
+    tinlinevarrealinfer1.pp, three modes, the mode being a real axis here
+      -Munleashed              v55 exit 1, 27 failing checks  ->  v56 exit 0, 52/52
+      -Mdelphi                 v55 exit 1, 18 failing checks  ->  v56 exit 0, 49/49
+      -Mdelphiunicode          v55 exit 1, 18 failing checks  ->  v56 exit 0, 49/49
+    The control FAILS in every mode, so a pass here cannot be reached by accident.
 
-  No semantic regression: tinlinevarnativeint1 (checks=45 fails=0,
-  NativeInt=8) and the cy1096 block-scope finalization matrix (all corners
-  released exactly once) were compiled AND run under qemu by BOTH the v54 and
-  the v55 binary with byte-identical verdicts.
+    tinlinevarrealinfer2.pp is a %FAIL test -- `for var i := 1.0` must stay
+    rejected.  BOTH compilers reject it, cleanly, with "Ordinal expression
+    expected" and zero internal errors.  The fix did not open that door.
 
-WHAT THIS IS NOT
-  qemu-user is an emulator, not aarch64 hardware.  It runs the real shipped
-  bytes and real aarch64 instruction encodings, so codegen and RTL defects do
-  surface -- but nobody has yet run any VibePascal ARM artifact on physical
-  ARM silicon, and this release does not change that.
+  NO REGRESSION, also by execution, on the v56 compiler:
+    tinlinevarnativeint1.pp   PASS   (NativeInt inference, v54's rule)
+    tinlinevarstrinfer1.pp    PASS   (default-string inference, v54's rule)
+    tblockscopefinal1.pp      PASS   (block-scoped finalisation: every corner
+                                      released exactly once -- counted, not
+                                      merely observed as "released")
 
-REPRODUCE IT: dist/arm-runtime-proof.sh re-runs the published-byte checks from
-a clean checkout.  It hash-checks each shipped compiler against the md5 in its
-own VERSION.txt and refuses to continue on a mismatch, so a pass is a statement
-about the published bytes rather than about a local rebuild.
+  LIMIT, stated plainly: qemu-user is an emulator.  It runs the real shipped
+  bytes and real ARM64 encodings, so codegen and RTL defects DO surface -- but
+  it is not a Raspberry Pi.  NOBODY HAS RUN THIS ON PHYSICAL ARM HARDWARE.
+  Cache behaviour, real kernel and libc versions and timing are outside what
+  this can show.  Do not quote a pass here as a hardware sign-off.
+  Re-runnable: sh dist/arm-runtime-proof.sh

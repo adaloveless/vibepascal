@@ -1,6 +1,6 @@
 # VibePascal v56 -- cross-platform status manifest
 # Cut by FPCDeveloper (Otto).  win64 + linux64 shipped 2026-09-10 (cy1106);
-# x86_64-darwin + aarch64-darwin shipped 2026-09-10 (cy1107).
+# x86_64-darwin, aarch64-darwin and aarch64-linux shipped 2026-09-10 (cy1107).
 # This file is the authoritative answer to "which platforms have v56".
 # Per-platform detail lives in dist/<target>/VERSION.txt and inside each tarball.
 
@@ -45,14 +45,24 @@ PLATFORMS CARRYING v56
                    ppca64 md5 e59dc3390af7b76b44eb49b38c8eda0e
                    -- RUNTIME: NEVER EXECUTED, same reason.
 
+  aarch64-linux/   vibepascal-v56-a187bbac34-aarch64-linux-bin.tar.gz
+                   md5 f8932c236acf0a7bf184146bc7a204ea
+                   ppca64 md5 96241cbc8871786eb790c3c068258e33
+                   -- RUNTIME: EXECUTED under qemu-user-static, and A/B'd
+                      against the published v55 binary in three modes (v55
+                      fails 27/18/18 checks, v56 passes 52/49/49) with the
+                      NativeInt, default-string and block-scope matrices all
+                      still passing.  qemu is not a Raspberry Pi: nobody has
+                      run this on physical ARM hardware.
+                      Re-runnable: sh dist/arm-runtime-proof.sh
+
   Both darwin binaries are also staged under dist/darwin-native/ in the layout
   build-release.sh:1137/1155 globs, so the next Lazarus Mac roll bundles v56.
   Those staging directories are UNTRACKED by convention (they mirror the
   tracked tarballs); a fresh clone recreates them from the tarballs above.
 
 STILL ON v55 OR OLDER
-  aarch64-linux and arm-linux carry v55; arm-linux-cross and i386-linux-cross
-  carry v54.  Each needs a cross rebuild from a187bbac34; tracked on the open
+  arm-linux carries v55; arm-linux-cross and i386-linux-cross carry v54.  Each needs a cross rebuild from a187bbac34; tracked on the open
   ledger row v55_fix_reaches_other_platforms.  The two -cross targets have no
   confirmed consumer (BuildMaster confirmed in writing they are not in his
   release path) and self-close 2026-10-01 if none appears.  Their packages are
