@@ -1,0 +1,52 @@
+VibePascal v54 -- arm-linux CROSS compiler -- runs on x86_64-linux, emits 32-bit arm-linux
+Source commit: b7d2d9676ecf1d7d8250cd460b9c48069920513e
+Compiler fix:  b9cb8fea875670cfc48f7d83b88d4af39a28aa6e
+Parent release: v53 (9e20efe4d6912fe6a9558c442ae4fa8d5dfe3045)
+Built: 2026-09-10 on x86_64-linux
+Binary: bin/ppcrossarm  md5 0138dae1259db05136d6fa7391a2a213
+
+ABI: ARMHF -- ARM EABI5, HARD float (VFP).  This is the ABI of Raspberry Pi OS
+32-bit and of Debian/Ubuntu armhf.  It is NOT compatible with an armel
+(soft-float) system.  The compiler reports "Target OS: Linux for ARMHF".
+An armel build is possible from the same source (the tree's own default is in
+fact armel, compiler/fpcdefs.inc:249), but this host has only armhf cross
+binutils, so armhf is what was built and verified.  Ask FPCDeveloper if you
+need the armel pair.
+
+UNITS ARE INCLUDED SEPARATELY and are REQUIRED.  arm-linux is a NEW platform for
+this fork -- unlike win64/aarch64/i386 there is no pre-existing unit set to
+reuse, so pair this binary with
+  vibepascal-v54-arm-linux-units.tar.gz
+and point the compiler at it (-Fu<prefix>/units/arm-linux, or an fpc.cfg).
+
+Change (same as the rest of v54): an untyped INTEGER initialiser for an inline
+var (and for an inferred `for var i := ...` counter) now infers NativeInt
+instead of the hard-coded LongInt.  On a 32-bit target such as this one
+NativeInt is 4 bytes -- and is the same type as LongInt -- so the visible effect
+of that half is simply that the width follows the target.  A string or char
+literal initialiser now infers exactly what a bare `string` denotes at that
+point; under -Mdelphiunicode/-Munleashed that is the wide string.
+
+VERIFIED (on the build host, x86_64-linux):
+  - The compiler and the full arm-linux RTL (99 units) build clean from the
+    v54 source commit, exit 0.
+  - tests/test/tinlinevarnativeint1.pp -- the 45-assertion v54 matrix -- COMPILES
+    and LINKS for arm-linux, producing a real ELF 32-bit ARM EABI5 executable.
+  - Compile-time self-check: SizeOf(NativeInt)=4 and SizeOf(Pointer)=4 on this
+    target ($if/$fatal probe, so a wrong width would fail the build).
+  - String inference proven with a working negative control: `var s := 'hello'`
+    under -Munleashed binds to a `var UnicodeString` parameter, and the same
+    probe against `var AnsiString` is REJECTED with
+    'Call by var for arg no. 1 has to match exactly: Got "UnicodeString"'.
+    So the inferred type really is the wide string, not merely assignable to it.
+  - NOT a discriminator, stated plainly: on 32-bit ARM NativeInt and LongInt are
+    the same type, so a var-parameter probe cannot tell the v54 rule from the
+    old one.  The 32-bit half of the directive was proven by EXECUTION on
+    i386-linux in v54, not here.
+
+RUNTIME: this cross compiler WAS EXECUTED on the build host -- it is what built
+the 99-unit arm-linux RTL and every arm executable listed above, so its own
+runtime behaviour is directly demonstrated.  What is NOT verified is the
+behaviour of the 32-bit ARM executables it emits: this host has no qemu and no
+ARM hardware, so those were format-verified (ELF 32-bit ARM EABI5) but never
+executed.

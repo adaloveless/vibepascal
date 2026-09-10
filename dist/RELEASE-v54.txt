@@ -43,14 +43,46 @@ PLATFORMS IN THIS RELEASE (compiler binaries, each built from the commit above)
                    -- a CROSS compiler: runs on x86_64-linux, emits 32-bit
                       i386-linux.  Included because it is what proves the
                       32-bit half of the directive (see below).
+  arm-linux/       vibepascal-v54-b7d2d9676e-arm-linux-bin.tar.gz
+                   md5 8d817f047628458edc043aed5111fc7f
+                   ppcarm md5 da6167de452b8dfdb4f57e33ffb8c733
+                   -- NATIVE 32-bit ARM compiler, ARMHF (EABI5 hard float:
+                      Raspberry Pi OS 32-bit, Debian/Ubuntu armhf).
+                   vibepascal-v54-arm-linux-units.tar.gz
+                   md5 bd4fa9afca17ed8d4595ddb1cafb9960
+                   -- 99-unit arm-linux RTL.  REQUIRED, and unlike every other
+                      platform it is NOT optional: arm-linux is new to this
+                      fork, so there is no pre-existing unit set to reuse.
+  arm-linux-cross/ vibepascal-v54-b7d2d9676e-arm-linux-cross-bin.tar.gz
+                   md5 092f346c1dc3e74481e7010584fe23b1
+                   ppcrossarm md5 0138dae1259db05136d6fa7391a2a213
+                   -- runs on x86_64-linux, emits 32-bit armhf.
 
 NOT IN THIS RELEASE
-  arm-linux (32-bit ARM).  ppcrossarm was lost before this cycle
-  (BACKLOG_arm_linux_recovery) and there is no arm-linux RTL in the tree, so
-  rebuilding it needs the target ABI decided first -- armv7 hardfloat vs
-  softfloat.  Guessing the ABI would ship a compiler that silently produces
-  wrong binaries, so it is deliberately omitted and left with BuildMaster
-  (Bruno) to specify.  Every other platform the tree can build is present.
+  Nothing.  Every platform this tree can build is present.
+
+  CORRECTION (2026-09-10, Otto).  The 2026-09-03 cut of this file said
+  arm-linux was deliberately omitted because "rebuilding it needs the target
+  ABI decided first -- armv7 hardfloat vs softfloat", and handed that decision
+  to BuildMaster.  That premise was wrong, and I never measured it before
+  writing it down.  On re-measuring:
+    - the arm cross compiler builds clean in 12 seconds and needs no ABI
+      decision at all, because the ABI is a build-time define of the compiler,
+      not a precondition for building one;
+    - the tree already HAS a default (compiler/fpcdefs.inc:249 defines
+      FPC_ARMEL when nothing else is set), so there was nothing to guess;
+    - the real and only blocker was mundane: the RTL makefile invokes the
+      unprefixed assembler name `arm-linux-as`, while this host has the
+      toolchain installed as `arm-linux-gnueabihf-as`.  Passing
+      BINUTILSPREFIX=arm-linux-gnueabihf- builds the whole 99-unit RTL clean.
+  armhf rather than armel was chosen by measurement, not preference: this host
+  carries an armhf cross toolchain and no armel one, and armhf is what
+  Raspberry Pi OS 32-bit runs.  An armel pair can be produced from the same
+  source on request.
+
+  This is the same mistake shape as the darwin note that the same cycle
+  disproved -- a "blocked on missing toolchain" claim recorded without ever
+  reading the actual error.
 
 VERIFICATION
   Performed on x86_64-linux against a baseline compiler built from the parent
@@ -78,10 +110,25 @@ VERIFICATION
     4 bytes in a 32-bit app against 8 in a 64-bit one, which is exactly what
     the directive asked for.  The string matrix likewise passes 20/20 on i386.
 
-  NOT VERIFIED: runtime behaviour on win64, aarch64-linux, or either darwin.
-  This build host is x86_64-linux with no wine and no qemu, so those four
+  - arm-linux (added 2026-09-10): compiler + 99-unit RTL build clean from this
+    same commit; tinlinevarnativeint1.pp COMPILES and LINKS to a real ELF
+    32-bit ARM EABI5 executable; a $if/$fatal probe proves SizeOf(NativeInt)=4
+    and SizeOf(Pointer)=4 on the target; and `var s := 'hello'` under
+    -Munleashed binds to a `var UnicodeString` parameter while the same probe
+    against `var AnsiString` is REJECTED -- a working negative control, so the
+    inferred type really is the wide string.  Stated plainly: on 32-bit ARM
+    NativeInt and LongInt are the SAME type, so no var-parameter probe can
+    distinguish the v54 integer rule there; the 32-bit half of the directive
+    was proven by execution on i386-linux, not on arm.  Finally the two
+    SHIPPED tarballs were extracted fresh and used together to build an ARM
+    executable end to end, so the published pair is self-consistent.
+
+  NOT VERIFIED: runtime behaviour on win64, aarch64-linux, either darwin,
+  or arm-linux.
+  This build host is x86_64-linux with no wine and no qemu, so those five
   binaries are format-verified (PE32+ / ELF aarch64 / Mach-O x86_64 / Mach-O
-  arm64) and were cross-built from the identical source, but never executed.
+  arm64 / ELF 32-bit ARM EABI5) and were cross-built from the identical
+  source, but never executed.
   First runtime proof for Windows is the auto-update.bat smoke.
 
 COMPATIBILITY
