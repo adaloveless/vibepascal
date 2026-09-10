@@ -97,6 +97,27 @@ interface
        so any divergence here reintroduces the bug it is meant to fix. }
     function get_default_stringdef : tdef;
 
+    {# Returns the type an un-annotated inline variable infers from a REAL
+       CONSTANT initialiser: the default real type, Double (s64real).  Nil on
+       a target built without FPU types (psystem.create_fpu_types leaves
+       s64floattype nil when fputype=fpu_none), in which case the caller must
+       leave the constant's own type alone. }
+    function get_default_realdef : tdef;
+
+    {# Returns true when def is a genuine floating point type OTHER than the
+       default real type - i.e. one an inferred real constant should be moved
+       off, in either direction.  Currency and Comp are excluded: both are
+       floatdefs on some targets (i386) yet hold scaled integers, not real
+       approximations, so widening them would change their meaning. }
+    function is_non_default_realdef(def : tdef) : boolean;
+
+    {# Returns true when v survives in the default real type, i.e. does not
+       become an infinity and does not collapse to zero.  Precision DIGITS
+       may be lost - that is what asking for a Double means - but RANGE may
+       not be, so 1.0e400 and 1.0e-4000 keep the wider type they were given
+       rather than silently turning into +Inf or 0. }
+    function real_fits_default_realdef(v : bestreal) : boolean;
+
     {# Returns true if definition is a boolean }
     function is_boolean(def : tdef) : boolean;
 
@@ -760,6 +781,61 @@ implementation
           end
         else
           result:=cshortstringtype;
+      end;
+
+
+    { the default real type to infer from a real constant; see the interface }
+    function get_default_realdef : tdef;
+      begin
+        { Double, not pbestrealtype^: Extended is an x87-only 80-bit type that
+          costs a slow FPU path everywhere else, and Delphi on the 64-bit
+          targets we ship makes Extended an alias of Double anyway
+          (Policy #24 - Delphi compatible, Windows first).
+          Nil when the target was built with fputype=fpu_none. }
+        result:=s64floattype;
+      end;
+
+
+    { true if def is a real type other than the default real type }
+    function is_non_default_realdef(def : tdef) : boolean;
+      var
+        defaultdef : tdef;
+      begin
+        result:=false;
+        defaultdef:=get_default_realdef;
+        if not(assigned(def)) or not(assigned(defaultdef)) then
+          exit;
+        if def.typ<>floatdef then
+          exit;
+        { currency and comp are floatdefs on i386 but hold scaled integers,
+          not real approximations - moving them would change their meaning }
+        if is_currency(def) or is_fpucomp(def) then
+          exit;
+        { compare the float KIND, not the def pointer: a target may hand out
+          more than one def for the same IEEE format }
+        result:=tfloatdef(def).floattype<>tfloatdef(defaultdef).floattype;
+      end;
+
+
+    { true if v keeps its magnitude in the default real type }
+    function real_fits_default_realdef(v : bestreal) : boolean;
+      const
+        { IEEE-754 binary64 limits: largest finite value, and smallest
+          positive subnormal.  s64floattype is binary64 on every target we
+          build, so these do not vary with the target. }
+        max_binary64 = 1.7976931348623157e308;
+        min_binary64_subnormal = 4.9406564584124654e-324;
+      var
+        a : bestreal;
+      begin
+        if v=0 then
+          begin
+            result:=true;
+            exit;
+          end;
+        a:=abs(v);
+        { a NaN fails both comparisons, which is the answer we want here }
+        result:=(a<=max_binary64) and (a>=min_binary64_subnormal);
       end;
 
 
