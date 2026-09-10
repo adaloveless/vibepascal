@@ -5196,11 +5196,28 @@ begin
         inputfilename:=ChangeFileExt(inputfilename,pext);
     end;
 
-  { Check output dir }
+  { Create the output dirs. -FE (exe/link output) and -FU (unit/object output)
+    name where the COMPILER writes, not where the user already put something,
+    so a missing one is a chore for us to do rather than an error to hand back.
+    The shipped win64 bin/fpc.cfg carries -FU./units/$FPCTARGET, which cannot
+    exist in a fresh working directory, and the first compile there died with
+    "Can't create object file: .\units\x86_64-win64\hello.o (error code: 3)"
+    out of owbase.pas -- a diagnostic that silently made the user go mkdir by
+    hand. Only report the path when we have actually TRIED and FAILED to create
+    it, so a genuinely impossible path (bad drive, no write permission) still
+    stops option processing with the same message as before. }
   if (OutputExeDir<>'') and
-     not PathExists(OutputExeDir,false) then
+     not PathExists(OutputExeDir,false) and
+     not ForceDirectories(OutputExeDir) then
     begin
       Message1(general_e_path_does_not_exist,OutputExeDir);
+      StopOptions(1);
+    end;
+  if (OutputUnitDir<>'') and
+     not PathExists(OutputUnitDir,false) and
+     not ForceDirectories(OutputUnitDir) then
+    begin
+      Message1(general_e_path_does_not_exist,OutputUnitDir);
       StopOptions(1);
     end;
 
