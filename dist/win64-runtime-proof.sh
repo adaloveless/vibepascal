@@ -41,7 +41,7 @@ say "stage 0: unpack the PUBLISHED tarballs and hash-check the compiler"
 BIN=$(sed -n 's/^versioned_tarball: *//p' "$VP/dist/win64/LATEST.txt")
 UNITS=$(sed -n 's/^units_tarball: *//p'    "$VP/dist/win64/LATEST.txt")
 WANT=$(sed -n 's/^ppcx64_exe_md5: *//p'    "$VP/dist/win64/LATEST.txt")
-rm -rf "$W"; mkdir -p "$W/vp" "$W/build/units/x86_64-win64"
+rm -rf "$W"; mkdir -p "$W/vp" "$W/build"
 tar xzf "$VP/dist/win64/$BIN"   -C "$W/vp"
 tar xzf "$VP/dist/win64/$UNITS" -C "$W/vp"
 PPC="$W/vp/bin/ppcx64.exe"
@@ -60,9 +60,11 @@ ck "-iD matches LATEST.txt date" "$($WINE "$PPC" -iD 2>/dev/null | tr -d '\r\n')
 echo "  info: -iV = $($WINE "$PPC" -iV 2>/dev/null | tr -d '\r\n')"
 
 say "stage 2: it COMPILES and internally links, and the product RUNS"
-# NOTE: bin/fpc.cfg ends with -FU./units/$FPCTARGET and the compiler does not
-# create that directory -- hence the mkdir above.  Dist usability bug, not a
-# compiler bug; documented in dist/win64/staging-v54/VERSION.txt.
+# There is deliberately NO mkdir of ./units/$FPCTARGET here.  bin/fpc.cfg ends
+# with -FU./units/$FPCTARGET, and up to v54 the compiler did not create that
+# directory, so this very step used to need a hand-made mkdir to get going.
+# v55 creates it; stage 2b below asserts that, so if the fix ever regresses
+# this script fails here rather than quietly papering over it.
 cp "$VP/tests/test/tinlinevarnativeint1.pp" "$VP/tests/test/vp_win64_smoke.pp" "$W/build/"
 cd "$W/build"
 for mode in -Munleashed -Mdelphiunicode; do
@@ -73,6 +75,40 @@ done
 $WINE "$PPC" -Munleashed vp_win64_smoke.pp >/dev/null 2>&1
 $WINE ./vp_win64_smoke.exe >/dev/null 2>&1 && rc=0 || rc=$?
 ck "vp_win64_smoke exit code" "$rc" "0"
+
+say "stage 2b: a FRESH directory needs no mkdir (the v55 -FU fix)"
+# The v54-and-earlier failure this replaced, verbatim:
+#   hello.pas(4,1) Error: Can't create object file: .\units\x86_64-win64\hello.o (error code: 3)
+#   hello.pas(4,1) Fatal: Can't create object .\units\x86_64-win64\hello.o
+# Anchored on a directory that has never existed, with the SHIPPED fpc.cfg.
+mkdir -p "$W/fresh"
+cat > "$W/fresh/hello.pas" <<'PAS'
+program hello;
+begin
+  writeln('hello from vibepascal');
+end.
+PAS
+( cd "$W/fresh" && $WINE "$PPC" hello.pas ) >"$W/fresh/compile.log" 2>&1 && frc=0 || frc=$?
+ck "fresh-dir compile exit code" "$frc" "0"
+[ -f "$W/fresh/units/x86_64-win64/hello.o" ] && got=yes || got=no
+ck "compiler created units/x86_64-win64" "$got" "yes"
+ck "fresh-dir exe output" "$($WINE "$W/fresh/hello.exe" 2>/dev/null | tr -d '\r\n')" "hello from vibepascal"
+
+# Negative control for THIS stage: the preserved pre-fix v54 compiler must
+# still fail in the same directory shape, or the stage above proves nothing.
+PRE=$HOME/src/vibepascal-slices/cy1102_outputdir/ppcx64.exe.pre-outputdir-v54
+if [ ! -f "$PRE" ]; then
+  echo "  SKIP pre-v55 -FU control -- needs the preserved v54 exe at"
+  echo "       $PRE (lazdev-local)"
+else
+  cp "$PRE" "$W/vp/bin/ppcx64.pre.exe"
+  mkdir -p "$W/freshctl"; cp "$W/fresh/hello.pas" "$W/freshctl/"
+  ( cd "$W/freshctl" && $WINE "$W/vp/bin/ppcx64.pre.exe" hello.pas ) \
+      >"$W/freshctl/compile.log" 2>&1 && crc2=0 || crc2=$?
+  ck "pre-v55 control fresh-dir exit code" "$crc2" "1"
+  if grep -q "Can't create object file" "$W/freshctl/compile.log"; then got=yes; else got=no; fi
+  ck "pre-v55 control failed for the -FU reason" "$got" "yes"
+fi
 
 say "stage 3: negative control -- the harness must be able to FAIL"
 # Same source, cross-built by the preserved pre-v54 compiler.  If this exits 0

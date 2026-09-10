@@ -1,0 +1,111 @@
+VibePascal v55 Win64 compiler -- a missing -FU/-FE output directory is created,
+not complained about
+Source commit: eae5d3e919a26a7db19937da10da1c8b610b17da
+Compiler fix:  4d10b26fe7  (compiler/options.pas)
+Parent release: v54 (b7d2d9676ecf1d7d8250cd460b9c48069920513e)
+Built: 2026-09-10, cross-compiled Linux x86_64 -> Win64 (-Apecoff -Xi) from the
+       self-hosted Linux compiler 19f526bd6be0ec63fca96c4d1b77e19d
+ppcx64.exe md5:    30D80F9225B7356869BB2639797D1045
+ppcx64.exe sha256: 4B9BA08C12612D6C0679445332F74153686E53831D9D0E60F9017C3A662F5C8B
+
+WHAT WAS BROKEN
+---------------
+Unpacking this tarball and compiling anything in a fresh directory failed on
+the FIRST build, before you had written a line of your own code:
+
+    hello.pas(4,1) Error: Can't create object file: .\units\x86_64-win64\hello.o (error code: 3)
+    hello.pas(4,1) Fatal: Can't create object .\units\x86_64-win64\hello.o
+    Fatal: Compilation aborted
+
+Nothing you did caused it. bin/fpc.cfg carries "-FU./units/$FPCTARGET", the
+compiler had never created that directory, and the diagnostic named a FILE
+rather than the directory -- so the cure (mkdir units\x86_64-win64) was not
+discoverable from the message. Anyone who unpacked v54 or earlier and typed
+one compile command hit this. Everyone installing through auto-update.bat was
+immune, because that path passes -n and suppresses this config entirely.
+
+Extracting the units tarball did NOT help, and it is worth saying why: the two
+kinds of path in fpc.cfg are anchored differently.
+
+    -Fu$FPCBINDIR/../units/$FPCTARGET   SEARCH  -- relative to the COMPILER
+    -FU./units/$FPCTARGET               OUTPUT  -- relative to YOUR directory
+
+Search resolves into the install tree; output resolves wherever you happen to
+be standing. BuildMaster measured this on the published v54 bytes with all
+1803 v52 PPUs present in the install tree and it still failed identically. No
+tarball and no installer mkdir can satisfy an output path that follows the
+user around, which is why this had to be fixed in the compiler.
+
+WHAT CHANGED
+------------
+-FE (exe/link output) and -FU (unit/object output) name where the COMPILER
+writes, not where you already put something, so a missing one is a chore for
+the compiler rather than an error to hand back. Both are now created up front,
+recursively.
+
+The existing "Path ... does not exist" error is still reported -- but only
+after creation has actually been TRIED and FAILED. So a genuinely impossible
+path (a component that is a plain file, a read-only parent, a bad drive) still
+stops the build, with the same message, and now it arrives during option
+processing and names the DIRECTORY instead of surfacing later as a codegen
+"error code: 3" on a file.
+
+One behaviour change to be aware of: -FE on a missing directory used to be an
+error and now creates the directory. -FU never had that diagnostic at all.
+
+bin/fpc.cfg is UNCHANGED in substance -- "-FU./units/$FPCTARGET" is still
+there, deliberately. It now does what it always meant: your .o/.ppu land in
+./units/x86_64-win64 and that directory appears if it is missing. Deleting the
+line would also have made compiles work, but it would have scattered .o/.ppu
+next to your sources instead, which is a worse default and a change nobody
+asked for. (The comment block in that file was rewritten to drop a stale
+"v32-rc" version literal; ask the compiler with `ppcx64 -iV` instead.)
+
+Distribution requirements:
+- COMPILER-BINARY-ONLY refresh on top of v54. Only compiler/options.pas
+  changed. No PPU format change, no RTL change, no package change.
+- Pair with vibepascal-v52-win64-units.tar.gz (the v52 1803-PPU unit set,
+  still current -- v53, v54 and v55 are all binary-only refreshes on it).
+  Existing v52/v53/v54 unit installs stay valid and do NOT need re-pulling.
+- Install through C:\Lazarus\auto-update.bat.
+
+VALIDATION
+----------
+Linux, on isolated A/B compilers built from the same tree (the production
+ppcx64 and its units were never touched by these runs):
+- 11-corner -FU/-FE matrix: -FU relative one level missing, -FU relative three
+  levels missing, -FU absolute missing, -FE missing, -FU and -FE missing
+  together, -FU on an existing directory, no -FU/-FE at all, -FU under a plain
+  FILE, -FU under a read-only parent, a UNIT compile writing both .ppu and .o
+  into a missing -FU, and the shipped "-FU./units/$FPCTARGET" config-file
+  shape read through @cfg. Baseline 4/11 -> fixed 11/11. Every corner that is
+  supposed to succeed had its produced binary RUN, not merely linked; the two
+  corners that must still refuse still exit non-zero with no internal error.
+- Full corpus tests/test t*.pp, 1981 tests, compile status + run exit code
+  compared between baseline and fixed compilers: 1981 SAME, 0 DIFF.
+- Pre-fix control: the SHIPPED v54 Linux compiler (eb57aa4d) was re-run
+  through the same matrix this cycle and still fails 7 of 11, so the matrix
+  can fail and the comparison means something.
+- Self-host fixpoint: stage3 == stage4 byte-identical
+  (19f526bd6be0ec63fca96c4d1b77e19d). The stage2->stage3 delta was exactly two
+  bytes -- the producing compiler's own embedded build-date stamp, 2026/09/03
+  carried in by an incremental stage1 versus 2026/09/10 from the first clean
+  build -- not a codegen difference.
+- vp_win64_smoke RESULT: PASS and tinlinevarnativeint1 checks=45 fails=0 under
+  -Munleashed on the self-hosted Linux compiler.
+
+Win64, running THESE bytes under wine64 (see dist/win64-runtime-proof.sh):
+- Fresh directory, shipped bin/fpc.cfg, NO mkdir: exit 0, the compiler created
+  units\x86_64-win64\hello.o, produced hello.exe, and hello.exe RAN.
+- Negative control, same directory shape, the preserved pre-fix v54 exe
+  (293f3c98a26ff3233d88550259ba8b1f): exit 1 with exactly the two error lines
+  quoted at the top of this file, and no output produced. The A/B is on the
+  real PE bytes, not a rebuild.
+- No semantic drift: tinlinevarnativeint1 reports "checks=45 fails=0
+  NativeInt=8" under BOTH -Munleashed and -Mdelphiunicode, and
+  tests/test/vp_win64_smoke.pp exits 0 with RESULT: PASS.
+
+LIMIT, stated plainly: wine is NOT Windows. It runs the real shipped PE bytes
+and real x86-64 instructions on an independent reimplementation of the Win64
+API, so codegen, PE layout and RTL-startup defects do surface -- but nobody
+has yet run this compiler on genuine Windows hardware. That ask is still open.
