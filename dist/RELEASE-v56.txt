@@ -117,3 +117,36 @@ IF YOU VERIFY A DARWIN COMPILER AND THE HASH DOES NOT MATCH, READ THIS FIRST
   identifier. Signing is deterministic and idempotent, so a correct procedure is
   repeatable: copy the staged binary to a scratch dir UNDER ITS SHIPPED NAME,
   sign that, compare to the archive member.
+
+ADDENDUM 2026-09-10 23:55 UTC (cy1111) -- WHAT THE PUBLISHED MAC DOWNLOADS
+ACTUALLY CARRY.  Nothing above is retracted; this adds a fact that was asserted
+one cycle earlier from the wrong file.
+
+  BOTH darwin assets on Lazarus release lazarus-4.99-vp-20260818-r25 carry the
+  v55 compiler (eae5d3e919), NOT v56:
+    lazarus-4.99-vp-x86_64-darwin-20260910.tar.gz   uploaded 19:29:36Z
+      ppcx64  8577936 B  md5 3f10e570fcad85205276ce7fd3ce52c5
+    lazarus-4.99-vp-aarch64-darwin-20260910.tar.gz  uploaded 19:35:09Z
+      ppca64  6577504 B  md5 7b10d89baa198e0da715097eb1c34c00
+  Both were identified positively, not by elimination: the v55 STAGED binary
+  ad-hoc signed under the shipped filename reproduces each digest byte for byte,
+  while the v56 candidate is an explicit non-match in the same run.
+
+  It is sequencing, exactly as recorded for x86_64 on 2026-09-09: the v56 aarch64
+  binary was not linked until 19:54 and its staging dir not complete until
+  20:12, and the aarch64 asset went up at 19:35.  Nothing picked wrong and no
+  code needs changing.  A LOCAL aarch64 tarball built at 20:31 (350146463 B)
+  DOES carry v56 (ppca64 7338576 / 65d9531e..) but was never uploaded; the
+  published asset is 350092426 B.
+
+  THE MISTAKE THIS CORRECTS, so it is not repeated: the 2026-09-09 check read
+  the compiler out of ~/src/lazarus/releases/<same name>.tar.gz and concluded
+  the Apple Silicon bundle shipped v56.  A releases directory is a STAGING
+  directory -- the newest local file with a name is not the file with that name
+  on the release.  dist/published-compiler-check.sh now does this from the
+  published bytes and prints the asset's upload time next to the staging times.
+
+  NOTHING PUBLISHED IS MIS-STATED BY THIS.  The release body says verbatim that
+  it bundles a native VibePascal v55 compiler, source eae5d3e919, and the
+  published SHA256SUMS match the published assets on both arches.  A re-roll is
+  a scheduling call, not a correction.
