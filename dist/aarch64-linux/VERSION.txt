@@ -1,50 +1,74 @@
-VibePascal v54 -- aarch64-linux native compiler (runs on ARM64 Linux, e.g. Raspberry Pi 64-bit)
-Source commit: b7d2d9676ecf1d7d8250cd460b9c48069920513e
-Compiler fix:  b9cb8fea875670cfc48f7d83b88d4af39a28aa6e
-Parent release: v53 (9e20efe4d6912fe6a9558c442ae4fa8d5dfe3045)
-Built: 2026-09-03 on x86_64-linux
-Binary: bin/ppca64  md5 5cc202e1ee758321f9fba15aa7fb8ba8
+VibePascal v55 -- aarch64-linux native compiler (runs on ARM64 Linux, e.g. a
+64-bit Raspberry Pi).  -FU/-FE output directories are created instead of
+aborting the build.
+Source commit: eae5d3e919 (merge of fix/output-dir-autocreate)
+Compiler fix:  4d10b26fe772dfbd4992cbeb53f09028f7dfee4f
+Parent release: v54 (b7d2d9676ecf1d7d8250cd460b9c48069920513e)
+Built: 2026-09-10, cross-built on x86_64-linux via compiler/ppcrossa64
+Binary: bin/ppca64  md5 7a41c2c459ebe303ecf47907d9e13f74
 
-Change: an untyped INTEGER initialiser for an inline var (and for an inferred
-`for var i := ...` counter) now infers NativeInt instead of the hard-coded
-LongInt -- pointer width, so 8 bytes on a 64-bit target and 4 on a 32-bit one.
-A string/char literal initialiser now infers exactly what a bare `string`
-denotes at that point (wide under -Mdelphiunicode/-Munleashed; ShortString
-under $H-, which earlier releases got wrong).  Only types narrower than
-NativeInt are widened, so Int64/QWord keep their width; explicit typecasts
-such as byte(10) are never promoted.
+COMPILER BINARY ONLY.  Only compiler/options.pas changed between v54 and v55:
+no RTL change, no package change, no PPU format change.  An existing v54 (or
+v53/v52) aarch64-linux unit set stays valid, and the utility binaries are
+unchanged and not re-shipped.
 
-COMPILER BINARY ONLY.  Nothing in the RTL, the packages or the PPU format
-changed between v53 and v54, so an existing unit set for this platform stays
-valid.  Full change + validation record: dist/win64/staging-v54/VERSION.txt.
+WHY THIS EXISTS
+  -FE and -FU name where the COMPILER writes.  Up to and including v54 a
+  missing one was an error: -FE reported 'Path "x/" does not exist' during
+  option processing, and -FU failed later and far more obscurely at object
+  write time ("Can't create assembler file: x/hello.s").  In both cases the
+  compiler knew the path and made the user run mkdir.  v55 creates both
+  directories up front, recursively.
 
-RUNTIME VERIFIED UNDER EMULATION (2026-09-10, corrects the original v54 text).
-The original note here said this binary "has never been executed".  That is no
-longer true.  qemu-user-static was not installed on the build host; it is a
-stock Ubuntu package and installing it was one command.  Measured:
+  The fix shipped to Win64 first (2026-09-10) because that is where it was
+  reported -- the Win64 package's bin/fpc.cfg carries -FU./units/$FPCTARGET,
+  so the first compile after unpacking failed before the user had written a
+  line of their own code.  Nothing about the behaviour was Windows-specific.
+  This build carries the same fix to aarch64-linux.
 
-  - bin/ppca64 RUNS on aarch64.  `ppca64 -iV` -> 3.3.1, exit 0.  Statically
-    linked, so no aarch64 sysroot is needed to start it.
-  - It COMPILES and its output RUNS.  Against rtl/units/aarch64-linux from the
-    same source commit (host cross binutils via -XPaarch64-linux-gnu-), the
-    emulated ppca64 built tests/test/tinlinevarnativeint1.pp and the resulting
-    aarch64 executable ran: checks=45 fails=0, NativeInt=8, VERDICT:PASS.
-  - The full cy1096 block-scope finalization matrix (330 lines, 22 control-flow
-    corners) also compiled and ran here: MATRIX PASS, every corner released
-    exactly once.
+  One behaviour change: -FE on a missing directory used to error and now
+  creates it.  An IMPOSSIBLE path still stops the build with the same
+  general_e_path_does_not_exist message -- it is now reported only after
+  creation has been TRIED and FAILED, so it arrives early and names the
+  directory rather than surfacing later as an assembler-file error.
 
-Together with the arm-linux result (NativeInt=4 on 32-bit ARM) this is the
-first execution proof of BOTH halves of directive mtkt2shb on real ARM
-instruction sets: pointer-width on a 64-bit target, 32-bit on a 32-bit target.
+VERIFIED ON THIS TARGET, UNDER EMULATION (qemu-user, 2026-09-10)
+  A/B against the PUBLISHED pre-fix v54 aarch64 binary (md5
+  5cc202e1ee758321f9fba15aa7fb8ba8, preserved from dist and re-run this
+  cycle), same source, same options, same fresh directory, varying ONLY the
+  compiler.  11 corners; every "must compile" corner had its emitted aarch64
+  binary EXECUTED under qemu and required to print 42, not merely link:
 
-WHAT THIS IS NOT: qemu-user is an emulator, not aarch64 hardware.  It runs the
-real shipped bytes and real aarch64 encodings, so codegen and RTL defects show
-up -- but it is not a sign-off on physical silicon, and nobody has run these
-artifacts on an actual aarch64 machine yet.
+    -FU one level deep .............. v54 fail (Can't create assembler file)  v55 pass
+    -FU three levels deep ........... v54 fail                                v55 pass
+    -FE relative .................... v54 fail (Path "od2/" does not exist)   v55 pass
+    -FU and -FE together ............ v54 fail                                v55 pass
+    -FU absolute .................... v54 fail                                v55 pass
+    -FU units/sub ................... v54 fail                                v55 pass
+    -FU on an EXISTING dir .......... v54 pass                                v55 pass
+    no -FU/-FE at all ............... v54 pass                                v55 pass
+    an fpc.cfg carrying
+      -FU./units/$FPCTARGET ......... v54 fail (./units/aarch64-linux/)       v55 pass
+    -FU under a PLAIN FILE .......... v54 refuse (1)                          v55 refuse (1)
+    -FU under a READ-ONLY dir ....... v54 refuse (1)                          v55 refuse (1)
 
-REPRODUCE IT YOURSELF: dist/arm-runtime-proof.sh re-runs every claim above from
-a clean checkout (installs nothing; it tells you which two packages it needs).
-It hash-checks each shipped compiler against the md5 in its own VERSION.txt and
-refuses to continue on a mismatch, so a pass is a statement about the published
-bytes, not about a local rebuild.
+  BASELINE 4/11, FIXED 11/11.  The two must-refuse corners still refuse with a
+  non-zero exit and no internal error on both compilers, so the check can
+  still fail -- an all-pass harness would prove nothing.  Identical shape to
+  the x86_64 result the fix commit records (4/11 -> 11/11).
 
+  No semantic regression: tinlinevarnativeint1 (checks=45 fails=0,
+  NativeInt=8) and the cy1096 block-scope finalization matrix (all corners
+  released exactly once) were compiled AND run under qemu by BOTH the v54 and
+  the v55 binary with byte-identical verdicts.
+
+WHAT THIS IS NOT
+  qemu-user is an emulator, not aarch64 hardware.  It runs the real shipped
+  bytes and real aarch64 instruction encodings, so codegen and RTL defects do
+  surface -- but nobody has yet run any VibePascal ARM artifact on physical
+  ARM silicon, and this release does not change that.
+
+REPRODUCE IT: dist/arm-runtime-proof.sh re-runs the published-byte checks from
+a clean checkout.  It hash-checks each shipped compiler against the md5 in its
+own VERSION.txt and refuses to continue on a mismatch, so a pass is a statement
+about the published bytes rather than about a local rebuild.
