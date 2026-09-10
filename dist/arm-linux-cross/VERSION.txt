@@ -41,12 +41,19 @@ VERIFIED (on the build host, x86_64-linux):
     So the inferred type really is the wide string, not merely assignable to it.
   - NOT a discriminator, stated plainly: on 32-bit ARM NativeInt and LongInt are
     the same type, so a var-parameter probe cannot tell the v54 rule from the
-    old one.  The 32-bit half of the directive was proven by EXECUTION on
-    i386-linux in v54, not here.
+    old one.  (Superseded below: the 32-bit half is now proven by execution on
+    a 32-bit ARM target itself, under qemu-user, not only on i386-linux.)
 
 RUNTIME: this cross compiler WAS EXECUTED on the build host -- it is what built
 the 99-unit arm-linux RTL and every arm executable listed above, so its own
-runtime behaviour is directly demonstrated.  What is NOT verified is the
-behaviour of the 32-bit ARM executables it emits: this host has no qemu and no
-ARM hardware, so those were format-verified (ELF 32-bit ARM EABI5) but never
-executed.
+runtime behaviour is directly demonstrated.
+
+UPDATE 2026-09-10 -- the ARM executables it emits now RUN too, correcting the
+original text here.  That text claimed "this host has no qemu"; qemu-user-static
+was simply not installed, and it is a stock Ubuntu package one command away.
+With it, the arm output of this cross compiler executes: the 45-assertion v54
+matrix reports checks=45 fails=0, NativeInt=4, VERDICT:PASS, exit 0, and the
+330-line cy1096 block-scope finalization matrix reports MATRIX PASS with every
+corner released exactly once.  See dist/arm-linux/VERSION.txt for the full
+evidence list and for the limits of emulation -- qemu-user is not a Raspberry
+Pi, and nobody has run these artifacts on physical ARM hardware yet.

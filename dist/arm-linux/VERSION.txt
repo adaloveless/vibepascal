@@ -41,10 +41,44 @@ VERIFIED (on the build host, x86_64-linux):
     So the inferred type really is the wide string, not merely assignable to it.
   - NOT a discriminator, stated plainly: on 32-bit ARM NativeInt and LongInt are
     the same type, so a var-parameter probe cannot tell the v54 rule from the
-    old one.  The 32-bit half of the directive was proven by EXECUTION on
-    i386-linux in v54, not here.
+    old one.  (Superseded below: the 32-bit half is now proven by execution on
+    a 32-bit ARM target itself, under qemu-user, not only on i386-linux.)
 
-RUNTIME NOT VERIFIED ON THIS PLATFORM.  The build host is x86_64-linux with no
-qemu, so this binary and the executables it produces were never executed.  They
-are format-verified (ELF 32-bit ARM EABI5) and built from the identical source
-commit as every other v54 artifact.
+RUNTIME VERIFIED UNDER EMULATION (2026-09-10, corrects the original v54 text).
+The original note here said this host "has no qemu" and that nothing had ever
+been executed.  That was wrong: qemu-user-static was simply not installed.  It
+is a stock Ubuntu package, it installed in one command, and with it the whole
+arm-linux pair EXECUTES.  Measured, not inferred:
+
+  - bin/ppcarm RUNS on ARM.  `ppcarm -iV` -> 3.3.1, `-iTP` -> arm, `-iTO` ->
+    linux, exit 0.  It is statically linked, so it needs no ARM sysroot at all.
+  - It COMPILES with the shipped unit set and its output RUNS.  The emulated
+    ppcarm built and linked a program against units/arm-linux (host cross
+    binutils via -XParm-linux-gnueabihf-) and the resulting ARM executable ran
+    and printed the correct 32-bit answer.
+  - tests/test/tinlinevarnativeint1.pp -- the 45-assertion v54 matrix -- was
+    COMPILED BY THIS COMPILER ON ARM AND RUN: checks=45 fails=0, NativeInt=4,
+    VERDICT:PASS, exit 0.  The 32-bit half of directive mtkt2shb is now proven
+    by execution ON A 32-BIT ARM TARGET, not only by inference from i386.
+  - tinlinevarstrinfer1: checks=20 fails=0, PASS.  tinlinevar1/4/delphi and
+    tblockscopefinal1: compiled and ran, exit 0.  tinlinevar2 and tinlinevar3
+    are { %FAIL } tests and were correctly REJECTED at compile time -- so the
+    block-scoping rule is enforced on ARM too, not just accepted.
+  - The full cy1096 block-scope finalization matrix (330 lines, 22 corners
+    across exception unwind / exit / goto / loop re-entry / break+continue /
+    nested + unentered blocks / with-block / aliasing) ran on ARM: MATRIX PASS,
+    every corner released EXACTLY ONCE.
+
+WHAT THIS IS NOT: qemu-user is an emulator, not a Raspberry Pi.  It exercises
+real ARM instruction encodings, the real EABI5 hard-float ABI and the real
+shipped bytes, so codegen and RTL bugs surface -- but silicon-specific issues
+(cache/coherency, real kernel/libc versions, timing) are outside what it can
+show.  No one has yet run these artifacts on physical ARM hardware.  Treat this
+as strong evidence, not as a hardware sign-off.
+
+REPRODUCE IT YOURSELF: dist/arm-runtime-proof.sh re-runs every claim above from
+a clean checkout (installs nothing; it tells you which two packages it needs).
+It hash-checks each shipped compiler against the md5 in its own VERSION.txt and
+refuses to continue on a mismatch, so a pass is a statement about the published
+bytes, not about a local rebuild.
+

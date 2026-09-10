@@ -119,16 +119,40 @@ VERIFICATION
     inferred type really is the wide string.  Stated plainly: on 32-bit ARM
     NativeInt and LongInt are the SAME type, so no var-parameter probe can
     distinguish the v54 integer rule there; the 32-bit half of the directive
-    was proven by execution on i386-linux, not on arm.  Finally the two
+    was proven by execution on i386-linux -- and, as of 2026-09-10, on arm
+    itself under qemu-user (NativeInt=4, 45/45).  Finally the two
     SHIPPED tarballs were extracted fresh and used together to build an ARM
     executable end to end, so the published pair is self-consistent.
 
-  NOT VERIFIED: runtime behaviour on win64, aarch64-linux, either darwin,
-  or arm-linux.
-  This build host is x86_64-linux with no wine and no qemu, so those five
-  binaries are format-verified (PE32+ / ELF aarch64 / Mach-O x86_64 / Mach-O
-  arm64 / ELF 32-bit ARM EABI5) and were cross-built from the identical
-  source, but never executed.
+  RUNTIME UPDATE 2026-09-10 -- arm-linux and aarch64-linux are no longer
+  unexecuted.  The original note below said this host has "no qemu"; that was
+  an unchecked assumption, not a fact.  qemu-user-static is a stock Ubuntu
+  package, it installed in one command, and both ARM compilers then ran:
+    - ppcarm  (32-bit ARM, ARMHF): -iV ok; compiled the v54 45-assertion matrix
+      with the shipped unit set and RAN it -- checks=45 fails=0, NativeInt=4,
+      PASS; the 330-line cy1096 block-scope matrix also PASSED, every corner
+      released exactly once; the two { %FAIL } scope tests were correctly
+      rejected at compile time.
+    - ppca64  (aarch64): -iV ok; same two matrices compiled and RAN --
+      NativeInt=8, 45/45 PASS, and block-scope MATRIX PASS.
+  So BOTH halves of directive mtkt2shb are now proven by execution on real ARM
+  instruction sets: 4 bytes on the 32-bit target, 8 on the 64-bit one.
+  Caveat stated plainly: qemu-user is an emulator.  It runs the real shipped
+  bytes and real ARM encodings, so codegen and RTL defects surface, but it is
+  not a sign-off on physical silicon and no one has run these on real ARM
+  hardware yet.
+
+REPRODUCE IT YOURSELF: dist/arm-runtime-proof.sh re-runs every claim above from
+a clean checkout (installs nothing; it tells you which two packages it needs).
+It hash-checks each shipped compiler against the md5 in its own VERSION.txt and
+refuses to continue on a mismatch, so a pass is a statement about the published
+bytes, not about a local rebuild.
+
+
+  STILL NOT VERIFIED: runtime behaviour on win64 and on either darwin.
+  This build host is x86_64-linux with no wine and no macOS, so those three
+  binaries are format-verified (PE32+ / Mach-O x86_64 / Mach-O arm64) and were
+  cross-built from the identical source, but never executed.
   First runtime proof for Windows is the auto-update.bat smoke.
 
 COMPATIBILITY
