@@ -121,6 +121,29 @@ PLATFORMS CARRYING v58
                    -- SIGNING: predicted as-shipped 7338624 B,
                       md5 b49919f66d9eee4f06fe6fff8f137c04.
 
+IN-TREE CROSS COMPILERS THE SAME REBUILD TOUCHED -- NOT PUBLISHED, BUT DEPENDED ON
+  These live only in the working tree. They have no tarball and no download, so
+  they are not "platforms" above. They are listed because at least one of them is
+  exec'd by a downstream gate -- compiler/ppcrossaarch64 is a SYMLINK to
+  compiler/ppcrossa64, and BuildMaster's aarch64-linux Lazarus roll and loadcheck
+  run through that symlink. A binary something depends on should not be the one
+  the manifest is silent about.
+
+    compiler/ppcrossa64   md5 eab972e2457f458e0c42bd2a51afa4d6  (= ppcrossaarch64)
+                          carries v58. Measured, not inferred from its mtime:
+                          dist/ppu-truncation-check.sh ... aarch64-linux scores
+                          25/25 clean rc=0, and the preserved predecessor
+                          (md5 877b3046..) scores 11/25 rc=1 on the same command.
+                          Measured independently by BuildMaster and again here
+                          against aarch64-darwin .ppu files, same 25/25.
+    compiler/ppcross386   md5 b76969a5226f68019f287a97dac89333
+    compiler/ppcrossarm   md5 5e3d9ba2d978db06b31a1a15c37244d9
+                          -- these two DO have published artifacts, listed above
+                             under i386-linux-cross/ and arm-linux-cross/.
+
+  A fresh md5 alone would not have established any of this: an incremental build
+  that recompiled one file emits one too. See the unit-count section below.
+
 HOW EACH BINARY WAS SHOWN TO CARRY THE FIX -- AND WHY NOT BY VERSION STRING
   Every one of these compilers reports "3.3.1".  The version string cannot tell
   v54 from v58, so it was never used as evidence.  The discriminating test is
