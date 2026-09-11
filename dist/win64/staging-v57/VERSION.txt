@@ -1,0 +1,98 @@
+VibePascal v57 Win64 compiler -- a truncated .ppu is now an error, not a hang
+Source commit: 1f605f41b3b06a5fa84fb4cb31ee4298fb30907f
+Compiler fix:  c31227c8ca  (compiler/entfile.pas)
+Parent release: v56 (a187bbac34e1f61154affa5a57e93298028ffc72)
+Built: 2026-09-11, cross-compiled Linux x86_64 -> Win64 (-Apecoff -Xi) from the
+       self-hosted Linux compiler 6a460e0e02cc3ef71313aa5040c1934e
+ppcx64.exe md5:    858DDDD345B11E0122DA4B9D8902FDBB
+ppcx64.exe sha256: A9B8F51571B4FBED5C5C61B8D02C1EACC7A46BF73BC4F7D1325A0033FBEE4EEF
+ppudump.exe md5:   039506397B32FC5D32EA794821DDB2E6   (rebuilt: it shares the same reader)
+
+WHAT WAS BROKEN
+---------------
+Hand the compiler a HALF-WRITTEN .ppu and it spun at 99% CPU forever, printed
+nothing, and had to be killed.  A .ppu of zero bytes was handled correctly and
+said so, which is what makes this a compiler bug rather than "a bad file caught
+late".  Partial .ppu files are not exotic: a killed build, a full disk or an
+interrupted copy all leave one behind.  On that input the compiler did not fail
+your build -- it STALLED it, with no message to search for.
+
+    intact aspelldyn.ppu   55291 bytes  ->  exit 0 in 0.06s
+    zero-byte  .ppu            0 bytes  ->  "Can't find unit", exit 1, instant
+    truncated  .ppu          120 bytes  ->  99% CPU, no output, never returns
+
+Reported by BuildMaster, who hit it by accident while corrupting a unit on
+purpose to build a negative control for something else.
+
+WHY
+---
+The PPU reader treated running off the end of the file as a silent no-op.  When
+it needed bytes and the file had none left, it returned quietly, leaving the
+destination buffer holding whatever it held before, and told nobody.  The entry
+header is read through that same path, so at end of file the reader still had
+the PREVIOUS entry described in its hands and handed that entry back to its
+caller -- again, and again.  The compiler's interface-loading loop happily
+re-processed the same entry forever.  On the 120-byte file the cut lands exactly
+at the end of the source-file-list entry, so what got replayed was the list of
+source files: a million identical "PPU Source:" lines in twelve seconds.
+
+WHAT CHANGED
+------------
+A short read is now an error, and an error is sticky.  Four small changes, all
+inside compiler/entfile.pas, the shared reader:
+
+  * reading past the end of the file sets the reader's error flag (the
+    exact-fit case, where the last byte needed is the last byte present, is
+    still a success);
+  * skipping past the end likewise;
+  * on error the entry reader zeroes its entry and reports a read error
+    instead of replaying a stale one;
+  * end-of-entry reports true once the error flag is set, so the seven loops
+    in the unit loader that drain an entry stop instead of waiting for data
+    that will never arrive.
+
+The compiler already had a fatal for this situation -- "Invalid PPU-File
+entry" -- and already stopped on it everywhere.  It simply never got told.
+No new message, no message-catalogue change, no PPU format change.  ppudump
+already guarded itself with the same error flag; this makes the compiler agree
+with its own dump tool.
+
+MEASURED
+--------
+Twenty truncation offsets of one real 55291-byte .ppu, identical command line,
+only the .ppu varying.  NINE of the twenty hang on v56 -- the reported input was
+not special.  All nine now fail in 0.05s with a message and exit 1:
+
+    offsets 54 70 77 83 100 119 120 121 200 1000   v56 HANG -> v57 exit 1
+    offsets 0 1 20 39 40 41 45 27645               unchanged clean error
+    intact 55291                                   exit 0 both, still compiles
+
+Full 1983-test corpus A/B against a baseline rebuilt from this same source with
+the same command minus the patch: 1983 SAME, 0 DIFF.  Self-host fixpoint reached,
+stage2 == stage3 byte-identical (6a460e0e02cc3ef71313aa5040c1934e).
+
+WIN64 RUNTIME VERIFIED on these exact bytes under wine64, with the published v56
+exe as the control so the harness can still fail:
+
+    v56 ppcx64.exe, truncated .ppu  ->  killed at 25s, no output
+    v57 ppcx64.exe, truncated .ppu  ->  "Fatal: Invalid PPU-File entry: 0",
+                                        exit 1, under one second
+    both, intact .ppu               ->  exit 0
+
+wine is NOT Windows: it is an independent reimplementation of the Win64 API
+running the real shipped PE bytes, so this is execution evidence for the code we
+generate, never a real-Windows sign-off.  Nobody has yet run any VibePascal
+release on real Windows hardware.
+
+NOT FIXED, AND NOT HIDDEN
+-------------------------
+Cutting only the LAST 11 bytes off that 55291-byte file is still accepted with
+exit 0.  Nothing an interface load reads lives in those bytes, so the reader
+never notices they are gone.  Catching that needs a whole-file length check
+against the size recorded in the header, which has to cope with .ppu data read
+from a nonzero offset inside a stream -- a different and riskier change, and not
+one to bundle with a hang fix.
+
+COMPILER-BINARY-ONLY REFRESH on v56.  No PPU format, RTL or package change, so
+THE UNITS ARE STILL THE v52 SET and auto-update.bat can take the ~3.5 MB bin
+tarball alone.
