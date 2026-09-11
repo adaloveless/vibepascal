@@ -32,6 +32,9 @@
 #
 # Usage: unit-set-loadcheck.sh <target> [compiler] [vpdir]
 #   e.g. unit-set-loadcheck.sh x86_64-linux
+#   [compiler] defaults FROM THE TARGET'S CPU (ppcx64 / ppcrossa64 / ppcrossarm /
+#   ppcross386) -- pass it only to test a specific binary. Whatever is used, it must first
+#   build an empty program for <target> or the run aborts with exit 2 (see PREFLIGHT).
 # Exit: 0 = every package loaded clean; 1 = at least one package failed or recompiled.
 #
 # Measured 2026-09-10 (cy1109): x86_64-linux 146/146 clean, x86_64-darwin 118/118 clean.
@@ -60,7 +63,22 @@
 #   only the driver -- so the next build will skip the package on the strength of the
 #   wreckage the last one left. Swept all 921 packages/*/units/<target> dirs in this tree
 #   cy1112: gtk2/x86_64-win64 was the ONLY one, so flagging costs nothing today and catches
-#   the next one. x86_64-linux re-measured 146/146 rc=0 after the fix -- no regression.
+#   the next one.
+#
+# ALL SIX TARGETS re-measured cy1112 (2026-09-11) after the orphan was cleared, each run
+# with NO compiler argument so the new CPU-aware default is what is being tested:
+#   x86_64-linux   147/147 rc=0   (was 146/146 -- gstreamer joins the denominator)
+#   aarch64-linux  144/144 rc=0   (was 143/143)
+#   arm-linux      143/143 rc=0   (was 142/142)
+#   x86_64-darwin  119/119 rc=0   (was 118/118)
+#   aarch64-darwin 116/116 rc=0   (was 115/115)
+#   x86_64-win64   111/111 rc=0   (was 108/109 rc=1 -- +gtk2 +gstreamer, librsvg fixed)
+# gstreamer accounts for the +1 everywhere: an UNCOMMITTED edit had sat in packages/
+# fpmake_add.inc since 2026-08-18 16:04 commenting out add_gstreamer with the reason
+# "gst needs glib2 (absent from VP tree)". glib2 is not absent and is not a package -- it
+# is a unit of gtk2, built for every target -- so a one-target problem was being worked
+# around on all seven, in a change no clone had and any checkout would have silently
+# reverted. Reverted to the committed state; gst.pp builds everywhere it is asked to.
 #
 # WHY arm-linux PASSED BEFORE THIS FIX AND aarch64-linux DID NOT (measured cy1110, from
 # the artifacts, not reasoned): the arm-linux target writes its object with FPC's INTERNAL
@@ -73,8 +91,24 @@
 set -u
 TARGET="${1:-x86_64-linux}"
 VPDIR="${3:-/home/jason/src/vibepascal}"
-PPC="${2:-$VPDIR/compiler/ppcx64}"
 RTL="$VPDIR/rtl/units/$TARGET"
+
+# DEFAULT THE COMPILER FROM THE TARGET'S CPU, never to ppcx64 (cy1112). One FPC binary
+# serves every OS of one CPU but no other CPU at all, so `unit-set-loadcheck.sh
+# aarch64-linux` with the x86_64 compiler makes EVERY package fail identically with
+# "Unsupported target architecture -Paarch64, invoke the fpc compiler driver instead" --
+# 144/144 problems, from a tree that is perfectly fine. Measured today, by me, knowing
+# the rule and walking into it anyway, which is why this is now code and not a comment.
+# The cross binaries (host-executable, foreign codegen) are the right default: ppca64 and
+# ppcarm are NATIVE binaries for those CPUs and cannot run on this host at all.
+case "${TARGET%%-*}" in
+  x86_64)  DEFPPC="$VPDIR/compiler/ppcx64"     ;;
+  aarch64) DEFPPC="$VPDIR/compiler/ppcrossa64" ;;
+  arm)     DEFPPC="$VPDIR/compiler/ppcrossarm" ;;
+  i386)    DEFPPC="$VPDIR/compiler/ppcross386" ;;
+  *)       DEFPPC="$VPDIR/compiler/ppcx64"     ;;
+esac
+PPC="${2:-$DEFPPC}"
 
 [ -x "$PPC" ] || { echo "FATAL: no compiler at $PPC"; exit 2; }
 [ -d "$RTL" ] || { echo "FATAL: no RTL units at $RTL"; exit 2; }
@@ -88,6 +122,23 @@ TARGS="-T$TOS -P$TCPU"
 SCRATCH=$(mktemp -d "${TMPDIR:-/tmp}/loadcheck-$TARGET-XXXXXX") || exit 2
 trap 'rm -rf "$SCRATCH"' EXIT
 mkdir -p "$SCRATCH/out" "$SCRATCH/work"
+
+# PREFLIGHT: prove the harness can compile ANYTHING for this target before judging 144
+# package unit sets with it. BuildMaster's rule (cy1110) is that an ALL-FAIL result means
+# an unusable harness rather than a rotten tree -- a unit set does not rot all at once, a
+# toolchain does. That rule saved 143 healthy dirs when it was a human reading output;
+# here it is enforced before the sweep runs, so a wrong compiler costs one compile and a
+# clear sentence instead of a screenful of identical failures that read like a disaster.
+printf 'program preflight;\nbegin\nend.\n' > "$SCRATCH/work/preflight.pp"
+if ! "$PPC" $TARGS -n -s -Cn -Fu"$RTL" -FU"$SCRATCH/out" "$SCRATCH/work/preflight.pp" \
+     > "$SCRATCH/work/preflight.log" 2>&1; then
+  echo "FATAL: $PPC cannot build an empty program for $TARGET -- the harness is unusable,"
+  echo "       which says nothing about the unit set. First error:"
+  grep -E 'Fatal|Error' "$SCRATCH/work/preflight.log" | head -3 | sed 's/^/       /'
+  echo "       pass a compiler that targets ${TARGET%%-*} as argument 2, e.g. $DEFPPC"
+  exit 2
+fi
+rm -f "$SCRATCH/out"/*
 
 # every package unit dir goes on the search path, so cross-package uses resolve.
 # NOTE: the package under test must be searched FIRST. Several packages ship their own
