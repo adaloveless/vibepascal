@@ -1,67 +1,78 @@
-VibePascal v56 -- arm-linux native compiler (32-bit ARM, ARMHF/EABIHF; a 32-bit
-Raspberry Pi OS is the target this exists for).  An inferred inline var
-initialised from a real constant is a Double, whatever the constant's value
-happens to be.
-Source commit: a187bbac34 (merge of inlinevar-real-default)
-Compiler fix:  f06e46d8eb  (compiler/pstatmnt.pas, compiler/defutil.pas, compiler/ncnv.pas)
-Parent release: v55 (eae5d3e919a26a7db19937da10da1c8b610b17da)
-Built: 2026-09-10, cross-built on x86_64-linux via a freshly bootstrapped
-       compiler/ppcrossarm.v56hf (from a187bbac34, -dFPC_ARMHF,
-       BINUTILSPREFIX=arm-linux-gnueabihf-)
-Binary: bin/ppcarm  md5 d9fd3cb9503e86206e2fdf456b62c61a
-                    sha256 5b1bdf1e7fe57c57adb4c75dea5e051a5b0857e11ee0a2ad5d60abd635a64a92
+VibePascal v58 -- arm-linux NATIVE compiler (32-bit ARM, ARMHF/EABIHF; a 32-bit
+Raspberry Pi OS is the target this exists for).  A .ppu shorter than its own
+header says is truncated, and a half-written one can no longer hang the compiler.
+Source commit: dedf242c696a543f9626e2839ced40876478a98a
+Parent release for THIS target: v56 (a187bbac34)
+Built: 2026-09-11, cross-built on x86_64-linux via a freshly bootstrapped
+       compiler/ppcrossarm (md5 5e3d9ba2d978db06b31a1a15c37244d9, itself built
+       from a CLEAN unit tree by the v58 native ppcx64,
+       md5 8c8179b2f0a452cebec0131aa301b076), -dFPC_ARMHF at BOTH stages,
+       BINUTILSPREFIX=arm-linux-gnueabihf-
+Binary: bin/ppcarm  md5 49acd17c61202c72906a2a020091cac4
+                    sha256 223468ae5fc8a3e8719dc6a9d56475bf7b6fca8693c5f6f6177305c679bd2db3
+                    5670200 bytes, ELF 32-bit ARM EABI5, statically linked, stripped
 
-COMPILER BINARY ONLY.  Only compiler/{pstatmnt,defutil,ncnv}.pas changed between
-v55 and v56: no RTL change, no package change, no PPU format change.  Pair it
-with the existing vibepascal-v54-arm-linux-units.tar.gz, which stays valid and
-is still REQUIRED -- this is a bin-only refresh, not a standalone install.
+ABI: ARMHF (EABIHF), hard float.  readelf reports flags 0x5000400, "Version5
+EABI, hard-float ABI".  The compiler tree defaults to FPC_ARMEL, so this build
+passes -dFPC_ARMHF explicitly; unchanged from v56.  It is NOT compatible with an
+armel (soft-float) system.
 
-ABI: ARMHF (EABIHF), hard float.  The compiler tree defaults to FPC_ARMEL, so
-this build passes -dFPC_ARMHF explicitly at BOTH stages -- the host cross
-compiler and the native one.  Building the cross stage without it produces an
-ARMEL compiler that cannot even read this tree's ARMHF system.ppu ("Can't find
-unit system"), which is what that error means if you hit it.
+BIN-ONLY, AND THE UNITS ARE NOT OPTIONAL.  This tarball contains the compiler and
+nothing else.  Pair it with vibepascal-v54-arm-linux-units.tar.gz, which sits
+beside it in this directory, stays valid, and is still REQUIRED -- this is a
+refresh of an install, not a standalone one.
 
-WHAT CHANGED
-  An inline var with no type annotation used to take its type from the real
-  constant you initialised it with, and that type changes with the VALUE:
+THIS TARGET SKIPPED v57.  x86_64 shipped v57 and v58 on 2026-09-11 while ARM
+stayed at v56, so this release carries BOTH .ppu reader fixes, not one:
 
-      var a := 1.0;      // Single   -  4 bytes,  7 digits
-      var b := 0.1;      // Extended - 10 bytes, 19 digits
-      var d := 1/2;      // Double
+  v57 (c31227c8ca)  a half-written .ppu is an ERROR, not an infinite 99%-CPU spin
+                    with no message.  On the v56 binary this replaces, a killed
+                    build or a full disk could hang a compile forever.
+  v58 (dedf242c69)  a .ppu SHORTER than the length its own header declares is
+                    rejected instead of silently accepted.  v57 only noticed
+                    damage it happened to trip over; lose the TAIL of a unit and
+                    there was nothing to trip over, so the compiler built your
+                    program against a unit that is not all there -- exit 0, no
+                    message, nothing to search a log for.
 
-  v56 infers the DEFAULT real type -- Double -- in either direction.  RANGE is
-  never traded: 1.0e400 and 1.0e-4000 keep their wider type.  A variable or
-  non-constant expression keeps its own type, and an explicit `single(1.0)`
-  still wins.  How real CONSTANTS themselves are typed is NOT touched.
+THIS DOES NOT TURN GOOD BUILDS RED.  The rejection is soft and self-healing: a
+truncated unit whose source is available is RECOMPILED and the build goes green;
+a good copy in a later -Fu directory is used instead; only a truncated unit with
+no source and no other copy stops the compile, and it stops with the message an
+absent unit already gives.  Nobody is ever told to go and delete a file.
 
-VERIFIED ON THIS PLATFORM BY EXECUTION, NOT BY INSPECTION
-  The COMPILER is a 32-bit ARM binary run under qemu-arm-static on the build
-  host, and every program it produced was RUN too, not merely linked.
+COMPILER BINARY ONLY.  No RTL change, no package change, no PPU FORMAT change
+between v56 and v58 -- the reader got stricter, the format did not move.  The
+v54 unit set stays valid.
 
-  A/B against the PUBLISHED v55 arm binary (md5 494305fbcdbc4e156a7357fe0940d573,
-  taken out of its own shipped tarball and md5-checked against that tarball's
-  VERSION.txt before it was trusted as a control):
+VERIFIED ON THESE EXACT BYTES
+-----------------------------
+  * dist/ppu-truncation-check.sh ppcarm arm-linux, against the real 54211-byte
+    packages/aspell/units/arm-linux/aspelldyn.ppu:
+        12/25 offsets clean, 13 problem(s), exit 1   on the v56 binary this replaces
+        25/25 offsets clean,  0 problem(s), exit 0   on this one
+    Of the 13: 8 truncations HUNG and had to be killed at 30s, and 5 were
+    ACCEPTED with rc=0 -- a corrupt unit taken as valid, silently.  The arm
+    CROSS compiler scored 14 on the same file (9 HANG, 5 ACCEPTED): one offset
+    that spins on the host binary errors out on the native one.  Reported as
+    measured rather than rounded to match -- the ACCEPTED five, which are the
+    silent half and the reason v58 exists, are identical on both.
+    The pre-fix binary is the one that actually shipped as v56
+    (md5 d9fd3cb9503e86206e2fdf456b62c61a), preserved and re-run this cycle
+    under emulation -- not a reconstruction, and not an argument from source.
+  * EXECUTION, not inspection.  This binary RUNS: qemu-arm-static reports
+    version 3.3.1, target cpu arm, and it compiled and ran
+        tests/test/tinlinevarnativeint1.pp -Munleashed -> VERDICT:PASS
+        tests/test/tinlinevarstrinfer1.pp  -Munleashed -> VERDICT:PASS
+        tests/test/tblockscopefinal1.pp                -> MATRIX: PASS
+                                     (all corners block-scoped, released exactly once)
+    and it correctly REJECTED both { %FAIL } tests, tinlinevar2 and tinlinevar3 --
+    accepting those is the actual bug, so both directions are asserted.
+  * dist/arm-runtime-proof.sh exercises this tarball end to end and checks the
+    md5 above against the bytes it unpacks, so the number in this file cannot
+    drift from the artifact without the proof failing.
 
-    tinlinevarrealinfer1.pp, three modes -- mode is a real axis of this fix
-      -Munleashed        v55 52 checks / 25 fails  ->  v56 52 / 0
-      -Mdelphi           v55 49 checks / 16 fails  ->  v56 49 / 0
-      -Mdelphiunicode    v55 49 checks / 16 fails  ->  v56 49 / 0
-    The control FAILS in every mode, so a pass cannot be reached by accident.
-
-    tinlinevarrealinfer2.pp is a %FAIL test -- `for var i := 1.0` must stay
-    rejected.  BOTH compilers reject it with "Ordinal expression expected" and
-    zero internal errors.
-
-  NO REGRESSION, also by execution on the v56 compiler:
-    tinlinevarnativeint1.pp   45/45, NativeInt=4  (32-bit: the whole point of
-                                                   the v54 NativeInt rule)
-    tinlinevarstrinfer1.pp    PASS
-    tblockscopefinal1.pp      PASS -- every corner released EXACTLY ONCE
-                              (kills counted, so a double-free scores as a fail)
-    tinlinevar2 / tinlinevar3 both still correctly REJECTED
-
-  LIMIT, stated plainly: qemu-user is an emulator.  It runs the real shipped
-  bytes and real ARM encodings, so codegen and RTL defects DO surface -- but it
-  is not a Raspberry Pi.  NOBODY HAS RUN THIS ON PHYSICAL ARM HARDWARE.
-  Re-runnable: sh dist/arm-runtime-proof.sh
+NOT PROVEN HERE, AND SAID PLAINLY: qemu-user is an emulator.  It runs the real
+shipped bytes and real ARM instruction encodings, so codegen and RTL defects DO
+surface -- but it is not a Raspberry Pi.  NOBODY HAS RUN ANY VIBEPASCAL RELEASE
+ON PHYSICAL ARM SILICON.  Do not quote a pass here as a hardware sign-off.
