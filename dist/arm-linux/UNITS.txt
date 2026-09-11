@@ -26,6 +26,17 @@ and the rc=1 is:
 
     pkgtest.pas(3,16) Fatal: Can't find unit fpjson used by pkgtest
 
+AND THE OTHER HALF OF THAT TRAP: THE SUFFIX RULE DOES NOT TRAVEL
+----------------------------------------------------------------
+Added 2026-09-11.  "Use the -full one" is correct HERE, and correct nowhere else
+BY NAME.  dist/aarch64-linux/ has no *-units-full file at all, and its
+plain-named vibepascal-v52-aarch64-linux-units.tar.gz IS its full set (3217
+members, 1631 .ppu, fpjson present -- measured, with an impossible-unit-name
+grep as the control).  Carrying this rule there by filename finds nothing and
+reads as "aarch64 never got a full set", which is false.  The discriminator is
+the member count, or simply whether fpjson.ppu is in the archive -- never the
+suffix.  See dist/aarch64-linux/UNITS.txt.
+
 WHAT TO DOWNLOAD
 ----------------
   vibepascal-v58-dedf242c69-arm-linux-bin.tar.gz    the compiler

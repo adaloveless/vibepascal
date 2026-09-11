@@ -126,3 +126,23 @@ NOT PROVEN HERE: nobody has run this compiler, or anything it emits, on a real
 32-bit i386 INSTALL.  The generated binaries were executed on x86_64-linux,
 which runs i386 code natively; that covers codegen and the RTL, and it does not
 cover a 32-bit userland.
+
+VERIFY IT YOURSELF -- THIS IS EXECUTABLE, NOT ADVICE
+----------------------------------------------------
+Added 2026-09-11.  dist/cross-runtime-proof.sh runs everything above end to end
+against the PUBLISHED bytes.  It resolves the newest tarballs rather than naming
+them (a proof pinned to a literal filename prints PASS over superseded bytes
+forever), extracts into an empty directory, compiles a program that uses a
+PACKAGE unit -- fpjson, not just SysUtils+Classes, because an RTL-only unit set
+passes SysUtils+Classes and that is exactly how the RTL-only arm-linux tarball
+stayed invisible -- with -n so the host's own installed FPC can supply nothing,
+identifies the artifact with file(1), RUNS it, and scores every negative control
+on its MESSAGE TEXT instead of an exit code.  For arm it asserts the -XP axis in
+BOTH directions, so it proves the documented REASON and not only the cure.
+
+    sh dist/cross-runtime-proof.sh [workdir]
+
+Exit 0 = every stage passed, 1 = a stage failed, 2 = this host is missing a tool
+so nothing was measured.  It is not decorative: pointed at a tree carrying the
+superseded RTL-ONLY arm unit set it fails, rc=1, with
+"Can't find unit fpjson used by pkgtest".

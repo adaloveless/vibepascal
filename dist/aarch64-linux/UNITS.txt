@@ -17,6 +17,36 @@ hidden, the compiler stops at:
 
     hello.pas(1,15) Fatal: Can't find unit system used by hello
 
+DO NOT GO LOOKING FOR A "-units-full" FILE HERE -- THERE ISN'T ONE, AND THE
+PLAIN NAME IS THE FULL SET
+------------------------------------------------------------------------------
+Added 2026-09-11, after BuildMaster carried the rule "grab the -full one" over
+from dist/arm-linux/ and found no such file in this directory.  That is a
+reasonable thing to conclude from the filenames and it is the wrong conclusion:
+it reads as "no full set was ever cut for aarch64", which was true two cycles
+ago and is not true now.
+
+THE SUFFIX IS NOT THE DISCRIMINATOR ACROSS TARGETS.  THE MEMBER COUNT IS.
+Measured off the tarballs themselves -- `tar tzf X | wc -l` and `| grep -c ppu$`:
+
+    arm-linux      ...-units.tar.gz        206 members    99 .ppu  fpjson ABSENT
+    arm-linux      ...-units-full.tar.gz  3498 members  1646 .ppu  fpjson PRESENT
+    aarch64-linux  ...-units.tar.gz       3217 members  1631 .ppu  fpjson PRESENT
+
+So on arm-linux the plain name is the RTL-ONLY one, and on aarch64-linux the
+plain name IS the full set.  The name cannot tell you which you are holding.
+Count the members, or just look for fpjson.ppu.
+CONTROL, because a grep that matches everything would prove nothing: the same
+three member lists grepped for an impossible unit name return 0, so the fpjson
+hits above are real hits.
+(The 3217 "members" here and the 3215 "files" below are the same archive -- tar
+counts the two directory entries units/ and units/aarch64-linux/ as members.)
+
+THE NAME WILL NOT BE CHANGED.  Renaming a published artifact invalidates every
+hash already recorded against it, and same-name-different-bytes is
+indistinguishable from corruption to anyone holding the old copy.  The
+correction goes here, in the file that is mirrored nowhere.
+
 WHAT TO DOWNLOAD
 ----------------
   vibepascal-v58-dedf242c69-aarch64-linux-bin.tar.gz   the compiler
