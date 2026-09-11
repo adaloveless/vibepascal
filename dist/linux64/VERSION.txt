@@ -1,83 +1,78 @@
-VibePascal v56 Linux x86_64 compiler -- an inferred inline var initialised from
-a real constant is a Double, whatever the constant's value happens to be
-Source commit: a187bbac34 (merge of inlinevar-real-default)
-Compiler fix:  f06e46d8eb  (compiler/pstatmnt.pas, compiler/defutil.pas, compiler/ncnv.pas)
-Parent release: v55 (eae5d3e919a26a7db19937da10da1c8b610b17da)
-Built: 2026-09-10, native self-host fixpoint on x86_64-linux
-ppcx64 md5:    E6DE1F00ECCB9B5CCF028BEE7E7342AD
+VibePascal v57 Linux x86_64 compiler -- a truncated .ppu is an error, not a hang
+Source commit: 1f605f41b3 (merge of otto/ppu-truncated-hang)
+Compiler fix:  c31227c8ca  (compiler/entfile.pas)
+Parent release: v56 (a187bbac34e1f61154affa5a57e93298028ffc72)
+Built: 2026-09-11, native self-host fixpoint on x86_64-linux (stage2 == stage3)
+ppcx64 md5:    6A460E0E02CC3EF71313AA5040C1934E
+ppcx64 sha256: E22E9AE724C678431F1D4206AE8BEE904CD7504A58B0B447942A8EE9985567D8
+ppudump md5:   528F623CD25E9739C690341A85CCC435   (rebuilt: it shares the same reader)
 
-Contents: bin/ppcx64 only -- a COMPILER-BINARY refresh meant to drop into an
-existing VibePascal source/unit tree on Linux.  No RTL change, no package
-change, no PPU format change, so an existing v52/v53/v54/v55 Linux unit set
-stays valid and the utility binaries (ppudump/ppumove/fpcres/...) are unchanged
-and not re-shipped.
+Contents: bin/ppcx64 and bin/ppudump -- a COMPILER-BINARY refresh meant to drop
+into an existing VibePascal source/unit tree on Linux.  No RTL change, no
+package change, no PPU format change, so an existing v52..v56 Linux unit set
+stays valid.  ppudump is included only because it is built from the same reader
+that changed; every other utility binary is unchanged and does not need one.
 
 WHAT WAS BROKEN
-  An inline var with no type annotation took its type from the real constant
-  you initialised it with, and that type changes with the VALUE:
+---------------
+Hand the compiler a half-written .ppu and it spun at 99% CPU forever, printed
+nothing, and had to be killed.  A zero-byte .ppu was handled correctly and said
+so, which is what makes this the compiler's fault rather than the file's.  A
+killed build, a full disk or an interrupted copy all leave a partial .ppu
+behind; on that input the compiler did not fail your build, it STALLED it, with
+no message to grep for.
 
-      var a := 1.0;      // Single   -  4 bytes,  7 digits
-      var b := 0.1;      // Extended - 10 bytes, 19 digits
-      var c := 1.0/3.0;  // Single, or Extended under {$mode delphi}
-      var d := 1/2;      // Double
+    intact aspelldyn.ppu   55291 bytes  ->  exit 0 in 0.06s
+    zero-byte  .ppu            0 bytes  ->  "Can't find unit", exit 1, instant
+    truncated  .ppu          120 bytes  ->  99% CPU, no output, never returns
 
-  Four declarations side by side, four different types, none of them the one
-  Delphi or an explicit `var x: Double := ...` gives.  The 4-byte case is the
-  one that bites: `var pi := 3.14159265358979` quietly kept about seven digits,
-  and the same variable widened to fifteen as soon as somebody edited the
-  literal to one a Single cannot represent exactly.  Lars hit the other end of
-  it in the Lazarus IDE, where code completion and the compiler disagreed.
+WHY
+---
+The PPU reader treated running off the end of the file as a silent no-op: it
+returned quietly with the destination buffer untouched and told nobody.  The
+entry header is read through that same path, so at end of file the reader still
+described the PREVIOUS entry and handed it back to its caller, again and again,
+and the interface loader re-processed it forever.  On the 120-byte file the cut
+lands exactly at the end of the source-file-list entry, so what got replayed was
+the source file list: a million identical "PPU Source:" lines in twelve seconds.
 
-CHANGE
-  An un-annotated inline var initialised from a real CONSTANT now infers the
-  default real type, Double.  It is the third rule of the family v54 started:
-  `var i := -1` -> NativeInt, `var s := 'x'` -> the default string type, and now
-  a real constant -> the default real type.  Inference gives you the DEFAULT
-  type of a kind, not the narrowest one that happens to fit today's literal.
-  Double and not Extended because Extended is an x87-only 80-bit type and
-  Delphi makes Extended an alias of Double on every 64-bit target we ship.
+WHAT CHANGED (compiler/entfile.pas, the shared reader, four small changes)
+  * reading past end of file sets the reader's error flag -- the exact-fit case,
+    where the last byte needed is the last byte present, stays a success;
+  * skipping past end of file likewise;
+  * on error the entry reader zeroes its entry and reports a read error rather
+    than replaying a stale one;
+  * end-of-entry reports true once the flag is set, so the seven loops in the
+    unit loader that drain an entry stop instead of waiting for data that will
+    never arrive.
+The compiler already had the right fatal -- "Invalid PPU-File entry" -- and
+already stopped on it everywhere; it simply never got told.  No new message, no
+message-catalogue change, no PPU format change.  ppudump already guarded itself
+with the same error flag, so this makes the compiler agree with its own dump
+tool.
 
-  Deliberately unchanged:
-   - RANGE is never lost.  1.0e400 and 1.0e-4000 keep the wider type they were
-     given; a Double would silently hold +Inf and 0.  Precision digits can be
-     lost, because that is what asking for a Double means.
-   - A variable or non-constant expression keeps its own type, as Delphi infers
-     it: `var m := someSingle` is still a Single.
-   - An explicit `single(1.0)` still wins.  Making that true was part of the
-     fix: a cast to the type a constant already had used to be dropped without
-     recording that the user asked for it.
-   - Currency and Comp are untouched, and `var d := 1/2` was already a Double.
-   - How real CONSTANTS themselves are typed is NOT touched.  That is stock FPC
-     behaviour ($MINFPCONSTPREC default s32real, $EXCESSPRECISION on in delphi
-     mode), byte-identical to upstream, and still reachable explicitly.
+MEASURED
+--------
+Twenty truncation offsets of one real 55291-byte .ppu, identical command line,
+only the .ppu varying.  NINE of the twenty hang on v56 -- the reported input was
+not special -- and all nine now fail in 0.05s with a message and exit 1:
 
-VERIFIED ON THIS PLATFORM (x86_64-linux, native -- not emulated, not wine)
-  Isolated throwaway A/B compilers, real toolchain untouched.  The baseline
-  built that way came out byte-identical to the published v55 Linux binary
-  (19F526BD6BE0EC63FCA96C4D1B77E19D), which is what makes the A/B trustworthy.
-   - tinlinevarrealinfer1.pp: 57 checks over 10 structural contexts (free
-     procedure, method, nested block, nested procedure, with-block, for-loop
-     body, except and finally, while/repeat/case, closure capture, main program
-     body) crossed with the MODE axis, because delphi mode widens a constant
-     fold differently:
-        -Munleashed       baseline 37 failures -> 0 of 57
-        -Mdelphi          baseline 36 failures -> 0 of 54
-        -Mdelphiunicode   baseline 36 failures -> 0 of 54
-     VALUES are asserted as well as sizes, including through a closure capture:
-     an inferred variable must hold exactly what the declared one holds.
-   - tinlinevarrealinfer2.pp (%FAIL): `for var i := 1.0 to 2.0` is still
-     rejected, cleanly, with no internal error.
-   - full tests/test corpus, 1982 tests: 1981 SAME, 0 DIFF, after a
-     baseline-against-baseline control run that was also 0 DIFF.
-   - self-host fixpoint: stage2 == stage3, byte-identical (this md5).
-   - the neighbouring inference rules are unmoved: tinlinevarnativeint1 45/45
-     and tinlinevarstrinfer1 20/20, both under -Munleashed and -Mdelphiunicode.
-  Re-run from the EXTRACTED tarball rather than the build tree, so what is
-  measured is what is shipped.
+    offsets 54 70 77 83 100 119 120 121 200 1000   v56 HANG -> v57 exit 1
+    offsets 0 1 20 39 40 41 45 27645               unchanged clean error
+    intact 55291                                   exit 0 both, still compiles
 
-STILL ON v55 OR OLDER AFTER THIS RELEASE
-  aarch64-linux, arm-linux, x86_64-darwin and aarch64-darwin carry v55, and
-  arm-linux-cross and i386-linux-cross carry v54.  None of them has this real
-  inference change yet; each needs a cross rebuild from a187bbac34.  That is
-  tracked.  Those packages are honestly labelled, but do not read this release
-  as "the fix is everywhere".
+Full 1983-test corpus A/B against a baseline rebuilt from this same source with
+the same command minus the patch: 1983 SAME, 0 DIFF.  Self-host fixpoint
+reached, stage2 == stage3 byte-identical.
+
+NOT FIXED, AND NOT HIDDEN
+-------------------------
+Cutting only the LAST 11 bytes off that 55291-byte file is still accepted with
+exit 0: nothing an interface load reads lives in those bytes, so the reader
+never notices they are gone.  Catching that needs a whole-file length check
+against the size recorded in the header, which must also cope with .ppu data
+read from a nonzero offset inside a stream -- a different and riskier change,
+deliberately not bundled with a hang fix.
+
+Reported by BuildMaster, who hit it while corrupting a unit on purpose to build
+a negative control for something else.
