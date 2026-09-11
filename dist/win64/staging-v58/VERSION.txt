@@ -1,0 +1,102 @@
+VibePascal v58 Win64 compiler -- a .ppu shorter than its own header says is truncated
+Source commit: dedf242c696a543f9626e2839ced40876478a98a
+Parent release: v57 (1f605f41b3b06a5fa84fb4cb31ee4298fb30907f)
+Built: 2026-09-11, cross-compiled Linux x86_64 -> Win64 (-Apecoff -Xi) from the
+       self-hosted Linux compiler 383e0d4195a00038fc5a121cae3334e8
+ppcx64.exe md5:    1B54420B3B00F581786BA2ECF410747F
+ppcx64.exe sha256: EDF94E34129B14F9A0B37ED5E1C5E8455DBA4F7E67806B7E004FF719E2FCC873
+ppudump.exe md5:   0A20A60261B87F97EC878FCA798AAE59   (rebuilt: same reader)
+ppumove.exe md5:   604523F77F0F1218BF7190727096260E   (rebuilt: same reader)
+ppufiles.exe md5:  15A137BCF0484D7CF19BDFAEE9BD1322   (rebuilt: same reader)
+Every other binary in bin/ is byte-identical to the v57 tarball.
+
+WHAT WAS BROKEN
+---------------
+This is the gap v57's own VERSION.txt declared under "NOT FIXED, AND NOT HIDDEN",
+now closed.
+
+v57 stopped the compiler HANGING on a half-written .ppu, but it only ever
+noticed damage it happened to trip over.  Lose the TAIL of a unit file and there
+was nothing to trip over: nothing an interface load reads lives in the last
+handful of bytes, so the compiler read what it wanted, never reached the missing
+part, and built your program against a unit that is not all there -- exit 0, no
+message, nothing to search a log for.  Measured on a real 55291-byte unit, every
+truncation from 55271 bytes upward was accepted.
+
+A killed build, a full disk or an interrupted copy is exactly how a file loses
+its tail, so this is the same accident v57 was about, landing a few bytes later.
+
+WHY IT WAS INVISIBLE
+--------------------
+A .ppu header records how long the payload is, so a complete unit file is always
+exactly 40 bytes of header plus that number, and can never be fewer.  Nothing
+compared those two numbers.  The reader checked that the file was at least big
+enough to hold the header and then trusted whatever followed.
+
+WHAT CHANGED
+------------
+tppufile.readheader now compares the length the header declares against the
+length the file actually has, and rejects it when the file is SHORT.  Longer than
+declared stays legal, as it always was.  The arithmetic is 64-bit on purpose: the
+declared size is an unsigned 32-bit field, and a corrupt header claiming near 4 GB
+would wrap a 32-bit sum and turn the check into a no-op at exactly the moment it
+is needed.
+
+THIS DOES NOT TURN GOOD BUILDS RED.  The rejection is soft and self-healing:
+  * if the unit's source is available, the unit is RECOMPILED and the build goes
+    green -- measured, the .ppu comes back at its full length;
+  * if a good copy of the same unit sits in a later -Fu directory, the compiler
+    falls through to it and the build goes green -- also measured;
+  * only a truncated unit with no source and no other copy stops the compile, and
+    it stops with the message an absent unit already gives.
+Nobody is ever told to go and delete a file.
+
+The other half of the change is that the length has to BE a length.  It came
+from TCStream.Size, which is Seek(0,soFromEnd), and only a plain file answers
+that with a byte count -- a range stream (a .ppu read from inside a package
+file) answers with its last valid offset, one short, and an open-ended one with
+a number that is not a length at all.  Left alone, that would have declared
+every packaged unit truncated by exactly one byte.  So the length is now handed
+in by whoever opens the stream and knows it.  TCRangeStream.Seek itself is NOT
+touched: it works for the code that uses it, an open-ended range stream has no
+real end to seek to, and moving its semantics to serve a reader that does not
+need it is how one wrong behaviour becomes two.
+
+UNTESTABLE HERE, AND SAID PLAINLY: no target in this compiler enables dynamic
+packages -- the flag is tested in twelve places and set in none -- so a .pcp
+package cannot be built to read back, and the package half above is written to
+be correct if that is ever switched on rather than proven by running it.
+
+VERIFIED
+--------
+  * 4000 real .ppu files in rtl/ and packages/: every one is exactly 40+declared
+    bytes, so the check has no slack to fire falsely on
+  * dist/ppu-truncation-check.sh, extended this release to SCORE the tail offsets
+    it used to document as an open gap:
+        20/25 offsets clean, 5 problem(s), exit 1   on the pre-fix compiler
+        25/25 offsets clean, 0 problem(s), exit 0   on this one
+    so the gate discriminates rather than describing
+  * dist/unit-set-loadcheck.sh x86_64-linux: 147/147 packages load clean
+  * full 1983-test corpus A/B against a baseline rebuilt from this same source
+    with the same command minus the patch: 1983 SAME, 0 DIFF
+  * self-host fixpoint: stage1 == stage2 == stage3, byte-identical
+
+WIN64 RUNTIME VERIFIED on these exact bytes under wine64, with the published v57
+exe as the control so the harness can still fail:
+
+    v57 ppcx64.exe, unit truncated by 11 / 3 / 1 bytes  ->  exit 0, accepted
+    v58 ppcx64.exe, same three                          ->  exit 1, rejected
+    both, intact unit                                   ->  exit 0
+
+The unit under test exists in exactly one directory with its source off every
+search path, because a second copy or an available source would have let a
+correct rejection end in a green build and read as a pass either way.
+
+wine is NOT Windows: it is an independent reimplementation of the Win64 API
+running the real shipped PE bytes, so this is execution evidence for the code we
+generate, never a real-Windows sign-off.  Nobody has yet run any VibePascal
+release on real Windows hardware.
+
+COMPILER-BINARY-ONLY REFRESH on v57.  No PPU format, RTL or package change, so
+THE UNITS ARE STILL THE v52 SET and auto-update.bat can take the ~3.5 MB bin
+tarball alone.
