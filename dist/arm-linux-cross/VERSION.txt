@@ -1,59 +1,54 @@
-VibePascal v54 -- arm-linux CROSS compiler -- runs on x86_64-linux, emits 32-bit arm-linux
-Source commit: b7d2d9676ecf1d7d8250cd460b9c48069920513e
-Compiler fix:  b9cb8fea875670cfc48f7d83b88d4af39a28aa6e
-Parent release: v53 (9e20efe4d6912fe6a9558c442ae4fa8d5dfe3045)
-Built: 2026-09-10 on x86_64-linux
-Binary: bin/ppcrossarm  md5 0138dae1259db05136d6fa7391a2a213
+VibePascal v58 -- arm-linux CROSS compiler -- runs on x86_64-linux, emits 32-bit arm-linux
+Source commit: dedf242c696a543f9626e2839ced40876478a98a
+Parent release for THIS target: v54 (b7d2d9676ecf1d7d8250cd460b9c48069920513e)
+Built: 2026-09-11 on x86_64-linux, from a CLEAN compiler/arm unit tree, driven by
+       the v58 native ppcx64 (md5 8c8179b2f0a452cebec0131aa301b076), -dFPC_ARMHF
+Binary: bin/ppcrossarm  md5 5e3d9ba2d978db06b31a1a15c37244d9
+                        sha256 5d819aa301ecd888015b7804e75fb6cdb73f2c2464fe2537e180aa5757ce03f4
+                        5342672 bytes, ELF 64-bit x86-64, statically linked, stripped
 
-ABI: ARMHF -- ARM EABI5, HARD float (VFP).  This is the ABI of Raspberry Pi OS
-32-bit and of Debian/Ubuntu armhf.  It is NOT compatible with an armel
-(soft-float) system.  The compiler reports "Target OS: Linux for ARMHF".
-An armel build is possible from the same source (the tree's own default is in
-fact armel, compiler/fpcdefs.inc:249), but this host has only armhf cross
-binutils, so armhf is what was built and verified.  Ask FPCDeveloper if you
-need the armel pair.
+ABI: ARMHF (ARM EABI5, HARD float / VFP) -- the ABI of 32-bit Raspberry Pi OS and
+of Debian/Ubuntu armhf.  It is NOT compatible with an armel (soft-float) system.
+The tree's own default is armel (compiler/fpcdefs.inc:249), so this build passes
+-dFPC_ARMHF explicitly; unchanged from the v54 cross compiler it replaces.
 
-UNITS ARE INCLUDED SEPARATELY and are REQUIRED.  arm-linux is a NEW platform for
-this fork -- unlike win64/aarch64/i386 there is no pre-existing unit set to
-reuse, so pair this binary with
-  vibepascal-v54-arm-linux-units.tar.gz
-and point the compiler at it (-Fu<prefix>/units/arm-linux, or an fpc.cfg).
+THIS TARGET WAS FOUR RELEASES BEHIND.  x86_64 shipped v55, v56, v57 and v58 while
+this cross compiler stayed on v54, so it collects everything in between:
 
-Change (same as the rest of v54): an untyped INTEGER initialiser for an inline
-var (and for an inferred `for var i := ...` counter) now infers NativeInt
-instead of the hard-coded LongInt.  On a 32-bit target such as this one
-NativeInt is 4 bytes -- and is the same type as LongInt -- so the visible effect
-of that half is simply that the width follows the target.  A string or char
-literal initialiser now infers exactly what a bare `string` denotes at that
-point; under -Mdelphiunicode/-Munleashed that is the wide string.
+  v55 (4d10b26fe7)  a missing -FU/-FE output directory is CREATED instead of
+                    complained about.
+  v56 (f06e46d8eb)  an inferred inline var initialised from a real constant is a
+                    Double, whatever the constant's value happens to be.
+  v57 (c31227c8ca)  a half-written .ppu is an ERROR, not an infinite 99%-CPU spin
+                    with no message.
+  v58 (dedf242c69)  a .ppu SHORTER than the length its own header declares is
+                    rejected instead of silently accepted.
 
-VERIFIED (on the build host, x86_64-linux):
-  - The compiler and the full arm-linux RTL (99 units) build clean from the
-    v54 source commit, exit 0.
-  - tests/test/tinlinevarnativeint1.pp -- the 45-assertion v54 matrix -- COMPILES
-    and LINKS for arm-linux, producing a real ELF 32-bit ARM EABI5 executable.
-  - Compile-time self-check: SizeOf(NativeInt)=4 and SizeOf(Pointer)=4 on this
-    target ($if/$fatal probe, so a wrong width would fail the build).
-  - String inference proven with a working negative control: `var s := 'hello'`
-    under -Munleashed binds to a `var UnicodeString` parameter, and the same
-    probe against `var AnsiString` is REJECTED with
-    'Call by var for arg no. 1 has to match exactly: Got "UnicodeString"'.
-    So the inferred type really is the wide string, not merely assignable to it.
-  - NOT a discriminator, stated plainly: on 32-bit ARM NativeInt and LongInt are
-    the same type, so a var-parameter probe cannot tell the v54 rule from the
-    old one.  (Superseded below: the 32-bit half is now proven by execution on
-    a 32-bit ARM target itself, under qemu-user, not only on i386-linux.)
+Nothing in the RTL, the packages or the PPU format changed across v54..v58, so an
+existing arm-linux unit set stays valid and does not need rebuilding.
 
-RUNTIME: this cross compiler WAS EXECUTED on the build host -- it is what built
-the 99-unit arm-linux RTL and every arm executable listed above, so its own
-runtime behaviour is directly demonstrated.
+VERIFIED ON THESE EXACT BYTES
+-----------------------------
+  * dist/ppu-truncation-check.sh ppcrossarm arm-linux, against the real
+    54211-byte packages/aspell/units/arm-linux/aspelldyn.ppu:
+        11/25 offsets clean, 14 problem(s), exit 1   on the v54 binary this replaces
+        25/25 offsets clean,  0 problem(s), exit 0   on this one
+    Of the 14: 9 truncations HUNG and had to be killed at 30s, and 5 were
+    ACCEPTED with rc=0 -- a corrupt unit taken as valid, silently.
+    The pre-fix binary is the one that actually shipped as v54, preserved and
+    re-run this cycle -- not a reconstruction.
+  * EXECUTION, not inspection: this compiler built tests/test/tinlinevarnativeint1.pp
+    -Munleashed into an ELF 32-bit ARM EABI5 hard-float binary which RAN under
+    qemu-arm-static and reported checks=45 fails=0 NativeInt=4, VERDICT:PASS.
 
-UPDATE 2026-09-10 -- the ARM executables it emits now RUN too, correcting the
-original text here.  That text claimed "this host has no qemu"; qemu-user-static
-was simply not installed, and it is a stock Ubuntu package one command away.
-With it, the arm output of this cross compiler executes: the 45-assertion v54
-matrix reports checks=45 fails=0, NativeInt=4, VERDICT:PASS, exit 0, and the
-330-line cy1096 block-scope finalization matrix reports MATRIX PASS with every
-corner released exactly once.  See dist/arm-linux/VERSION.txt for the full
-evidence list and for the limits of emulation -- qemu-user is not a Raspberry
-Pi, and nobody has run these artifacts on physical ARM hardware yet.
+BUILD PROVENANCE, because a cross build can lie about being one
+---------------------------------------------------------------
+An incremental build of this target against the Sep-10 unit tree did not merely
+reuse stale units -- it CRASHED the driver compiler with an access violation
+while compiling pp.pas.  Wiping compiler/arm/{bin,units} and rebuilding from
+scratch fixed it with no source change.  241 units were recompiled for this
+binary; if you are reproducing it, check that count rather than the timestamps.
+
+NOT PROVEN HERE: qemu-user is an emulator.  It runs the real shipped bytes and
+real ARM encodings, so codegen and RTL defects do surface, but it is not a
+Raspberry Pi.  Nobody has run this compiler's output on physical ARM silicon.
