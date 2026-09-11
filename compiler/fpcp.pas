@@ -57,7 +57,7 @@ interface
       destructor destroy; override;
       procedure loadpcp;
       procedure savepcp;
-      function getmodulestream(module:tmodulebase):tcstream;
+      function getmodulestream(module:tmodulebase;out astreamsize:longint):tcstream;
       procedure initmoduleinfo(module:tmodulebase);
       procedure addunit(module:tmodulebase);
       procedure add_required_package(pkg:tpackage);
@@ -521,16 +521,24 @@ implementation
       pcpfile:=nil;
     end;
 
-  function tpcppackage.getmodulestream(module:tmodulebase):tcstream;
+  function tpcppackage.getmodulestream(module:tmodulebase;out astreamsize:longint):tcstream;
     var
       i : longint;
       contained : pcontainedunit;
     begin
+      { hand the window's declared length back with the stream: it is recorded
+        here at write time (writeppudata sets it from the substream position
+        after rewriteppu) and is NOT recoverable from the stream afterwards --
+        TCRangeStream.Seek soFromEnd answers with the last valid offset, one
+        byte short of the length, so a reader that asked the stream would judge
+        every packaged unit truncated by one byte (cy1117). }
+      astreamsize:=-1;
       for i:=0 to containedmodules.count-1 do
         begin
           contained:=pcontainedunit(containedmodules[i]);
           if contained^.module=module then
             begin
+              astreamsize:=contained^.size;
               result:=pcpfile.substream(contained^.offset,contained^.size);
               exit;
             end;

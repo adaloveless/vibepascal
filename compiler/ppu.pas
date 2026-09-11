@@ -285,6 +285,7 @@ end;
 function tppufile.readheader: longint;
 var
   is_valid : boolean;
+  declaredlen : int64;
 begin
   is_valid:=true;
   result:=fsize;
@@ -318,6 +319,25 @@ begin
 {$ELSE not ENDIAN_BIG}
   change_endian := (header.common.flags and uf_big_endian) = uf_big_endian;
 {$ENDIF}
+  { WHOLE-FILE LENGTH CHECK (cy1117).  The header states the payload length, so
+    a complete .ppu is exactly sizeof(tppuheader)+size bytes and can never be
+    fewer.  Without this, a .ppu whose tail is missing is accepted outright when
+    nothing an interface load reads happened to live in the lost bytes -- on the
+    55291-byte unit this was found with, every truncation in the last 11 bytes
+    passed with rc=0 and the caller went on to use a unit that is not all there.
+    Longer than declared stays legal: only SHORT is a defect.  int64 because
+    common.size is a dword and a corrupt header may declare ~4G, which would
+    wrap a longint sum and turn the test into a no-op at exactly the moment it
+    is most needed.  Failure here is not fatal to the build: the caller discards
+    the ppu and recompiles the unit from source, which is also why it must never
+    fire on a good file. }
+  declaredlen:=int64(sizeof(tppuheader))+header.common.size;
+  if fsize<declaredlen then
+    begin
+      do_comment(V_Error,' Truncated ppu: '+tostr(int64(fsize))+' bytes present, header declares '+tostr(declaredlen));
+      fillchar(header,sizeof(tppuheader),#0);
+      exit(-1);
+    end;
 end;
 
 function tppufile.outputallowed: boolean;

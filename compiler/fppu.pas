@@ -74,7 +74,7 @@ interface
           procedure reset(for_recompile: boolean);override;
           procedure re_resolve;
           function  openppufile:boolean;
-          function  openppustream(strm:TCStream):boolean;
+          function  openppustream(strm:TCStream;astreamsize:longint=-1):boolean;
           procedure getppucrc;
           function dependent_module_has_our_crc: boolean;
           function dependent_module_crc_mismatch: boolean;
@@ -302,13 +302,13 @@ var
       end;
 
 
-    function tppumodule.openppustream(strm:TCStream):boolean;
+    function tppumodule.openppustream(strm:TCStream;astreamsize:longint=-1):boolean;
       begin
         result:=false;
       { Open the ppufile }
         Message1(unit_u_ppu_name,ppufilename);
         ppufile:=tcompilerppufile.create(ppufilename);
-        if not ppufile.openstream(strm) then
+        if not ppufile.openstream(strm,astreamsize) then
          begin
            discardppu;
            Message(unit_u_ppu_file_too_short);
@@ -792,6 +792,7 @@ var
         pkgunit : pcontainedunit;
         i,idx : longint;
         strm : TCStream;
+        strmsize : longint;
       begin
         result:=false;
         for i:=0 to packagelist.count-1 do
@@ -810,10 +811,10 @@ var
                 {filename:=pkgunit^.ppufile;
                 if not SearchPathList(unitsearchpath) then
                   exit};
-                strm:=tpcppackage(pkg^.package).getmodulestream(self);
+                strm:=tpcppackage(pkg^.package).getmodulestream(self,strmsize);
                 if not assigned(strm) then
                   internalerror(2015103002);
-                if not openppustream(strm) then
+                if not openppustream(strm,strmsize) then
                   exit;
                 package:=pkg^.package;
                 Message2(unit_u_loading_from_package,modulename^,pkg^.package.packagename^);

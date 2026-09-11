@@ -18,14 +18,15 @@
 #          (i.e. the tree is bad);
 # exit 2 = the harness could not run -- says nothing about the compiler.
 #
-# DELIBERATELY NOT SCORED: an offset inside the last ~11 bytes of the file.
-# Nothing an interface load reads lives there, so the reader cannot notice
-# those bytes are gone and a .ppu missing them is still accepted with rc=0.
-# Catching that needs a whole-file length check against the size recorded in
-# the header, which must also cope with .ppu data read from a nonzero offset
-# inside a stream.  It is a real gap and it is open, not covered by this gate;
-# scoring it here would only make the gate red forever and teach people to
-# ignore it.
+# THE TAIL OFFSETS ARE NOW SCORED (cy1117).  They used to be excluded on
+# purpose: nothing an interface load READS lives in the last handful of bytes,
+# so the reader could not notice they were gone and a .ppu missing them was
+# accepted with rc=0 -- on the 55291-byte unit this gate is normally pointed
+# at, every truncation from 55271 up passed.  Closing it needed a whole-file
+# length check, comparing the physical length against the one the ppu header
+# declares, which is what v58 added in tppufile.readheader.  A truncated unit
+# whose source is available is now RECOMPILED and the build goes green; only a
+# unit with no source left to rebuild from stops the compile.
 #
 # COMPANION CHECK, different question: this script asks whether the compiler
 # SURVIVES a half-written unit.  dist/ppu-corruption-recovery-check.sh asks what
@@ -69,7 +70,18 @@ trap 'echo "ABORTED $TARGET -- killed after $total of the offsets were judged"; 
 
 printf 'program p;\nuses %s;\nbegin end.\n' "$UNIT" > "$SCRATCH/p.pp"
 
-for n in 0 1 20 39 40 41 45 54 70 77 83 100 119 120 121 200 1000 $((FULL/2)) $FULL; do
+# The tail offsets only mean something on a file big enough for them to sit
+# past the fixed list above; below that they would duplicate offsets already
+# scored and quietly inflate the denominator.  Say so rather than skip silently.
+OFFSETS="0 1 20 39 40 41 45 54 70 77 83 100 119 120 121 200 1000 $((FULL/2))"
+if [ "$FULL" -gt 1200 ]; then
+  OFFSETS="$OFFSETS $((FULL-40)) $((FULL-20)) $((FULL-11)) $((FULL-5)) $((FULL-2)) $((FULL-1))"
+else
+  echo "trunccheck: $REALPPU is only $FULL bytes -- tail offsets not scored on a file this small"
+fi
+OFFSETS="$OFFSETS $FULL"
+
+for n in $OFFSETS; do
   total=$((total+1))
   U="$SCRATCH/u"; W="$SCRATCH/w"; rm -rf "$U" "$W"; mkdir -p "$U" "$W" || { echo "TRUNCCHECK FATAL: cannot make scratch dirs" >&2; exit 2; }
   head -c "$n" "$REALPPU" > "$U/$UNIT.ppu"

@@ -292,7 +292,7 @@ type
 {$endif}
   {read}
     function  openfile:boolean;
-    function  openstream(strm:TCStream):boolean;
+    function  openstream(strm:TCStream;aknownsize:longint=-1):boolean;
     procedure reloadbuf;
     procedure readdata(out b;len:integer);
     procedure readdata(const b : TByteDynArray);
@@ -664,7 +664,7 @@ begin
 end;
 
 
-function tentryfile.openstream(strm:TCStream):boolean;
+function tentryfile.openstream(strm:TCStream;aknownsize:longint=-1):boolean;
 var
   i : longint;
 begin
@@ -681,7 +681,18 @@ begin
   {$pop}
 {$endif DEBUG_PPU}
 {read ppuheader}
-  fsize:=f.Size;
+  { fsize is the PHYSICAL length of the entry data, and readheader compares the
+    length the header declares against it.  Only a caller can state it for a
+    stream that is a WINDOW into a larger file: TCStream.Size is Seek(0,soFromEnd),
+    which TCRangeStream answers with FSize-1 (its last valid offset, not its
+    length) and, for the open-ended ASize<0 construction, with a maxLongint-based
+    number that is not a length at all.  So take the caller's figure when it has
+    one and only fall back to asking the stream -- which is exact for the plain
+    file case, TCFileStream.Seek soFromEnd returning the true byte count (cy1117). }
+  if aknownsize>=0 then
+    fsize:=aknownsize
+  else
+    fsize:=f.Size;
   i:=readheader;
   if i<0 then
     exit;
