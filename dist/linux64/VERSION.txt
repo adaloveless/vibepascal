@@ -1,78 +1,77 @@
-VibePascal v57 Linux x86_64 compiler -- a truncated .ppu is an error, not a hang
-Source commit: 1f605f41b3 (merge of otto/ppu-truncated-hang)
-Compiler fix:  c31227c8ca  (compiler/entfile.pas)
-Parent release: v56 (a187bbac34e1f61154affa5a57e93298028ffc72)
-Built: 2026-09-11, native self-host fixpoint on x86_64-linux (stage2 == stage3)
-ppcx64 md5:    6A460E0E02CC3EF71313AA5040C1934E
-ppcx64 sha256: E22E9AE724C678431F1D4206AE8BEE904CD7504A58B0B447942A8EE9985567D8
-ppudump md5:   528F623CD25E9739C690341A85CCC435   (rebuilt: it shares the same reader)
+VibePascal v58 Linux x86_64 compiler -- a .ppu shorter than its header says is truncated
+Source commit: dedf242c696a543f9626e2839ced40876478a98a
+Parent release: v57 (1f605f41b3b06a5fa84fb4cb31ee4298fb30907f)
+Built: 2026-09-11, native self-host fixpoint on x86_64-linux (stage1==stage2==stage3)
+ppcx64 md5:    8C8179B2F0A452CEBEC0131AA301B076
+ppcx64 sha256: DF34EFC40B4F8717E3F221A9CC175C66BA7D5222DB39FC520BA67EC31A7D0991
+ppudump md5:   241AB27A8991E3F599FA7A5564AF30A2   (rebuilt: it shares the same reader)
 
 Contents: bin/ppcx64 and bin/ppudump -- a COMPILER-BINARY refresh meant to drop
 into an existing VibePascal source/unit tree on Linux.  No RTL change, no
-package change, no PPU format change, so an existing v52..v56 Linux unit set
-stays valid.  ppudump is included only because it is built from the same reader
-that changed; every other utility binary is unchanged and does not need one.
+package change, no PPU format change, so an existing v52..v57 Linux unit set
+stays valid and does not need rebuilding.
 
 WHAT WAS BROKEN
 ---------------
-Hand the compiler a half-written .ppu and it spun at 99% CPU forever, printed
-nothing, and had to be killed.  A zero-byte .ppu was handled correctly and said
-so, which is what makes this the compiler's fault rather than the file's.  A
-killed build, a full disk or an interrupted copy all leave a partial .ppu
-behind; on that input the compiler did not fail your build, it STALLED it, with
-no message to grep for.
+This is the gap v57's own VERSION.txt declared under "NOT FIXED, AND NOT
+HIDDEN", now closed.
 
-    intact aspelldyn.ppu   55291 bytes  ->  exit 0 in 0.06s
-    zero-byte  .ppu            0 bytes  ->  "Can't find unit", exit 1, instant
-    truncated  .ppu          120 bytes  ->  99% CPU, no output, never returns
+v57 stopped the compiler HANGING on a half-written .ppu, but it only ever
+noticed damage it happened to trip over.  Lose the TAIL of a unit file and there
+was nothing to trip over: nothing an interface load reads lives in the last
+handful of bytes, so the compiler read what it wanted, never reached the missing
+part, and built your program against a unit that is not all there -- exit 0, no
+message, nothing to search a log for.  Measured on a real 55291-byte unit, every
+truncation from 55271 bytes upward was accepted.
 
-WHY
----
-The PPU reader treated running off the end of the file as a silent no-op: it
-returned quietly with the destination buffer untouched and told nobody.  The
-entry header is read through that same path, so at end of file the reader still
-described the PREVIOUS entry and handed it back to its caller, again and again,
-and the interface loader re-processed it forever.  On the 120-byte file the cut
-lands exactly at the end of the source-file-list entry, so what got replayed was
-the source file list: a million identical "PPU Source:" lines in twelve seconds.
+A killed build, a full disk or an interrupted copy is exactly how a file loses
+its tail, so this is the same accident v57 was about, landing a few bytes later.
 
-WHAT CHANGED (compiler/entfile.pas, the shared reader, four small changes)
-  * reading past end of file sets the reader's error flag -- the exact-fit case,
-    where the last byte needed is the last byte present, stays a success;
-  * skipping past end of file likewise;
-  * on error the entry reader zeroes its entry and reports a read error rather
-    than replaying a stale one;
-  * end-of-entry reports true once the flag is set, so the seven loops in the
-    unit loader that drain an entry stop instead of waiting for data that will
-    never arrive.
-The compiler already had the right fatal -- "Invalid PPU-File entry" -- and
-already stopped on it everywhere; it simply never got told.  No new message, no
-message-catalogue change, no PPU format change.  ppudump already guarded itself
-with the same error flag, so this makes the compiler agree with its own dump
-tool.
+WHAT CHANGED
+------------
+A .ppu header records how long the payload is, so a complete unit file is always
+exactly 40 bytes of header plus that number, and can never be fewer.  Nothing
+compared those two numbers; the reader checked only that the file was big enough
+to hold the header and then trusted whatever followed.  tppufile.readheader now
+compares them and rejects a SHORT file.  Longer than declared stays legal, as it
+always was.  The arithmetic is 64-bit on purpose: the declared size is an
+unsigned 32-bit field, and a corrupt header claiming near 4 GB would wrap a
+32-bit sum and switch the check off at exactly the moment it is needed.
 
-MEASURED
+THIS DOES NOT TURN GOOD BUILDS RED.  The rejection is soft and self-healing:
+  * if the unit's source is available, the unit is RECOMPILED and the build goes
+    green -- measured, the .ppu comes back at its full length;
+  * if a good copy of the same unit sits in a later -Fu directory, the compiler
+    falls through to it and the build goes green -- also measured;
+  * only a truncated unit with no source and no other copy stops the compile, and
+    it stops with the message an absent unit already gives.
+Nobody is ever told to go and delete a file.
+
+The other half of the change is that the length has to BE a length.  It came
+from Seek-to-end, which only a plain file answers with a byte count -- a range
+stream (a .ppu read from inside a package file) answers with its last valid
+offset, one short.  Left alone, that would have declared every packaged unit
+truncated by exactly one byte.  The length is now handed in by whoever opens the
+stream and knows it, and the range stream's own seek is left alone rather than
+bent to serve a reader that does not need it.  Said plainly: no target in this
+compiler enables dynamic packages, so that package half cannot be exercised here
+and is written to be right if it is ever switched on, not proven by running it.
+
+VERIFIED
 --------
-Twenty truncation offsets of one real 55291-byte .ppu, identical command line,
-only the .ppu varying.  NINE of the twenty hang on v56 -- the reported input was
-not special -- and all nine now fail in 0.05s with a message and exit 1:
+  * 4000 real .ppu files in rtl/ and packages/: every one is exactly 40+declared
+    bytes, so the check has no slack to fire falsely on
+  * dist/ppu-truncation-check.sh, extended this release to SCORE the tail offsets
+    it used to document as an open gap:
+        20/25 offsets clean, 5 problem(s), exit 1   on the pre-fix compiler
+        25/25 offsets clean, 0 problem(s), exit 0   on this one
+  * dist/unit-set-loadcheck.sh x86_64-linux: 147/147 packages load clean
+  * full 1983-test corpus A/B against a baseline rebuilt from this same source
+    with the same command minus the patch: 1983 SAME, 0 DIFF
+  * self-host fixpoint: stage1 == stage2 == stage3, byte-identical
 
-    offsets 54 70 77 83 100 119 120 121 200 1000   v56 HANG -> v57 exit 1
-    offsets 0 1 20 39 40 41 45 27645               unchanged clean error
-    intact 55291                                   exit 0 both, still compiles
-
-Full 1983-test corpus A/B against a baseline rebuilt from this same source with
-the same command minus the patch: 1983 SAME, 0 DIFF.  Self-host fixpoint
-reached, stage2 == stage3 byte-identical.
-
-NOT FIXED, AND NOT HIDDEN
--------------------------
-Cutting only the LAST 11 bytes off that 55291-byte file is still accepted with
-exit 0: nothing an interface load reads lives in those bytes, so the reader
-never notices they are gone.  Catching that needs a whole-file length check
-against the size recorded in the header, which must also cope with .ppu data
-read from a nonzero offset inside a stream -- a different and riskier change,
-deliberately not bundled with a hang fix.
-
-Reported by BuildMaster, who hit it while corrupting a unit on purpose to build
-a negative control for something else.
+NOTE ON bin/ppudump: it is STRIPPED in this release and was not in v57, which is
+why it is about 1.2 MB smaller.  Nothing else about it changed -- its output on
+an intact .ppu is byte-identical to v57's, and .text differs by under 0.1%.  On a
+truncated .ppu it now refuses the file up front instead of dumping partway and
+ending in "!! Error in PPU".
