@@ -1,9 +1,10 @@
 # VibePascal v58 -- cross-platform status manifest
 # Cut by FPCDeveloper (Otto).  win64 + linux64 shipped 2026-09-11 (cy1117);
 # i386-linux-cross, arm-linux-cross, aarch64-linux and arm-linux shipped
-# 2026-09-11 (cy1118).  The two macOS targets are NOT here yet -- see the
-# section at the end, which says so plainly rather than leaving it to be
-# discovered.
+# 2026-09-11 (cy1118); x86_64-darwin and aarch64-darwin shipped 2026-09-11
+# (cy1119).  v58 is now on EVERY target this fork publishes.  The section at
+# the end records that the macOS pair shipped hours after the rest, and why,
+# rather than quietly erasing the gap.
 # This file is the authoritative answer to "which platforms have v58".
 # Per-platform detail lives in dist/<target>/VERSION.txt and inside each tarball.
 # There is no RELEASE-v57.txt: v57 shipped to win64 and linux64 only, and every
@@ -101,6 +102,25 @@ PLATFORMS CARRYING v58
                    -- RUNTIME: its OUTPUT was executed under qemu-arm-static,
                       checks=45 fails=0 NativeInt=4.
 
+  x86_64-darwin/   vibepascal-v58-dedf242c69-x86_64-darwin-bin.tar.gz
+                   md5 7e21e550132e2bf62695d94e73794429
+                   ppcx64 md5 95ae70bde49d567e7b4c912eb7670e7a  (UNSIGNED, 9269256 B)
+                   -- SKIPPED v57; this release carries BOTH reader fixes.
+                   -- RUNTIME: NEVER EXECUTED.  No macOS host and no Mach-O
+                      emulation on the build box.  See below for what WAS
+                      measured instead, and do not read this line as a pass.
+                   -- SIGNING: a Lazarus Mac bundle re-signs this binary, which
+                      CHANGES the hash.  Predicted as-shipped: 9393168 B,
+                      md5 3c4caf87a0167b016a615579aef40fe7.  A mismatch against
+                      the unsigned number above is NOT corruption.
+  aarch64-darwin/  vibepascal-v58-dedf242c69-aarch64-darwin-bin.tar.gz
+                   md5 912f9dbd5c1217b8a7f9a0e19fdd03b7
+                   ppca64 md5 ffc4553ffecc69104c7856602831e776  (UNSIGNED, 7333151 B)
+                   -- SKIPPED v57; this release carries BOTH reader fixes.
+                   -- RUNTIME: NEVER EXECUTED, same reason as its Intel twin.
+                   -- SIGNING: predicted as-shipped 7338624 B,
+                      md5 b49919f66d9eee4f06fe6fff8f137c04.
+
 HOW EACH BINARY WAS SHOWN TO CARRY THE FIX -- AND WHY NOT BY VERSION STRING
   Every one of these compilers reports "3.3.1".  The version string cannot tell
   v54 from v58, so it was never used as evidence.  The discriminating test is
@@ -117,6 +137,19 @@ HOW EACH BINARY WAS SHOWN TO CARRY THE FIX -- AND WHY NOT BY VERSION STRING
     arm-linux (cross)  ppcrossarm  v54        11/25, exit 1     25/25, exit 0
     aarch64-linux      ppca64      v56        11/25, exit 1     25/25, exit 0
     arm-linux (native) ppcarm      v56        12/25, exit 1     25/25, exit 0
+    x86_64-darwin      ppcx64      v56        11/25, exit 1     25/25, exit 0
+    aarch64-darwin     ppca64      v56        11/25, exit 1     25/25, exit 0
+
+  THE TWO DARWIN ROWS ARE NOT THE SHIPPED MACH-O BINARIES, and saying so is the
+  point.  Nothing here can execute a Mach-O, so those two lines were measured on
+  Linux-hosted compilers built from the SAME source commit, targeting darwin and
+  reading real <arch>-darwin .ppu files.  They are evidence about the SOURCE the
+  shipped binaries were built from, not about the shipped binaries running.  What
+  ties the source to the bytes is the section triage in the darwin VERSION.txt
+  files: v56 source vs v58 source, both cross-built here today with the same host
+  compiler, RTL and flags, __text +896 (x86_64) and +784 (aarch64), against a
+  build-noise floor of SEVENTEEN BYTES of LC_UUID on the Intel side and identical
+  section sizes on the arm64 side.
 
   The pre-fix failures split into a loud half and a silent half: 8 or 9 offsets
   HUNG and had to be killed at 30 seconds, and 5 were ACCEPTED with rc=0 -- a
@@ -135,8 +168,22 @@ A CROSS BUILD CAN LIE ABOUT BEING ONE -- CHECK THE UNIT COUNT, NOT THE HASH
   compiler with an access violation.  Both were cured by wiping
   compiler/<target>/{bin,units} and rebuilding from scratch, with no source
   change.  Units recompiled per binary this release: 277 (i386), 223 (aarch64),
-  241 (arm).  If you reproduce these, assert that count.
+  241 (arm), 250 (x86_64-darwin), 223 (aarch64-darwin).  If you
+  reproduce these, assert that count.
 
+ADDENDUM 2026-09-11 (cy1119): THE MACOS PAIR SHIPPED, HOURS AFTER THE REST
+  Both darwin targets now carry v58 and are listed above.  The paragraph below is
+  left exactly as it was written earlier today, because it is the record of what
+  this manifest said while the gap was open -- not because it is still true.  The
+  one line in it that is now WRONG is "STILL ON v56"; everything it says about
+  WHY the darwin delivery path is different is still correct and is why those two
+  entries carry an extra SIGNING note and no runtime claim.
+
+  Still true after this addendum, and the reason the honesty section above is
+  worded the way it is: v58 is on every target, but the macOS pair is the only
+  one where nobody has ever executed the shipped binary.
+
+--- SUPERSEDED, KEPT VERBATIM (written 2026-09-11, cy1118) ---
 STILL ON v56 AFTER THIS RELEASE
   x86_64-darwin/   vibepascal-v56-a187bbac34-x86_64-darwin-bin.tar.gz
   aarch64-darwin/  vibepascal-v56-a187bbac34-aarch64-darwin-bin.tar.gz

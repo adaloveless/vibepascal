@@ -1,78 +1,121 @@
-VibePascal v56 -- x86_64-darwin native compiler (runs on Intel macOS).
-An inferred inline var initialised from a real constant is a Double, whatever
-the constant's value happens to be.
-Source commit: a187bbac34 (merge of inlinevar-real-default)
-Compiler fix:  f06e46d8eb  (compiler/pstatmnt.pas, compiler/defutil.pas, compiler/ncnv.pas)
-Parent release: v55 (eae5d3e919a26a7db19937da10da1c8b610b17da)
-Built: 2026-09-10, cross-built on x86_64-linux against MacOSX26.2.sdk (osxcross ld)
-Binary: bin/ppcx64  md5 f3a7f19bdf5da06af4afdc559c6bf5c3
-                 sha256 2f3c9a1dd4fa61a353d551ad8fd38f436e4079dc560e8a4d73446094d7322359
+VibePascal v58 -- x86_64-darwin native compiler (runs on Intel macOS).
+A .ppu that is SHORTER than its own header declares is rejected instead of
+silently accepted, and a half-written one no longer hangs the compiler forever.
 
-COMPILER BINARY ONLY.  Only compiler/{pstatmnt,defutil,ncnv}.pas changed between
-v55 and v56: no RTL change, no package change, no PPU format change, so an
-existing v54/v55 x86_64-darwin unit set stays valid and the utility binaries are
-unchanged and not re-shipped.
+Source commit:  dedf242c696a543f9626e2839ced40876478a98a  (dedf242c69)
+Compiler fixes: c31227c8ca  (v57 -- a short read inside the .ppu reader is an error)
+                dedf242c69  (v58 -- tppufile.readheader compares the declared
+                             payload length against the physical one)
+Parent release: v56 (a187bbac34).  This target SKIPPED v57, so it collects BOTH
+                reader fixes at once.
+Built: 2026-09-11, cross-built on x86_64-linux against MacOSX26.2.sdk (osxcross ld)
+Binary: bin/ppcx64  size   9269256
+                    md5    95ae70bde49d567e7b4c912eb7670e7a
+                    sha256 9ab7be02558a2f6bbee5a243253d3cc236a73386dc55cb24a789946541b7a4fd
 
-WHAT CHANGED
-  An inline var with no type annotation used to take its type from the real
-  constant you initialised it with, and that type changes with the VALUE:
+COMPILER BINARY ONLY.  Only compiler/entfile.pas and compiler/ppu.pas changed
+between v56 and v58: no RTL change, no package change, and NO PPU FORMAT change
+-- the reader got stricter, the format did not move -- so an existing v54/v55/v56
+x86_64-darwin unit set stays valid and the utility binaries are unchanged and not
+re-shipped.
 
-      var a := 1.0;      // Single   -  4 bytes,  7 digits
-      var b := 0.1;      // Extended - 10 bytes, 19 digits
-      var c := 1.0/3.0;  // Single, or Extended under {$mode delphi}
-      var d := 1/2;      // Double
+WHAT CHANGED -- ONE ACCIDENT, TWO BYTES APART
+  Both fixes are about the same thing happening to a unit file: a killed build, a
+  full disk or an interrupted copy leaves a .ppu HALF WRITTEN.
 
-  Four declarations side by side, four different types, none of them the one
-  Delphi or an explicit `var x: Double := ...` gives.  v56 infers the DEFAULT
-  real type -- Double -- in either direction.  RANGE is never traded: 1.0e400
-  and 1.0e-4000 keep their wider type, because a Double would silently hold
-  +Inf and 0.  A variable or non-constant expression still keeps its own type,
-  and an explicit `single(1.0)` still wins.  How real CONSTANTS themselves are
-  typed is NOT touched -- that is stock upstream FPC.
+  v57  A short read inside the .ppu reader is now an error.  Before it, a half-
+       written unit could put the compiler into an infinite 99%-CPU spin with no
+       message at all -- you had to notice a build that never ended and go looking.
+
+  v58  v57 only ever noticed damage it happened to trip over.  Lose the TAIL of a
+       unit and there is nothing to trip over, because nothing an interface load
+       reads lives in the last handful of bytes: the compiler read what it wanted,
+       never reached the missing part, and built your program against a unit that
+       is not all there.  Exit 0, no message, nothing to search a log for.
+       A .ppu header records how long the payload is, so a complete file is always
+       40 bytes of header plus that number and can never be fewer.  readheader now
+       compares the two and rejects a SHORT file.  Longer than declared stays
+       legal, as it always was.  The arithmetic is 64-bit on purpose: the declared
+       size is an unsigned 32-bit field, and a corrupt header claiming near 4 GB
+       would wrap a 32-bit sum and switch the check off at exactly the moment it
+       is needed.
+
+  THIS DOES NOT TURN GOOD BUILDS RED.  The rejection is soft and self-healing: a
+  truncated unit whose source is available is RECOMPILED and the build goes green;
+  a good copy of the same unit in a later -Fu directory is used instead; only a
+  truncated unit with no source and no other copy stops the compile, and it stops
+  with the message an absent unit already gives.  Nobody is ever told to go and
+  delete a file.
 
 HOW FAR THE VERIFICATION GOES ON THIS TARGET -- READ THIS BEFORE QUOTING IT
-  This binary has NEVER BEEN EXECUTED.  The build host is x86_64-linux, there
-  is no macOS on it, and no packaged emulator on this box runs a Mach-O.  That
-  was equally true of the v55 and v54 binaries this one replaces; it is not a
-  new gap, but it is a real one and nothing on this machine will close it.
+  THIS BINARY HAS NEVER BEEN EXECUTED.  The build host is x86_64-linux, there is
+  no macOS on it, and no packaged emulator on this box runs a Mach-O.  That was
+  equally true of the v54, v55 and v56 binaries this one replaces; it is not a new
+  gap, but it is a real one and nothing on this machine will close it.
 
   What IS established:
-    - Format and architecture: runs on Intel macOS, Mach-O, checked with `file` on the exact
-      bytes in this tarball.
-    - The fix is compiled in, by a SINGLE-AXIS Mach-O section triage: the v55
-      source commit and the v56 source commit were each cross-built here with
-      the SAME host compiler, the SAME RTL units and the SAME flags, and only
-      then compared.  __text goes 4382382 -> 4382798, a delta of exactly
-      416 bytes -- the size of the added inference code, and nothing else.
-      The same delta reproduced under a second link mode (-CX -XX), which is
-      what makes it a measurement of the SOURCE and not of the build.
-    - Reproducibility: three independent full rebuilds of this configuration
-      were compared byte for byte.  x86_64-darwin came out byte-identical every
-      time; aarch64-darwin varies only in the linker-generated LC_UUID and one
-      byte of __LINKEDIT packing, with __text identical.
-    - The BEHAVIOUR of this exact source was A/B proven elsewhere: natively on
-      x86_64-linux against the published pre-fix v55 binary, 57 checks over 10
-      structural contexts, plus a %FAIL test that must keep refusing
-      `for var i := 1.0`.
 
-  What is NOT established: that this binary starts, compiles, or links on a
-  Mac.  If you have a macOS box, the one number worth sending back is the exit
-  code of `./bin/ppcx64 -iV` (expect 0, printing 3.3.1) -- it needs no SDK and
-  no unit set to answer that.
+    - Format and architecture: Mach-O 64-bit x86_64 executable, flags
+      NOUNDEFS/DYLDLINK/TWOLEVEL/PIE, checked with file(1) on the exact bytes in
+      this tarball.
 
-WHY THIS BINARY IS LARGER THAN v55's, AND WHAT THAT IS NOT
-  v55 shipped __text 3583563 here; this one is 4382798.  That gap is NOT code
-  the fix added -- the fix is 416 bytes, measured above.  Two build-recipe
-  differences account for it, and both were measured rather than assumed:
-    - The RTL units this compiler statically links were rebuilt in the shared
-      tree on 2026-09-10 at 19:40 UTC, by BuildMaster's Mac re-roll, while this
-      cycle was running.  The same source built immediately before and after
-      that rebuild differs by 191,536 bytes of __text -- about 4% -- on its own.
-    - v56 is linked PLAIN.  v55 was smart-linked or similar: rebuilding the v55
-      SOURCE here with -CX -XX gives __text 3724590, most of the way back to
-      v55's 3583563, while rebuilding it plain gives 4382382.  Plain was chosen
-      deliberately -- no binary on this target can be executed here, so the
-      build that performs the fewest transformations is the one whose contents
-      can be defended.
-  v55's exact flags were never recorded, so the reconstruction is close but not
-  exact.  Said here rather than rounded away.
+    - The build really recompiled the patched code, rather than relinking stale
+      units.  compiler/x86_64/{bin,units} was wiped first; the build then compiled
+      250 units, among them entfile and ppu, and both entfile.ppu and ppu.ppu were
+      written fresh.  (A cross/native compiler build can return 0, emit a new md5
+      and have recompiled a single file off week-old PPUs -- measured on this tree
+      on 2026-09-11 -- so the unit COUNT is asserted here, never the hash.)
+
+    - The fix is compiled in, by a SINGLE-AXIS Mach-O section triage.  The v56
+      source commit and the v58 source commit were each cross-built HERE, TODAY,
+      with the same host compiler, the same RTL units and the same flags, and only
+      then compared:  __text 4382798 -> 4383694, a delta of 896 bytes.
+      The control that makes that a source measurement and not build noise: the
+      v56-source rebuild came out 9269216 bytes, the same size as the v56 binary
+      shipped on 2026-09-10, differing from it in SEVENTEEN bytes of the whole
+      9.2 MB file (the linker-generated LC_UUID), with every section size
+      identical.  So the build is reproducible to within a UUID and the 896-byte
+      delta is the fix.
+
+    - The BEHAVIOUR of this source was proven by EXECUTION, on this host, against
+      a control that fails.  The shipped Mach-O cannot run here, so the run used
+      the x86_64-linux compiler built from the SAME commit, targeting darwin and
+      reading real x86_64-darwin .ppu files:
+        dist/ppu-truncation-check.sh <compiler> x86_64-darwin \
+            packages/aspell/units/x86_64-darwin/aspelldyn.ppu \
+            rtl/units/x86_64-darwin
+      v58 source: 25/25 offsets clean, 0 problems, rc=0.
+      v56 source (the preserved pre-fix compiler): 11/25, 14 problems, rc=1 --
+      eight HANGs killed at 30 s, one silent kill, and five SILENT ACCEPTs of a
+      truncated unit at 55293/55302/55308/55311/55312 bytes.  A gate that cannot
+      fail proves nothing; this one demonstrably says NO.
+
+  What is NOT established: that this binary starts, compiles or links on a Mac.
+  If you have a macOS box, the one number worth sending back is the exit code of
+  ./bin/ppcx64 -iV (expect 0, printing 3.3.1) -- it needs no SDK and no unit set.
+
+AD-HOC SIGNING CHANGES THIS HASH -- A MISMATCH IS NOT CORRUPTION
+  Every md5/sha256 above describes the binary AS STAGED, UNSIGNED.  Darwin
+  packaging in Lazarus build-release.sh ad-hoc signs every bundled Mach-O with
+  rcodesign, and the compiler is hard-linked into the .app, so the signature
+  rewrites the top-level copy too.  A signature appends bytes and changes the
+  hash, so the number above CANNOT match the file inside a Lazarus darwin tarball.
+
+  Predicted AS-SHIPPED digests, if this binary is signed with no other mutation:
+    ppcx64   9393168 bytes
+      md5    3c4caf87a0167b016a615579aef40fe7
+      sha256 7c868bbc14e7a6a469181b49f28d0c1dbf22860e492c6c39c61ccae267a2cef0
+
+  These are a CROSS-CHECK, not the authority: build-release.sh stamps an
+  "AS SHIPPED IN THIS TARBALL" block computed after packaging, and that block
+  wins if the two disagree.  The prediction procedure was validated in the same
+  run by re-deriving the v56 number: signing the v56 compiler under the name
+  ppcx64 reproduces its documented 9393120 / 6e7a99a81afe9ec57ef133aad8da478e
+  exactly.
+
+  VERIFY UNDER THE REAL FILENAME OR THE NUMBER IS WRONG.  rcodesign takes the
+  Mach-O binary identifier from the FILE'S NAME when none is embedded, and that
+  identifier is covered by the signature -- so signing a copy called ppcx64.tmp
+  yields a DIFFERENT hash than signing one called ppcx64.  The aarch64 binary is
+  insensitive to this because its linker already embedded an identifier, which is
+  why exactly half of any such check reproduces on the first try.
