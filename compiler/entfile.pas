@@ -727,7 +727,16 @@ begin
     reloadbuf;
     pbuf:=@buf[bufidx];
     if bufsize=0 then
-      exit;
+      begin
+        { Physical end of file with bytes still outstanding = the file is
+          truncated. Flag it, otherwise the caller sees a "successful" read of
+          whatever stale bytes b already held and keeps going (cy1114: a
+          truncated .ppu made readentry replay the last entry forever). len=0
+          here is the exact-fit case and is NOT an error. }
+        if len>0 then
+          error:=true;
+        exit;
+      end;
   until false;
   move(pbuf^,p^,len);
 {$ifdef DEBUG_PPU}
@@ -768,7 +777,11 @@ begin
         dec(len,left);
         reloadbuf;
         if bufsize=0 then
-         exit;
+         begin
+           { truncated file: could not skip to the end of the entry (cy1114) }
+           error:=true;
+           exit;
+         end;
       end
      else
       begin
@@ -798,6 +811,17 @@ begin
   ppu_log('entrystart');
 {$endif}
   readdata(entry,sizeof(tentry));
+  if error then
+    begin
+      { The entry header could not be read in full, so `entry' still describes
+        the PREVIOUS entry. Returning entry.nr here replays that entry, which
+        never terminates; report a read error instead (cy1114). }
+      fillchar(entry,sizeof(tentry),0);
+      entrystart:=bufstart+bufidx;
+      entryidx:=0;
+      readentry:=iberror;
+      exit;
+    end;
   if change_endian then
     entry.size:=swapendian(entry.size);
   entrystart:=bufstart+bufidx;
@@ -817,6 +841,13 @@ end;
 
 function tentryfile.endofentry: boolean;
 begin
+  { A read error (truncated file) means there is nothing more to get out of this
+    entry -- say so, or callers loop on data that will never arrive (cy1114). }
+  if error then
+    begin
+      endofentry:=true;
+      exit;
+    end;
 {$ifdef generic_cpu}
   endofentry:=(entryidx=entry.size);
 {$else not generic_cpu}
