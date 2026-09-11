@@ -1,0 +1,128 @@
+i386-linux UNIT SET -- READ THIS BEFORE USING THE BIN TARBALL
+=============================================================
+Added 2026-09-11.  This file is NOT mirrored inside any published tarball, so it
+can be corrected later without making an already-shipped artifact disagree with
+it.  VERSION.txt in this directory is byte-identical (md5
+455282186da36bb2f505b70a0f055b1b) to the copy inside the v58 cross bin tarball
+and is therefore left exactly as it shipped -- INCLUDING its line "an existing
+i386-linux unit set stays valid and does not need rebuilding", which quietly
+assumed you had one.  Until today nobody could have: this target had shipped
+four compiler binaries and NO units at all, so the published bytes could not
+compile one line on a machine with no prior install.  This file is that fix.
+
+WHAT TO DOWNLOAD
+----------------
+  vibepascal-v58-dedf242c69-i386-linux-cross-bin.tar.gz    the compiler
+      2007967 bytes   md5 debb51aeb7e0749a7852b87cc8459117
+      contains bin/ppcross386 (6338192 bytes, md5 b76969a5226f68019f287a97dac89333)
+
+  vibepascal-v54-i386-linux-units-full.tar.gz              the unit set  <-- NEW
+      84260313 bytes
+      md5    3e9ce41ec5a263d500ae5218c62d8280
+      sha256 36a5a85feee223e39498a45b1398b149fe0911385e7ffe86af4117e6616f40b3
+      3607 files flat in units/i386-linux/:
+        1704 .ppu   (108 RTL + 1596 package)
+        1652 .o
+         250 .rsj   (resource strings)
+           1 .inc   (packages/gdbint gdbver.inc)
+      Same full RTL+packages shape as the win64, aarch64-linux and arm-linux
+      sets.  There is no earlier i386 units tarball, superseded or otherwise --
+      this is the first one, so nothing is being replaced and no previously
+      published hash changes.
+
+A NOTE ON WHERE THIS FILE LIVES, FOR WHOEVER AUTOMATES OVER dist/ NEXT.
+The DIRECTORY is named for the compiler's HOST (i386-linux-cross = runs on
+x86_64), while the TARBALL is named for its TARGET (i386-linux), because that is
+what the units are -- a native i386 compiler, if we ever ship one, would use this
+exact set unchanged.  So the usual "<dir> == <target token in the filename>"
+assumption does NOT hold here, and a glob built on it (dist/arm-runtime-proof.sh
+latest_units() is built that way) will find nothing.  dist/arm-linux/ has no such
+mismatch; this directory does.  Renaming the tarball to match the directory would
+be worse: it would claim these PPUs are cross-specific, and they are not.
+
+Extract both into the same directory.  You get bin/ppcross386 and
+units/i386-linux/, and the compiler needs to be told where the units are:
+
+    ./bin/ppcross386 -Fuunits/i386-linux -Flunits/i386-linux hello.pas
+
+THIS IS A CROSS COMPILER, BUT IT NEEDS NO CROSS BINUTILS
+---------------------------------------------------------
+bin/ppcross386 is an x86_64-linux binary that emits 32-bit i386-linux code
+(-iSP x86_64, -iTP i386).  Unlike the arm cross compiler it needs NO -XP prefix
+and no extra packages: a stock x86_64 binutils already links elf_i386, and a
+stock x86_64 kernel already runs i386 binaries.  Measured -- the plain command
+above compiled and the result ran, with nothing installed.
+(For contrast see dist/arm-linux-cross/UNITS.txt, where omitting
+-XParm-linux-gnueabihf- fails at LINK with a message that looks like a broken
+unit set and is not.)
+
+WHY THE UNITS SAY v54 AND THE COMPILER SAYS v58
+-----------------------------------------------
+The version stamp is MEASURED, not picked.  These PPUs were built 2026-09-03
+01:2x, and the commit at HEAD then was 529f6a3239, five minutes after v54
+(b7d2d9676e, 2026-09-03 01:21).  The stamp is nominal only:
+
+    git diff --stat 529f6a3239 b7d2d9676e -- rtl/ packages/   -> EMPTY
+    git diff --stat b7d2d9676e HEAD       -- rtl/ packages/   -> EMPTY
+
+RTL and package SOURCE has not moved at all from the build-time commit through
+v54 to today; only compiler/ moved.  The same version-mismatched pairing already
+ships for win64 (v52 units + v58 binary), aarch64-linux (v52 + v58) and
+arm-linux (v54 + v58), and it is the honest shape: restamping these v58 would
+claim a rebuild that did not happen.
+
+One file is out of family and is disclosed rather than left to be found: 3606 of
+the 3607 are 2026-09-03 01:xx, and packages/gdbint/units/i386-linux/gdbver.inc
+is 2026-04-17 22:17, 19 bytes.  It is a generated version include, it is in the
+tree, and it loads clean with everything else.
+
+WHAT WAS VERIFIED, AND THE CHAIN MATTERS MORE THAN ANY ONE NUMBER
+------------------------------------------------------------------
+  1. THE TREE LOADS.  dist/unit-set-loadcheck.sh i386-linux (ppcross386, 3.3.1):
+     146/146 packages load clean, 0 problems, exit 0, with zero silent
+     recompiles -- every unit output is directed to a scratch dir precisely so a
+     recompile would be DETECTED rather than hidden.
+  2. THE TARBALL IS THAT TREE.  All 3607 members md5-compared against the tree
+     files the load check measured: 3607 vs 3607, 0 mismatches.  Staged
+     TYPE-BLIND (find -type f), not by a guessed extension list, and asserted 0
+     basename collisions when flattening and 0 hardlink entries in the archive.
+  3. EXTRACT TO A RUNNING PROGRAM, FROM PUBLISHED BYTES ONLY.  The compiler
+     tarball was re-downloaded UNAUTHENTICATED from raw.githubusercontent.com
+     (HTTP 200, 2007967 bytes, md5 matching) into an EMPTY directory with the
+     units tarball, and compiled with -n so this host's installed FPC could
+     supply nothing:
+
+        program pkgtest;
+        {$mode objfpc}{$H+}
+        uses SysUtils, Classes, fpjson;   <-- fpjson is a PACKAGE unit, on
+                                              purpose (see the control below)
+        ...
+
+     rc=0, artifact "ELF 32-bit LSB executable, Intel 80386, statically linked",
+     and it RAN:
+
+        HELLO vibepascal i386-linux 2 { "target" : "i386-linux", "nativeint" : 4 }
+
+  4. NEGATIVE CONTROLS, SCORED ON THEIR MESSAGE TEXT AND NOT ON THEIR EXIT CODE.
+     An exit code is not a reason -- a typo in the command line returns rc=1 too,
+     so a control can go void and still read as firing.
+       A. units/ moved aside:
+            hello.pas(1,15) Fatal: Can't find unit system used by hello    rc=1
+       B. an RTL-ONLY unit set (217 files, what this target would have shipped
+          if nobody had checked), single axis -- same compiler, same command,
+          only the unit set differing:
+            uses SysUtils, Classes;   RTL-only rc=0     full set rc=0
+            uses SysUtils, fpjson;    RTL-only rc=1     full set rc=0 and RUNS
+          and the rc=1 is
+            pkgonly.pas(3,16) Fatal: Can't find unit fpjson used by pkgonly
+          That control is here because arm-linux shipped an RTL-only set for a
+          day and every smoke test we had passed over it: a hello-world that
+          uses SysUtils and Classes resolves ENTIRELY inside the RTL.
+
+  Proof tree: ~/src/vibepascal-slices/i386units/ (README.txt has the exact
+  reproduce command, plus verify/ holding the A/B).
+
+NOT PROVEN HERE: nobody has run this compiler, or anything it emits, on a real
+32-bit i386 INSTALL.  The generated binaries were executed on x86_64-linux,
+which runs i386 code natively; that covers codegen and the RTL, and it does not
+cover a 32-bit userland.

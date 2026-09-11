@@ -1,0 +1,107 @@
+arm-linux-cross UNIT SET -- READ THIS BEFORE USING THE BIN TARBALL
+==================================================================
+Added 2026-09-11.  This file is NOT mirrored inside any published tarball, so it
+can be corrected later without making an already-shipped artifact disagree with
+it.  VERSION.txt in this directory is byte-identical (md5
+18d45fee3024bdf4a9d731e604f21897) to the copy inside the v58 cross bin tarball
+and is therefore left exactly as it shipped.
+
+THIS DIRECTORY IS A POINTER, NOT A SECOND TARBALL
+-------------------------------------------------
+This target ships a CROSS compiler: an x86_64-linux binary that emits 32-bit
+arm-linux code.  Its TARGET is arm-linux, so it consumes exactly the same unit
+set as the native arm-linux compiler.  Nothing arm-linux-cross-specific exists
+and nothing here needs to be downloaded twice.  Get the units from:
+
+  dist/arm-linux/vibepascal-v54-arm-linux-units-full.tar.gz
+      82757332 bytes
+      md5    6e92ffab6cb292c65dc0dc393a487164
+      sha256 aca16ac314da1730e3253c71807d2a8249fc4e31c5f54f98a5a2438afa855030
+      3496 files flat in units/arm-linux/: 1646 .ppu (99 RTL + 1547 package),
+      1600 .o, 249 .rsj, 1 .inc.
+      Full writeup, including why the units say v54 and the compiler says v58:
+      dist/arm-linux/UNITS.txt
+
+  Do NOT use dist/arm-linux/vibepascal-v54-arm-linux-units.tar.gz.  It is still
+  published and still valid, but it is the RTL and nothing else (204 files), so
+  it can build a program that uses SysUtils and Classes and cannot build one
+  that uses fpjson.
+
+YOU ALSO NEED CROSS BINUTILS, AND THIS IS THE PART THAT BITES
+--------------------------------------------------------------
+The compiler binary is x86_64.  Left to itself it calls YOUR HOST's assembler
+and linker, and a host x86_64 ld cannot link ARM objects.  Measured here on the
+published bytes, with the unit set present and correct:
+
+  ./bin/ppcrossarm -n -FU. -Fuunits/arm-linux -Flunits/arm-linux pkgtest.pas
+
+  /usr/bin/ld.bfd: skipping incompatible ./units/arm-linux/varutils.o when
+                   searching for ./units/arm-linux/varutils.o
+  /usr/bin/ld.bfd: cannot find ./units/arm-linux/varutils.o: No such file or directory
+  pkgtest.pas(18,1) Error: Error while linking
+  pkgtest.pas(18,1) Fatal: There were 1 errors compiling module, stopping
+  rc=1
+
+That message names a unit .o and reads like a broken or incomplete unit set.  It
+is not.  The units are fine; the LINKER is the wrong architecture.  This is
+intrinsic to cross compilation -- it is not a qemu artifact and it happens on
+every host.  The internal linker is NOT a way around it: -Xi was tried and fell
+through to /usr/bin/ld.bfd and failed identically.
+
+So install armhf binutils and point the compiler at them with -XP:
+
+  sudo apt-get install -y binutils-arm-linux-gnueabihf     (Debian/Ubuntu)
+
+  ./bin/ppcrossarm -n -FU. -Fuunits/arm-linux -Flunits/arm-linux \
+                   -XParm-linux-gnueabihf- pkgtest.pas
+
+The ABI must match: this compiler is built -dFPC_ARMHF (ARM EABI5, HARD float),
+so it needs the gnueabihf binutils, not the soft-float armel ones.  No sysroot
+and no ARM libc are required -- the output is statically linked.
+
+Note for anyone comparing with dist/arm-linux/UNITS.txt: the command documented
+THERE has no -XP, and that is correct for that file.  The native ppcarm running
+on a real ARM board finds a native as/ld and needs no prefix.  -XP is a
+CROSS-compiler requirement.
+
+WHAT WAS MEASURED, ON THE PUBLISHED BYTES, IN AN EMPTY DIRECTORY
+-----------------------------------------------------------------
+  * vibepascal-v58-dedf242c69-arm-linux-cross-bin.tar.gz re-downloaded
+    UNAUTHENTICATED from raw.githubusercontent.com: HTTP 200, 1768165 bytes,
+    md5 0f35c1601c2441a69977e7b9baa2b6d6, identical to the local copy.
+    Extracted bin/ppcrossarm md5 5e3d9ba2d978db06b31a1a15c37244d9 -- matches the
+    md5 its OWN VERSION.txt declares.
+  * The 82 MB unit tarball was NOT re-downloaded.  Published-vs-local was
+    settled with the GitHub contents API instead: the published blob sha1
+    7cdc30407935dbad3fcc63dd5e4c9eaefc4ae2c8 equals `git hash-object` on the
+    local file, sizes 82757332 both sides.
+  * Compiler identity: -iV 3.3.1, -iD 2026/09/11, -iTP arm, -iSP x86_64.  The
+    last two are the point: TARGET arm, HOST x86_64.
+  * EXTRACT TO RUNNING PROGRAM, from the published bytes only, both tarballs into
+    one empty directory, -n so this host's installed FPC could supply nothing:
+
+        program pkgtest;
+        {$mode objfpc}{$H+}
+        uses SysUtils, Classes, fpjson;    <-- fpjson is a PACKAGE unit, on
+                                               purpose: an RTL-only unit set
+                                               passes a hello-world smoke and
+                                               fails here.
+        ...
+
+    rc=0, artifact "ELF 32-bit LSB executable, ARM, EABI5 version 1 (SYSV),
+    statically linked", and it RAN under qemu-arm-static:
+
+        HELLO vibepascal arm-linux-cross 2 { "target" : "arm-linux-cross", "nativeint" : 4 }
+
+  * NEGATIVE CONTROL, scored on its message TEXT and not on its exit code
+    (an exit code is not a reason -- the wrong flag returns rc=1 too):
+    with units/ moved aside,
+        hello.pas(1,15) Fatal: Can't find unit system used by hello
+    So the run above could have failed, and did not.
+
+  Proof tree: ~/src/vibepascal-slices/armcross/ (README.txt has the exact
+  reproduce command).
+
+NOT PROVEN HERE: qemu-user is an emulator.  It runs the real shipped bytes and
+real ARM encodings, so codegen and RTL defects do surface, but it is not a
+Raspberry Pi.  Nobody has run this compiler's output on physical ARM silicon.

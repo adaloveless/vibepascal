@@ -343,3 +343,75 @@ principle.
 
 NOBODY HAS STILL EVER RUN A VibePascal BINARY ON PHYSICAL ARM HARDWARE, 32-BIT OR
 64-BIT.  That sentence has not changed and is not changed by this addendum.
+
+================================================================================
+ADDENDUM 2026-09-11 (later, cy1124) -- THE TWO CROSS TARGETS NOW HAVE UNITS TOO
+================================================================================
+The previous addendum closed arm-linux and ended with "STILL OPEN: i386-linux-cross
+publishes nothing at all for units".  That is closed now, and arm-linux-cross --
+which needed no new bytes -- has a pointer.  Both are PACKAGING, not builds: the
+PPUs already existed and nothing was compiled (Policy #13).
+
+NEW ARTIFACT
+  dist/i386-linux-cross/vibepascal-v54-i386-linux-units-full.tar.gz
+      84260313 bytes  md5 3e9ce41ec5a263d500ae5218c62d8280
+      sha256 36a5a85feee223e39498a45b1398b149fe0911385e7ffe86af4117e6616f40b3
+      3607 files: 1704 .ppu (108 RTL + 1596 package), 1652 .o, 250 .rsj, 1 .inc
+  This is the FIRST units tarball this target has ever had, so nothing is
+  superseded and no previously published hash changes.  Four compiler binaries
+  had shipped for i386 with no unit set at all, which means the published bytes
+  could not compile one line on a machine with no prior install.
+  Full writeup: dist/i386-linux-cross/UNITS.txt.
+
+NEW POINTER, NO NEW BYTES
+  dist/arm-linux-cross/UNITS.txt.  The arm CROSS compiler targets arm-linux, so
+  it consumes the SAME unit set as the native arm compiler -- an 82 MB tarball
+  copied into a second directory would have been waste.  The file is a pointer
+  to dist/arm-linux/vibepascal-v54-arm-linux-units-full.tar.gz.
+
+AND THE REASON THAT POINTER IS NOT A ONE-LINER.  Running it before writing it
+found something a user would have read as a broken unit set.  The arm cross
+compiler is an x86_64 binary and left to itself calls the HOST linker:
+
+    /usr/bin/ld.bfd: skipping incompatible ./units/arm-linux/varutils.o
+    pkgtest.pas(18,1) Error: Error while linking                        rc=1
+
+The units are fine; the LINKER is the wrong architecture.  Fix is
+-XParm-linux-gnueabihf- plus binutils-arm-linux-gnueabihf, and the internal
+linker is NOT a substitute (-Xi was tried and fell through to the same ld).
+The i386 cross compiler is the OPPOSITE case and that contrast is now documented
+on both files: stock x86_64 binutils already links elf_i386, so it needs no -XP
+and no extra packages.
+
+BOTH PROVEN EXTRACT-TO-RUNNING-PROGRAM FROM PUBLISHED BYTES, IN EMPTY DIRS, WITH
+A PACKAGE UNIT (uses SysUtils, Classes, fpjson -- an RTL-only set passes a
+hello-world and fails this, which is exactly how the arm gap stayed invisible):
+  arm-linux-cross   rc=0, ELF 32-bit ARM EABI5 statically linked, RAN under
+                    qemu-arm-static: HELLO vibepascal arm-linux-cross 2 {...}
+  i386-linux-cross  rc=0, ELF 32-bit Intel 80386 statically linked, RAN
+                    natively: HELLO vibepascal i386-linux 2 {...}
+NEGATIVE CONTROLS FIRED AND WERE SCORED ON THEIR TEXT, NOT THEIR EXIT CODE --
+"Can't find unit system used by hello" on both, plus an RTL-only-vs-full A/B on
+i386 ("Can't find unit fpjson used by pkgonly").  An rc is not a reason: a
+rejected flag returns rc=1 too, so a control can go void and still read as
+firing.
+
+PUBLISHED-VS-LOCAL WITHOUT AN 82 MB DOWNLOAD.  The arm units tarball was settled
+with the GitHub contents API blob sha1 (7cdc30407935dbad3fcc63dd5e4c9eaefc4ae2c8
+== local `git hash-object`, size 82757332 both sides) instead of a re-fetch.  The
+two small compiler tarballs WERE re-downloaded unauthenticated and re-hashed.
+
+NEITHER VERSION.txt WAS TOUCHED.  dist/arm-linux-cross/VERSION.txt (md5
+18d45fee3024bdf4a9d731e604f21897) and dist/i386-linux-cross/VERSION.txt (md5
+455282186da36bb2f505b70a0f055b1b) are byte-identical to the copies inside their
+published bin tarballs, so the corrections live in UNITS.txt instead.
+
+STILL OPEN AFTER THIS: linux64, x86_64-darwin and aarch64-darwin publish a
+compiler with no unit set.  None has a blocked consumer today -- the fleet builds
+RTL+packages from the checkout for linux64, and the Lazarus darwin tarball
+bundles a full 6754-unit darwin set -- so they stay uncut until one turns up.
+This is still not a plan to cut tarballs on principle.
+
+NOBODY HAS STILL EVER RUN A VibePascal BINARY ON PHYSICAL ARM HARDWARE, AND
+NOTHING HERE HAS RUN ON A REAL 32-BIT i386 USERLAND.  qemu-arm-static is an
+emulator and x86_64 running i386 code is not a 32-bit install.
