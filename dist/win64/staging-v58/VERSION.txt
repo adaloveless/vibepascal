@@ -2,13 +2,23 @@ VibePascal v58 Win64 compiler -- a .ppu shorter than its own header says is trun
 Source commit: dedf242c696a543f9626e2839ced40876478a98a
 Parent release: v57 (1f605f41b3b06a5fa84fb4cb31ee4298fb30907f)
 Built: 2026-09-11, cross-compiled Linux x86_64 -> Win64 (-Apecoff -Xi) from the
-       self-hosted Linux compiler 383e0d4195a00038fc5a121cae3334e8
-ppcx64.exe md5:    1B54420B3B00F581786BA2ECF410747F
-ppcx64.exe sha256: EDF94E34129B14F9A0B37ED5E1C5E8455DBA4F7E67806B7E004FF719E2FCC873
+       self-hosted Linux compiler 8c8179b2f0a452cebec0131aa301b076
+ppcx64.exe md5:    447B4E500C5525A7FD89B21A6F7DD303
+ppcx64.exe sha256: 0DA2D0A19D9C50A1E615C3AF0315AE8A2229EEF34B97570BB37330761586534C
 ppudump.exe md5:   0A20A60261B87F97EC878FCA798AAE59   (rebuilt: same reader)
 ppumove.exe md5:   604523F77F0F1218BF7190727096260E   (rebuilt: same reader)
 ppufiles.exe md5:  15A137BCF0484D7CF19BDFAEE9BD1322   (rebuilt: same reader)
 Every other binary in bin/ is byte-identical to the v57 tarball.
+
+The compiler reports its own build date as 2026/09/11, which is what
+dist/win64-runtime-proof.sh stage 1 reconciles against the date in LATEST.txt.
+The first v58 build of this same source did NOT: FPC takes that date from when
+compiler/version.pas was last COMPILED, and an unchanged version.pas is not
+recompiled just because the compiler is relinked, so a genuinely fresh binary
+carried yesterday's date and the gate said so.  Rebuilt rather than papered
+over -- a binary that misreports when it was built is exactly what that check
+exists to catch, and the fix is to make the binary right, not the pointer
+agree with it.
 
 WHAT WAS BROKEN
 ---------------
