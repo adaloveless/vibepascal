@@ -1,64 +1,61 @@
-VibePascal v56 -- aarch64-linux native compiler (runs on ARM64 Linux, e.g. a
-64-bit Raspberry Pi).  An inferred inline var initialised from a real constant
-is a Double, whatever the constant's value happens to be.
-Source commit: a187bbac34 (merge of inlinevar-real-default)
-Compiler fix:  f06e46d8eb  (compiler/pstatmnt.pas, compiler/defutil.pas, compiler/ncnv.pas)
-Parent release: v55 (eae5d3e919a26a7db19937da10da1c8b610b17da)
-Built: 2026-09-10, cross-built on x86_64-linux via a freshly bootstrapped
-       compiler/ppcrossa64.v56 (itself built from a187bbac34)
-Binary: bin/ppca64  md5 96241cbc8871786eb790c3c068258e33
-                    sha256 d4c3fc42fd35fa8b7496fdd17c238f70bd9bf43b3e4cdc2b2116bc271e98fbfd
+VibePascal v58 -- aarch64-linux NATIVE compiler (runs on ARM64 Linux, e.g. a
+64-bit Raspberry Pi).  A .ppu shorter than its own header says is truncated, and
+a half-written one can no longer hang the compiler.
+Source commit: dedf242c696a543f9626e2839ced40876478a98a
+Parent release for THIS target: v56 (a187bbac34)
+Built: 2026-09-11, cross-built on x86_64-linux via a freshly bootstrapped
+       compiler/ppcrossa64 (md5 eab972e2457f458e0c42bd2a51afa4d6, itself built
+       from a CLEAN unit tree by the v58 native ppcx64,
+       md5 8c8179b2f0a452cebec0131aa301b076)
+Binary: bin/ppca64  md5 78c729e8addfb7a8e80ddb245ca57049
+                    sha256 d5d6e998ede92c89bf25d88263e8eae4aae5b18fb99f26bcc2dc828a37a49c7f
+                    5181472 bytes, ELF 64-bit ARM aarch64, statically linked, stripped
 
-COMPILER BINARY ONLY.  Only compiler/{pstatmnt,defutil,ncnv}.pas changed between
-v55 and v56: no RTL change, no package change, no PPU format change.  An
-existing v54/v55 aarch64-linux unit set stays valid, and the utility binaries
-are unchanged and not re-shipped.
+THIS TARGET SKIPPED v57.  x86_64 shipped v57 and v58 on 2026-09-11 while ARM
+stayed at v56, so this release carries BOTH .ppu reader fixes, not one:
 
-WHAT CHANGED
-  An inline var with no type annotation used to take its type from the real
-  constant you initialised it with, and that type changes with the VALUE:
+  v57 (c31227c8ca)  a half-written .ppu is an ERROR, not an infinite 99%-CPU spin
+                    with no message.  On the v56 binary this replaces, a killed
+                    build or a full disk could hang a compile forever.
+  v58 (dedf242c69)  a .ppu SHORTER than the length its own header declares is
+                    rejected instead of silently accepted.  v57 only noticed
+                    damage it happened to trip over; lose the TAIL of a unit and
+                    there was nothing to trip over, so the compiler built your
+                    program against a unit that is not all there -- exit 0, no
+                    message, nothing to search a log for.
 
-      var a := 1.0;      // Single   -  4 bytes,  7 digits
-      var b := 0.1;      // Extended - 10 bytes, 19 digits
-      var c := 1.0/3.0;  // Single, or Extended under {$mode delphi}
-      var d := 1/2;      // Double
+THIS DOES NOT TURN GOOD BUILDS RED.  The rejection is soft and self-healing: a
+truncated unit whose source is available is RECOMPILED and the build goes green;
+a good copy in a later -Fu directory is used instead; only a truncated unit with
+no source and no other copy stops the compile, and it stops with the message an
+absent unit already gives.  Nobody is ever told to go and delete a file.
 
-  v56 infers the DEFAULT real type -- Double -- in either direction.  RANGE is
-  never traded: 1.0e400 and 1.0e-4000 keep their wider type, because a Double
-  would silently hold +Inf and 0.  A variable or non-constant expression keeps
-  its own type, and an explicit `single(1.0)` still wins.  How real CONSTANTS
-  themselves are typed is NOT touched -- that is stock upstream FPC.
+COMPILER BINARY ONLY.  No RTL change, no package change, no PPU FORMAT change
+between v56 and v58 -- the reader got stricter, the format did not move.  An
+existing aarch64-linux unit set stays valid and does not need rebuilding.
 
-VERIFIED ON THIS PLATFORM BY EXECUTION, NOT BY INSPECTION
-  Every number below came from running real aarch64 instructions under
-  qemu-user-static on the build host: the COMPILER is an aarch64 binary run
-  under the emulator, and each program it produced was RUN too, not merely
-  linked.
+VERIFIED ON THESE EXACT BYTES
+-----------------------------
+  * dist/ppu-truncation-check.sh ppca64 aarch64-linux, against the real
+    55282-byte packages/aspell/units/aarch64-linux/aspelldyn.ppu:
+        11/25 offsets clean, 14 problem(s), exit 1   on the v56 binary this replaces
+        25/25 offsets clean,  0 problem(s), exit 0   on this one
+    Of the 14: 9 truncations HUNG and had to be killed at 30s, and 5 were
+    ACCEPTED with rc=0 -- a corrupt unit taken as valid, silently.
+    The pre-fix binary is the one that actually shipped as v56
+    (md5 96241cbc8871786eb790c3c068258e33), preserved and re-run this cycle
+    under emulation -- not a reconstruction, and not an argument from source.
+  * EXECUTION, not inspection.  This binary RUNS: qemu-aarch64-static reports
+    version 3.3.1, and it compiled and ran
+        tests/test/tinlinevarnativeint1.pp -Munleashed -> VERDICT:PASS
+        tests/test/tblockscopefinal1.pp                -> MATRIX: PASS
+                                     (all corners block-scoped, released exactly once)
+  * dist/arm-runtime-proof.sh exercises this tarball end to end and checks the
+    md5 above against the bytes it unpacks, so the number in this file cannot
+    drift from the artifact without the proof failing.
 
-  A/B against the PUBLISHED v55 aarch64 binary (md5 7a41c2c459ebe303ecf47907d9e13f74,
-  taken out of its own shipped tarball and md5-checked against that tarball's
-  VERSION.txt before it was trusted as a control):
-
-    tinlinevarrealinfer1.pp, three modes, the mode being a real axis here
-      -Munleashed              v55 exit 1, 27 failing checks  ->  v56 exit 0, 52/52
-      -Mdelphi                 v55 exit 1, 18 failing checks  ->  v56 exit 0, 49/49
-      -Mdelphiunicode          v55 exit 1, 18 failing checks  ->  v56 exit 0, 49/49
-    The control FAILS in every mode, so a pass here cannot be reached by accident.
-
-    tinlinevarrealinfer2.pp is a %FAIL test -- `for var i := 1.0` must stay
-    rejected.  BOTH compilers reject it, cleanly, with "Ordinal expression
-    expected" and zero internal errors.  The fix did not open that door.
-
-  NO REGRESSION, also by execution, on the v56 compiler:
-    tinlinevarnativeint1.pp   PASS   (NativeInt inference, v54's rule)
-    tinlinevarstrinfer1.pp    PASS   (default-string inference, v54's rule)
-    tblockscopefinal1.pp      PASS   (block-scoped finalisation: every corner
-                                      released exactly once -- counted, not
-                                      merely observed as "released")
-
-  LIMIT, stated plainly: qemu-user is an emulator.  It runs the real shipped
-  bytes and real ARM64 encodings, so codegen and RTL defects DO surface -- but
-  it is not a Raspberry Pi.  NOBODY HAS RUN THIS ON PHYSICAL ARM HARDWARE.
-  Cache behaviour, real kernel and libc versions and timing are outside what
-  this can show.  Do not quote a pass here as a hardware sign-off.
-  Re-runnable: sh dist/arm-runtime-proof.sh
+NOT PROVEN HERE, AND SAID PLAINLY: qemu-user is an emulator.  It runs the real
+shipped bytes and real aarch64 instruction encodings, so codegen and RTL defects
+DO surface -- but it is not a Raspberry Pi.  NOBODY HAS RUN ANY VIBEPASCAL
+RELEASE ON PHYSICAL ARM SILICON.  Do not quote a pass here as a hardware
+sign-off.
