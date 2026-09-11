@@ -1,24 +1,58 @@
-VibePascal v54 -- i386-linux CROSS compiler -- runs on x86_64-linux, emits 32-bit i386-linux
-Source commit: b7d2d9676ecf1d7d8250cd460b9c48069920513e
-Compiler fix:  b9cb8fea875670cfc48f7d83b88d4af39a28aa6e
-Parent release: v53 (9e20efe4d6912fe6a9558c442ae4fa8d5dfe3045)
-Built: 2026-09-03 on x86_64-linux
-Binary: bin/ppcross386  md5 ed6ba4ee0019c0653344a5e9c3a121fb
+VibePascal v58 -- i386-linux CROSS compiler -- runs on x86_64-linux, emits 32-bit i386-linux
+Source commit: dedf242c696a543f9626e2839ced40876478a98a
+Parent release for THIS target: v54 (b7d2d9676ecf1d7d8250cd460b9c48069920513e)
+Built: 2026-09-11 on x86_64-linux, from a CLEAN compiler/i386 unit tree, driven by
+       the v58 native ppcx64 (md5 8c8179b2f0a452cebec0131aa301b076)
+Binary: bin/ppcross386  md5 b76969a5226f68019f287a97dac89333
+                        sha256 0260a27bbc3754749442d70340461c7e1db4e652b6003da1e7b421bf8eb2c9a2
+                        6338192 bytes, ELF 64-bit x86-64, statically linked, stripped
 
-Change: an untyped INTEGER initialiser for an inline var (and for an inferred
-`for var i := ...` counter) now infers NativeInt instead of the hard-coded
-LongInt -- pointer width, so 8 bytes on a 64-bit target and 4 on a 32-bit one.
-A string/char literal initialiser now infers exactly what a bare `string`
-denotes at that point (wide under -Mdelphiunicode/-Munleashed; ShortString
-under $H-, which earlier releases got wrong).  Only types narrower than
-NativeInt are widened, so Int64/QWord keep their width; explicit typecasts
-such as byte(10) are never promoted.
+THIS TARGET WAS FOUR RELEASES BEHIND.  x86_64 shipped v55, v56, v57 and v58 while
+this cross compiler stayed on v54, so it is not a one-fix refresh -- it collects
+everything that happened in between:
 
-COMPILER BINARY ONLY.  Nothing in the RTL, the packages or the PPU format
-changed between v53 and v54, so an existing unit set for this platform stays
-valid.  Full change + validation record: dist/win64/staging-v54/VERSION.txt.
+  v55 (4d10b26fe7)  a missing -FU/-FE output directory is CREATED instead of
+                    complained about, so a first build in a fresh directory works.
+  v56 (f06e46d8eb)  an inferred inline var initialised from a real constant is a
+                    Double, whatever the constant's value happens to be.
+  v57 (c31227c8ca)  a half-written .ppu is an ERROR, not an infinite 99%-CPU spin
+                    with no message.  On the v54 binary this target was still
+                    shipping, a killed build or a full disk could hang a compile
+                    forever.
+  v58 (dedf242c69)  a .ppu SHORTER than the length its own header declares is
+                    rejected instead of silently accepted.  v57 only noticed
+                    damage it happened to trip over; lose the TAIL of a unit and
+                    there was nothing to trip over, so the compiler built your
+                    program against a unit that is not all there -- exit 0, no
+                    message.
 
-RUNTIME NOT VERIFIED ON THIS PLATFORM.  The build host is x86_64-linux; this
-binary was cross-built from the identical source commit and its file format was
-verified, but it has never been executed.  Only the x86_64-linux binary (and,
-for the i386 target, its generated output) were actually run.
+Nothing in the RTL, the packages or the PPU format changed across v54..v58, so an
+existing i386-linux unit set stays valid and does not need rebuilding.
+
+VERIFIED ON THESE EXACT BYTES
+-----------------------------
+  * dist/ppu-truncation-check.sh ppcross386 i386-linux, against the real
+    54220-byte packages/aspell/units/i386-linux/aspelldyn.ppu:
+        11/25 offsets clean, 14 problem(s), exit 1   on the v54 binary this replaces
+        25/25 offsets clean,  0 problem(s), exit 0   on this one
+    Of the 14: 9 truncations HUNG and had to be killed at 30s, and 5 were
+    ACCEPTED with rc=0 -- a corrupt unit taken as valid, silently.
+    The pre-fix binary is the one that actually shipped as v54, preserved and
+    re-run this cycle -- not a reconstruction.
+  * EXECUTION, not inspection: this compiler built tests/test/tinlinevarnativeint1.pp
+    -Munleashed into an ELF 32-bit i386 binary which RAN on this host and reported
+    checks=45 fails=0 NativeInt=4, VERDICT:PASS.
+
+BUILD PROVENANCE, because a cross build can lie about being one
+---------------------------------------------------------------
+The first attempt this cycle relinked ppcross386 from Sep-3 units: it compiled
+ONE file (pp.pas, 795 lines), never touched the patched entfile.pas, and still
+emitted a NEW md5 that reads exactly like a successful rebuild.  The unit tree is
+now wiped per target before building and the recompiled-unit count is asserted
+(277 units for this binary).  If you are reproducing this, check the count, not
+the timestamp.
+
+NOT PROVEN HERE: nobody has run this compiler, or anything it emits, on a 32-bit
+i386 INSTALL.  The generated binaries were executed on x86_64-linux, which runs
+i386 code natively; that covers codegen and RTL, and does not cover a real 32-bit
+userland.
