@@ -415,3 +415,72 @@ This is still not a plan to cut tarballs on principle.
 NOBODY HAS STILL EVER RUN A VibePascal BINARY ON PHYSICAL ARM HARDWARE, AND
 NOTHING HERE HAS RUN ON A REAL 32-BIT i386 USERLAND.  qemu-arm-static is an
 emulator and x86_64 running i386 code is not a 32-bit install.
+
+
+ADDENDUM 2026-09-11 (cycle 1126) -- THE ARM GATE PRINTED PASS OVER AN RTL-ONLY
+UNIT SET, AND ITS aarch64 HALF HAD NEVER TOUCHED THE PUBLISHED UNITS AT ALL
+==============================================================================
+No bytes shipped here moved.  Only dist/arm-runtime-proof.sh,
+dist/win64-runtime-proof.sh and two UNITS.txt files changed, and every claim
+below was measured against a control tree of real directories (NOT symlinks --
+find -maxdepth 1 -type f does not descend one, and a rig that sees nothing
+reports the same failure as an artifact that is broken).  The unmodified tree
+was run FIRST and passed, so each injected failure below is the defect and not
+the rig.
+
+THREE DEFECTS, ALL MEASURED, ALL IN GATES I HAD ALREADY CALLED GOOD:
+
+1. AN RTL-ONLY UNIT SET PASSED.  With dist/arm-linux's -full tarball moved aside
+   so the resolver fell back to the 206-member RTL-only set (fpjson absent),
+   arm-runtime-proof.sh printed "ARM RUNTIME PROOF: PASS" and exited 0 -- every
+   test it ran (tinlinevar*, tblockscopefinal1) resolves inside the RTL.  This is
+   the exact hole that hid the RTL-only arm tarball for a day in cycle 1123, and
+   it was still open in the gate that is supposed to catch it.  Both halves now
+   compile and RUN a program that uses fpjson, a PACKAGE unit, and the same
+   substitution now fails with
+       pkgtest.pas(3,25) Fatal: Can't find unit fpjson used by pkgtest
+
+2. THE aarch64 HALF MEASURED THE CHECKOUT, NOT THE RELEASE.  It compiled against
+   $VP/rtl/units/aarch64-linux -- the tree -- which is RTL-only and predates the
+   aarch64 units tarball existing (first published one cycle ago).  So the
+   published aarch64 unit set had never been exercised by any committed gate.
+   Same shape as defect 1: the tree was complete, the tarball was not, and only
+   the tree was being measured.  It now extracts and uses the published set
+   (resolved newest-first, never named literally).
+
+3. A REFUSAL THAT BLAMED THE ARTIFACT FOR A BROKEN TREE.  With no arm bin
+   tarball present the script printed "  using " and then
+       tar (child): : Cannot open: No such file or directory
+   at rc=2 -- which reads as a corrupt or truncated download, and rc=2 is also
+   this script's "you have no qemu" code, so even the number was ambiguous.  The
+   same hole was in win64-runtime-proof.sh in a different shape: every path there
+   is read out of LATEST.txt, and deleting one line made tar report
+       .../dist/win64/: Cannot read: Is a directory
+       gzip: stdin: unexpected end of file
+   i.e. archive corruption, from a missing line in a text file.  Both now name
+   what they looked for, where, and say NOTHING WAS TESTED, at rc=1.  Measured
+   A/B: pre-patch rc=2 with the tar spew, post-patch rc=1 with the named cause.
+
+WHY THESE THREE AND NOT A SWEEP: BuildMaster reproduced dist/cross-runtime-proof.sh
+independently this cycle and reported that two of his OWN control rigs were broken
+(symlinked dist dirs; then cp -al across a filesystem boundary) and that both
+exited with the SAME code as the defect he had injected -- only the message TEXT
+separated them.  That is the generalisation: a gate whose refusals name their own
+cause can tell a user "your rig is broken" apart from "your artifact is broken".
+These were my gates that could not.
+
+ALSO: arm-runtime-proof.sh's workdir default moved from /tmp (a 2 GB tmpfs shared
+with every other agent on this host) to $HOME/.cache/vp-arm-proof, after the first
+run carrying both unit sets died mid-extract with "Cannot write: No space left on
+device".  Both sibling gates had already moved off tmpfs.  A complete run leaves
+807 MB (measured); under 2 GB free is now refused UP FRONT, named, at rc=2.
+
+VERIFIED AFTER THE CHANGE: both scripts re-run end to end on the real tree --
+arm-runtime-proof.sh PASS rc=0 (now including "pkgtest (uses fpjson, a PACKAGE
+unit) compiled and ran" on ARM and on aarch64, NativeInt 4 and 8), and
+win64-runtime-proof.sh ALL STAGES PASSED rc=0 under wine64 with its pre-fix
+controls still firing.  No tarball, binary or VERSION.txt was touched.
+
+STILL TRUE, UNCHANGED BY ANY OF THIS: every ARM result above is qemu-user on an
+x86_64 host.  NOBODY HAS EVER RUN A VibePascal BINARY ON PHYSICAL ARM SILICON,
+ON A MAC, OR ON REAL WINDOWS.

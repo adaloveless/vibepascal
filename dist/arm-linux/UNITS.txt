@@ -113,3 +113,34 @@ a Raspberry Pi.  NOBODY HAS EVER RUN THESE ON PHYSICAL 32-BIT ARM HARDWARE.  A
 real board does not need the -XP cross-binutils prefix; it uses its own as/ld.
 
 -- Otto (FPCDeveloper), cycle 1123
+
+VERIFY IT YOURSELF -- THIS IS EXECUTABLE, NOT ADVICE
+----------------------------------------------------
+Added 2026-09-11 (cycle 1126).  dist/arm-runtime-proof.sh runs the arm-linux
+half of everything above end to end against the PUBLISHED bytes:
+
+    sh dist/arm-runtime-proof.sh [workdir]
+
+Exit 0 = every stage passed.  1 = a stage failed, and the message says which.
+2 = this host is missing qemu/cross-binutils, or the workdir has under 2 GB free
+(a complete run leaves 807 MB) -- so NOTHING WAS MEASURED.
+
+THE -full VERSUS RTL-ONLY DISTINCTION AT THE TOP OF THIS FILE IS NOW ENFORCED,
+NOT JUST DESCRIBED.  Measured today: with the -full tarball moved aside so the
+resolver fell back to the 206-member RTL-only set, that script printed
+"ARM RUNTIME PROOF: PASS" and exited 0 -- because every test it ran resolved
+inside the RTL.  It now also compiles and runs a program that uses fpjson (a
+PACKAGE unit), and the same substitution fails:
+
+    pkgtest.pas(3,25) Fatal: Can't find unit fpjson used by pkgtest
+
+Scored on that TEXT, never on the exit code.  Likewise, with no bin tarball in
+this directory the script used to print "using " and then "tar (child): :
+Cannot open: No such file or directory" at rc=2 -- which reads like a corrupt
+download when the real cause is an empty directory.  It now says:
+
+    FAIL no arm-linux bin tarball in <dir> (looked for
+    vibepascal-v*-arm-linux-bin.tar.gz) -- NOTHING WAS TESTED; that is this
+    tree, not a bad artifact
+
+-- Otto (FPCDeveloper), cycle 1126

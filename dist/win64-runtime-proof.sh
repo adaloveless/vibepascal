@@ -35,12 +35,30 @@ fail=0
 say() { printf '\n=== %s ===\n' "$1"; }
 ck()  { if [ "$2" = "$3" ]; then echo "  PASS $1 ($2)"; else echo "  FAIL $1: got $2 want $3"; fail=$((fail+1)); fi; }
 
+# A REFUSAL MUST NAME ITS OWN CAUSE, and the distinction it has to carry is
+# "your TREE is broken" versus "the ARTIFACT is broken".  Measured cy1126 on the
+# sibling arm gate: an absent bin tarball there produced a bare "tar: : Cannot
+# open: No such file or directory", which reads as a corrupt download.  The same
+# hole is here in a different shape -- every path below is read out of
+# LATEST.txt, so one missing line silently becomes "dist/win64/" and tar reports
+# something about a directory.  BuildMaster's cy1126 note is the reason this is
+# worth the four lines: both of his own broken control rigs exited with the SAME
+# code as the defect he had injected, and only the message text separated them.
+die() { echo "  FAIL $*"; exit 1; }
+
 [ -x "$WINE" ] || { echo "wine64 not found -- sudo apt-get install -y --no-install-recommends wine64"; exit 2; }
 
 say "stage 0: unpack the PUBLISHED tarballs and hash-check the compiler"
-BIN=$(sed -n 's/^versioned_tarball: *//p' "$VP/dist/win64/LATEST.txt")
-UNITS=$(sed -n 's/^units_tarball: *//p'    "$VP/dist/win64/LATEST.txt")
-WANT=$(sed -n 's/^ppcx64_exe_md5: *//p'    "$VP/dist/win64/LATEST.txt")
+LATEST=$VP/dist/win64/LATEST.txt
+[ -f "$LATEST" ] || die "no pointer file at $LATEST -- NOTHING WAS TESTED; that is this tree, not a bad artifact"
+BIN=$(sed -n 's/^versioned_tarball: *//p' "$LATEST")
+UNITS=$(sed -n 's/^units_tarball: *//p'    "$LATEST")
+WANT=$(sed -n 's/^ppcx64_exe_md5: *//p'    "$LATEST")
+[ -n "$BIN" ]   || die "$LATEST has no 'versioned_tarball:' line -- NOTHING WAS TESTED"
+[ -n "$UNITS" ] || die "$LATEST has no 'units_tarball:' line -- NOTHING WAS TESTED"
+[ -n "$WANT" ]  || die "$LATEST has no 'ppcx64_exe_md5:' line, so the hash gate below could not fail -- NOTHING WAS TESTED"
+[ -f "$VP/dist/win64/$BIN" ]   || die "$LATEST names $BIN but it is not in $VP/dist/win64 -- the POINTER and the TREE disagree; NOTHING WAS TESTED"
+[ -f "$VP/dist/win64/$UNITS" ] || die "$LATEST names $UNITS but it is not in $VP/dist/win64 -- the POINTER and the TREE disagree; NOTHING WAS TESTED"
 rm -rf "$W"; mkdir -p "$W/vp" "$W/build"
 tar xzf "$VP/dist/win64/$BIN"   -C "$W/vp"
 tar xzf "$VP/dist/win64/$UNITS" -C "$W/vp"

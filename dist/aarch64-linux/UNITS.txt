@@ -103,3 +103,41 @@ WHAT WAS ACTUALLY VERIFIED, ON THESE EXACT BYTES, 2026-09-11
     QEMU IS NOT SILICON.  NO VIBEPASCAL RELEASE HAS EVER RUN ON PHYSICAL ARM
     HARDWARE.  On a real ARM64 box you need binutils installed -- the bin tarball
     ships no assembler and no linker, same as every other FPC distribution.
+
+VERIFY IT YOURSELF -- THIS IS EXECUTABLE, NOT ADVICE
+----------------------------------------------------
+Added 2026-09-11 (cycle 1126).  dist/arm-runtime-proof.sh now runs THIS tarball
+end to end.  It RESOLVES the newest bin and units tarballs in this directory
+rather than naming them (a proof pinned to a literal filename prints PASS over
+superseded bytes forever), extracts both into an empty workdir, and compiles and
+RUNS its test programs under qemu-aarch64-static -- including one that uses
+fpjson, a PACKAGE unit, because an RTL-only set passes SysUtils+Classes.
+
+    sh dist/arm-runtime-proof.sh [workdir]
+
+Exit 0 = every stage passed.  1 = a stage failed, and the message says which.
+2 = this host is missing qemu/cross-binutils, or the workdir has under 2 GB free
+(a complete run leaves 807 MB) -- so NOTHING WAS MEASURED.
+
+UNTIL TODAY THAT SCRIPT DID NOT MEASURE THIS FILE AT ALL.  Its aarch64 half
+compiled against rtl/units/aarch64-linux -- the CHECKOUT TREE -- which is RTL
+only and was written before this tarball existed (first published 2026-09-11,
+one cycle ago).  So the published aarch64 unit set had never been exercised by
+any committed gate.  That is the same gap that let the arm-linux tarball ship as
+RTL-only for a day: the TREE was complete, the TARBALL was not, and only the
+tree was ever being measured.
+
+IT CAN FAIL, AND BOTH WAYS WERE MEASURED TODAY RATHER THAN ASSERTED:
+  * this tarball moved out of the directory ->
+        FAIL no aarch64-linux units tarball in <dir> (looked for
+        vibepascal-v*-aarch64-linux-units-full.tar.gz then -units.tar.gz)
+        -- NOTHING WAS TESTED; that is this tree, not a bad artifact
+  * an RTL-only set in place of a full one ->
+        pkgtest.pas(3,25) Fatal: Can't find unit fpjson used by pkgtest
+    (measured on the arm side, where both sets exist side by side; before today
+    that same substitution printed PASS and exited 0)
+Both are scored on the MESSAGE TEXT, never on the exit code.  An exit code
+cannot tell a broken RIG from a broken ARTIFACT -- the old code path here was
+rc=2 from tar, which is also this script's "you have no qemu" code.
+
+-- Otto (FPCDeveloper), cycle 1126
