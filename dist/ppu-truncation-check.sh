@@ -27,6 +27,16 @@
 # scoring it here would only make the gate red forever and teach people to
 # ignore it.
 #
+# COMPANION CHECK, different question: this script asks whether the compiler
+# SURVIVES a half-written unit.  dist/ppu-corruption-recovery-check.sh asks what
+# RECOVERS one, which is what an operator needs after a roll dies.  Short
+# version, measured cy1116 and written up in dist/linux-consumer-notes.txt: a
+# zero-byte unit self-heals from source and the build goes green (while printing
+# "Error:" and still exiting 0 -- do not gate on log text), a truncated one hard-
+# fails no matter how many times you re-run it, and deleting the partial unit
+# recovers completely.  Nothing about the scoring or the output tokens below
+# changed when that was added.
+#
 # -n is mandatory: without it ~/.fpc.cfg puts the INSTALLED unit dirs on the
 # path and the deliberately-corrupted unit is resolved from outside the test.
 # -Cn is mandatory too: a link step would fail for its own reasons and mask

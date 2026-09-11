@@ -79,3 +79,96 @@ Which means the copies GO STALE.  bin/ is in .gitignore (upstream FPC's, twice),
 so its contents are not committed and cannot be; re-running
 linux-bin-layout.sh after a compiler build is part of the deal, and --check
 reports a stale copy by md5 rather than letting you ship the wrong compiler.
+
+================================================================
+A CORRUPT .PPU ON THE FLOOR: WHAT RECOVERS, AND WHAT DOES NOT
+================================================================
+Added cy1116 (2026-09-11).  Measured on the shipped v57 Linux compiler,
+md5 6a460e0e02cc3ef71313aa5040c1934e, against
+packages/aspell/units/x86_64-linux/aspelldyn.ppu (55291 B) with the unit's
+SOURCE also on the search path -- units and sources side by side, which is the
+shape a real build tree has.
+
+A killed build, a full disk or an interrupted copy leaves a damaged unit file
+behind.  v57 made the compiler FAIL on one instead of spinning forever (see
+ppu-truncation-check.sh).  This section is the next question: you have the bad
+unit and the sources are right there -- what gets you back?
+
+THE TWO CORRUPTION SHAPES DO NOT BEHAVE THE SAME
+------------------------------------------------
+    zero-byte .ppu   -> rebuilt from source, exit 0.  Self-heals.
+    truncated .ppu   -> Fatal: Invalid PPU-File entry: 0, exit 1.  Hard stop,
+                        and the source sitting right beside it does not help.
+
+That asymmetry is deliberate and it is not going to change.  A zero-length file
+carries no header to disagree with, so the reader rejects it cleanly and the
+compiler falls through to the source.  A SHORT READ, by contrast, is an error
+and v57 makes that error sticky -- which is the entire point of the fix.  The
+alternative would be to rebuild silently over a half-written unit, and silent
+recovery from unknown damage is worse than a stop.
+
+A PLAIN RETRY NEVER CLEARS A TRUNCATED UNIT
+-------------------------------------------
+Measured: three consecutive identical compiles, exit 1 every time, the file
+untouched at its truncated length each time.  Re-running the build is not a
+remedy and no number of attempts makes it one.  The compiler will rebuild a
+unit it cannot FIND; it will not rebuild one it can find but cannot READ.
+
+BUT IT IS RECOVERABLE, AND THE RECOVERY IS ONE rm
+-------------------------------------------------
+    rm the partial .ppu   (or the whole units/<target> directory)
+    re-run the build
+
+Measured: exit 0, and the rebuilt unit is BIT-FOR-BIT what a from-scratch build
+of that unit produces.  So this is a stop, not a loss -- do not reach for a
+re-roll from clean, and do not go looking for a compiler bug.
+
+Two controls behind that claim, because "it rebuilt something" is not the same
+as "it rebuilt the right thing":
+  * The rebuild is independent of the damage.  Zero-byte-healed, truncated-
+    then-deleted, and simply-absent all produce the SAME md5
+    (a07199db4a3cf44459e22fd05a76893c) -- so the corruption does not influence
+    the result at all.  Repeated runs and -Cn/-O2 variation give that same md5.
+  * It is ABI-identical to the unit we shipped: same size (55291 B), same
+    Checksum (60286495), same Interface Checksum (60286495), same Indirect
+    Checksum (DD7A3B44), and every dependency CRC equal.  Two bytes of 55291
+    differ from the 2026-08-18 shipped copy (at offsets 51 and 55189); they are
+    not any checksum and they are not caused by -Cn or -O2, and the shipped
+    copy was built by fpmake with an older compiler, which is reason enough.
+    We did not isolate which build-context field they are.  It is not a
+    corruption signal.
+
+A TRAP FOR ANYONE GATING A BUILD ON LOG TEXT
+--------------------------------------------
+The zero-byte self-heal prints this and still exits 0:
+
+    Error:  Invalid header size 0 (expecting 40)
+    Error:  Invalid header size 0 (expecting 40)
+
+Both halves of that are correct.  compiler/ppu.pas:299 emits it through
+do_comment(V_Error, ...) -- a diagnostic channel that prints AT error verbosity
+but does not increment the compiler's error count -- so the build genuinely
+succeeded and exit 0 is the honest answer.
+
+The consequence is real for tooling, in both directions:
+  * A gate that greps a log for "Error" will call this healthy green build a
+    failure.  Use the EXIT CODE to decide pass/fail.
+  * A gate that looks only at the exit code will never learn that a unit was
+    silently rebuilt mid-roll.  That Error line is the only notice you get.
+
+PROVING IT ON YOUR OWN TREE
+---------------------------
+    dist/ppu-corruption-recovery-check.sh <compiler> <target> <a-real.ppu> \
+        <unit-source-dir> <rtl-unit-dir>
+
+    e.g. dist/ppu-corruption-recovery-check.sh compiler/ppcx64 x86_64-linux \
+            packages/aspell/units/x86_64-linux/aspelldyn.ppu \
+            packages/aspell/src rtl/units/x86_64-linux
+
+Six checks, ~0.7 s, exit 0 = recovery behaves as described above, 1 = it does
+not, 2 = the harness could not run (which says nothing about the compiler).
+It asserts each claim on this page, including the two controls -- that an
+INTACT unit is still loaded rather than rebuilt over, and that the source
+fallback is reachable at all, without which none of the other results mean
+anything.  Self-tested against the pre-v57 compiler, which it reports as
+HANG / 5 of 6 / exit 1, so a pass is not vacuous.
