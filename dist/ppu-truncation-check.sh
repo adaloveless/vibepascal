@@ -38,6 +38,23 @@
 # recovers completely.  Nothing about the scoring or the output tokens below
 # changed when that was added.
 #
+# THE COMPILER UNDER TEST IS RUN UNDER AN ADDRESS-SPACE CAP, AND THAT IS NOT
+# TIDINESS -- IT IS WHAT STOPS THIS GATE KILLING THE HOST (cy1127).  The bug this
+# script exists for does not merely spin: measured on the pre-fix compiler with
+# /usr/bin/time -v, the stale-entry replay loop allocates about 54 MB/s and never
+# frees, reaching 3.0 GB in 55 s.  Eight of the offsets below take that path, so
+# an UNCAPPED run of this gate spends 8 x 30 s growing ~1.6 GB at a time; on an
+# 8 GB host with swap already gone that is exactly the shape that fired the OOM
+# killer here on 2026-09-11 (a 13.5 GB compiler, killed by the kernel, which
+# looks in a build log exactly like a compiler crash).  A gate that can take out
+# an unrelated agent's build is a gate people rightly switch off.
+# The cap is chosen from a MEASUREMENT, not a guess: the healthy v58 compiler
+# peaks at 17,152 kB across all 25 offsets here, because every one of them
+# compiles the same three-line program -- so 1 GB is ~60x the real ceiling and
+# cannot fail a legitimate compile.  Hitting it is reported as LEAK, with the
+# cap named, rather than as HANG or SILENT: "no output, killed at 30s" sends the
+# reader hunting an infinite loop and never says the process ate the box.
+#
 # -n is mandatory: without it ~/.fpc.cfg puts the INSTALLED unit dirs on the
 # path and the deliberately-corrupted unit is resolved from outside the test.
 # -Cn is mandatory too: a link step would fail for its own reasons and mask
@@ -51,6 +68,18 @@ PPC="$1"; TARGET="$2"; REALPPU="$3"; RTL="$4"
 [ -x "$PPC" ]      || { echo "TRUNCCHECK FATAL: no compiler at $PPC" >&2;        echo "trunccheck: 0/0 offsets clean, 1 problem(s)"; exit 2; }
 [ -f "$REALPPU" ]  || { echo "TRUNCCHECK FATAL: no .ppu at $REALPPU" >&2;        echo "trunccheck: 0/0 offsets clean, 1 problem(s)"; exit 2; }
 [ -d "$RTL" ]      || { echo "TRUNCCHECK FATAL: no rtl unit dir at $RTL" >&2;    echo "trunccheck: 0/0 offsets clean, 1 problem(s)"; exit 2; }
+
+# Address-space cap for the compiler under test, in kB.  See the header: 1 GB is
+# ~60x the measured peak of a healthy run of THIS gate.  Overridable for a host
+# that needs a different number, but never silently absent -- if the cap cannot
+# be set we say so, because an uncapped run is the one that can kill the host.
+VMCAP=${TRUNCCHECK_VMCAP_KB:-1048576}
+if ( ulimit -v "$VMCAP" ) 2>/dev/null; then
+  CAPPED=yes
+else
+  CAPPED=no
+  echo "trunccheck: WARNING cannot set a ${VMCAP} kB address-space cap on this host -- the compiler under test runs UNBOUNDED, and a leaking compiler can OOM this box" >&2
+fi
 
 CPU=${TARGET%%-*}; OS=${TARGET#*-}
 UNIT=$(basename "$REALPPU" .ppu)
@@ -85,13 +114,33 @@ for n in $OFFSETS; do
   total=$((total+1))
   U="$SCRATCH/u"; W="$SCRATCH/w"; rm -rf "$U" "$W"; mkdir -p "$U" "$W" || { echo "TRUNCCHECK FATAL: cannot make scratch dirs" >&2; exit 2; }
   head -c "$n" "$REALPPU" > "$U/$UNIT.ppu"
-  out=$(timeout 30 "$PPC" -n -s -T"$OS" -P"$CPU" -Cn -Fu"$U" -Fu"$RTL" -FU"$W" "$SCRATCH/p.pp" 2>&1)
+  out=$( [ "$CAPPED" = yes ] && ulimit -v "$VMCAP"
+         timeout 30 "$PPC" -n -s -T"$OS" -P"$CPU" -Cn -Fu"$U" -Fu"$RTL" -FU"$W" "$SCRATCH/p.pp" 2>&1)
   rc=$?
   if [ "$n" = "$FULL" ]; then
     [ "$rc" = 0 ] && continue
     echo "BROKEN $TARGET $UNIT.ppu intact ($n bytes) -- rc=$rc, the compiler rejects a GOOD unit"
     bad=$((bad+1)); rc_final=1; continue
   fi
+  # THE CAP IS SCORED ON THE MESSAGE, NOT ON rc, AND THAT ORDER IS LOAD-BEARING.
+  # Measured cy1127 on the pre-fix compiler: running out of address space ends
+  # the SAME defect in two different ways, and one of them is indistinguishable
+  # from a healthy refusal if you look at rc alone --
+  #   offsets 83/100/119 -> rc=217, ZERO output (the runtime just dies)
+  #   offsets 120/121    -> rc=1 with "Fatal: No memory left"
+  # rc=1-with-a-message is exactly what a CORRECT refusal looks like, so the
+  # first cut of this cap scored four leaking offsets as CLEAN and dropped the
+  # problem count from 13 to 10 -- a host-safety fix that quietly disabled the
+  # detection it was protecting.  Hence: match the out-of-memory TEXT first.
+  # Only "No memory left" is matched, not the "raised exception internally"
+  # line that sometimes accompanies it, because that one is emitted for any
+  # internal exception and would relabel unrelated defects as a leak.
+  oomtext=no
+  case "$out" in *"No memory left"*) oomtext=yes ;; esac
+  if [ "$oomtext" = yes ] || [ "$rc" = 203 ] || [ "$rc" = 217 ]; then
+    echo "LEAK $TARGET $UNIT.ppu truncated to $n bytes -- rc=$rc, the compiler exhausted the ${VMCAP} kB address-space cap instead of refusing the unit (UNCAPPED this is the 13.5 GB shape that gets a build OOM-killed)"
+    bad=$((bad+1)); rc_final=1
+  else
   case "$rc" in
     124) echo "HANG $TARGET $UNIT.ppu truncated to $n bytes -- no output, killed at 30s"
          bad=$((bad+1)); rc_final=1 ;;
@@ -102,5 +151,6 @@ for n in $OFFSETS; do
            bad=$((bad+1)); rc_final=1
          fi ;;
   esac
+  fi
 done
 exit $rc_final

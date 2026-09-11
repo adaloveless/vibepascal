@@ -66,6 +66,24 @@ RTL=$(readlink -f "$RTL")     || die2 "cannot resolve rtl unit dir"
 
 CPU=${TARGET%%-*}; OS=${TARGET#*-}
 UNIT=$(basename "$REALPPU" .ppu)
+
+# ADDRESS-SPACE CAP FOR THE COMPILER UNDER TEST -- HOST SAFETY, NOT TIDINESS.
+# Measured cy1127 with /usr/bin/time -v: on the pre-fix compiler a truncated unit
+# does not merely spin, it allocates about 54 MB/s and never frees (3.0 GB in
+# 55 s), and this gate's truncated arm gives it a SIXTY second window -- ~3.2 GB
+# in one arm, on a host where the OOM killer really did fire on 2026-09-11 and
+# took a 13.5 GB compiler with it.  A killed build and a compiler defect look
+# identical in a log, so a gate that can cause one is worse than no gate.
+# 1 GB is ~60x the measured peak of a healthy run (17 MB; every arm here
+# compiles the same three-line program), so it cannot fail a legitimate compile.
+VMCAP=${RECOVERYCHECK_VMCAP_KB:-1048576}
+if ( ulimit -v "$VMCAP" ) 2>/dev/null; then
+  CAPPED=yes
+else
+  CAPPED=no
+  echo "recoverycheck: WARNING cannot set a ${VMCAP} kB address-space cap on this host -- the compiler under test runs UNBOUNDED, and a leaking compiler can OOM this box" >&2
+fi
+
 SCRATCH=$(mktemp -d) || { SCRATCH=""; die2 "mktemp failed"; }
 printf 'program p;\nuses %s;\nbegin end.\n' "$UNIT" > "$SCRATCH/p.pp" || die2 "cannot write the probe program"
 
@@ -84,7 +102,9 @@ seed_and_run() {
   compile_once
 }
 compile_once() {
-  out=$(cd "$SCRATCH" && timeout 60 "$PPC" -n -s -T"$OS" -P"$CPU" -Cn \
+  out=$(cd "$SCRATCH" || exit 2
+        [ "$CAPPED" = yes ] && ulimit -v "$VMCAP"
+        timeout 60 "$PPC" -n -s -T"$OS" -P"$CPU" -Cn \
           -Fu"$U" -Fu"$USRC" -Fu"$RTL" -FU"$U" "$SCRATCH/p.pp" 2>&1)
   rc=$?
   if [ -f "$U/$UNIT.ppu" ]; then md5=$(md5sum "$U/$UNIT.ppu" | cut -d' ' -f1)
@@ -130,41 +150,89 @@ elif [ "$md5" != "$CLEAN" ]; then
 fi
 
 # ------------------------------------------------------------- 4. truncated
-# Documented to HARD-FAIL even with the source right there.  A short read is an
-# error (v57) and the error is sticky, so the source fallback is never reached.
+# WHAT THIS ARM EXPECTS CHANGED UNDER US, AND THE GATE WAS THE LAST TO HEAR
+# (cy1127).  It was written for v57, where a short read was a STICKY error: a
+# truncated unit hard-failed even with the source right there, and this arm
+# scored anything else as a problem.  v58's whole-file length check
+# (dedf242c69, tppufile.readheader) compares the physical length against the one
+# the header declares, which lands BEFORE the sticky-error path -- so the unit
+# is now treated as unusable rather than unreadable, and the compiler falls
+# through to the source exactly as it does for a zero-byte one.
+# Measured here, three arms, single axis (is the source reachable):
+#   unit absent                      -> rc=0, rebuilt, md5 a07199db..(55291 B)
+#   truncated 120 B, source on path  -> rc=0, SELF-HEALS to that same md5
+#   truncated 120 B, source hidden   -> rc=1, file left at 120 B, hard stop
+# So the hard stop is real but it is now the NO-SOURCE case only.  Left alone,
+# this arm reported the healthy shipped compiler as two problems and exited 1 --
+# a gate that fails on a good tree gets switched off, and then it is not a gate.
+# The heal is still verified against $CLEAN: "it rebuilt something" is not the
+# same as "it rebuilt the right thing".
 total=$((total+1))
 seed_and_run truncated
 hung=no
+# THE LEAK IS SCORED ON THE MESSAGE, NOT ON rc, AND THAT ORDER IS LOAD-BEARING.
+# Under the cap, running out of address space ends the SAME defect two ways
+# (measured cy1127 on the sibling gate): rc=217 with ZERO output, or rc=1 with
+# "Fatal: No memory left" -- and rc=1-with-a-message is exactly what a CORRECT
+# refusal looks like here, so scoring on rc alone reads a leak as a clean pass.
+# Before this, check 4 scored ONLY 124 and 0, so every leak that ended either of
+# those two ways counted as clean.  Only "No memory left" is matched, not the
+# "raised exception internally" line that sometimes accompanies it: that one is
+# emitted for any internal exception and would relabel unrelated defects.
+leaked=no
+case "$out" in *"No memory left"*) leaked=yes ;; esac
+case "$rc" in 203|217) leaked=yes ;; esac
+if [ "$leaked" = yes ]; then
+  echo "LEAK $TARGET $UNIT.ppu truncated -- rc=$rc, the compiler exhausted the ${VMCAP} kB address-space cap instead of refusing the unit (UNCAPPED this is the 13.5 GB shape that gets a build OOM-killed)"
+  hung=yes; bad=$((bad+1)); rc_final=1
+else
 case "$rc" in
   124) echo "HANG $TARGET $UNIT.ppu truncated -- killed at 60s (pre-v57 behaviour)"
        hung=yes; bad=$((bad+1)); rc_final=1 ;;
-    0) echo "SILENTACCEPT $TARGET $UNIT.ppu truncated -- rc=0, a partial unit was taken as valid or silently rebuilt over"
+    0) if [ "$md5" = "$CLEAN" ]; then
+         echo "  (truncated: self-healed from source to the clean md5 $md5 -- v58 behaviour, and it prints Error: lines while exiting 0, so do not gate on log text)"
+       else
+         echo "HEALDIFFERS $TARGET $UNIT.ppu truncated -- healed to ${md5:-<no unit>} but a clean build gives $CLEAN"
+         bad=$((bad+1)); rc_final=1
+       fi ;;
+    *) echo "NOHEAL $TARGET $UNIT.ppu truncated -- rc=$rc with the source on the path and size=$size; that is the pre-v58 sticky hard stop, so either the length check is gone or the source fallback is"
        bad=$((bad+1)); rc_final=1 ;;
 esac
+fi
 
-# --------------------------------------------------- 5. a plain retry is not it
-# Three identical runs.  If any of them goes green, "delete the partial unit
-# first" is the wrong advice and the notes must change.
+# ------------------------------------------- 5. is the heal REPEATABLE, not luck
+# THIS CHECK USED TO ASK THE OPPOSITE QUESTION AND IT HAD TO BE RE-AIMED, NOT
+# JUST RE-WORDED (cy1127).  Under v57 it ran three more compiles WITHOUT
+# re-seeding, because a truncated unit stayed truncated: any green run meant "a
+# plain retry cleared it" and the documented delete-it-first advice was wrong.
+# Under v58 check 4 heals the unit, so the file on disk is already GOOD by the
+# time this runs -- three more compiles against a healthy unit assert nothing,
+# and the old scoring turned the intended heal into a RETRYHEALED problem.
+# The question worth asking now is whether the heal is STABLE: seed the damage
+# again each time and require the same clean md5 every time, so a heal that
+# works once and flaps is caught.
 #
-# A compiler that HUNG in check 4 has already answered this -- a hang is not a
-# recovery -- so re-running it three more times only buys three more 60s
-# timeouts.  Measured: judging the pre-fix compiler took 4m02s with the loop
-# and ~1m without it, against 0.7s for a healthy one.  A check that costs 350x
-# more on a bad tree than a good one is a check people switch off.  The
-# assertion still HOLDS in that case and still counts toward $total; it is not
-# a problem, so it gets a lowercase note and no ALL-CAPS token.
+# A compiler that HUNG or LEAKED in check 4 has already answered this -- neither
+# is a recovery -- so re-running only buys three more 60s windows.  Measured:
+# judging the pre-fix compiler took 4m02s with the loop and ~1m without it,
+# against 0.7s for a healthy one.  A check that costs 350x more on a bad tree
+# than a good one is a check people switch off.  The assertion still HOLDS in
+# that case and still counts toward $total; it is not a problem, so it gets a
+# lowercase note and no ALL-CAPS token.
 total=$((total+1))
 if [ "$hung" = yes ]; then
-  echo "  (retry check: not re-run -- check 4 hung, and a hang is already not a recovery)"
+  echo "  (repeat check: not re-run -- check 4 hung or leaked, and neither is a recovery)"
 else
-  retry_went_green=no
+  flapped=no
   for i in 1 2 3; do
-    compile_once
-    [ "$rc" = 0 ] && retry_went_green=yes
+    seed_and_run truncated
+    { [ "$rc" = 0 ] && [ "$md5" = "$CLEAN" ]; } || flapped="run $i: rc=$rc md5=${md5:-<no unit>}"
   done
-  if [ "$retry_went_green" = yes ]; then
-    echo "RETRYHEALED $TARGET $UNIT.ppu truncated -- a plain re-run cleared it; the documented 'delete it first' advice is wrong"
+  if [ "$flapped" != no ]; then
+    echo "RETRYFLAPS $TARGET $UNIT.ppu truncated -- the self-heal is not repeatable ($flapped), and an intermittent recovery is not one you can document"
     bad=$((bad+1)); rc_final=1
+  else
+    echo "  (repeat check: seeded and healed 3/3 times, same md5 each time)"
   fi
 fi
 

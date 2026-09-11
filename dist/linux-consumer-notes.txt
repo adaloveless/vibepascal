@@ -83,8 +83,10 @@ reports a stale copy by md5 rather than letting you ship the wrong compiler.
 ================================================================
 A CORRUPT .PPU ON THE FLOOR: WHAT RECOVERS, AND WHAT DOES NOT
 ================================================================
-Added cy1116 (2026-09-11).  Measured on the shipped v57 Linux compiler,
-md5 6a460e0e02cc3ef71313aa5040c1934e, against
+Added cy1116 (2026-09-11), and CORRECTED cy1127 (2026-09-11) after v58 changed
+the answer -- read the correction below before acting on anything in this
+section.  Original measurement: the shipped v57 Linux compiler, md5
+6a460e0e02cc3ef71313aa5040c1934e, against
 packages/aspell/units/x86_64-linux/aspelldyn.ppu (55291 B) with the unit's
 SOURCE also on the search path -- units and sources side by side, which is the
 shape a real build tree has.
@@ -94,28 +96,54 @@ behind.  v57 made the compiler FAIL on one instead of spinning forever (see
 ppu-truncation-check.sh).  This section is the next question: you have the bad
 unit and the sources are right there -- what gets you back?
 
-THE TWO CORRUPTION SHAPES DO NOT BEHAVE THE SAME
-------------------------------------------------
+WHAT CHANGED IN v58, AND WHY THIS SECTION USED TO TELL YOU TO DO WORK YOU DO
+NOT HAVE TO DO
+----------------------------------------------------------------------------
+v58 added a whole-file length check (dedf242c69, tppufile.readheader): the
+physical length of a .ppu is compared against the length its own header
+declares.  That lands BEFORE the sticky short-read error v57 introduced, so a
+truncated unit is now judged UNUSABLE rather than UNREADABLE -- and the compiler
+falls through to the source for it exactly as it always did for a zero-byte one.
+Re-measured cy1127 on the shipped v58 compiler (compiler/ppcx64,
+md5 8c8179b2f0a452cebec0131aa301b076), three arms, one axis:
+
+    unit ABSENT                        -> exit 0, built,   md5 a07199db..
+    unit TRUNCATED, source on path     -> exit 0, HEALED,  md5 a07199db..
+    unit TRUNCATED, source NOT on path -> exit 1, file left at its short length
+
+So three sentences this section used to carry are now wrong, and they are named
+here rather than quietly deleted, because anyone who read them earlier acted on
+them: "the source sitting right beside it does not help" (it does), "that
+asymmetry is deliberate and it is not going to change" (it changed eight days
+later), and "a plain retry never clears a truncated unit" (a plain retry clears
+it, because the first compile already did).
+
+THE TWO CORRUPTION SHAPES NOW BEHAVE THE SAME, GIVEN SOURCE
+-----------------------------------------------------------
     zero-byte .ppu   -> rebuilt from source, exit 0.  Self-heals.
-    truncated .ppu   -> Fatal: Invalid PPU-File entry: 0, exit 1.  Hard stop,
-                        and the source sitting right beside it does not help.
+    truncated .ppu   -> rebuilt from source, exit 0.  Self-heals (v58+).
+                        Without the source on the path: Error: Truncated ppu:
+                        <n> bytes present, header declares <m>, then exit 1.
 
-That asymmetry is deliberate and it is not going to change.  A zero-length file
-carries no header to disagree with, so the reader rejects it cleanly and the
-compiler falls through to the source.  A SHORT READ, by contrast, is an error
-and v57 makes that error sticky -- which is the entire point of the fix.  The
-alternative would be to rebuild silently over a half-written unit, and silent
-recovery from unknown damage is worse than a stop.
+The hard stop is real, but it is now the NO-SOURCE case only -- a units-only
+install, which is exactly what our own units tarballs give you.  There, a
+damaged unit still stops the build and still needs the rm below.
 
-A PLAIN RETRY NEVER CLEARS A TRUNCATED UNIT
--------------------------------------------
-Measured: three consecutive identical compiles, exit 1 every time, the file
-untouched at its truncated length each time.  Re-running the build is not a
-remedy and no number of attempts makes it one.  The compiler will rebuild a
-unit it cannot FIND; it will not rebuild one it can find but cannot READ.
+AND THE SELF-HEAL PRINTS Error: LINES WHILE EXITING 0
+-----------------------------------------------------
+The truncated case now behaves like the zero-byte one in the trap described
+further down: it emits
 
-BUT IT IS RECOVERABLE, AND THE RECOVERY IS ONE rm
--------------------------------------------------
+    Error:  Truncated ppu: 120 bytes present, header declares 55291
+
+and still exits 0, because that line goes out through do_comment(V_Error, ...)
+which prints at error verbosity without incrementing the error count.  Use the
+EXIT CODE.  A gate that greps for "Error" will call this healthy build a
+failure -- and a gate that reads only the exit code will never learn a unit was
+silently rebuilt mid-roll, which is the one notice you get.
+
+THE rm IS STILL THE RECOVERY WHEN THERE IS NO SOURCE
+----------------------------------------------------
     rm the partial .ppu   (or the whole units/<target> directory)
     re-run the build
 
@@ -137,6 +165,16 @@ as "it rebuilt the right thing":
     copy was built by fpmake with an older compiler, which is reason enough.
     We did not isolate which build-context field they are.  It is not a
     corruption signal.
+
+ONE MORE THING, AND IT IS ABOUT YOUR HOST RATHER THAN YOUR TREE
+---------------------------------------------------------------
+On a compiler from BEFORE the v57 reader fix, a truncated unit does not merely
+spin -- measured cy1127 with /usr/bin/time -v, the stale-entry replay loop
+allocates about 54 MB/s and never frees it: 3.0 GB in 55 s, and it does not
+stop.  On 2026-09-11 the OOM killer on this build host took a 13.5 GB compiler
+with it.  If you keep an old compiler around as a baseline or a bisect point,
+run it under a cap (ulimit -v) -- an OOM kill and a compiler crash are the same
+line in a build log.  Both gates named below now cap the compiler they test.
 
 A TRAP FOR ANYONE GATING A BUILD ON LOG TEXT
 --------------------------------------------
