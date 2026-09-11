@@ -93,6 +93,67 @@ TARGET="${1:-x86_64-linux}"
 VPDIR="${3:-/home/jason/src/vibepascal}"
 RTL="$VPDIR/rtl/units/$TARGET"
 
+# ---------------------------------------------------------------------------
+# THE SUMMARY LINE IS A CONTRACT AND IT IS OWED ON EVERY EXIT PATH (cy1113).
+# BuildMaster's release gate no longer greps for a fixed vocabulary of warning
+# words. It reads ANY line beginning with an ALL-CAPS token as a problem header,
+# takes that token as the mode, counts the headers, and then RECONCILES its own
+# count against the "N problem(s)" in the summary line below -- refusing to
+# assert a PASS when it counted problems it could not classify. That design is
+# what caught the DRIVER-ONLY defect his previous gate printed
+# "NOTE: 0 package(s) failed ... Continuing" over, on rc=1.
+#
+# The corollary is mine to honour, and before today this script broke it on four
+# exit paths: three printed a FATAL and no summary (a problem header he cannot
+# reconcile -> UNVERIFIED), and the mktemp failure printed NOTHING AT ALL, which
+# is the one output shape a reconciling gate cannot score even in principle.
+#
+# So: every exit emits the line, in the same shape, exactly once. A harness fault
+# reports "0/0 packages load clean, 1 problem(s)" -- honest, because no unit set
+# was judged -- and KEEPS exit 2, which is BuildMaster's own rule (cy1110):
+# 2 means the harness is unusable and says nothing about the tree, 1 means the
+# tree was measured and is bad. One problem header per counted problem on every
+# path, so the reconciliation can always complete.
+# ---------------------------------------------------------------------------
+SCRATCH=""
+total=0; ok=0; bad=0    # initialized HERE, not at the sweep: the EXIT trap reads them
+summary_printed=0
+
+emit_summary() {        # ok total bad
+  if [ "$summary_printed" -eq 0 ]; then
+    summary_printed=1
+    echo
+    echo "loadcheck $TARGET: $1/$2 packages load clean, $3 problem(s)"
+  fi
+  return 0
+}
+
+# ABORTED is a NEW all-caps token (BuildMaster told 2026-09-11). It is COUNTED in
+# the number the summary prints (bad+1), so his header count still reconciles
+# without him editing anything. It fires only when this script is killed or dies
+# before the sweep finishes: an interrupted measurement is not a clean one, and
+# the packages printed before it are all that was actually measured.
+abort_summary() {       # rc
+  echo "ABORTED $TARGET -- loadcheck terminated before it finished judging the unit set"
+  echo "        (rc=$1); only the packages reported above were measured"
+  emit_summary "$ok" "$total" "$((bad + 1))"
+}
+
+on_exit() {
+  rc=$?
+  [ -n "$SCRATCH" ] && rm -rf "$SCRATCH"
+  [ "$summary_printed" -eq 0 ] && abort_summary "$rc"
+  exit "$rc"
+}
+on_signal() {           # signal number
+  abort_summary "$((128 + $1))"
+  exit "$((128 + $1))"
+}
+trap on_exit EXIT
+trap 'on_signal 1'  HUP
+trap 'on_signal 2'  INT
+trap 'on_signal 15' TERM
+
 # DEFAULT THE COMPILER FROM THE TARGET'S CPU, never to ppcx64 (cy1112). One FPC binary
 # serves every OS of one CPU but no other CPU at all, so `unit-set-loadcheck.sh
 # aarch64-linux` with the x86_64 compiler makes EVERY package fail identically with
@@ -110,8 +171,8 @@ case "${TARGET%%-*}" in
 esac
 PPC="${2:-$DEFPPC}"
 
-[ -x "$PPC" ] || { echo "FATAL: no compiler at $PPC"; exit 2; }
-[ -d "$RTL" ] || { echo "FATAL: no RTL units at $RTL"; exit 2; }
+[ -x "$PPC" ] || { echo "FATAL: no compiler at $PPC"; emit_summary 0 0 1; exit 2; }
+[ -d "$RTL" ] || { echo "FATAL: no RTL units at $RTL"; emit_summary 0 0 1; exit 2; }
 
 # a ppu is refused outright by a compiler aimed at another target, so derive -T/-P from
 # the target triple rather than relying on the compiler's native default
@@ -119,8 +180,14 @@ TCPU="${TARGET%%-*}"
 TOS="${TARGET#*-}"
 TARGS="-T$TOS -P$TCPU"
 
-SCRATCH=$(mktemp -d "${TMPDIR:-/tmp}/loadcheck-$TARGET-XXXXXX") || exit 2
-trap 'rm -rf "$SCRATCH"' EXIT
+SCRATCH=$(mktemp -d "${TMPDIR:-/tmp}/loadcheck-$TARGET-XXXXXX") || {
+  # before cy1113 this was a bare `|| exit 2` and printed nothing whatsoever
+  echo "FATAL: cannot create a scratch dir under ${TMPDIR:-/tmp}"
+  emit_summary 0 0 1
+  exit 2
+}
+# cleanup now lives in the on_exit trap installed above, which also owns the
+# summary-of-last-resort; two EXIT traps would silently replace one another.
 mkdir -p "$SCRATCH/out" "$SCRATCH/work"
 
 # PREFLIGHT: prove the harness can compile ANYTHING for this target before judging 144
@@ -136,6 +203,7 @@ if ! "$PPC" $TARGS -n -s -Cn -Fu"$RTL" -FU"$SCRATCH/out" "$SCRATCH/work/prefligh
   echo "       which says nothing about the unit set. First error:"
   grep -E 'Fatal|Error' "$SCRATCH/work/preflight.log" | head -3 | sed 's/^/       /'
   echo "       pass a compiler that targets ${TARGET%%-*} as argument 2, e.g. $DEFPPC"
+  emit_summary 0 0 1
   exit 2
 fi
 rm -f "$SCRATCH/out"/*
@@ -152,7 +220,7 @@ for d in "$VPDIR"/packages/*/units/"$TARGET"; do
   [ -d "$d" ] && FURest="$FURest -Fu$d"
 done
 
-total=0; ok=0; bad=0
+# counters are initialized at the top of the script (the EXIT trap reads them)
 echo "loadcheck $TARGET"
 echo "  compiler : $PPC ($("$PPC" -iV 2>/dev/null))"
 echo "  rtl      : $RTL (system.ppu $(date -r "$RTL/system.ppu" +%Y-%m-%d_%H:%M 2>/dev/null))"
@@ -241,6 +309,5 @@ for d in "$VPDIR"/packages/*/units/"$TARGET"; do
   fi
 done
 
-echo
-echo "loadcheck $TARGET: $ok/$total packages load clean, $bad problem(s)"
+emit_summary "$ok" "$total" "$bad"
 [ "$bad" -eq 0 ] || exit 1
