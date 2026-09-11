@@ -1,0 +1,81 @@
+VibePascal -- notes for CONSUMERS of the Linux compiler
+Written cy1115 (2026-09-11).  Mirrored into no tarball on purpose, so it can be
+corrected without contradicting bytes that are already published.
+
+================================================================
+DO NOT INVOKE THE COMPILER FROM ITS OWN SOURCE DIRECTORY
+================================================================
+
+Run the Linux compiler from a directory that contains NO .pas files.
+
+    good:  $VP_DIR/bin/ppcx64          <- what the dist tarballs give you
+    bad:   $VP_DIR/compiler/ppcx64     <- the build output, sitting in its own source tree
+
+FPC appends the running binary's own directory to the unit search path, after
+everything the caller passed.  That is documented, long-standing, correct
+behaviour and it is the right thing for a compiler building its own RTL -- there
+is no compiler bug here and nothing about it is going to change.
+
+The consequence is entirely about WHERE THE BINARY LIVES.  `make -C compiler`
+writes ppcx64 into compiler/, which also holds 207 .pas files.  So anyone who
+invokes $VP_DIR/compiler/ppcx64 by that path silently gets 207 of the
+compiler's own units prepended to their search path.  They never asked for
+them, and nothing in the output says they are there.
+
+WHAT IT ACTUALLY COSTS
+----------------------
+Measured against a Lazarus tree: 3 of our 207 unit names collide with its 4017
+-- `compiler`, `macho`, `tokens`.  That is a small surface, and one of them
+fires.  Lazarus has components/fpdebug/macho.pas (2101 lines); we have
+compiler/macho.pas (2106 lines).  LazDebuggerFp gets fpdebug's OUTPUT directory
+on its unit path but not fpdebug's SOURCE directory, so while that package
+compiles, the only macho.pas FPC can see is OURS.  It recompiles unit `macho`
+into LazDebuggerFp's output directory with a different CRC (62128 B vs
+62168 B), which invalidates fpimgreadermachofile.ppu, and the IDE build dies:
+
+    Fatal: (10022) Can't find unit FpImgReaderMachoFile used by FpImgReaderMacho
+
+The failure names a LAZARUS unit and reads like a Lazarus problem from end to
+end.  It cost LazarusDeveloper three cycles and a completely unbuildable
+x86_64-linux/gtk2 IDE before a -vut trace showed the real line:
+
+    Searching file .../vibepascal/compiler/macho.pas... found
+
+Same binary, copied into an empty directory, everything else identical: rc=0.
+If you are chasing a "can't find unit" whose named unit plainly exists in your
+own tree, run with -vut and grep the trace for vibepascal/compiler.
+
+WHAT WE SHIP, AND WHAT YOU HAVE TO DO
+-------------------------------------
+THE PUBLISHED TARBALLS WERE NEVER AFFECTED.  Every Linux dist tarball
+(linux64, aarch64-linux, arm-linux, and the two -cross ones) has shipped
+bin/ppc* with ZERO .pas members since v54, exactly like the win64 tarball.
+Unpack one and use $VP_DIR/bin/<name> and this cannot reach you.
+
+The exposure is the GIT CHECKOUT used as $VP_DIR, where the binary is a build
+product living next to its own sources and where bin/ does not exist at all.
+For that case, run:
+
+    dist/linux-bin-layout.sh            # populate <tree>/bin from <tree>/compiler
+    dist/linux-bin-layout.sh --check    # verify only; touches nothing
+
+It copies the consumer-facing compilers (ppcx64, ppcross386, ppcrossa64,
+ppcrossarm, and the ppcrossaarch64 alias) into <tree>/bin, then PROVES the
+property by compiling a trivial program through the installed binary and
+asserting the compiler source directory is absent from its unit path -- with
+the negative control run first, so a pass cannot be vacuous.
+Exit 0 = clean, 1 = the tree is bad, 2 = the check itself could not run.
+
+TWO THINGS THAT LOOK LIKE SHORTCUTS AND ARE NOT
+-----------------------------------------------
+A SYMLINK DOES NOT WORK.  FPC resolves the executable to its target before
+computing exepath, so bin/ppcx64 -> ../compiler/ppcx64 prints
+"Using unit path: .../vibepascal/compiler/" and reproduces the hazard in full.
+Measured: 20 hits via the symlink, identical to running the original; 0 via a
+real copy.  A hard link fails the other way -- a rebuild writes a new inode, so
+the link silently stops tracking the compiler you just built.
+
+Which means the copies GO STALE.  bin/ is in .gitignore (upstream FPC's, twice),
+so its contents are not committed and cannot be; re-running
+linux-bin-layout.sh after a compiler build is part of the deal, and --check
+reports a stale copy by md5 rather than letting you ship the wrong compiler.
