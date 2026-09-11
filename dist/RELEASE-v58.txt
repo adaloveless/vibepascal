@@ -272,3 +272,74 @@ units tarball is RTL-ONLY (99 .ppu) where win64 and now aarch64-linux ship the
 full RTL+packages set.  Whether each of those gaps BITES depends on whether units
 reach that target's users by another route, which is being measured per target
 rather than answered by counting tarballs.
+
+
+ADDENDUM 2026-09-11 (cy1123) -- arm-linux GOES FROM RTL-ONLY TO A FULL UNIT SET
+===============================================================================
+The paragraph immediately above names arm-linux as a remaining gap.  That half is
+now closed, in the same PACKAGING-not-a-build shape as the aarch64 one: the
+package PPUs already existed and were already verified, they had simply never
+been cut into a tarball.  Policy #13 safe -- nothing was compiled.
+
+NEW:  dist/arm-linux/vibepascal-v54-arm-linux-units-full.tar.gz
+      82757332 bytes
+      md5    6e92ffab6cb292c65dc0dc393a487164
+      sha256 aca16ac314da1730e3253c71807d2a8249fc4e31c5f54f98a5a2438afa855030
+      3496 files flat in units/arm-linux/: 1646 .ppu (99 RTL + 1547 package),
+      1600 .o, 249 .rsj, 1 .inc.
+NEW:  dist/arm-linux/UNITS.txt (mirrored nowhere, so it can be corrected later).
+
+THE OLD RTL-ONLY TARBALL IS KEPT, BYTE-UNTOUCHED, UNDER ITS OWN NAME.
+vibepascal-v54-arm-linux-units.tar.gz (3353006 bytes, md5
+bd4fa9afca17ed8d4595ddb1cafb9960) has been downloadable since 2026-09-10, so
+anyone verifying it against its recorded hash must still succeed.  Replacing its
+bytes under the same name would be indistinguishable from corruption on their
+end.  It is a PROVEN strict subset: all 204 of its members were md5-compared
+against the same-named members of the full set, 0 differences.
+
+WHAT THE GAP ACTUALLY WAS, MEASURED ON A SINGLE AXIS.  Same compiler, same
+command, same source, only the unit set differs:
+    uses SysUtils, Classes;   old set rc=0    full set rc=0
+    uses SysUtils, fpjson;    old set rc=1    full set rc=0
+             ("pkgtest.pas(3,16) Fatal: Can't find unit fpjson used by pkgtest")
+
+VERIFIED 2026-09-11 on these exact bytes, and the chain is the point rather than
+any one number: 143/143 packages load clean exit 0 with zero recompiles
+(dist/unit-set-loadcheck.sh arm-linux, compiler ppcrossarm); all 3496 tarball
+files byte-identical by md5 to the tree units that load check measured, 0
+mismatches; and extract-to-running-program from the published bytes only -- the
+v58 bin tarball plus this units tarball into an empty directory, a program using
+SysUtils + Classes + fpjson compiled with -n so this host's installed FPC could
+supply nothing (rc=0, "ELF 32-bit LSB executable, ARM, EABI5, statically
+linked"), RUN with correct output (NativeInt = 4).  NEGATIVE CONTROL FIRED:
+identical command with units/ renamed away -> rc=1, "Can't find unit system used
+by hello".  Under qemu-arm-static with arm-linux-gnueabihf cross binutils, which
+is not a Raspberry Pi.
+
+dist/arm-runtime-proof.sh NOW FOLLOWS THE ARTIFACT.  It named the RTL-only
+tarball literally, so it would have gone on measuring the superseded bytes
+forever; it now picks the units tarball the same highest-vN way it already picked
+the bin tarball, preferring a "-full" set.  Re-run end to end after the change:
+PASS, exit 0, every assertion identical, only the "using" line different.
+
+dist/arm-linux/VERSION.txt IS DELIBERATELY UNTOUCHED.  It is byte-identical (md5
+01e0ba5003dc90ccff0e12e6a63a46e1) to the copy inside the published v58 bin
+tarball, and it names the OLD units tarball.  That line is incomplete rather than
+wrong, and correcting it in place would make the repo and a shipped artifact
+disagree -- so the correction lives in UNITS.txt instead.
+
+v54 UNITS WITH A v58 COMPILER IS NOMINAL ONLY HERE TOO, AND IT IS MEASURED:
+"git diff --stat b7d2d9676e HEAD -- rtl/ packages/" is EMPTY.  RTL and package
+source did not move between v54 and v58; only compiler/ did (8 files, 210
+insertions).
+
+STILL OPEN AFTER THIS: i386-linux-cross publishes nothing at all for units (there
+is no dist/i386-linux directory), and linux64, x86_64-darwin and aarch64-darwin
+publish a compiler with no unit set.  None of those three has a BLOCKED consumer
+today -- the fleet builds RTL+packages from the checkout for linux64, and the
+Lazarus darwin tarball bundles a full 6754-unit darwin set -- which is why only
+the two ARM targets have been cut.  This is not a plan to cut five tarballs on
+principle.
+
+NOBODY HAS STILL EVER RUN A VibePascal BINARY ON PHYSICAL ARM HARDWARE, 32-BIT OR
+64-BIT.  That sentence has not changed and is not changed by this addendum.

@@ -46,6 +46,26 @@ latest_bin() { # $1 = dist subdir / target token
     done | sort -n | tail -1 | cut -d' ' -f2-
 }
 
+# Same rule for the UNITS tarball, and for the same reason: this line used to name
+# vibepascal-v54-arm-linux-units.tar.gz literally, so when arm-linux gained a FULL
+# RTL+packages set (cy1123) the proof would have gone on measuring the RTL-only one
+# forever.  A "-full" set WINS over a plain one at the same version -- it is a proven
+# strict superset, so preferring it can never lose coverage -- and above that it is
+# highest-vN-first, matching latest_bin.
+latest_units() { # $1 = dist subdir / target token
+    for suffix in units-full units; do
+        found=$(find "$VP/dist/$1" -maxdepth 1 -type f \
+                     -name "vibepascal-v*-$1-$suffix.tar.gz" 2>/dev/null |
+        while IFS= read -r t; do
+            b=$(basename "$t"); v=${b#vibepascal-v}; v=${v%%-*}
+            case "$v" in ''|*[!0-9]*) continue ;; esac
+            printf '%08d %s\n' "$v" "$t"
+        done | sort -n | tail -1 | cut -d' ' -f2-)
+        [ -n "$found" ] && { echo "$found"; return 0; }
+    done
+    return 1
+}
+
 # -FU/-FE OUTPUT-DIR AUTOCREATE (compiler fix 4d10b26fe7, first shipped as v55).
 # Deliberately VERSION-AWARE, so this stays a real assertion on every target
 # rather than a check that has to be edited as each one catches up:
@@ -77,7 +97,8 @@ tarball_version() { b=$(basename "$1"); b=${b#vibepascal-v}; echo "${b%%-*}"; }
 echo "== arm-linux (32-bit ARM, ARMHF) =="
 cd "$W/arm"
 ARMTB=$(latest_bin arm-linux); echo "  using $(basename "$ARMTB")"; tar xzf "$ARMTB"
-tar xzf "$VP"/dist/arm-linux/vibepascal-v54-arm-linux-units.tar.gz
+ARMUNITS=$(latest_units arm-linux) || { echo "  FAIL no arm-linux units tarball published"; exit 1; }
+echo "  using $(basename "$ARMUNITS")"; tar xzf "$ARMUNITS"
 
 # The md5 the tarball declares about itself must match the bytes we just got.
 want=$(sed -n 's/.*bin\/ppcarm  *md5 \([0-9a-f]*\).*/\1/p' VERSION.txt | head -1)

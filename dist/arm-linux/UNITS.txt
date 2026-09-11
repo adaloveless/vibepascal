@@ -1,0 +1,104 @@
+arm-linux UNIT SET -- READ THIS BEFORE USING THE BIN TARBALL
+============================================================
+Added 2026-09-11.  This file is NOT mirrored inside any published tarball, so it
+can be corrected without making an already-shipped artifact disagree with it.
+VERSION.txt is byte-identical to the copy inside the v58 bin tarball (md5
+01e0ba5003dc90ccff0e12e6a63a46e1) and is therefore left exactly as it shipped --
+INCLUDING the line that tells you to pair the compiler with
+vibepascal-v54-arm-linux-units.tar.gz.  That line is not wrong, it is INCOMPLETE,
+and this file is the correction.
+
+WHAT CHANGED: THE PUBLISHED UNIT SET WAS RTL-ONLY
+-------------------------------------------------
+vibepascal-v54-arm-linux-units.tar.gz ships 204 files -- 99 .ppu, 100 .o and 5
+.rsj: the RTL and nothing else.  1547 package units (fcl-json, fcl-base, fcl-xml,
+fpvectorial, paszlib, the rest) had been compiled for arm-linux and had never
+been published.  So a user holding only the published bytes could build a program
+that uses SysUtils and Classes, and could NOT build one that uses fpjson.
+
+Measured, not assumed.  Same compiler, same command line, same source; the ONLY
+axis that differs is the unit set:
+
+    uses SysUtils, Classes;        old RTL-only set  rc=0     full set  rc=0
+    uses SysUtils, fpjson;         old RTL-only set  rc=1     full set  rc=0
+
+and the rc=1 is:
+
+    pkgtest.pas(3,16) Fatal: Can't find unit fpjson used by pkgtest
+
+WHAT TO DOWNLOAD
+----------------
+  vibepascal-v58-dedf242c69-arm-linux-bin.tar.gz    the compiler
+      1712348 bytes   md5 b9eae9c45dd73b28618cebe0f5a79b27
+
+  vibepascal-v54-arm-linux-units-full.tar.gz        the unit set  <-- USE THIS ONE
+      82757332 bytes
+      md5    6e92ffab6cb292c65dc0dc393a487164
+      sha256 aca16ac314da1730e3253c71807d2a8249fc4e31c5f54f98a5a2438afa855030
+      3496 files flat in units/arm-linux/:
+        1646 .ppu   (99 RTL + 1547 package)
+        1600 .o
+         249 .rsj   (resource strings)
+           1 .inc   (packages/gdbint gdbver.inc)
+      The same full RTL+packages shape as the win64 and aarch64-linux sets.
+
+  vibepascal-v54-arm-linux-units.tar.gz             SUPERSEDED, still published
+      3353006 bytes   md5 bd4fa9afca17ed8d4595ddb1cafb9960
+      Kept byte-untouched because it has been downloadable since 2026-09-10 and
+      anyone verifying it against its recorded hash must still succeed.  You do
+      not need both: it is a PROVEN strict subset -- all 204 of its members were
+      md5-compared against the same-named members of the full set, 0 differences.
+      A NEW NAME was used rather than replacing the old file for exactly this
+      reason.  Same name plus different bytes is indistinguishable from
+      corruption to anyone who already has a copy.
+
+Extract the bin tarball and the full units tarball into the same directory.  You
+get bin/ppcarm and units/arm-linux/, and the compiler needs to be told where the
+units are:
+
+    ./bin/ppcarm -Fuunits/arm-linux -Flunits/arm-linux hello.pas
+
+WHY THE UNITS SAY v54 AND THE COMPILER SAYS v58
+-----------------------------------------------
+The version stamp is MEASURED, not picked.  These PPUs were built 2026-09-10,
+which was v54.  The stamp is nominal only:
+
+    git diff --stat b7d2d9676e HEAD -- rtl/ packages/     -> EMPTY
+
+RTL and package SOURCE did not move at all between v54 and v58.  Only compiler/
+moved (8 files, 210 insertions).  The same version-mismatched pairing already
+ships for win64 (v52 units + v58 binary) and aarch64-linux (v52 units + v58
+binary), and it is the honest shape: restamping these v58 would claim a rebuild
+that did not happen.
+
+ONE UNIT IS OUT OF FAMILY, AND IT IS DISCLOSED RATHER THAN LEFT TO BE FOUND:
+1546 package PPUs are from 2026-09-10 14:xx, and
+packages/gstreamer/units/arm-linux/gst.ppu is from 2026-09-11 01:07.  It loads
+clean along with everything else.  It is recorded here only so nobody finds a
+stray mtime and wonders what it means.
+
+WHAT WAS VERIFIED, AND THE CHAIN MATTERS MORE THAN ANY ONE NUMBER
+-----------------------------------------------------------------
+1. LOADS: dist/unit-set-loadcheck.sh arm-linux (compiler ppcrossarm) ->
+   143/143 packages load clean, 0 problems, ZERO silent recompiles.
+2. THE TARBALL HOLDS THOSE EXACT BYTES: all 3496 members md5-compared against
+   the tree files the load check measured -> 0 mismatches.  Without this link,
+   step 1 describes different bytes than the ones shipping.
+3. EXTRACT TO RUNNING PROGRAM FROM THE PUBLISHED BYTES ONLY: both tarballs into
+   an empty directory; a program using SysUtils, Classes AND fpjson compiled with
+   -n so this host's installed FPC could supply nothing; output is "ELF 32-bit
+   LSB executable, ARM, EABI5 version 1 (SYSV), statically linked"; it RAN and
+   printed { "cpu" : "arm-linux", "bits" : 32 } -- NativeInt = 4, as it must be
+   on 32-bit ARM.
+4. NEGATIVE CONTROL FIRED: identical command with units/ renamed away ->
+   rc=1, "hello.pas(1,15) Fatal: Can't find unit system used by hello".
+   A check that cannot fail proves nothing.
+
+THE LIMIT, STATED PLAINLY: all of the above ran under qemu-arm-static on an
+x86_64 host, with arm-linux-gnueabihf cross binutils supplying as/ld because this
+host has no native ARM assembler.  qemu-user runs the real shipped bytes and real
+ARM instruction encodings, so codegen and RTL defects DO surface -- but it is not
+a Raspberry Pi.  NOBODY HAS EVER RUN THESE ON PHYSICAL 32-BIT ARM HARDWARE.  A
+real board does not need the -XP cross-binutils prefix; it uses its own as/ld.
+
+-- Otto (FPCDeveloper), cycle 1123
