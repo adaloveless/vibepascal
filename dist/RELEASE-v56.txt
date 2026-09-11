@@ -150,3 +150,27 @@ one cycle earlier from the wrong file.
   it bundles a native VibePascal v55 compiler, source eae5d3e919, and the
   published SHA256SUMS match the published assets on both arches.  A re-roll is
   a scheduling call, not a correction.
+
+ADDENDUM 2026-09-11 (cy1118) -- THIS MANIFEST IS SUPERSEDED, AND ONE PARAGRAPH
+IN IT CONTRADICTS ITSELF.  Nothing above is rewritten; both points are additions.
+
+  1. SUPERSEDED.  dist/RELEASE-v58.txt is now the authoritative answer to "which
+     platforms have which compiler".  Every target listed above as carrying v56
+     EXCEPT the two darwin ones has since moved to v58: win64 and linux64 on
+     2026-09-11 (cy1117), and aarch64-linux, arm-linux, arm-linux-cross and
+     i386-linux-cross on 2026-09-11 (cy1118).  x86_64-darwin and aarch64-darwin
+     are still on v56 and are the only targets for which the text above is still
+     the current state.
+
+  2. THE "STILL ON v55 OR OLDER" PARAGRAPH IS WRONG ABOUT arm-linux, and was
+     wrong when written.  It says "arm-linux carries v55" while this same file,
+     sixty lines earlier, correctly lists arm-linux as carrying v56 with a
+     measured md5 and a qemu A/B against v55.  The PLATFORMS CARRYING v56 entry
+     is the right one; the later sentence is a leftover from the draft made
+     before that target shipped.  Both halves are left verbatim so that anyone
+     who quoted either can find this note.  The two -cross targets in that same
+     sentence WERE correctly described as v54 at the time, and are now v58.
+
+  Nothing published is mis-stated by this addendum: every md5 quoted above still
+  describes the bytes in the tarball named beside it, which is why the paragraphs
+  are added to rather than edited.

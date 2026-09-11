@@ -1,0 +1,156 @@
+# VibePascal v58 -- cross-platform status manifest
+# Cut by FPCDeveloper (Otto).  win64 + linux64 shipped 2026-09-11 (cy1117);
+# i386-linux-cross, arm-linux-cross, aarch64-linux and arm-linux shipped
+# 2026-09-11 (cy1118).  The two macOS targets are NOT here yet -- see the
+# section at the end, which says so plainly rather than leaving it to be
+# discovered.
+# This file is the authoritative answer to "which platforms have v58".
+# Per-platform detail lives in dist/<target>/VERSION.txt and inside each tarball.
+# There is no RELEASE-v57.txt: v57 shipped to win64 and linux64 only, and every
+# target that skipped it collects it here, so v57 is documented below too.
+
+source_commit: dedf242c696a543f9626e2839ced40876478a98a
+compiler_fix:  dedf242c69  (compiler/entfile.pas -- tppufile.readheader)
+parent:        v57 (1f605f41b3b06a5fa84fb4cb31ee4298fb30907f, fix c31227c8ca)
+
+WHAT CHANGED IN v57 AND v58 -- ONE ACCIDENT, TWO BYTES APART
+  Both fixes are about the same thing happening to a unit file: a killed build,
+  a full disk or an interrupted copy leaves a .ppu HALF WRITTEN.
+
+  v57 (c31227c8ca)  A short read inside the .ppu reader is now an error.  Before
+                    it, a half-written unit could put the compiler into an
+                    infinite 99%-CPU spin with no message at all -- you had to
+                    notice a build that never ended and go looking.
+
+  v58 (dedf242c69)  v57 only ever noticed damage it happened to trip over.  Lose
+                    the TAIL of a unit and there is nothing to trip over, because
+                    nothing an interface load reads lives in the last handful of
+                    bytes: the compiler read what it wanted, never reached the
+                    missing part, and built your program against a unit that is
+                    not all there.  Exit 0, no message, nothing to search a log
+                    for.  Measured on a real 55291-byte unit, every truncation
+                    from 55271 bytes upward was accepted.
+                    A .ppu header records how long the payload is, so a complete
+                    file is always 40 bytes of header plus that number and can
+                    never be fewer.  tppufile.readheader now compares the two and
+                    rejects a SHORT file.  Longer than declared stays legal, as
+                    it always was.  The arithmetic is 64-bit on purpose: the
+                    declared size is an unsigned 32-bit field, and a corrupt
+                    header claiming near 4 GB would wrap a 32-bit sum and switch
+                    the check off at exactly the moment it is needed.
+
+  THIS DOES NOT TURN GOOD BUILDS RED.  The rejection is soft and self-healing: a
+  truncated unit whose source is available is RECOMPILED and the build goes
+  green; a good copy of the same unit in a later -Fu directory is used instead;
+  only a truncated unit with no source and no other copy stops the compile, and
+  it stops with the message an absent unit already gives.  Nobody is ever told to
+  go and delete a file.
+
+  COMPILER-BINARY-ONLY.  No PPU FORMAT change -- the reader got stricter, the
+  format did not move -- and no RTL or package change, so existing unit sets stay
+  valid on every platform.
+
+PLATFORMS CARRYING v58
+  win64/           vibepascal-v58-dedf242c69-win64-bin.tar.gz
+                   md5 5d0814f675a58bf2fc40535bfa86e7ca
+                   ppcx64.exe md5 447b4e500c5525a7fd89b21a6f7dd303
+                   -- also published as vibepascal-latest-win64-bin.tar.gz and
+                      named by dist/win64/LATEST.txt (the auto-update pointer)
+                   -- units are STILL the v52 set; auto-update.bat can take the
+                      ~3.5 MB bin alone
+                   -- RUNTIME: executes under wine64, with the published v57 exe
+                      as a control that still fails.  wine is NOT Windows, and
+                      nobody has run any release on real Windows hardware.
+                   -- if you hold a v58 win64 tarball with md5
+                      c74de747a8838a8cfe469a2b4bb81f41, that is the superseded
+                      first cut: same fix, wrong self-reported build date.
+  linux64/         vibepascal-v58-dedf242c69-linux-x86_64-bin.tar.gz
+                   md5 98948446d672fb0709f256632317fc56
+                   ppcx64 md5 8c8179b2f0a452cebec0131aa301b076
+                   -- RUNTIME: native self-host fixpoint (stage1==stage2==stage3)
+                      and a full 1983-test corpus A/B, 1983 SAME / 0 DIFF.  This
+                      is the only platform with real, non-emulated runtime proof.
+
+  aarch64-linux/   vibepascal-v58-dedf242c69-aarch64-linux-bin.tar.gz
+                   md5 f0e5da8a60468be2ef2e390747bbdb87
+                   ppca64 md5 78c729e8addfb7a8e80ddb245ca57049
+                   -- SKIPPED v57; this release carries BOTH reader fixes.
+                   -- RUNTIME: EXECUTED under qemu-aarch64-static.
+                      Re-runnable: sh dist/arm-runtime-proof.sh
+  arm-linux/       vibepascal-v58-dedf242c69-arm-linux-bin.tar.gz
+                   md5 b9eae9c45dd73b28618cebe0f5a79b27
+                   ppcarm md5 49acd17c61202c72906a2a020091cac4
+                   -- ARMHF/EABIHF (readelf flags 0x5000400).  BIN-ONLY: pair
+                      with vibepascal-v54-arm-linux-units.tar.gz, still REQUIRED.
+                   -- SKIPPED v57; this release carries BOTH reader fixes.
+                   -- RUNTIME: EXECUTED under qemu-arm-static, including both
+                      { %FAIL } tests still correctly REJECTED.
+  i386-linux-cross/ vibepascal-v58-dedf242c69-i386-linux-cross-bin.tar.gz
+                   md5 debb51aeb7e0749a7852b87cc8459117
+                   ppcross386 md5 b76969a5226f68019f287a97dac89333
+                   -- was FOUR releases behind (v54): also collects v55 (-FU/-FE
+                      output dir autocreate) and v56 (real-constant inline var
+                      infers Double).
+                   -- RUNTIME: its OUTPUT was executed -- a 32-bit i386 ELF built
+                      by this compiler ran here, checks=45 fails=0 NativeInt=4.
+                      The compiler itself is an x86_64 host binary.
+  arm-linux-cross/ vibepascal-v58-dedf242c69-arm-linux-cross-bin.tar.gz
+                   md5 0f35c1601c2441a69977e7b9baa2b6d6
+                   ppcrossarm md5 5e3d9ba2d978db06b31a1a15c37244d9
+                   -- ARMHF, same four-release catch-up as i386-linux-cross.
+                   -- RUNTIME: its OUTPUT was executed under qemu-arm-static,
+                      checks=45 fails=0 NativeInt=4.
+
+HOW EACH BINARY WAS SHOWN TO CARRY THE FIX -- AND WHY NOT BY VERSION STRING
+  Every one of these compilers reports "3.3.1".  The version string cannot tell
+  v54 from v58, so it was never used as evidence.  The discriminating test is
+  dist/ppu-truncation-check.sh: truncate a REAL .ppu for that target at 25
+  offsets and score what the compiler does, with the unit in exactly ONE
+  directory and its source off every search path -- otherwise a correct rejection
+  resolves from a shadow copy and reads as a pass.
+
+  Each new binary was run against the PRESERVED binary it replaces, the one that
+  actually shipped, re-run this cycle rather than argued from source:
+
+    target             replaced binary        pre-fix           post-fix
+    i386-linux         ppcross386  v54        11/25, exit 1     25/25, exit 0
+    arm-linux (cross)  ppcrossarm  v54        11/25, exit 1     25/25, exit 0
+    aarch64-linux      ppca64      v56        11/25, exit 1     25/25, exit 0
+    arm-linux (native) ppcarm      v56        12/25, exit 1     25/25, exit 0
+
+  The pre-fix failures split into a loud half and a silent half: 8 or 9 offsets
+  HUNG and had to be killed at 30 seconds, and 5 were ACCEPTED with rc=0 -- a
+  corrupt unit taken as valid, which is the half v58 exists for.  The native arm
+  compiler scores 13 problems where its cross twin scores 14; one offset that
+  spins on the host binary errors out on the native one.  That is reported as
+  measured rather than rounded to match, and the silent five are identical on
+  every target.
+
+A CROSS BUILD CAN LIE ABOUT BEING ONE -- CHECK THE UNIT COUNT, NOT THE HASH
+  Recorded because it nearly shipped four stale compilers with fresh hashes.
+  The first ppcross386 build this cycle compiled ONE file (pp.pas, 795 lines),
+  never touched the patched entfile.pas, reused units from 2026-09-03 for
+  everything else -- and emitted a NEW md5, which reads exactly like a successful
+  rebuild.  A separate incremental arm build did worse: it crashed the driver
+  compiler with an access violation.  Both were cured by wiping
+  compiler/<target>/{bin,units} and rebuilding from scratch, with no source
+  change.  Units recompiled per binary this release: 277 (i386), 223 (aarch64),
+  241 (arm).  If you reproduce these, assert that count.
+
+STILL ON v56 AFTER THIS RELEASE
+  x86_64-darwin/   vibepascal-v56-a187bbac34-x86_64-darwin-bin.tar.gz
+  aarch64-darwin/  vibepascal-v56-a187bbac34-aarch64-darwin-bin.tar.gz
+
+  Both macOS targets are missing v57 AND v58.  On those compilers a half-written
+  unit still hangs forever and a tail-truncated one is still taken as valid.
+  Nobody is blocked on anybody: it is a build step, and darwin is NOT blocked on
+  a missing SDK (pass -XR to mac_sdk/MacOSX26.2.sdk and both darwin targets
+  link).  It is deliberately NOT bundled into this release because the darwin
+  delivery path is different: build-release.sh ad-hoc signs every bundled Mach-O
+  with rcodesign, a signature APPENDS bytes and CHANGES the hash, so publishing
+  an unsigned staging hash there is the exact thing that reads to a careful user
+  as corruption.  See the signing sections of dist/RELEASE-v56.txt before
+  attempting it.  Tracked on the open ledger row darwin_stale_v58.
+
+  Do not read this manifest as "the fix is everywhere".  It is on every Linux and
+  Windows target and on neither macOS target.
