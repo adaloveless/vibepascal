@@ -108,12 +108,25 @@ echo "  md5      $S_MD5"
 [ $# -gt 0 ] || exit 0
 
 echo "IDENTIFY -- ad-hoc signing each candidate under the shipped filename '${S_NAME:-ppc?}'"
-command -v rcodesign >/dev/null 2>&1 || { echo "  (rcodesign not on PATH -- size alone must settle it)"; exit 0; }
+# A MISSING TOOL IS NOT A PASS (cy1127).  This used to print a note and exit 0,
+# which reads as "identification done" to anything checking the exit code, when
+# in fact the step never ran.  Candidate dirs were asked for, so not being able
+# to judge them is a harness failure -- exit 2, the code this script already uses
+# for "could not measure", never 0 and never 1.
+command -v rcodesign >/dev/null 2>&1 || {
+  echo "  NOTHING WAS TESTED: rcodesign is not on PATH, so no candidate could be signed under the shipped filename and none was compared -- this says nothing about the published compiler"
+  exit 2; }
 rc=1
+judged=0
 for d in "$@"; do
+  # Name a bad path rather than letting it vanish into an unmatched glob: a
+  # staging dir here is named with a date AND a git sha, so a typo or a stale
+  # glob is the likeliest way this script is ever pointed at nothing.
+  [ -d "$d" ] || echo "  MISSING  $d -- not a directory, nothing in it could be judged"
   for cand in "$d"/bin/ppc* "$d"/ppc*; do
     [ -f "$cand" ] || continue
     case "$cand" in *.ppu|*.o) continue;; esac
+    judged=$((judged+1))
     s=$(mktemp -d "${TMPDIR:-/tmp}/sign.XXXXXX")
     cp "$cand" "$s/${S_NAME:-$(basename "$cand")}" 2>/dev/null || { rm -rf "$s"; continue; }
     rcodesign sign "$s/${S_NAME:-$(basename "$cand")}" >/dev/null 2>&1
@@ -128,5 +141,17 @@ for d in "$@"; do
     rm -rf "$s"
   done
 done
-[ $rc -eq 0 ] || echo "  NO CANDIDATE MATCHED -- the published compiler came from bytes not in these dirs"
+# A LOOP THAT JUDGED NOTHING MUST NOT REPORT A MISMATCH (cy1127, measured).
+# Before this, an existing-but-empty candidate dir AND a candidate dir that does
+# not exist at all both produced the SAME line -- "the published compiler came
+# from bytes not in these dirs" at rc=1 -- which is a provenance alarm worth
+# holding a release over, asserted after testing zero candidates.  A wrong path
+# is the common case, not the rare one.  Distinct exit code, because rc=1 has to
+# keep meaning "candidates were compared and none of them is it".
+if [ "$judged" -eq 0 ]; then
+  echo "  NOTHING WAS TESTED: no ppc* candidate file was found under any of the $# dir(s) given -- looked for '<dir>/bin/ppc*' and '<dir>/ppc*' in: $*"
+  echo "  This says NOTHING about the published compiler.  Check the paths; a staging dir here is named with both a date and a git sha."
+  exit 2
+fi
+[ $rc -eq 0 ] || echo "  NO CANDIDATE MATCHED ($judged candidate(s) signed and compared) -- the published compiler came from bytes not in these dirs"
 exit $rc
