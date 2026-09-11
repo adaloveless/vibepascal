@@ -38,15 +38,29 @@
 # Swept all six targets 2026-09-10 by BuildMaster (cy1110), and re-measured here after -s:
 #   x86_64-linux 146/146 rc=0   arm-linux 142/142 rc=0   x86_64-darwin 118/118 rc=0
 #   aarch64-darwin 115/115 rc=0   aarch64-linux 143/143 rc=0 (0/143 before -s)
-#   x86_64-win64 108/109 rc=1 -- one problem, NOT a defect and NOT fixable by rebuilding:
-#   packages/librsvg/units/x86_64-win64/ ships rsvg.ppu, which uses glib2, and glib2 (which
-#   lives in the gtk2 package) has no win64 build in this tree. gtk2's fpmake.pp DOES
-#   declare Win32/Win64 (P.OSes:=AllUnixOSes+[Win32,Win64]-[darwin,...]), so nothing is
-#   mis-declared -- the win64 roll simply never produced the gtk2/glib2 units, only the
-#   buildgtk2 driver. Leave the package sources alone and allowlist librsvg. r25's shipped
-#   win64 asset was cut from this same unit set, so this is the state of every win64
-#   release so far, not a regression. gtk2 itself is no longer reported at all: see the
-#   build-driver skip below (it now prints SKIPPED and leaves the denominator at 109).
+#   x86_64-win64 108/109 rc=1 -- SUPERSEDED, and the diagnosis above it was WRONG. Kept
+#   verbatim as the lesson: this file used to say the win64 librsvg miss was "NOT a defect
+#   and NOT fixable by rebuilding" because "glib2 ... has no win64 build in this tree" and
+#   "the win64 roll simply never produced the gtk2/glib2 units, only the buildgtk2 driver",
+#   and it told the reader to "Leave the package sources alone and allowlist librsvg".
+#   Every clause of that is a correct MEASUREMENT with a false conclusion bolted on.
+#
+#   MEASURED cy1112, x86_64-win64 is now 111/111 rc=0. What was actually wrong: a FAILED
+#   win64 gtk2 build on 2026-08-18 15:42 left buildgtk2.ppu behind as an ORPHAN. fpmake
+#   treats the driver as the package's only explicit target (gtk2's other 12 units are all
+#   AddImplicitUnit), so with that one ppu present it reported "[100%] Compiled package
+#   gtk2" and built NOTHING, on every run, forever. Deleting the orphan and re-running the
+#   unchanged make line built all 12 units in seconds. librsvg's rsvg.ppu then loaded, and
+#   gstreamer -- which needs glib2 and nothing else -- built for win64 too.
+#   NOTHING in the package sources needed changing, and nothing needed allowlisting.
+#
+#   THE GENERAL SHAPE, which is why the skip branch below now FLAGS instead of absolving:
+#   "the package is simply not built for that target" is a description, never a cause. A
+#   unit dir that EXISTS and holds ONLY a build driver means a build ran there and produced
+#   only the driver -- so the next build will skip the package on the strength of the
+#   wreckage the last one left. Swept all 921 packages/*/units/<target> dirs in this tree
+#   cy1112: gtk2/x86_64-win64 was the ONLY one, so flagging costs nothing today and catches
+#   the next one. x86_64-linux re-measured 146/146 rc=0 after the fix -- no regression.
 #
 # WHY arm-linux PASSED BEFORE THIS FIX AND aarch64-linux DID NOT (measured cy1110, from
 # the artifacts, not reasoned): the arm-linux target writes its object with FPC's INTERNAL
@@ -106,19 +120,32 @@ for d in "$VPDIR"/packages/*/units/"$TARGET"; do
             # them has a source whose interface is nothing but a uses clause over its own
             # package's units). Skipping them removes ZERO coverage, because a driver only
             # ever uses units from its own dir and this probe lists those units directly.
-            # It removes a real FALSE ALARM: packages/gtk2/units/x86_64-win64/ contains
-            # buildgtk2.ppu and NOTHING ELSE (gtk2 has 13 units on linux, none on win64),
-            # so the driver was the sole "unit" of the package and reported
-            # "Can't find unit gtk2 used by buildgtk2" -- which reads as a broken unit set
-            # when the truth is the package is simply not built for that target.
+            # Skipping the driver stops it reporting "Can't find unit gtk2 used by
+            # buildgtk2", which is a real false alarm ABOUT THE DRIVER. But a dir left
+            # holding ONLY drivers is not thereby innocent -- see the DRIVER-ONLY branch
+            # below, which is where cy1110 quietly excused the orphan that was blocking
+            # every win64 gtk2 build. Skip the driver; do NOT skip the dir.
             case "$b" in BuildUnit_*|buildunit_*|build*|Build*|BUILD*) continue;; esac
             echo "$b"
           done | tr '\n' ',' | sed 's/,$//')
   if [ -z "$units" ]; then
-    # never let a package vanish from the denominator silently -- if a dir held only
-    # drivers, say so, so a future real unit named build* cannot hide by shrinking $total
+    # DRIVER-ONLY IS A DEFECT SIGNATURE, NOT A BENIGN "not built here" (cy1112).
+    # A dir that exists and holds only an fpmake build driver means a build ran in it and
+    # produced nothing else; because the driver is usually the package's only EXPLICIT
+    # fpmake target, its mere presence then makes every later fpmake run report
+    # "[100%] Compiled package <pkg>" while doing no work. That is how gtk2 stayed unbuilt
+    # for win64 from 2026-08-18 to cy1112 and took librsvg and gstreamer down with it.
+    # The remedy is always the same and costs seconds: delete the orphan driver ppu and
+    # re-run the SAME make line. A package that is genuinely not built for a target has no
+    # unit dir at all and is filtered out by the [ -d ] test above, so this branch cannot
+    # fire for that case. Counted in BOTH $total and $bad: the package stays in the
+    # denominator (it was never vanishing-safe to drop it) and the gate exits non-zero.
     drivers=$(ls "$d"/*.ppu 2>/dev/null | xargs -r -n1 basename | tr '\n' ' ')
-    [ -n "$drivers" ] && echo "SKIPPED $pkg -- no consumable units for $TARGET (build driver only: $drivers)"
+    if [ -n "$drivers" ]; then
+      echo "DRIVER-ONLY $pkg -- $TARGET dir holds build drivers and no units: $drivers"
+      echo "             a stale driver ppu makes fpmake report the package built; delete it and rebuild"
+      total=$((total+1)); bad=$((bad+1))
+    fi
     continue
   fi
   total=$((total+1))
