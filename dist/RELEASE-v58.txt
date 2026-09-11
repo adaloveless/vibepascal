@@ -224,3 +224,51 @@ STILL ON v56 AFTER THIS RELEASE
 
   Do not read this manifest as "the fix is everywhere".  It is on every Linux and
   Windows target and on neither macOS target.
+
+--- ADDENDUM 2026-09-11 (cy1122): aarch64-linux NOW HAS A UNIT SET ---
+Nothing above is retracted; this adds an artifact the manifest could not name
+because it did not exist when the manifest was written.
+
+  dist/aarch64-linux/vibepascal-v52-aarch64-linux-units.tar.gz
+    84809752 bytes   md5 a8e82e441275abb2bc75a1554f2d7c56
+    sha256 958db18cafa1c1d1677f1986bef73888672ae31961afea699ded783e2356da83
+    1631 .ppu + 1584 .o, flat in units/aarch64-linux/
+
+WHY THIS MATTERED MORE THAN A MISSING CONVENIENCE FILE.  Four aarch64-linux
+releases (v54, v55, v56, v58) shipped a compiler binary and NO unit set, and this
+target has never published one -- so on a box with no prior VibePascal install the
+published bytes could not compile one line.  That violates our own rule that a
+platform which has never shipped cannot go out bin-only, and it was found while
+pinning bytes for a verification ask to the one native ARM64 host we have
+(gx10-f8f9), where the honest answer to "can a user get from extract to a working
+build" was no.  PACKAGING, NOT A BUILD: the PPUs already existed on disk and
+nothing was compiled to produce this.
+
+VERIFIED 2026-09-11 on these exact bytes: 144/144 packages load clean exit 0 with
+zero recompiles; all 3215 tarball files byte-identical to the units that load
+check measured; and extract-to-running-program from the published bytes only --
+bin tarball plus this units tarball into an empty directory, a SysUtils/Classes
+program compiled with -n (rc=0, ELF aarch64 static) and RUN (rc=0, correct
+output), with the negative control firing when units/ is hidden (rc=1, "Can't
+find unit system").  Under qemu-aarch64-static, which is not silicon.  Details
+and the exact commands in dist/aarch64-linux/UNITS.txt.
+
+v52 UNITS WITH A v58 COMPILER IS NOMINAL ONLY HERE, AND IT IS MEASURED:
+"git diff --stat 34660520 HEAD -- rtl/ packages/" is EMPTY.  RTL and package
+source did not move between v52 and v58 -- only compiler/ did (10 files, 407
+insertions) -- and the PPU format did not move either (v208 / LongVersion 30).
+A v58-stamped rebuild would compile the same source these were compiled from.
+
+dist/aarch64-linux/VERSION.txt IS DELIBERATELY UNTOUCHED.  It is byte-identical
+(md5 1b1c71191ddefdc461cec628f0cdcf03) to the copy inside the published v58 bin
+tarball, and rewriting it would make the repo and the shipped artifact disagree.
+The pairing requirement therefore lives in the new, mirrored-nowhere
+dist/aarch64-linux/UNITS.txt.
+
+STILL OPEN AFTER THIS, so the gap is not mis-reported as closed: five other
+targets publish a compiler binary and no unit set (arm-linux-cross,
+i386-linux-cross, linux64, x86_64-darwin, aarch64-darwin), and the arm-linux v54
+units tarball is RTL-ONLY (99 .ppu) where win64 and now aarch64-linux ship the
+full RTL+packages set.  Whether each of those gaps BITES depends on whether units
+reach that target's users by another route, which is being measured per target
+rather than answered by counting tarballs.

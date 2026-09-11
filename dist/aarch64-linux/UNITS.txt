@@ -1,0 +1,75 @@
+aarch64-linux UNIT SET -- READ THIS BEFORE USING THE BIN TARBALL
+================================================================
+Added 2026-09-11.  This file is NOT mirrored inside any published tarball, so it
+can be corrected without making an already-shipped artifact disagree with it.
+VERSION.txt is byte-identical to the copy inside the v58 bin tarball and is
+therefore left exactly as it shipped.
+
+THE UNITS ARE NOT OPTIONAL, AND UNTIL TODAY THEY WERE NOT PUBLISHED AT ALL.
+--------------------------------------------------------------------------
+Every aarch64-linux release so far (v54, v55, v56, v58) shipped a compiler
+binary and nothing else.  VERSION.txt says "an existing aarch64-linux unit set
+stays valid and does not need rebuilding", which is true and was also useless
+here: this target has never published a unit set, so there was no existing one to
+stay valid.  On a machine with no prior VibePascal install, the published bytes
+could not compile a single line.  Measured, not assumed -- with the unit set
+hidden, the compiler stops at:
+
+    hello.pas(1,15) Fatal: Can't find unit system used by hello
+
+WHAT TO DOWNLOAD
+----------------
+  vibepascal-v58-dedf242c69-aarch64-linux-bin.tar.gz   the compiler
+  vibepascal-v52-aarch64-linux-units.tar.gz            the unit set  <-- REQUIRED
+
+    84809752 bytes
+    md5    a8e82e441275abb2bc75a1554f2d7c56
+    sha256 958db18cafa1c1d1677f1986bef73888672ae31961afea699ded783e2356da83
+    3215 files: 1631 .ppu + 1584 .o, flat in units/aarch64-linux/
+    (98 RTL units + 1533 package units -- the same full RTL+packages shape as the
+     win64 set, NOT the RTL-only shape the arm-linux v54 units tarball has)
+
+Extract both into the same directory.  You get bin/ppca64 and
+units/aarch64-linux/, and the compiler needs to be told where the units are:
+
+    ./bin/ppca64 -Fuunits/aarch64-linux -Flunits/aarch64-linux hello.pas
+
+WHY THE UNITS SAY v52 AND THE COMPILER SAYS v58, AND WHY THAT IS NOT A COMPROMISE
+--------------------------------------------------------------------------------
+The units were built 2026-08-18, which was v52.  The same is already true of the
+win64 pairing that ships today (v52 units, v58 binary).  For THIS target the
+mismatch is nominal only, and that is measured rather than argued:
+
+    git diff --stat 34660520 HEAD -- rtl/ packages/      ->  EMPTY
+
+RTL and package SOURCE is byte-identical between v52 and v58.  Only compiler/
+moved (10 files, 407 insertions).  So a unit set rebuilt from v58 source would be
+built from the same source these were built from; there is no RTL or package
+change for the older stamp to be missing.  PPU format did not move either -- both
+the RTL and the package units read v208 / LongVersion 30.
+
+WHAT WAS ACTUALLY VERIFIED, ON THESE EXACT BYTES, 2026-09-11
+------------------------------------------------------------
+  * 144/144 packages load clean, 0 problem(s), exit 0
+    (dist/unit-set-loadcheck.sh aarch64-linux compiler/ppcrossa64) -- re-measured
+    this cycle, and it recompiled NOTHING, so the set is self-consistent rather
+    than repaired on the way past.
+  * All 3215 files in the tarball are byte-identical (md5) to the units the load
+    check measured.  0 mismatches.  That is the link between "the tree is good"
+    and "the tarball is good"; without it the load check describes something else.
+  * EXTRACT-TO-RUNNING-PROGRAM, from the published bytes only.  The bin tarball
+    and this units tarball were extracted into an empty directory and a program
+    using SysUtils and Classes (TStringList) was compiled with -n, so the host's
+    own installed FPC could not supply anything:
+        compile -> rc=0
+        output  -> ELF 64-bit LSB executable, ARM aarch64, statically linked
+        run     -> "HELLO vibepascal aarch64-linux 2", rc=0
+    CONTROL: the identical command with units/ hidden fails (rc=1, "Can't find
+    unit system").  The controls split, so the pass is the unit set and not the
+    host.
+  * THE COMPILE AND THE RUN WERE UNDER qemu-aarch64-static ON x86_64, and the
+    external assembler/linker had to be the aarch64 cross binutils
+    (-XPaarch64-linux-gnu-) because this host has no native aarch64 "as".
+    QEMU IS NOT SILICON.  NO VIBEPASCAL RELEASE HAS EVER RUN ON PHYSICAL ARM
+    HARDWARE.  On a real ARM64 box you need binutils installed -- the bin tarball
+    ships no assembler and no linker, same as every other FPC distribution.
