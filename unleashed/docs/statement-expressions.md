@@ -56,11 +56,38 @@ s := case day of
   5: 'Friday';
 else
   'Weekend';
+```
+
+Each branch yields a value. All branches must yield compatible
+types. The `else` branch is required unless the listed branches
+cover every value of the subject's type (an enum or boolean with
+every value present, or ranges that span the whole ordinal type).
+
+### Syntax notes
+
+- The `else` value TERMINATES the case-expression: there is no
+  `end` after it. `x := case c of 0: 1 else 2 end;` is a syntax
+  error -- that `end` closes the enclosing `begin..end` instead,
+  and the compiler reports it at the far end of the block
+  (`"." expected but ";" found`).
+- Without an `else` branch the branch list is closed by `end`,
+  exactly as in a case statement:
+
+```pas
+type TColor = (cRed, cGreen);
+var c: TColor;
+var n := case c of
+  cRed:   1;
+  cGreen: 2;
 end;
 ```
 
-Each branch yields a value. The `else` branch is required. All
-branches must yield compatible types.
+- A semicolon before `else` is optional, as in a case statement:
+  `case x of 1: 10; 2: 20; else 30` and `case x of 1: 10; 2: 20 else 30`
+  are the same expression.
+- Code shared with other compilers: an `end` after the `else` value
+  is not accepted here. This is the fpc-unleashed grammar, pinned by
+  `tests/test/tstatementexpr3.pp`.
 
 ## try-except expression
 
@@ -102,7 +129,7 @@ the same promotion rules as regular assignments:
 var s := if b then 'hello' else 'world';
 
 // integer + integer = ok
-var i := case x of 1: 10; 2: 20; else 30; end;
+var i := case x of 1: 10; 2: 20; else 30;
 
 // mismatched types = error
 var x := if b then 42 else 'hello'; // Error
@@ -117,7 +144,7 @@ writeln(if b then 'yes' else 'no');
 
 arr[if i > 0 then i else 0] := value;
 
-Foo(case mode of 1: 'fast'; else 'slow'; end);
+Foo(case mode of 1: 'fast' else 'slow');
 
 var x := 1 + (if b then 10 else 20);
 ```
