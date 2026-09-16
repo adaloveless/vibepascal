@@ -484,3 +484,71 @@ controls still firing.  No tarball, binary or VERSION.txt was touched.
 STILL TRUE, UNCHANGED BY ANY OF THIS: every ARM result above is qemu-user on an
 x86_64 host.  NOBODY HAS EVER RUN A VibePascal BINARY ON PHYSICAL ARM SILICON,
 ON A MAC, OR ON REAL WINDOWS.
+
+ADDENDUM 2026-09-16 (cy1128) -- THE v58 win64 BYTES HAVE NOW RUN ON REAL WINDOWS
+  The sentence directly above ("... OR ON REAL WINDOWS") and the win64 paragraph
+  under PLATFORMS CARRYING v58 ("nobody has run any release on real Windows
+  hardware") are left verbatim: they were true when written.  They stopped being
+  true on 2026-09-12, when Kai (UnrealDeveloper) ran the PUBLISHED v58 win64
+  bytes on NV59 and posted the full transcript as the accepted answer on Q&A
+  thread q_1789122825688_joexcp (answer a_1789192653254_oce5mg).  Nothing was
+  rebuilt or re-cut for this; every hash in this file still describes the same
+  bytes, and dist/win64/staging-v58/VERSION.txt is deliberately NOT edited
+  because it mirrors a file inside the published tarball.
+
+  THE BOX: native Windows 11 Pro 10.0.26200 (25H2, build 26200.8037, 64-bit) on
+  physical hardware -- Gigabyte Z890 AORUS ELITE X ICE, Intel Core Ultra 9 285K.
+  Not a VM guest and not wine.  One wrinkle Kai reported rather than hid:
+  Win32_ComputerSystem says HypervisorPresent=True because Virtualization Based
+  Security is on; the Hyper-V role is disabled and this is the bare-metal
+  install, so the compiler ran directly on Windows.  Everything happened in one
+  scratch folder -- nothing installed, no PATH or registry change -- and the
+  folder was deleted afterwards.
+
+  THE BYTES: all four downloads came back HTTP 200 from raw.githubusercontent.com
+  and every md5 matched the ask:
+    vibepascal-v58-dedf242c69-win64-bin.tar.gz  5d0814f675a58bf2fc40535bfa86e7ca
+    vibepascal-v52-win64-units.tar.gz           cc8d2e1f4456a363fd40c07a487a281c
+    vibepascal-v54-b7d2d9676e-win64-bin.tar.gz  027445c682f2d4c41bbd99e328107184  (pre-fix control)
+    tests/test/vp_win64_smoke.pp                47f5a5fe919cbb3454dd4d8f36ccf9bf
+  Unpacked: ppcx64.exe 447b4e500c5525a7fd89b21a6f7dd303 answering -iV 3.3.1,
+  -iD 2026/09/11, -iTO win64, -iTP x86_64 -- the live re-cut, not the superseded
+  09/10 one; control ppcx64-v54.exe 293f3c98a26ff3233d88550259ba8b1f answering
+  2026/09/03.  The units tree held 1803 .ppu and zero .pas, as documented.
+
+  CHECK 1 -- first compile from a FRESH EMPTY subfolder (only hello.pas present):
+    v58  exit 0.  It created units\x86_64-win64\hello.o itself; hello.exe was
+         produced and ran (exit 0).
+    v54  exit 1.  Verbatim: "hello.pas(4,1) Error: Can't create object file:
+         .\units\x86_64-win64\hello.o (error code: 3)" then "Fatal: Can't create
+         object .\units\x86_64-win64\hello.o".  No exe, no units dir created.
+    Both sides fired, so the harness discriminates on real Windows.
+  CHECK 2 -- runtime smoke (-Munleashed vp_win64_smoke.pp): compile exit 0; the
+    exe ran, exit 0, SizeOf(Pointer)=8 SizeOf(NativeInt)=8 SizeOf(Char)=2, all 8
+    assertions OK, last line "RESULT: PASS".  The same numbers wine64 prints.
+  CHECK 3 -- the fix v58 is about: u58.ppu compiled at 797 bytes (the same size
+    as here), source deleted, file chopped to 796.
+    v58  exit 1.  First line verbatim "Error: Truncated ppu: 796 bytes present,
+         header declares 797", then "PPU Loading .\units\x86_64-win64\u58.ppu"
+         and "t58.pas(2,6) Fatal: Can't find unit u58 used by t58".  No t58.exe;
+         the truncated .ppu left on disk at 796 bytes.
+    v54  exit 0.  No message at all; t58.exe (175208 bytes) produced AND RAN,
+         exit 0.  That silent green build against an incomplete unit is the bug
+         v58 stops, now seen on real Windows.
+
+  WHAT THIS PROVES AND WHAT IT DOES NOT.  The published v58 win64 compiler
+  starts, compiles, links, and its output runs on real Windows 11, and the
+  truncated-.ppu rejection fires there exactly as it does under wine64.  It is
+  one box, one OS build, one CPU.  It says nothing about ARM or macOS, whose rows
+  stay open, and nothing about v33..v57, none of which has had a real-Windows run.
+  Kai rebuilt nothing: the only VibePascal exes that ran were the two published
+  compilers; checks 2 and 3 compile on the box by design.
+
+  FOR ANYONE REPEATING CHECK 3 FROM POWERSHELL, found by Kai the hard way:
+  [IO.File]::ReadAllBytes with a RELATIVE path resolves against the PROCESS
+  working directory, which Set-Location does not change.  His first pass threw
+  FileNotFound, the .ppu stayed at 797 bytes, and both compilers then exited 0
+  against an intact unit -- which reads exactly like a non-discriminating harness
+  and is only an untruncated file.  Print the .ppu length before and after the
+  chop and refuse to read step 6 unless it says 797 -> 796; use absolute paths,
+  or set [Environment]::CurrentDirectory first.
