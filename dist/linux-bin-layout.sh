@@ -43,7 +43,9 @@
 # exit 0 = <tree>/bin holds the consumer compilers, has no .pas in it, and a
 #          compile driven through it does NOT put compiler/ on the unit path;
 # exit 1 = the tree is bad (bin/ missing, a binary stale, or the hazard live);
-# exit 2 = the harness could not run -- says NOTHING about the tree.
+# exit 2 = the harness could not run, or NOTHING WAS TESTED (no compiler built
+#          under <tree>/compiler at all, cy1128) -- says NOTHING about the tree
+#          and must never be read as a pass.
 #
 # A SYMLINK DOES NOT WORK AND THIS IS MEASURED, NOT ASSUMED.  FPC resolves the
 # executable to its target before computing exepath, so bin/ppcx64 -> ../
@@ -164,6 +166,24 @@ copy_one() {  # $1 = name in bin/, $2 = name in compiler/
 echo "=== $MODE: $SRCDIR -> $BINDIR ==="
 for n in $WANTED; do copy_one "$n" "$n"; done
 for a in $ALIASES; do copy_one "${a%%:*}" "${a##*:}"; done
+
+# ------------------------------------------------ nothing judged is not PASS --
+# Measured cy1128 (2026-09-16): a tree whose compiler/ holds NONE of $WANTED took
+# the SKIP branch five times, found bin/ free of sources, skipped the
+# discriminator for want of a host compiler, and reported
+#   "0/0 binaries clean, 0 problem(s)" at exit 0
+# -- a PASS over nothing, in both modes.  A consumer or release gate calling
+# --check on a tree that was never built (or on the wrong tree) would have read
+# that as "layout verified".  Zero binaries judged is exit 2, named, like the
+# rcodesign-missing and zero-candidate arms of published-compiler-check.sh:
+# rc=1 keeps meaning "the tree is bad", rc=2 means "nothing was tested".
+if [ "$total" -eq 0 ]; then
+  echo "NOTHING WAS TESTED: $SRCDIR holds none of: $WANTED"
+  echo "                    build one first (make -C compiler compiler) or pass the right tree;"
+  echo "                    no binary was judged, so this run says nothing about $BINDIR"
+  emit_summary 0 0 1
+  exit 2
+fi
 
 if [ ! -d "$BINDIR" ]; then
   echo "MISSING: $BINDIR does not exist"

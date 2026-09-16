@@ -35,7 +35,9 @@
 #   [compiler] defaults FROM THE TARGET'S CPU (ppcx64 / ppcrossa64 / ppcrossarm /
 #   ppcross386) -- pass it only to test a specific binary. Whatever is used, it must first
 #   build an empty program for <target> or the run aborts with exit 2 (see PREFLIGHT).
-# Exit: 0 = every package loaded clean; 1 = at least one package failed or recompiled.
+# Exit: 0 = every package loaded clean; 1 = at least one package failed, recompiled, was
+#       DRIVER-ONLY or had an EMPTY unit dir; 2 = NOTHING WAS TESTED (harness unusable, or
+#       zero packages judged -- never read as a pass, cy1128).
 #
 # Measured 2026-09-10 (cy1109): x86_64-linux 146/146 clean, x86_64-darwin 118/118 clean.
 # Swept all six targets 2026-09-10 by BuildMaster (cy1110), and re-measured here after -s:
@@ -264,6 +266,18 @@ for d in "$VPDIR"/packages/*/units/"$TARGET"; do
       echo "DRIVER-ONLY $pkg -- $TARGET dir holds build drivers and no units: $drivers"
       echo "             a stale driver ppu makes fpmake report the package built; delete it and rebuild"
       total=$((total+1)); bad=$((bad+1))
+    else
+      # EMPTY IS ALSO A SIGNATURE, NOT AN ABSENCE (cy1128). Measured: a package whose
+      # $TARGET unit dir EXISTS but holds no .ppu at all fell through here silently --
+      # not counted, not named -- so a tree where a build had created the dir and then
+      # died (or an extract that produced directories and no files) scored N/N clean
+      # over a smaller N and nothing said so. The [ -d ] test above already excludes
+      # the genuinely-not-built package (no dir), so a dir with nothing in it is the
+      # remains of a build that produced nothing. Counted in $total and $bad like
+      # DRIVER-ONLY: the gate exits 1 and the reader learns which package it was.
+      echo "EMPTY $pkg -- $TARGET unit dir exists but holds no .ppu: $d"
+      echo "      a build created this dir and left nothing in it; rebuild the package or remove the dir"
+      total=$((total+1)); bad=$((bad+1))
     fi
     continue
   fi
@@ -308,6 +322,21 @@ for d in "$VPDIR"/packages/*/units/"$TARGET"; do
     grep -E 'Fatal|Error' "$log" | head -4 | sed 's/^/    /'
   fi
 done
+
+# ------------------------------------------------- nothing judged is not PASS --
+# Measured cy1128 (2026-09-16): a VPDIR with no packages/*/units/$TARGET dir holding a
+# unit -- no packages dir at all, or only empty ones -- reported
+#   "loadcheck $TARGET: 0/0 packages load clean, 0 problem(s)"  at exit 0.
+# That is a pass over nothing, and a release gate hung on this script would have read
+# a wrong --vpdir, a wrong target name or an unbuilt tree as "unit set verified".
+# Zero packages judged is exit 2, named with what was looked for and where, so rc=1
+# keeps meaning "a package failed" and rc=0 keeps meaning "N>0 packages loaded".
+if [ "$total" -eq 0 ]; then
+  echo "NOTHING WAS TESTED: no package unit dir under $VPDIR/packages/*/units/$TARGET held a .ppu"
+  echo "                    (wrong tree, wrong target, or nothing built for $TARGET yet) -- no unit set was judged"
+  emit_summary 0 0 1
+  exit 2
+fi
 
 emit_summary "$ok" "$total" "$bad"
 [ "$bad" -eq 0 ] || exit 1
