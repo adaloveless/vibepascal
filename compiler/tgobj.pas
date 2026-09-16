@@ -45,6 +45,19 @@ unit tgobj;
          temptype   : ttemptype;
          { finalize this temp if it's a managed type }
          fini       : boolean;
+         { VibePascal: this slot holds a COM interface reference whose lifetime
+           must end with the STATEMENT that produced it, not with the routine.
+           dirty says it currently holds a reference that has not been released
+           yet. Two consequences:
+             - thlcgobj.finalize_statement_temps releases it at the end of the
+               enclosing user statement (see tcgblocknode.pass_generate_code),
+               instead of leaving it to the routine-exit sweep;
+             - a dirty slot is not eligible for recycling, so two interface
+               results in one statement get two slots rather than fighting over
+               one (which used to free the first while a raw pointer taken out
+               of it was still in flight). }
+         stmtfini   : boolean;
+         dirty      : boolean;
          alignment  : shortint;
          pos        : asizeint;
          size       : asizeint;
@@ -142,6 +155,7 @@ implementation
     uses
        cutils,
        verbose,
+       defutil,
        procinfo;
 
 
@@ -304,6 +318,10 @@ implementation
                adjustedpos:=hp^.pos+alignmismatch;
                if (hp^.temptype=freetype) and
                   (hp^.fini=fini) and
+                  { VibePascal: a slot whose interface has not been released yet
+                    must not be handed to someone else -- recycling it is what
+                    used to finalise the previous tenant mid-statement }
+                  not (hp^.stmtfini and hp^.dirty) and
                   ((hp^.def=def) or
                    not fini) and
                   (hp^.size>=size) and
@@ -417,6 +435,8 @@ implementation
             tl^.def:=def;
             tl^.alignment:=alignment;
             tl^.nextfree:=nil;
+            tl^.stmtfini:=fini and is_interfacecom(def);
+            tl^.dirty:=tl^.stmtfini;
           end
          else
           begin
@@ -450,6 +470,8 @@ implementation
          Comment(V_Note,'tgobj: (AllocTemp) lasttemp set to '+tostr(lasttemp));
 {$endif}
             tl^.fini:=fini;
+            tl^.stmtfini:=fini and is_interfacecom(def);
+            tl^.dirty:=tl^.stmtfini;
             tl^.alignment:=alignment;
             tl^.size:=size;
             tl^.next:=templist;

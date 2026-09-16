@@ -118,7 +118,15 @@ interface
        tstatementnodeclass = class of tstatementnode;
 
        TBlockNodeFlag = (
-         bnf_strippable { Block node can be removed via simplify etc. }
+         bnf_strippable, { Block node can be removed via simplify etc. }
+         { VibePascal: this block came from a source-level begin..end, so its
+           statements are separate SOURCE statements. Compiler-built blocks
+           (internalstatements, rewritten loop bodies, ...) do not get this and
+           their "statements" are pieces of one source statement -- the
+           distinction matters for end-of-statement interface temp release,
+           see tcgblocknode.pass_generate_code. bnf_strippable is NOT a usable
+           proxy here: rewritten for-loop bodies carry it too. }
+         bnf_source_block
        );
 
        TBlockNodeFlags = set of TBlockNodeFlag;

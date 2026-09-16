@@ -3704,6 +3704,9 @@ implementation
            end;
 
          last:=cblocknode.create(first);
+         { VibePascal: a real source-level begin..end -- its statements are
+           separate source statements, which is where interface temps die }
+         Include(tblocknode(last).blocknodeflags,bnf_source_block);
          if assigned(blockst) then
            tblocknode(last).blocksymtable:=blockst;
          last.fileinfo:=filepos;
