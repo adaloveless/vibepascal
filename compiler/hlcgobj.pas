@@ -646,6 +646,11 @@ unit hlcgobj;
           procedure gen_entry_code(list:TAsmList);virtual;
           procedure gen_exit_code(list:TAsmList);virtual;
 
+          { VibePascal: release the COM interface temps whose statement just
+            ended. Called from tcgblocknode after every statement of a real
+            begin..end block. }
+          procedure finalize_statement_temps(list:TAsmList);virtual;
+
          protected
           { helpers called by gen_initialize_code/gen_finalize_code }
           procedure inittempvariables(list:TAsmList);virtual;
@@ -5160,11 +5165,45 @@ implementation
        begin
          if hp^.fini and
             assigned(hp^.def) and
-            is_managed_type(hp^.def) then
+            is_managed_type(hp^.def) and
+            { VibePascal: an interface temp that was already released at the end
+              of its statement holds nil here, so the routine-exit finalise is
+              dead code. Skip it rather than emit it. }
+            not (hp^.stmtfini and not hp^.dirty) then
           begin
             include(current_procinfo.flags,pi_needs_implicit_finally);
             tg.temp_to_ref(hp,href);
             g_finalize(list,hp^.def,href);
+          end;
+         hp:=hp^.next;
+       end;
+    end;
+
+
+  { VibePascal: a COM interface produced by a function and never stored in a
+    variable ends up in a hidden temp. Stock FPC only clears that temp when the
+    slot is recycled or when the routine exits, so "giver.Need.o.DoWork;" keeps
+    the object checked out long past its line. Release every such temp that is
+    no longer in use as soon as its statement ends. g_finalize nils the slot,
+    so the routine-exit sweep and any later reuse both find it clean. }
+  procedure thlcgobj.finalize_statement_temps(list: TAsmList);
+    var
+      hp : ptemprecord;
+      href : treference;
+    begin
+      hp:=tg.templist;
+      while assigned(hp) do
+       begin
+         if hp^.stmtfini and
+            hp^.dirty and
+            assigned(hp^.def) and
+            { only once nothing holds it any more: tt_persistent means the tree
+              is still using it, and this must not run early }
+            (hp^.temptype in [tt_free,tt_freenoreuse,tt_freeregallocator,tt_normal]) then
+          begin
+            tg.temp_to_ref(hp,href);
+            g_finalize(list,hp^.def,href);
+            hp^.dirty:=false;
           end;
          hp:=hp^.next;
        end;

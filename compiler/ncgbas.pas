@@ -481,6 +481,14 @@ interface
                begin
                  secondpass(hp.left);
                  location_copy(hp.location,hp.left.location);
+                 { VibePascal: end of a source statement -- release the COM
+                   interface temps it produced. Only for blocks the parser built
+                   from a real begin..end: the "statements" of a compiler-built
+                   block are pieces of ONE source statement, and cutting a temp
+                   loose between them would free an interface while the rest of
+                   the statement is still using what it held. }
+                 if bnf_source_block in blocknodeflags then
+                   hlcg.finalize_statement_temps(current_asmdata.CurrAsmList);
                end;
               location_copy(location,hp.location);
               hp:=tstatementnode(hp.right);
