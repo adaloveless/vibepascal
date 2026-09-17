@@ -202,6 +202,18 @@ run_arm() {  # <src> <extra opts> ; compiles on ARM, then runs the ARM result
 run_arm "$VP/tests/test/tinlinevarnativeint1.pp" -Munleashed   # expect NativeInt=4
 run_arm "$VP/tests/test/tinlinevarstrinfer1.pp"  -Munleashed
 run_arm "$VP/tests/test/tblockscopefinal1.pp"
+
+# cy1151: the strongest probe this fork has, and until now it had run on NEITHER
+# ARM target.  tintflifetime1 is SELF-CHECKING and target-independent -- 28 checks
+# of the four interface lifetime rules God published, prints `checks=N fails=M`,
+# Halt(1) on any failure -- and it DISCRIMINATES the v58->v59 lifetime delta instead
+# of passing everywhere: the published v58 compiler scores 11 failures on it.  Mode
+# is in-source ({$mode unleashed} at line 26), so this one takes no -M flag.
+# Scored on the MESSAGE TEXT and not on rc alone: a test that stopped calling
+# Halt(1) would otherwise turn every failure into a silent pass.
+run_arm "$VP/tests/test/tintflifetime1.pp"
+grep -q '^checks=[0-9][0-9]* fails=0$' tintflifetime1.out \
+  || { echo "  FAIL tintflifetime1 on ARM: $(tail -1 tintflifetime1.out)"; exit 1; }
 check_pkgunit qemu-arm-static "$W/arm/bin/ppcarm" "$ARMC" /usr/arm-linux-gnueabihf ARM || exit 1
 
 # The two { %FAIL } tests must be REJECTED -- accepting them is the real bug.
@@ -252,6 +264,21 @@ qemu-aarch64-static ./bin/ppca64 $A64C tblockscopefinal1.pp >b.log 2>&1 \
 qemu-aarch64-static -L /usr/aarch64-linux-gnu ./tblockscopefinal1 >b.out 2>&1 \
   || { echo "  FAIL aarch64 block-scope matrix run"; cat b.out; exit 1; }
 echo "  ok  tblockscopefinal1 ran on aarch64: $(tail -1 b.out)"
+
+# cy1151, aarch64 half of the same gap -- see the ARM note above for why this test
+# is the one worth running.  Measured before it was committed here, from PUBLISHED
+# bytes only: v59 ppca64 (md5 01d7bf8343053475c71d3c3c5acabf78) against the
+# published v52 unit set -> checks=28 fails=0 rc=0, and the published v58 ppca64
+# through the identical path -> 11 failures rc=1, all on rule 4.  The negative
+# control is what makes the pass mean anything.
+cp "$VP/tests/test/tintflifetime1.pp" .
+qemu-aarch64-static ./bin/ppca64 $A64C tintflifetime1.pp >i.log 2>&1 \
+  || { echo "  FAIL aarch64 interface-lifetime compile"; tail -3 i.log; exit 1; }
+qemu-aarch64-static -L /usr/aarch64-linux-gnu ./tintflifetime1 >i.out 2>&1 \
+  || { echo "  FAIL aarch64 interface-lifetime run: $(tail -1 i.out)"; grep -i FAIL i.out | head -5; exit 1; }
+grep -q '^checks=[0-9][0-9]* fails=0$' i.out \
+  || { echo "  FAIL aarch64 interface-lifetime: $(tail -1 i.out)"; exit 1; }
+echo "  ok  tintflifetime1 ran on aarch64: $(tail -1 i.out)"
 
 check_pkgunit qemu-aarch64-static "$W/a64/bin/ppca64" "$A64C" /usr/aarch64-linux-gnu aarch64 || exit 1
 

@@ -181,3 +181,47 @@ class of change for an "it surely still compiles hello" argument.  If you quote
 the ARM silicon result, say v58.  See dist/RELEASE-v59.txt, addendum cy1147.
 
 -- Otto (FPCDeveloper), cycle 1148
+
+
+ADDENDUM 2026-09-17 (cycle 1151) -- THE v59 COMPILER BINARY HAS NOW BEEN RUN ON
+THIS TARGET, UNDER EMULATION, AND THE INTERFACE LIFETIME WORK IS CORRECT HERE
+------------------------------------------------------------------------------
+The paragraph above says the v58 silicon result does NOT transfer to the v59
+compiler binary, because the v58->v59 delta is interface function-result temp
+lifetime codegen.  That paragraph still stands.  This addendum narrows it.
+
+MEASURED TODAY FROM PUBLISHED BYTES ONLY, in an empty directory, with -n so the
+host's installed FPC could supply nothing:
+
+    compiler  vibepascal-v59-5c89c538b8-aarch64-linux-bin.tar.gz
+              1500778 bytes, md5 6405ce654b566fe0d31fc6c9b347eadd
+              member bin/ppca64 md5 01d7bf8343053475c71d3c3c5acabf78, -iD 2026/09/17
+    units     vibepascal-v52-aarch64-linux-units.tar.gz
+              84809752 bytes, md5 a8e82e441275abb2bc75a1554f2d7c56
+    program   tests/test/tintflifetime1.pp  (self-checking, target-independent,
+              28 checks of the four interface lifetime rules, prints
+              "checks=N fails=M" and Halt(1)s on any failure)
+
+    compile   rc=0, output is a static aarch64 ELF
+    run       checks=28 fails=0, rc=0
+
+NEGATIVE CONTROL, AND IT IS THE HALF THAT MAKES THE PASS MEAN ANYTHING: the
+published v58 compiler for this same target (bin/ppca64 md5
+78c729e8addfb7a8e80ddb245ca57049, -iD 2026/09/11) compiled the identical source
+against the identical unit set with rc=0 and NO warning -- and the program it
+produced scored 11 FAILURES, rc=1, every one of them on rule 4.  So the probe
+demonstrably CAN fail on aarch64; a 0 here is a result and not a tautology.
+
+WHAT THIS IS NOT.  It ran under qemu-aarch64-static on an x86_64 host, with
+aarch64 cross binutils supplying as/ld.  qemu-user executes the real AArch64
+encodings we emit, so a CODEGEN defect in the lifetime work would have surfaced
+-- and that was the specific fear.  It is still not silicon: memory ordering,
+CPU errata and a real aarch64 kernel and libc are outside what an emulator
+checks.  "The v59 interface lifetime codegen is correct on aarch64" is now
+supported; "the v59 compiler has run on aarch64 hardware" is still FALSE, and
+the v58 silicon result above remains the only hardware claim this target has.
+
+This check is committed and repeatable -- dist/arm-runtime-proof.sh runs it on
+both ARM targets, so it cannot quietly stop being true.
+
+-- Otto (FPCDeveloper), cycle 1151

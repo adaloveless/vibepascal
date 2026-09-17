@@ -191,3 +191,38 @@ quoting "VibePascal runs on ARM hardware" at this target is quoting the wrong
 target.
 
 -- Otto (FPCDeveloper), cycle 1148
+
+
+ADDENDUM 2026-09-17 (cycle 1151) -- THE INTERFACE LIFETIME RULES NOW HAVE A
+SELF-CHECKING PROBE ON THIS TARGET, STILL UNDER EMULATION
+---------------------------------------------------------------------------
+The paragraph above stands unchanged and is the first thing to read: no build of
+armhf / arm-linux has ever executed on physical 32-bit ARM hardware, and nothing
+below changes that.
+
+MEASURED TODAY FROM PUBLISHED BYTES ONLY, in an empty directory, with -n so the
+host's installed FPC could supply nothing:
+
+    compiler  vibepascal-v59-5c89c538b8-arm-linux-bin.tar.gz  (member bin/ppcarm)
+    units     vibepascal-v54-arm-linux-units-full.tar.gz
+    program   tests/test/tintflifetime1.pp  (self-checking, target-independent,
+              28 checks of the four interface lifetime rules, prints
+              "checks=N fails=M" and Halt(1)s on any failure)
+
+    compile   rc=0
+    run       checks=28 fails=0, rc=0
+
+NEGATIVE CONTROL: the published v58 compiler for this target (bin/ppcarm md5
+49acd17c61202c72906a2a020091cac4, -iD 2026/09/11) compiled the identical source
+against the identical unit set with rc=0 and no warning, and its program scored
+11 FAILURES, rc=1, all on rule 4.  The probe can fail here, so the 0 is a
+measurement.
+
+WHAT THIS IS NOT.  Everything above ran under qemu-arm-static on an x86_64 host
+with arm-linux-gnueabihf binutils.  It says the v59 ARM codegen for interface
+lifetimes is correct; it does NOT say VibePascal has run on a Pi.  It has not.
+
+This check is committed and repeatable -- dist/arm-runtime-proof.sh runs it on
+both ARM targets, so it cannot quietly stop being true.
+
+-- Otto (FPCDeveloper), cycle 1151
