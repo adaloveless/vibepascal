@@ -1,23 +1,19 @@
-VibePascal v59 -- arm-linux CROSS compiler -- runs on x86_64-linux, emits 32-bit arm-linux
-A COM interface function-result temp is released at the end of its statement.
+VibePascal v59 Win64 compiler -- a COM interface function-result temp is released at the end of its statement
 Source commit: 5c89c538b8fb1f00c83fb5cabd9260f6e71caba4
 Compiler commits: 55e687f581 (GOD, the mechanism) + 5c89c538b8 (statement ownership, escape sweep, every statement list)
-Parent release for THIS target: v58 (dedf242c69)
-Built: 2026-09-17 on x86_64-linux, from a CLEAN compiler/arm unit tree (241 units
-       compiled, the five changed units among them), driven by the v59 native
-       ppcx64 (md5 12220bfd5b3a9b1ee6db7b68297f0844), -dFPC_ARMHF
-Binary: bin/ppcrossarm  md5 6236206b913843c9d49f84d7b5edbe70
-                        sha256 5ebe32e6455057609c88a5532b408eb8da61123d6a9f95ebbb18c71d37736378
-                        5530944 bytes, ELF 64-bit x86-64, statically linked, stripped
-
-ABI: ARMHF (ARM EABI5, HARD float / VFP) -- the ABI of 32-bit Raspberry Pi OS and
-of Debian/Ubuntu armhf.  It is NOT compatible with an armel (soft-float) system.
-The tree's own default is armel (compiler/fpcdefs.inc), so this build passes
--dFPC_ARMHF explicitly; unchanged since v54.
-
-UNITS: this compiler consumes the SAME unit set as the native arm compiler --
-dist/arm-linux/vibepascal-v54-arm-linux-units-full.tar.gz (see UNITS.txt here).
-No RTL, package or PPU-format change, so it stays valid.
+Parent release: v58 (dedf242c696a543f9626e2839ced40876478a98a)
+Built: 2026-09-17, cross-compiled Linux x86_64 -> Win64 (-Apecoff -Xi) from the
+       self-hosted Linux compiler 12220bfd5b3a9b1ee6db7b68297f0844 (v59 stage 3), from a clean
+       compiler/x86_64/units/x86_64-win64 tree: 249 units compiled, the five
+       changed units among them
+ppcx64.exe md5:    BEC75BEE2D6C4B105734C328216488D8
+ppcx64.exe sha256: 82A41E8947F4405976CF6EA5C0A6B50E0B38B5F277EBCEFFC36C21B3C76E370F
+                   5054976 bytes, PE32+ console x86-64, reports -iD 2026/09/17 (the
+                   build date dist/win64-runtime-proof.sh reconciles against LATEST.txt)
+Every other binary in bin/ is BYTE-IDENTICAL to the v58 tarball: ppudump, ppumove
+and ppufiles share the .ppu READER (rebuilt for v57/v58) but none of the five
+units this release changes -- tgobj, hlcgobj, ncgbas, nbas, pstatmnt -- is
+linked into any utility.
 
 WHAT CHANGED IN v59 -- A COM INTERFACE TEMP DIES WITH ITS STATEMENT
   A function that returns a COM interface, called where its result is never
@@ -93,17 +89,18 @@ HOW THE FIX WAS PROVEN, ON THE SOURCE EVERY TARGET IS BUILT FROM
     aarch64-linux 144/144, arm-linux 143/143 packages load clean, zero
     recompiles.
 
-VERIFIED ON THESE EXACT BYTES
-  * EXECUTION, not inspection: this compiler built both lifetime matrices into
-    32-bit ARM EABI5 hard-float binaries which RAN under qemu-arm-static:
-    tintfstmttemp1 checks=32 fails=0, tintfstmttemp2 checks=28 fails=0
-    created=27 destroyed=27 live=0.
-  * dist/ppu-truncation-check.sh ppcrossarm arm-linux: 25/25 offsets clean,
-    0 problems, exit 0.
-  * dist/unit-set-loadcheck.sh arm-linux with this binary: 143/143 packages
-    load clean, zero recompiles.
-  * dist/cross-runtime-proof.sh exercises this tarball end to end.
+WIN64 RUNTIME VERIFIED on these exact bytes under wine64: this ppcx64.exe
+compiled both lifetime matrices for win64 against the v52 unit set and the
+products RAN: tintfstmttemp1.exe checks=32 fails=0, tintfstmttemp2.exe
+checks=28 fails=0 created=27 destroyed=27 live=0.  dist/win64-runtime-proof.sh
+was run on the published tarball as well (its own controls included).
 
-NOT PROVEN HERE: qemu-user is an emulator.  It runs the real shipped bytes and
-real ARM encodings, so codegen and RTL defects do surface, but it is not a
-Raspberry Pi.  Nobody has run this compiler's output on physical ARM silicon.
+wine is NOT Windows: it runs the real shipped PE bytes through an independent
+reimplementation of the Win64 API, so this is execution evidence for the code we
+generate, never a real-Windows sign-off.  The v58 binary this one replaces HAS
+run on real Windows hardware (2026-09-12); this one has so far run only under
+wine64.
+
+COMPILER-BINARY-ONLY REFRESH on v58.  No PPU format, RTL or package change, so
+THE UNITS ARE STILL THE v52 SET and auto-update.bat can take the ~3.5 MB bin
+tarball alone.

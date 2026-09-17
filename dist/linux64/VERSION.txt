@@ -1,77 +1,98 @@
-VibePascal v58 Linux x86_64 compiler -- a .ppu shorter than its header says is truncated
-Source commit: dedf242c696a543f9626e2839ced40876478a98a
-Parent release: v57 (1f605f41b3b06a5fa84fb4cb31ee4298fb30907f)
-Built: 2026-09-11, native self-host fixpoint on x86_64-linux (stage1==stage2==stage3)
-ppcx64 md5:    8C8179B2F0A452CEBEC0131AA301B076
-ppcx64 sha256: DF34EFC40B4F8717E3F221A9CC175C66BA7D5222DB39FC520BA67EC31A7D0991
-ppudump md5:   241AB27A8991E3F599FA7A5564AF30A2   (rebuilt: it shares the same reader)
+VibePascal v59 Linux x86_64 compiler -- a COM interface function-result temp is released at the end of its statement
+Source commit: 5c89c538b8fb1f00c83fb5cabd9260f6e71caba4
+Compiler commits: 55e687f581 (GOD, the mechanism) + 5c89c538b8 (statement ownership, escape sweep, every statement list)
+Parent release: v58 (dedf242c696a543f9626e2839ced40876478a98a)
+Built: 2026-09-17, native self-host fixpoint on x86_64-linux from a clean unit tree
+       (stage 1 by the 55e687f581 compiler, stage 2 by stage 1, stage 3 by stage 2;
+       stage 2 == stage 3 byte-identical, this binary is stage 3; 250 units compiled
+       per stage, the five changed units among them)
+ppcx64 md5:    12220BFD5B3A9B1EE6DB7B68297F0844
+ppcx64 sha256: 6100D0804E89EE66EA3479AAEDC351513C458857A1F08CF38D63545233DD8175
+               6321824 bytes, ELF 64-bit x86-64, statically linked, reports -iD 2026/09/17
+ppudump md5:   241AB27A8991E3F599FA7A5564AF30A2   (UNCHANGED, the v58 bytes: none of the five
+               changed units -- tgobj, hlcgobj, ncgbas, nbas, pstatmnt -- is linked into it)
 
 Contents: bin/ppcx64 and bin/ppudump -- a COMPILER-BINARY refresh meant to drop
-into an existing VibePascal source/unit tree on Linux.  No RTL change, no
-package change, no PPU format change, so an existing v52..v57 Linux unit set
-stays valid and does not need rebuilding.
+into an existing VibePascal source/unit tree on Linux.  An existing v52..v58
+Linux unit set stays valid and does not need rebuilding.
 
-WHAT WAS BROKEN
----------------
-This is the gap v57's own VERSION.txt declared under "NOT FIXED, AND NOT
-HIDDEN", now closed.
+WHAT CHANGED IN v59 -- A COM INTERFACE TEMP DIES WITH ITS STATEMENT
+  A function that returns a COM interface, called where its result is never
+  stored in a variable ("Giver.Need.o.DoWork;"), leaves the reference in a
+  hidden temp.  Up to v58 that temp was released only when the ROUTINE exited
+  (or when the compiler happened to recycle the slot), so the object stayed
+  checked out long past its line -- a holder that should have handed its object
+  back at the semicolon kept it until the end of the procedure.  v59 releases it
+  at the end of the source statement that produced it, the way Delphi does.
 
-v57 stopped the compiler HANGING on a half-written .ppu, but it only ever
-noticed damage it happened to trip over.  Lose the TAIL of a unit file and there
-was nothing to trip over: nothing an interface load reads lives in the last
-handful of bytes, so the compiler read what it wanted, never reached the missing
-part, and built your program against a unit that is not all there -- exit 0, no
-message, nothing to search a log for.  Measured on a real 55291-byte unit, every
-truncation from 55271 bytes upward was accepted.
+  Two commits carry it, and the second one is why the first did not ship alone:
 
-A killed build, a full disk or an interrupted copy is exactly how a file loses
-its tail, so this is the same accident v57 was about, landing a few bytes later.
+    55e687f581  (GOD, 2026-09-16)  the mechanism.  A temp knows it holds a COM
+                interface (tgobj), a slot still holding one is never recycled
+                under a second result in the same statement, and tcgblocknode
+                releases the statement's temps after every statement of a
+                begin..end block.
 
-WHAT CHANGED
-------------
-A .ppu header records how long the payload is, so a complete unit file is always
-exactly 40 bytes of header plus that number, and can never be fewer.  Nothing
-compared those two numbers; the reader checked only that the file was big enough
-to hold the header and then trusted whatever followed.  tppufile.readheader now
-compares them and rejects a SHORT file.  Longer than declared stays legal, as it
-always was.  The arithmetic is 64-bit on purpose: the declared size is an
-unsigned 32-bit field, and a corrupt header claiming near 4 GB would wrap a
-32-bit sum and switch the check off at exactly the moment it is needed.
+    5c89c538b8  (Otto, 2026-09-17)  three holes measured on that build with
+                the two matrices added in tests/test/ (tintfstmttemp1.pp, 32
+                corners; tintfstmttemp2.pp, 28 corners), closed before anything
+                shipped:
+                  * a statement nested inside another -- the body of a
+                    with/if/while/case whose EXPRESSION produced the temp --
+                    released its parent's temp.  `with Giver.Need.o do begin
+                    A; B end` ran B on a freed object (measured: the owner's
+                    refcount hit zero after A).  Each temp now records which
+                    source statement allocated it and a statement releases
+                    only its own, never an enclosing one's.
+                  * exit, break, continue, goto and raise LEAKED the temp for
+                    good: the routine-exit sweep had been trimmed to skip
+                    temps whose statement-end release existed, and those
+                    escapes never reach that release.  Measured: every one of
+                    them leaked exactly one object.  The sweep covers every
+                    managed temp again; a slot that was already released is
+                    nil and costs one compare, one that was abandoned is
+                    released at routine exit, and nothing is released twice.
+                  * repeat..until bodies, try/finally/except bodies and
+                    case-else lists kept the old routine-exit lifetime, because
+                    only begin..end had been marked as a source statement list.
 
-THIS DOES NOT TURN GOOD BUILDS RED.  The rejection is soft and self-healing:
-  * if the unit's source is available, the unit is RECOMPILED and the build goes
-    green -- measured, the .ppu comes back at its full length;
-  * if a good copy of the same unit sits in a later -Fu directory, the compiler
-    falls through to it and the build goes green -- also measured;
-  * only a truncated unit with no source and no other copy stops the compile, and
-    it stops with the message an absent unit already gives.
-Nobody is ever told to go and delete a file.
+  What does NOT change: an interface stored in a variable, field, array or
+  Result lives exactly as long as it always did.  Two results used in one
+  statement are both alive until that statement ends.  A temp produced by an
+  if/while condition, a case selector or a with expression stays alive through
+  the branch, the loop body or the with block and is released when that
+  statement ends.
 
-The other half of the change is that the length has to BE a length.  It came
-from Seek-to-end, which only a plain file answers with a byte count -- a range
-stream (a .ppu read from inside a package file) answers with its last valid
-offset, one short.  Left alone, that would have declared every packaged unit
-truncated by exactly one byte.  The length is now handed in by whoever opens the
-stream and knows it, and the range stream's own seek is left alone rather than
-bent to serve a reader that does not need it.  Said plainly: no target in this
-compiler enables dynamic packages, so that package half cannot be exercised here
-and is written to be right if it is ever switched on, not proven by running it.
+  COMPILER BINARY ONLY.  No RTL change, no package change, no PPU FORMAT change
+  (the unit files' own header/version are untouched), so every existing unit
+  set for this target stays valid and does not need rebuilding.  Code compiled
+  by v59 simply releases these temps sooner.
 
-VERIFIED
---------
-  * 4000 real .ppu files in rtl/ and packages/: every one is exactly 40+declared
-    bytes, so the check has no slack to fire falsely on
-  * dist/ppu-truncation-check.sh, extended this release to SCORE the tail offsets
-    it used to document as an open gap:
-        20/25 offsets clean, 5 problem(s), exit 1   on the pre-fix compiler
-        25/25 offsets clean, 0 problem(s), exit 0   on this one
-  * dist/unit-set-loadcheck.sh x86_64-linux: 147/147 packages load clean
-  * full 1983-test corpus A/B against a baseline rebuilt from this same source
-    with the same command minus the patch: 1983 SAME, 0 DIFF
-  * self-host fixpoint: stage1 == stage2 == stage3, byte-identical
+HOW THE FIX WAS PROVEN, ON THE SOURCE EVERY TARGET IS BUILT FROM
+  * tests/test/tintfstmttemp1.pp and tintfstmttemp2.pp, 60 self-checking
+    corners in all (free proc, method, nested proc, main body, if/for/while/
+    repeat/with bodies, two temps in one statement, a temp passed as a
+    parameter, a stored interface, exit/break/continue/goto/raise mid-
+    statement, a nested block under a with/if/while/case temp, try/finally/
+    except/on/case-else bodies, an unentered block, and destroyed == created
+    at the end): 60/60 on this source at -O- and -O2.  The same programs score
+    35 failures on v58 (everything released at routine exit, nothing leaked,
+    nothing freed early) and 31 on the 55e687f581 build (3 leaked objects, 4
+    use-after-free corners, 6 statement lists left on the old lifetime) -- so
+    the harness fails in both directions and a pass means something.
+  * 1983-test corpus A/B against the PUBLISHED v58 x86_64-linux compiler:
+    1983 SAME, 0 DIFF (compile status and run exit code per test).
+  * self-host fixpoint on x86_64-linux: stage 2 == stage 3 byte-identical.
+  * dist/ppu-truncation-check.sh, the v57/v58 reader fixes are still in:
+    25/25 offsets clean on x86_64-linux, i386-linux, aarch64-linux and
+    arm-linux with the host-executable compilers.
+  * dist/unit-set-loadcheck.sh: x86_64-linux 147/147, i386-linux 146/146,
+    aarch64-linux 144/144, arm-linux 143/143 packages load clean, zero
+    recompiles.
 
-NOTE ON bin/ppudump: it is STRIPPED in this release and was not in v57, which is
-why it is about 1.2 MB smaller.  Nothing else about it changed -- its output on
-an intact .ppu is byte-identical to v57's, and .text differs by under 0.1%.  On a
-truncated .ppu it now refuses the file up front instead of dumping partway and
-ending in "!! Error in PPU".
+VERIFIED ON THESE EXACT BYTES
+  * both lifetime matrices compiled by this binary and RUN natively on this
+    host: tintfstmttemp1 checks=32 fails=0, tintfstmttemp2 checks=28 fails=0
+    created=27 destroyed=27 live=0, at -O- and at -O2.
+  * this is the only platform with real, non-emulated runtime proof, and the
+    one every other target's compiler was built by.

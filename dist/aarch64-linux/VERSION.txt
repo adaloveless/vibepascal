@@ -1,58 +1,107 @@
-VibePascal v58 -- aarch64-linux NATIVE compiler (runs on ARM64 Linux, e.g. a
-64-bit Raspberry Pi).  A .ppu shorter than its own header says is truncated, and
-a half-written one can no longer hang the compiler.
-Source commit: dedf242c696a543f9626e2839ced40876478a98a
-Parent release for THIS target: v56 (a187bbac34)
-Built: 2026-09-11, cross-built on x86_64-linux via a freshly bootstrapped
-       compiler/ppcrossa64 (md5 eab972e2457f458e0c42bd2a51afa4d6, itself built
-       from a CLEAN unit tree by the v58 native ppcx64,
-       md5 8c8179b2f0a452cebec0131aa301b076)
-Binary: bin/ppca64  md5 78c729e8addfb7a8e80ddb245ca57049
-                    sha256 d5d6e998ede92c89bf25d88263e8eae4aae5b18fb99f26bcc2dc828a37a49c7f
+VibePascal v59 -- aarch64-linux NATIVE compiler (runs on ARM64 Linux, e.g. a
+64-bit Raspberry Pi).  A COM interface function-result temp is released at the
+end of its statement.
+Source commit: 5c89c538b8fb1f00c83fb5cabd9260f6e71caba4
+Compiler commits: 55e687f581 (GOD, the mechanism) + 5c89c538b8 (statement ownership, escape sweep, every statement list)
+Parent release for THIS target: v58 (dedf242c69)
+Built: 2026-09-17, cross-built on x86_64-linux via a freshly bootstrapped
+       compiler/ppcrossa64 (md5 57561394c9b40030eec04ed9326c4283, itself built from a
+       CLEAN unit tree by the v59 native ppcx64, md5 12220bfd5b3a9b1ee6db7b68297f0844);
+       223 units compiled for this binary from a clean compiler/aarch64/units/aarch64-linux
+Binary: bin/ppca64  md5 01d7bf8343053475c71d3c3c5acabf78
+                    sha256 5c041fc2a55ee01c60bcfdb8b6dc961da8da52e7e0f9489a93ac1ea9bc897b3f
                     5181472 bytes, ELF 64-bit ARM aarch64, statically linked, stripped
 
-THIS TARGET SKIPPED v57.  x86_64 shipped v57 and v58 on 2026-09-11 while ARM
-stayed at v56, so this release carries BOTH .ppu reader fixes, not one:
+UNITS: pair with vibepascal-v52-aarch64-linux-units.tar.gz beside this file (see
+UNITS.txt).  That set stays valid: no RTL, package or PPU-format change.
 
-  v57 (c31227c8ca)  a half-written .ppu is an ERROR, not an infinite 99%-CPU spin
-                    with no message.  On the v56 binary this replaces, a killed
-                    build or a full disk could hang a compile forever.
-  v58 (dedf242c69)  a .ppu SHORTER than the length its own header declares is
-                    rejected instead of silently accepted.  v57 only noticed
-                    damage it happened to trip over; lose the TAIL of a unit and
-                    there was nothing to trip over, so the compiler built your
-                    program against a unit that is not all there -- exit 0, no
-                    message, nothing to search a log for.
+WHAT CHANGED IN v59 -- A COM INTERFACE TEMP DIES WITH ITS STATEMENT
+  A function that returns a COM interface, called where its result is never
+  stored in a variable ("Giver.Need.o.DoWork;"), leaves the reference in a
+  hidden temp.  Up to v58 that temp was released only when the ROUTINE exited
+  (or when the compiler happened to recycle the slot), so the object stayed
+  checked out long past its line -- a holder that should have handed its object
+  back at the semicolon kept it until the end of the procedure.  v59 releases it
+  at the end of the source statement that produced it, the way Delphi does.
 
-THIS DOES NOT TURN GOOD BUILDS RED.  The rejection is soft and self-healing: a
-truncated unit whose source is available is RECOMPILED and the build goes green;
-a good copy in a later -Fu directory is used instead; only a truncated unit with
-no source and no other copy stops the compile, and it stops with the message an
-absent unit already gives.  Nobody is ever told to go and delete a file.
+  Two commits carry it, and the second one is why the first did not ship alone:
 
-COMPILER BINARY ONLY.  No RTL change, no package change, no PPU FORMAT change
-between v56 and v58 -- the reader got stricter, the format did not move.  An
-existing aarch64-linux unit set stays valid and does not need rebuilding.
+    55e687f581  (GOD, 2026-09-16)  the mechanism.  A temp knows it holds a COM
+                interface (tgobj), a slot still holding one is never recycled
+                under a second result in the same statement, and tcgblocknode
+                releases the statement's temps after every statement of a
+                begin..end block.
+
+    5c89c538b8  (Otto, 2026-09-17)  three holes measured on that build with
+                the two matrices added in tests/test/ (tintfstmttemp1.pp, 32
+                corners; tintfstmttemp2.pp, 28 corners), closed before anything
+                shipped:
+                  * a statement nested inside another -- the body of a
+                    with/if/while/case whose EXPRESSION produced the temp --
+                    released its parent's temp.  `with Giver.Need.o do begin
+                    A; B end` ran B on a freed object (measured: the owner's
+                    refcount hit zero after A).  Each temp now records which
+                    source statement allocated it and a statement releases
+                    only its own, never an enclosing one's.
+                  * exit, break, continue, goto and raise LEAKED the temp for
+                    good: the routine-exit sweep had been trimmed to skip
+                    temps whose statement-end release existed, and those
+                    escapes never reach that release.  Measured: every one of
+                    them leaked exactly one object.  The sweep covers every
+                    managed temp again; a slot that was already released is
+                    nil and costs one compare, one that was abandoned is
+                    released at routine exit, and nothing is released twice.
+                  * repeat..until bodies, try/finally/except bodies and
+                    case-else lists kept the old routine-exit lifetime, because
+                    only begin..end had been marked as a source statement list.
+
+  What does NOT change: an interface stored in a variable, field, array or
+  Result lives exactly as long as it always did.  Two results used in one
+  statement are both alive until that statement ends.  A temp produced by an
+  if/while condition, a case selector or a with expression stays alive through
+  the branch, the loop body or the with block and is released when that
+  statement ends.
+
+  COMPILER BINARY ONLY.  No RTL change, no package change, no PPU FORMAT change
+  (the unit files' own header/version are untouched), so every existing unit
+  set for this target stays valid and does not need rebuilding.  Code compiled
+  by v59 simply releases these temps sooner.
+
+HOW THE FIX WAS PROVEN, ON THE SOURCE EVERY TARGET IS BUILT FROM
+  * tests/test/tintfstmttemp1.pp and tintfstmttemp2.pp, 60 self-checking
+    corners in all (free proc, method, nested proc, main body, if/for/while/
+    repeat/with bodies, two temps in one statement, a temp passed as a
+    parameter, a stored interface, exit/break/continue/goto/raise mid-
+    statement, a nested block under a with/if/while/case temp, try/finally/
+    except/on/case-else bodies, an unentered block, and destroyed == created
+    at the end): 60/60 on this source at -O- and -O2.  The same programs score
+    35 failures on v58 (everything released at routine exit, nothing leaked,
+    nothing freed early) and 31 on the 55e687f581 build (3 leaked objects, 4
+    use-after-free corners, 6 statement lists left on the old lifetime) -- so
+    the harness fails in both directions and a pass means something.
+  * 1983-test corpus A/B against the PUBLISHED v58 x86_64-linux compiler:
+    1983 SAME, 0 DIFF (compile status and run exit code per test).
+  * self-host fixpoint on x86_64-linux: stage 2 == stage 3 byte-identical.
+  * dist/ppu-truncation-check.sh, the v57/v58 reader fixes are still in:
+    25/25 offsets clean on x86_64-linux, i386-linux, aarch64-linux and
+    arm-linux with the host-executable compilers.
+  * dist/unit-set-loadcheck.sh: x86_64-linux 147/147, i386-linux 146/146,
+    aarch64-linux 144/144, arm-linux 143/143 packages load clean, zero
+    recompiles.
 
 VERIFIED ON THESE EXACT BYTES
------------------------------
+  * EXECUTION, not inspection.  Under qemu-aarch64-static this binary reports
+    3.3.1 / aarch64, compiled both lifetime matrices against the tree's
+    aarch64-linux units (-XPaarch64-linux-gnu- for the host cross binutils),
+    and the products RAN under qemu: tintfstmttemp1 checks=32 fails=0,
+    tintfstmttemp2 checks=28 fails=0 created=27 destroyed=27 live=0.
   * dist/ppu-truncation-check.sh ppca64 aarch64-linux, against the real
-    55282-byte packages/aspell/units/aarch64-linux/aspelldyn.ppu:
-        11/25 offsets clean, 14 problem(s), exit 1   on the v56 binary this replaces
-        25/25 offsets clean,  0 problem(s), exit 0   on this one
-    Of the 14: 9 truncations HUNG and had to be killed at 30s, and 5 were
-    ACCEPTED with rc=0 -- a corrupt unit taken as valid, silently.
-    The pre-fix binary is the one that actually shipped as v56
-    (md5 96241cbc8871786eb790c3c068258e33), preserved and re-run this cycle
-    under emulation -- not a reconstruction, and not an argument from source.
-  * EXECUTION, not inspection.  This binary RUNS: qemu-aarch64-static reports
-    version 3.3.1, and it compiled and ran
-        tests/test/tinlinevarnativeint1.pp -Munleashed -> VERDICT:PASS
-        tests/test/tblockscopefinal1.pp                -> MATRIX: PASS
-                                     (all corners block-scoped, released exactly once)
+    packages/aspell/units/aarch64-linux/aspelldyn.ppu: 25/25 offsets clean,
+    0 problems, exit 0 (run under qemu-user binfmt with the gate's cap raised
+    to 8 GB, TRUNCCHECK_VMCAP_KB=8388608, so the emulator can reserve its
+    guest address space; the v57/v58 reader fixes are still in).
   * dist/arm-runtime-proof.sh exercises this tarball end to end and checks the
-    md5 above against the bytes it unpacks, so the number in this file cannot
-    drift from the artifact without the proof failing.
+    md5 above against the bytes it unpacks.
 
 NOT PROVEN HERE, AND SAID PLAINLY: qemu-user is an emulator.  It runs the real
 shipped bytes and real aarch64 instruction encodings, so codegen and RTL defects

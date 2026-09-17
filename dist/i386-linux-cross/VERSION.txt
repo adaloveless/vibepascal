@@ -1,56 +1,102 @@
-VibePascal v58 -- i386-linux CROSS compiler -- runs on x86_64-linux, emits 32-bit i386-linux
-Source commit: dedf242c696a543f9626e2839ced40876478a98a
-Parent release for THIS target: v54 (b7d2d9676ecf1d7d8250cd460b9c48069920513e)
-Built: 2026-09-11 on x86_64-linux, from a CLEAN compiler/i386 unit tree, driven by
-       the v58 native ppcx64 (md5 8c8179b2f0a452cebec0131aa301b076)
-Binary: bin/ppcross386  md5 b76969a5226f68019f287a97dac89333
-                        sha256 0260a27bbc3754749442d70340461c7e1db4e652b6003da1e7b421bf8eb2c9a2
-                        6338192 bytes, ELF 64-bit x86-64, statically linked, stripped
+VibePascal v59 -- i386-linux CROSS compiler -- runs on x86_64-linux, emits 32-bit i386-linux
+A COM interface function-result temp is released at the end of its statement.
+Source commit: 5c89c538b8fb1f00c83fb5cabd9260f6e71caba4
+Compiler commits: 55e687f581 (GOD, the mechanism) + 5c89c538b8 (statement ownership, escape sweep, every statement list)
+Parent release for THIS target: v58 (dedf242c69)
+Built: 2026-09-17 on x86_64-linux, from a CLEAN compiler/i386 unit tree (278 units
+       compiled, the five changed units among them), driven by the v59 native
+       ppcx64 (md5 12220bfd5b3a9b1ee6db7b68297f0844)
+Binary: bin/ppcross386  md5 880fe174bee5b180b82530a4b13c6185
+                        sha256 34e89a5f2c5abdb5e640c556b86801dab917d306349e2809f597cb9b2436c493
+                        6523296 bytes, ELF 64-bit x86-64, statically linked, stripped
 
-THIS TARGET WAS FOUR RELEASES BEHIND.  x86_64 shipped v55, v56, v57 and v58 while
-this cross compiler stayed on v54, so it is not a one-fix refresh -- it collects
-everything that happened in between:
+UNITS: vibepascal-v54-i386-linux-units-full.tar.gz beside this file (see
+UNITS.txt) stays valid: no RTL, package or PPU-format change.
 
-  v55 (4d10b26fe7)  a missing -FU/-FE output directory is CREATED instead of
-                    complained about, so a first build in a fresh directory works.
-  v56 (f06e46d8eb)  an inferred inline var initialised from a real constant is a
-                    Double, whatever the constant's value happens to be.
-  v57 (c31227c8ca)  a half-written .ppu is an ERROR, not an infinite 99%-CPU spin
-                    with no message.  On the v54 binary this target was still
-                    shipping, a killed build or a full disk could hang a compile
-                    forever.
-  v58 (dedf242c69)  a .ppu SHORTER than the length its own header declares is
-                    rejected instead of silently accepted.  v57 only noticed
-                    damage it happened to trip over; lose the TAIL of a unit and
-                    there was nothing to trip over, so the compiler built your
-                    program against a unit that is not all there -- exit 0, no
-                    message.
+WHAT CHANGED IN v59 -- A COM INTERFACE TEMP DIES WITH ITS STATEMENT
+  A function that returns a COM interface, called where its result is never
+  stored in a variable ("Giver.Need.o.DoWork;"), leaves the reference in a
+  hidden temp.  Up to v58 that temp was released only when the ROUTINE exited
+  (or when the compiler happened to recycle the slot), so the object stayed
+  checked out long past its line -- a holder that should have handed its object
+  back at the semicolon kept it until the end of the procedure.  v59 releases it
+  at the end of the source statement that produced it, the way Delphi does.
 
-Nothing in the RTL, the packages or the PPU format changed across v54..v58, so an
-existing i386-linux unit set stays valid and does not need rebuilding.
+  Two commits carry it, and the second one is why the first did not ship alone:
+
+    55e687f581  (GOD, 2026-09-16)  the mechanism.  A temp knows it holds a COM
+                interface (tgobj), a slot still holding one is never recycled
+                under a second result in the same statement, and tcgblocknode
+                releases the statement's temps after every statement of a
+                begin..end block.
+
+    5c89c538b8  (Otto, 2026-09-17)  three holes measured on that build with
+                the two matrices added in tests/test/ (tintfstmttemp1.pp, 32
+                corners; tintfstmttemp2.pp, 28 corners), closed before anything
+                shipped:
+                  * a statement nested inside another -- the body of a
+                    with/if/while/case whose EXPRESSION produced the temp --
+                    released its parent's temp.  `with Giver.Need.o do begin
+                    A; B end` ran B on a freed object (measured: the owner's
+                    refcount hit zero after A).  Each temp now records which
+                    source statement allocated it and a statement releases
+                    only its own, never an enclosing one's.
+                  * exit, break, continue, goto and raise LEAKED the temp for
+                    good: the routine-exit sweep had been trimmed to skip
+                    temps whose statement-end release existed, and those
+                    escapes never reach that release.  Measured: every one of
+                    them leaked exactly one object.  The sweep covers every
+                    managed temp again; a slot that was already released is
+                    nil and costs one compare, one that was abandoned is
+                    released at routine exit, and nothing is released twice.
+                  * repeat..until bodies, try/finally/except bodies and
+                    case-else lists kept the old routine-exit lifetime, because
+                    only begin..end had been marked as a source statement list.
+
+  What does NOT change: an interface stored in a variable, field, array or
+  Result lives exactly as long as it always did.  Two results used in one
+  statement are both alive until that statement ends.  A temp produced by an
+  if/while condition, a case selector or a with expression stays alive through
+  the branch, the loop body or the with block and is released when that
+  statement ends.
+
+  COMPILER BINARY ONLY.  No RTL change, no package change, no PPU FORMAT change
+  (the unit files' own header/version are untouched), so every existing unit
+  set for this target stays valid and does not need rebuilding.  Code compiled
+  by v59 simply releases these temps sooner.
+
+HOW THE FIX WAS PROVEN, ON THE SOURCE EVERY TARGET IS BUILT FROM
+  * tests/test/tintfstmttemp1.pp and tintfstmttemp2.pp, 60 self-checking
+    corners in all (free proc, method, nested proc, main body, if/for/while/
+    repeat/with bodies, two temps in one statement, a temp passed as a
+    parameter, a stored interface, exit/break/continue/goto/raise mid-
+    statement, a nested block under a with/if/while/case temp, try/finally/
+    except/on/case-else bodies, an unentered block, and destroyed == created
+    at the end): 60/60 on this source at -O- and -O2.  The same programs score
+    35 failures on v58 (everything released at routine exit, nothing leaked,
+    nothing freed early) and 31 on the 55e687f581 build (3 leaked objects, 4
+    use-after-free corners, 6 statement lists left on the old lifetime) -- so
+    the harness fails in both directions and a pass means something.
+  * 1983-test corpus A/B against the PUBLISHED v58 x86_64-linux compiler:
+    1983 SAME, 0 DIFF (compile status and run exit code per test).
+  * self-host fixpoint on x86_64-linux: stage 2 == stage 3 byte-identical.
+  * dist/ppu-truncation-check.sh, the v57/v58 reader fixes are still in:
+    25/25 offsets clean on x86_64-linux, i386-linux, aarch64-linux and
+    arm-linux with the host-executable compilers.
+  * dist/unit-set-loadcheck.sh: x86_64-linux 147/147, i386-linux 146/146,
+    aarch64-linux 144/144, arm-linux 143/143 packages load clean, zero
+    recompiles.
 
 VERIFIED ON THESE EXACT BYTES
------------------------------
-  * dist/ppu-truncation-check.sh ppcross386 i386-linux, against the real
-    54220-byte packages/aspell/units/i386-linux/aspelldyn.ppu:
-        11/25 offsets clean, 14 problem(s), exit 1   on the v54 binary this replaces
-        25/25 offsets clean,  0 problem(s), exit 0   on this one
-    Of the 14: 9 truncations HUNG and had to be killed at 30s, and 5 were
-    ACCEPTED with rc=0 -- a corrupt unit taken as valid, silently.
-    The pre-fix binary is the one that actually shipped as v54, preserved and
-    re-run this cycle -- not a reconstruction.
-  * EXECUTION, not inspection: this compiler built tests/test/tinlinevarnativeint1.pp
-    -Munleashed into an ELF 32-bit i386 binary which RAN on this host and reported
-    checks=45 fails=0 NativeInt=4, VERDICT:PASS.
-
-BUILD PROVENANCE, because a cross build can lie about being one
----------------------------------------------------------------
-The first attempt this cycle relinked ppcross386 from Sep-3 units: it compiled
-ONE file (pp.pas, 795 lines), never touched the patched entfile.pas, and still
-emitted a NEW md5 that reads exactly like a successful rebuild.  The unit tree is
-now wiped per target before building and the recompiled-unit count is asserted
-(277 units for this binary).  If you are reproducing this, check the count, not
-the timestamp.
+  * EXECUTION, not inspection: this compiler built both lifetime matrices into
+    32-bit i386 ELF binaries which RAN natively on this host:
+    tintfstmttemp1 checks=32 fails=0, tintfstmttemp2 checks=28 fails=0
+    created=27 destroyed=27 live=0.
+  * dist/ppu-truncation-check.sh ppcross386 i386-linux: 25/25 offsets clean,
+    0 problems, exit 0.
+  * dist/unit-set-loadcheck.sh i386-linux with this binary: 146/146 packages
+    load clean, zero recompiles.
+  * dist/cross-runtime-proof.sh exercises this tarball end to end.
 
 NOT PROVEN HERE: nobody has run this compiler, or anything it emits, on a 32-bit
 i386 INSTALL.  The generated binaries were executed on x86_64-linux, which runs

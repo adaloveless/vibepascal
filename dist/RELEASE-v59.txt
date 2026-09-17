@@ -1,0 +1,213 @@
+# VibePascal v59 -- cross-platform status manifest
+# Cut by FPCDeveloper (Otto), 2026-09-17 (cy1133), on GOD's order relayed by
+# LazarusDeveloper (dashboard mu460o3b, 2026-09-16: "release new compilers for
+# all platforms").  All eight targets this fork publishes shipped in ONE cut,
+# from ONE source commit, in ONE dist commit.
+# This file is the authoritative answer to "which platforms have v59".
+# Per-platform detail lives in dist/<target>/VERSION.txt and inside each tarball.
+
+source_commit: 5c89c538b8fb1f00c83fb5cabd9260f6e71caba4
+compiler_fix:  55e687f581  (GOD, 2026-09-16 -- the mechanism: compiler/tgobj.pas,
+                            hlcgobj.pas, ncgbas.pas, nbas.pas, pstatmnt.pas)
+               5c89c538b8  (Otto, 2026-09-17 -- statement ownership, escape sweep,
+                            every source statement list; same five files)
+merge:         14e0f0f334  (55e687f581 landed on main by MERGE, so the sha GOD
+                            knows is the sha this manifest names; main's three
+                            commits over the fork point touched docs/ and dist/ only)
+parent:        v58 (dedf242c696a543f9626e2839ced40876478a98a)
+
+WHAT CHANGED IN v59 -- A COM INTERFACE TEMP DIES WITH ITS STATEMENT
+  A function that returns a COM interface, called where its result is never
+  stored in a variable ("Giver.Need.o.DoWork;"), leaves the reference in a
+  hidden temp.  Up to v58 that temp was released only when the ROUTINE exited
+  (or when the compiler happened to recycle the slot), so the object stayed
+  checked out long past its line -- a holder that should have handed its object
+  back at the semicolon kept it until the end of the procedure.  v59 releases it
+  at the end of the source statement that produced it, the way Delphi does.
+
+  Two commits carry it, and the second one is why the first did not ship alone:
+
+    55e687f581  (GOD, 2026-09-16)  the mechanism.  A temp knows it holds a COM
+                interface (tgobj), a slot still holding one is never recycled
+                under a second result in the same statement, and tcgblocknode
+                releases the statement's temps after every statement of a
+                begin..end block.
+
+    5c89c538b8  (Otto, 2026-09-17)  three holes measured on that build with
+                the two matrices added in tests/test/ (tintfstmttemp1.pp, 32
+                corners; tintfstmttemp2.pp, 28 corners), closed before anything
+                shipped:
+                  * a statement nested inside another -- the body of a
+                    with/if/while/case whose EXPRESSION produced the temp --
+                    released its parent's temp.  `with Giver.Need.o do begin
+                    A; B end` ran B on a freed object (measured: the owner's
+                    refcount hit zero after A).  Each temp now records which
+                    source statement allocated it and a statement releases
+                    only its own, never an enclosing one's.
+                  * exit, break, continue, goto and raise LEAKED the temp for
+                    good: the routine-exit sweep had been trimmed to skip
+                    temps whose statement-end release existed, and those
+                    escapes never reach that release.  Measured: every one of
+                    them leaked exactly one object.  The sweep covers every
+                    managed temp again; a slot that was already released is
+                    nil and costs one compare, one that was abandoned is
+                    released at routine exit, and nothing is released twice.
+                  * repeat..until bodies, try/finally/except bodies and
+                    case-else lists kept the old routine-exit lifetime, because
+                    only begin..end had been marked as a source statement list.
+
+  What does NOT change: an interface stored in a variable, field, array or
+  Result lives exactly as long as it always did.  Two results used in one
+  statement are both alive until that statement ends.  A temp produced by an
+  if/while condition, a case selector or a with expression stays alive through
+  the branch, the loop body or the with block and is released when that
+  statement ends.
+
+  COMPILER BINARY ONLY.  No RTL change, no package change, no PPU FORMAT change
+  (the unit files' own header/version are untouched), so every existing unit
+  set for this target stays valid and does not need rebuilding.  Code compiled
+  by v59 simply releases these temps sooner.
+
+WHY THERE IS A SECOND COMMIT, IN ONE PARAGRAPH
+  The release was measured before it was cut.  The 55e687f581 build passes
+  GOD's own holder test and fails 31 of the 60 corners in the two matrices
+  written for this release: three objects leaked (one per abandoned statement
+  -- exit, break, continue, goto, raise), four use-after-free corners (a
+  nested block freeing its parent statement's object), and six statement
+  lists still on the old lifetime.  v58 fails 35 of the same 60 the OLD way
+  (everything released at routine exit) and leaks nothing.  Shipping the
+  first build would have traded a too-long lifetime for a leak and a dangling
+  pointer, which is a regression even where the reported case passes.  The
+  hardening keeps GOD's mechanism and its data structures and adds one
+  integer per temp: which statement allocated it.
+
+PLATFORMS CARRYING v59
+  win64/           vibepascal-v59-5c89c538b8-win64-bin.tar.gz
+                   md5 7979ccc69051fef132bdc86c86833785
+                   ppcx64.exe md5 bec75bee2d6c4b105734c328216488d8  (5054976 B)
+                   -- also published as vibepascal-latest-win64-bin.tar.gz and
+                      named by dist/win64/LATEST.txt (the auto-update pointer)
+                   -- units are STILL the v52 set; auto-update.bat can take the
+                      ~3.4 MB bin alone; every bin/ member but ppcx64.exe is
+                      byte-identical to v58
+                   -- RUNTIME: both matrices compiled and RUN under wine64,
+                      60/60; dist/win64-runtime-proof.sh PASS.  wine is NOT
+                      Windows; v58 ran on real Windows (2026-09-12), v59 has not
+                      yet.
+  linux64/         vibepascal-v59-5c89c538b8-linux-x86_64-bin.tar.gz
+                   md5 58d080abaf354d669e521574c4725bdd
+                   ppcx64 md5 12220bfd5b3a9b1ee6db7b68297f0844  (6321824 B), ppudump = v58 bytes
+                   -- RUNTIME: native.  Self-host fixpoint stage 2 == stage 3,
+                      1983-test corpus A/B vs v58 1983 SAME / 0 DIFF, both
+                      matrices 60/60 at -O- and -O2.  The only platform with
+                      real, non-emulated runtime proof.
+  aarch64-linux/   vibepascal-v59-5c89c538b8-aarch64-linux-bin.tar.gz
+                   md5 6405ce654b566fe0d31fc6c9b347eadd
+                   ppca64 md5 01d7bf8343053475c71d3c3c5acabf78  (5181472 B)
+                   -- pair with vibepascal-v52-aarch64-linux-units.tar.gz (UNITS.txt)
+                   -- RUNTIME: EXECUTED under qemu-aarch64-static, both matrices
+                      60/60; truncation gate 25/25 (cap raised to 8 GB for qemu);
+                      dist/arm-runtime-proof.sh PASS.
+  arm-linux/       vibepascal-v59-5c89c538b8-arm-linux-bin.tar.gz
+                   md5 95ca1aaf2914b96d89a5cb8d7c6241ec
+                   ppcarm md5 c2aeb6f1abc246b517d7c9974361c3bb  (5670904 B)
+                   -- ARMHF/EABIHF (readelf flags 0x5000400).  BIN-ONLY: pair
+                      with vibepascal-v54-arm-linux-units-full.tar.gz, REQUIRED.
+                   -- RUNTIME: EXECUTED under qemu-arm-static, both matrices
+                      60/60; truncation gate 25/25 with the cap raised to 8 GB
+                      (see THE ARM NATIVE GATE below); arm-runtime-proof.sh PASS.
+  i386-linux-cross/ vibepascal-v59-5c89c538b8-i386-linux-cross-bin.tar.gz
+                   md5 880f94b085b41d3c75ccf8039ec86bc2
+                   ppcross386 md5 880fe174bee5b180b82530a4b13c6185  (6523296 B)
+                   -- RUNTIME: its OUTPUT was executed natively (32-bit ELF on
+                      this host), both matrices 60/60; truncation gate 25/25;
+                      loadcheck 146/146; cross-runtime-proof.sh PASS.
+  arm-linux-cross/ vibepascal-v59-5c89c538b8-arm-linux-cross-bin.tar.gz
+                   md5 44aad365e3504db353d8a968380cb337
+                   ppcrossarm md5 6236206b913843c9d49f84d7b5edbe70  (5530944 B)
+                   -- ARMHF.  RUNTIME: its OUTPUT was executed under
+                      qemu-arm-static, both matrices 60/60; truncation gate
+                      25/25; loadcheck 143/143; cross-runtime-proof.sh PASS.
+  x86_64-darwin/   vibepascal-v59-5c89c538b8-x86_64-darwin-bin.tar.gz
+                   md5 b63595c14eef26c28579b81664d8484f
+                   ppcx64 md5 a1a5e4639ca5118b58245285f05eca2e  (UNSIGNED, 9269400 B)
+                   -- RUNTIME: NEVER EXECUTED.  No macOS host and no Mach-O
+                      emulation on the build box.  Section triage against a
+                      v58-source rebuild made today: __text +624, noise floor
+                      17 bytes of LC_UUID.
+                   -- SIGNING: predicted as-shipped 9393312 B,
+                      md5 0ab83bbf196fc6ca8b29cf94231750b0.  A mismatch against
+                      the unsigned number above is NOT corruption.
+  aarch64-darwin/  vibepascal-v59-5c89c538b8-aarch64-darwin-bin.tar.gz
+                   md5 ccd7b0a838c9ff8692a1ced5f0d6d340
+                   ppca64 md5 31d5407d365b578826b9b9b52c46e1a8  (UNSIGNED, 7333274 B)
+                   -- RUNTIME: NEVER EXECUTED, same reason as its Intel twin.
+                      Section triage: __text +832, every v58 section size
+                      reproduced by today's v58-source rebuild.
+                   -- SIGNING: predicted as-shipped 7338752 B,
+                      md5 ab3d20b8ea24b56a291dc23c82510528.
+  Both darwin compilers are also staged (untracked, local to lazdev) under
+  dist/darwin-native/vibepascal-native-<arch>-darwin-20260917-v59-5c89c538b8/ with a
+  COMPILER_NOTES.txt each; Lars's get_latest_darwin_native_dir, lifted out of
+  build-release.sh and run against the real directory, resolves BOTH targets to
+  the v59 directories, rc=0.
+
+IN-TREE CROSS COMPILER THE SAME REBUILD TOUCHED -- NOT PUBLISHED, BUT DEPENDED ON
+    compiler/ppcrossa64   md5 57561394c9b40030eec04ed9326c4283  (5130208 B)  (= ppcrossaarch64, a symlink)
+                          built clean by the v59 ppcx64 (223 units); it is the
+                          driver that built ppca64 and the aarch64-darwin
+                          compiler; truncation gate 25/25; loadcheck
+                          aarch64-linux 144/144.  Refreshed into bin/ of the
+                          shared checkout by dist/linux-bin-layout.sh.
+
+HOW EACH BINARY WAS SHOWN TO CARRY THE FIX -- BY RUNNING IT
+  Every one of these compilers reports "3.3.1".  The version string cannot tell
+  v58 from v59, so it was never used as evidence.  The discriminating test is
+  the pair of self-checking programs added to tests/test/ with this release:
+
+    tintfstmttemp1.pp  32 corners: free proc, method, nested proc, main body,
+                       if/for/while/repeat/with bodies, two temps in one
+                       statement, a temp passed as a parameter, a temp made in
+                       a routine that raised, a stored interface.
+    tintfstmttemp2.pp  28 corners: exit/break/continue/goto/raise mid-statement,
+                       a raise from a nested block, a with/if/while/case whose
+                       expression made the temp with a nested block under it,
+                       repeat/try/finally/except/on/case-else bodies, an
+                       unentered block, and destroyed == created at the end.
+
+  Both were compiled BY each shipped compiler and the products RUN -- natively
+  for x86_64-linux and the i386 output, under qemu-user for every ARM binary
+  (native and cross), under wine64 for win64 -- and every run prints
+  checks=32 fails=0 and checks=28 fails=0 created=27 destroyed=27 live=0.  The
+  same programs on the published v58 compiler print 23 and 12 failures; on the
+  unhardened 55e687f581 build 2/3 and 28.  A gate that cannot fail proves
+  nothing; this one says NO in both directions.
+
+  The two darwin rows are the exception, and saying so is the point: nothing
+  here executes a Mach-O.  Their evidence is (a) the same source, run on the
+  same CPU, as a Linux-hosted binary, (b) the recompiled-unit count, and (c)
+  the single-axis section triage in each VERSION.txt, whose control is a v58
+  rebuild made today that reproduces the shipped v58 section for section.
+
+THE ARM NATIVE GATE, so the next person does not misread a 24/25
+  dist/ppu-truncation-check.sh runs the compiler under a 1 GB address-space cap
+  (a real, measured OOM guard, cy1127).  A 32-bit ARM guest under qemu-user
+  binfmt cannot START under that cap -- "Unable to find a guest_base to satisfy
+  all guest address mapping requirements 00000000-ffffffff" -- so the gate
+  scores the native ppcarm 24/25 with "the compiler rejects a GOOD unit".  That
+  is the emulator: the PUBLISHED v58 ppcarm scores exactly the same 24/25 under
+  the default cap, and both score 25/25 with TRUNCCHECK_VMCAP_KB=8388608.  The
+  arm CROSS compiler from the same source scores 25/25 under the default cap.
+
+UNITS ARE UNCHANGED ON EVERY TARGET.  git diff --stat dedf242c69 5c89c538b8 --
+rtl/ packages/ is EMPTY: RTL and package SOURCE did not move between v58 and
+v59, only compiler/ (five files, +149/-16 across the two commits) and tests/.
+The PPU format did not move either.  Every units tarball this fork has ever
+published pairs with a v59 compiler exactly as it paired with v58.
+
+WHO CAN STILL CLOSE WHAT
+  * real Windows: v58 ran on real hardware; v59 has not.  Lars routes the
+    real-Windows smoke non-blocking to Steve as usual.
+  * physical ARM silicon: never, for any release (board question
+    q_1789125036770_2jfmr9 still open).
+  * a Mac: no scheduled queue reaches one (darwin_real_hardware_proof).
