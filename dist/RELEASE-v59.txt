@@ -294,3 +294,59 @@ WHAT IT DOES NOT CLOSE
   * The two darwin VERSION.txt files and every other per-platform VERSION.txt
     are deliberately NOT touched by this addendum.  They mirror bytes already
     inside published tarballs.
+
+================================================================================
+ADDENDUM 2026-09-17 (cy1147) -- READ THIS BEFORE QUOTING THE ARM SILICON RESULT
+================================================================================
+  VibePascal ran on physical ARM silicon for the first time today.  THE BYTES
+  THAT RAN WERE v58, NOT v59.  The aarch64-linux entry above is unchanged and
+  still correct as written: v59's ARM runtime evidence is qemu-aarch64-static
+  only.  This note exists so nobody reads today's win as covering the tarball
+  this manifest points at.
+
+  WHAT WAS PROVEN, AND ON WHAT.  Wes (SiteManager_gx10-3c9a), a native aarch64
+  Linux box, 2026-09-17 16:24-16:26 UTC, on the PUBLISHED v58 bytes:
+    vibepascal-v58-dedf242c69-aarch64-linux-bin.tar.gz
+       1508828 B  md5 f0e5da8a60468be2ef2e390747bbdb87
+       member bin/ppca64  md5 78c729e8addfb7a8e80ddb245ca57049
+    vibepascal-v52-aarch64-linux-units.tar.gz
+      84809752 B  md5 a8e82e441275abb2bc75a1554f2d7c56
+  Extract both into one empty dir, nothing installed, then: uname -m aarch64;
+  ppca64 -iV 3.3.1; ppca64 -iSP aarch64; compile a SysUtils + Classes program
+  against the published unit tree, exit 0; run it, exit 0, correct output.
+  file(1) says both the compiler AND its output are ARM aarch64 ELF, so the
+  codegen is native too.  Full detail, including his qemu-binfmt disclosure and
+  his negative control, is in the cy1147 addendum to dist/RELEASE-v58.txt.
+
+  WHAT THAT DOES AND DOES NOT TRANSFER TO v59, stated precisely because the
+  halves differ:
+  * THE UNIT SET TRANSFERS EXACTLY.  v58 and v59 pair with the SAME units
+    tarball -- vibepascal-v52-aarch64-linux-units.tar.gz, md5 a8e82e44... --
+    byte-identical, not merely equivalent.  So "the published units are real,
+    complete enough to build a SysUtils + Classes program, and correctly laid
+    out for -Fu/-Fl on hardware" is proven for v59 as well.  That was the part
+    that had never been true before: four aarch64 releases shipped a compiler
+    with NO units, so on a clean box they could not compile one line.
+  * THE COMPILER BINARY DOES NOT TRANSFER.  v59's ppca64 is a different binary
+    (md5 01d7bf8343053475c71d3c3c5acabf78, 5181472 B) built from a different
+    source commit (5c89c538b8), and it has never executed on ARM hardware.  The
+    v58 -> v59 delta is not cosmetic: it is the COM interface function-result
+    temp lifetime work (GOD's 55e687f581 plus the cy1133 statement-ownership and
+    escape-sweep hardening).  That is codegen and lifetime behaviour, which is
+    exactly the class of change a "it surely still compiles hello" argument is
+    worst at covering.  We do not ship on "surely".
+
+  SO, PLAINLY: as of today the CURRENT published aarch64-linux compiler has no
+  hardware proof; the immediately previous one does, and the unit set both share
+  does.  Anyone quoting the ARM result must say v58.
+
+  WHAT WOULD CLOSE IT: the identical sequence against the v59 bin tarball
+  (1500778 B, md5 6405ce654b566fe0d31fc6c9b347eadd) with the same v52 units.  It
+  is roughly a two-minute job for anyone who has already done the v58 run -- one
+  tarball swapped, four commands re-run.  Asked of Wes as an explicitly OPTIONAL
+  follow-up the same hour this gap was found; he had already been told he was
+  done, and he is not obliged to.  If it is not taken up, this paragraph stands
+  and v59 aarch64 stays qemu-only in every document we publish.
+
+  32-bit ARM (arm-linux / armhf) is untouched by any of this and remains
+  unproven on hardware, with no candidate machine anywhere in the fleet.
