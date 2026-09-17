@@ -1,0 +1,103 @@
+x86_64-linux UNIT SET -- READ THIS BEFORE USING THE BIN TARBALL
+===============================================================
+Added 2026-09-17 (cycle 1148).  This file is NOT mirrored inside any published
+tarball, so it can be corrected later without making an already-shipped artifact
+disagree with it.
+
+WHY THIS DIRECTORY NEEDED A UNIT SET AT ALL
+--------------------------------------------
+Until today dist/linux64/ shipped compiler binaries and nothing else, and
+VERSION.txt described the drop correctly for the only case it had in mind:
+
+    "into an existing VibePascal source/unit tree on Linux.  An existing
+     v52..v58 Linux unit set stays valid and does not need rebuilding."
+
+That is right for an UPGRADER and useless to anyone else.  On a clean x86_64
+Linux box holding only the published bytes there was no unit set to drop into,
+so the published compiler could not compile one line -- the same gap that made
+aarch64-linux unanswerable for four releases until its units were cut.  Every
+other consumer target (win64, aarch64-linux, arm-linux, i386-linux-cross) has
+had a published unit set for days or weeks.  This one did not.  Now it does.
+
+WHAT TO DOWNLOAD
+----------------
+  vibepascal-v59-5c89c538b8-linux-x86_64-bin.tar.gz    the compiler
+      contains bin/ppcx64, 6321824 bytes,
+      md5 12220bfd5b3a9b1ee6db7b68297f0844
+      ELF 64-bit LSB executable, x86-64, statically linked
+
+  vibepascal-v59-x86_64-linux-units.tar.gz             the unit set  <-- REQUIRED
+      88430845 bytes
+      md5    88eab3aae1576e2fd5d8549c56386054
+      sha256 d92982324461fb62b34b01ed2adc8ad9ba939fc9653514f9c7439e4c81b06b21
+      3648 files flat in units/x86_64-linux/:
+        1718 .ppu   (105 RTL + 1613 package)
+        1667 .o
+         262 .rsj   (resource strings)
+           1 .inc   (packages/gdbint gdbver.inc)
+      Same full RTL+packages shape as the win64, aarch64-linux, arm-linux and
+      i386-linux-cross sets.  There is no earlier x86_64-linux units tarball,
+      superseded or otherwise -- this is the first one, so nothing is being
+      replaced and no previously published hash changes.
+
+Extract both into the same directory and tell the compiler where the units are:
+
+    ./bin/ppcx64 -Fuunits/x86_64-linux -Flunits/x86_64-linux hello.pas
+
+THE UNITS AND THE COMPILER ARE BOTH v59, AND THAT IS UNUSUAL HERE
+------------------------------------------------------------------
+Every other target ships a version-mismatched pair by design (win64 v52 units +
+v59 binary, aarch64-linux v52 + v59, arm-linux and i386-linux-cross v54 + v59)
+because their PPUs predate the compiler and RTL source did not move in between.
+This set does not: these PPUs were built 2026-09-17 02:05-02:18 by the v59
+compiler itself, from commit 5c89c538b8, during the post-cut rebuild that proves
+the shipped compiler can rebuild the whole RTL and all 147 packages from source.
+So the stamp is measured here too -- it just happens to match.
+
+ONE NAME COLLIDES, AND IT IS DISCLOSED RATHER THAN LEFT TO BE FOUND
+---------------------------------------------------------------------
+The layout is FLAT, one directory holding every unit, which is the shape all
+four existing sets ship.  Two different packages build a unit called whtml:
+
+    packages/fcl-base/units/x86_64-linux/whtml.ppu   47920 bytes
+    packages/ide/units/x86_64-linux/whtml.ppu        78767 bytes
+
+A flat directory can hold one.  This set carries the fcl-base one
+(md5 5f06f281b0cdef2cb4ccad22b8854358), chosen deliberately rather than by
+copy order, because it is the one every already-published set carries: the
+arm-linux, i386-linux-cross and aarch64-linux tarballs each hold a single
+~46-48 KB whtml.ppu and none of them holds the packages/ide variant.  If you
+need the IDE package's whtml, build it from source; it is not in here.
+
+WHAT WAS VERIFIED, AND THE CHAIN MATTERS MORE THAN ANY ONE NUMBER
+------------------------------------------------------------------
+1. LOADS: dist/unit-set-loadcheck.sh x86_64-linux, run against THIS unit tree
+   and the v59 compiler -> 147/147 packages load clean, 0 problems, zero silent
+   recompiles.  The first run of this check resolved the compiler and RTL from a
+   DIFFERENT checkout and measured a different unit set (system.ppu 2026-09-16
+   13:45); it was re-run with both paths passed explicitly (system.ppu
+   2026-09-17 02:13) and only the second run describes these bytes.
+2. THE TARBALL HOLDS THOSE EXACT BYTES: all 3648 members md5-compared against
+   the tree files the load check measured -> 0 mismatches.  Without this link,
+   step 1 describes different bytes than the ones shipping.
+3. EXTRACT TO RUNNING PROGRAM FROM THE PUBLISHED BYTES ONLY: both tarballs into
+   an empty directory; a program using SysUtils, Classes AND fpjson compiled
+   with -n, so this host's installed FPC could supply nothing; rc=0; output is
+   "ELF 64-bit LSB executable, x86-64, statically linked"; it RAN and printed
+       { "cpu" : "x86_64-linux", "bits" : 64 }
+   NativeInt = 8 bytes, as it must be on x86_64.
+4. NEGATIVE CONTROL FIRED: the identical command with units/ renamed away ->
+   rc=1, "pkgtest.pas(1,17) Fatal: Can't find unit system used by pkgtest", and
+   no binary produced.  A check that cannot fail proves nothing.
+
+AN HONEST LIMIT ON ONE OF THE CONTROLS.  A second control meant to show that a
+PACKAGE unit is the discriminator -- a hand-assembled RTL-only subset -- did
+fail (rc=1) but died earlier than intended, on fpintres rather than on fpjson.
+It therefore proves that an incomplete set fails; it does NOT isolate fpjson as
+the thing the full set adds.  Step 3 is the claim that stands.
+
+NOT PROVEN HERE: dist/unit-set-loadcheck.sh proves a unit set LOADS, i.e. its
+recorded dependency CRCs still match.  It does not prove the objects inside
+those PPUs assemble, link or run -- step 3 does that, for one program.
+
+-- Otto (FPCDeveloper), cycle 1148
