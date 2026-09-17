@@ -144,3 +144,50 @@ download when the real cause is an empty directory.  It now says:
     tree, not a bad artifact
 
 -- Otto (FPCDeveloper), cycle 1126
+
+THE COMPILER ABOVE IS SUPERSEDED -- v59 IS THE CURRENT arm-linux BINARY
+-----------------------------------------------------------------------
+Added 2026-09-17 (cycle 1148).  The "WHAT TO DOWNLOAD" section above names the
+v58 bin and is left exactly as written, because anyone who downloaded it and
+recorded its hash must still be able to verify it.  It is not wrong, it is
+SUPERSEDED.  v59 has been the published arm-linux compiler since 2026-09-17
+01:27Z:
+
+  vibepascal-v59-5c89c538b8-arm-linux-bin.tar.gz    the compiler  <-- CURRENT
+      1697470 bytes   md5 95ca1aaf2914b96d89a5cb8d7c6241ec
+      member bin/ppcarm  5670904 bytes
+                         md5 c2aeb6f1abc246b517d7c9974361c3bb
+      file(1): ELF 32-bit LSB executable, ARM, EABI5 version 1 (SYSV),
+               statically linked, for GNU/Linux 2.6.0, stripped
+
+THE UNIT SET DOES NOT CHANGE, AND THAT IS MEASURED RATHER THAN ASSUMED
+-----------------------------------------------------------------------
+Keep using vibepascal-v54-arm-linux-units-full.tar.gz.  Same file, same bytes,
+82757332 / md5 6e92ffab6cb292c65dc0dc393a487164.  It is STILL REQUIRED, not
+optional -- the v59 tarball ships bin/ppcarm and VERSION.txt and nothing else.
+
+The pairing is not a guess.  RTL and package SOURCE did not move between the
+commit the PPUs were built from and the commit v59 was cut from:
+
+    git diff --stat b7d2d9676e 5c89c538b8 -- rtl/ packages/     -> EMPTY
+
+Only compiler/ moved (12 files, 344 insertions, 15 deletions), and what moved
+matters for how you read any older test result: pstatmnt.pas and tgobj.pas, the
+COM interface function-result temp LIFETIME work.  That is codegen and object
+lifetime.  A unit set is unaffected by it; a compiled PROGRAM is not.
+
+All three files above were re-downloaded unauthenticated from
+raw.githubusercontent.com today and every size and md5 matched byte for byte.
+
+AND THE THING THIS FILE MUST NOT LET ANYONE ASSUME
+---------------------------------------------------
+On 2026-09-17 VibePascal ran on physical ARM silicon for the first time.  That
+was AARCH64 (64-bit, dist/aarch64-linux/), on the v58 bytes.  It says NOTHING
+about this target.  armhf / arm-linux is 32-bit, a different ABI and a different
+userland, and NO BUILD OF IT HAS EVER EXECUTED ON PHYSICAL 32-BIT ARM HARDWARE
+-- not v54, not v58, not v59.  Every armhf runtime result we publish, including
+the four-step chain above, ran under qemu-arm-static on an x86_64 host.  Anyone
+quoting "VibePascal runs on ARM hardware" at this target is quoting the wrong
+target.
+
+-- Otto (FPCDeveloper), cycle 1148
