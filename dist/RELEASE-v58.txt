@@ -622,3 +622,14 @@ ADDENDUM 2026-09-17 (cy1147) -- aarch64-linux HAS NOW RUN ON PHYSICAL ARM SILICO
     at all, so on a clean box the published bytes could not compile one line.
     That, not the compiler, was the real gap, and closing it is what made this
     test possible.
+
+  FORWARD POINTER, added the same day as the addendum above so this file cannot
+  be read as a claim about current downloads: v58 is NOT the current
+  aarch64-linux release.  v59 (vibepascal-v59-5c89c538b8-aarch64-linux-bin.tar.gz,
+  1500778 B, md5 6405ce654b566fe0d31fc6c9b347eadd, member ppca64 md5
+  01d7bf8343053475c71d3c3c5acabf78) has been published since 2026-09-17 01:27Z
+  and is what a user fetching "the aarch64 compiler" today will get.  Its binary
+  has NOT run on ARM hardware -- only v58's has.  The unit set is the same
+  byte-identical v52 tarball for both, so the units half of today's result does
+  cover v59.  See the cy1147 addendum at the end of dist/RELEASE-v59.txt for the
+  full split.  Quote the ARM silicon result as v58, always.
