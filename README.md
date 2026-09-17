@@ -4,7 +4,20 @@
 
 Started in 2026, ths project is "ALL GAS NO BRAKES".  2026 is that kind of year.  Rapid acceleration, possibly sometimes into a concrete, brick wall... but pedal to the floor none the less. Apologies if the agents are working in the main branch... sync/fork at your own risk... recommend having agents of your own to resolve issues.  Dozens of commits daily... dozens of upstream syncs daily from fpc/and fpc uleashed.  Maybe they're running agents there too now? I dunno.  It's all gas, no brakes over here!  Time to break free from the chains of the past.   That's what we're about!
 
-Some notable features that have been human observed:
+Sept 2026 Update:
+We improved the interface lifetime rules to be the best in the business.   
+1. If you declare an interface at the procedure level, it is dereferenced at the end of the function (standard classic behavior)
+2. If you declare an interface, inline, in a begin.. end block... it is dereferenced/freed at the end of the block.
+3. If you declare an interface, inline, inside a FOR loop, it is dereferenced end of the for loop.
+4. NEW* SUBTLE*:  If you declare FUNCTION that returns an interface and then make a function call into that function WITHOUT assigning that interface to a variable, the interface lives until the end of the line.  This allows for elegant smart pointers to be returned from functions that live long enough for you to make function calls against them (useful for pooling)
+
+e.g. 
+// function GetPooledConenction(): IDatabaseConnection;<--returns interface
+// function in IDatabaseConenction.Query() might also return : IQueryResult .. also an interface.
+GetPooledConnection().Query('select * from user').RowCount;
+//IDatabaseConnection and IQueryResult are dereferenced and freed on the next line.  Other compilers would hole the interface until the end of the function... making multiple pooled calls consume multiple pooled connection (bad)... this allows for better pool reuse, reducing stress on your back-end as a bonus
+
+Some notable features:
 1. Tightened compatibility with with regard to generics in particular, especially when returning generics from functions e.g. function (foo: string): TSomegeneric<string> 
 2. Tightened compatibility with regard to Anonymous procedures and functions
 3. Tightened compatibility with multi-line string literals.
