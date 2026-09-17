@@ -448,7 +448,9 @@ interface
         hp : tstatementnode;
         oldexitlabel : tasmlabel;
         oldflowcontrol : tflowcontrol;
+        stmtmark : longint;
       begin
+        stmtmark:=0;
         location_reset(location,LOC_VOID,OS_NO);
         oldflowcontrol:=[];
         oldexitlabel:=nil;
@@ -479,16 +481,28 @@ interface
             begin
               if assigned(hp.left) then
                begin
+                 { VibePascal: number the source statement about to be generated,
+                   so every temp it (or a statement nested in it) allocates is
+                   stamped as belonging to it -- see ttemprecord.stmtseq }
+                 if bnf_source_block in blocknodeflags then
+                   begin
+                     inc(tg.stmtcounter);
+                     stmtmark:=tg.stmtcounter;
+                   end;
                  secondpass(hp.left);
                  location_copy(hp.location,hp.left.location);
                  { VibePascal: end of a source statement -- release the COM
                    interface temps it produced. Only for blocks the parser built
-                   from a real begin..end: the "statements" of a compiler-built
-                   block are pieces of ONE source statement, and cutting a temp
-                   loose between them would free an interface while the rest of
-                   the statement is still using what it held. }
+                   from a source statement list (begin..end, repeat..until, the
+                   bodies of try/finally/except and case-else): the "statements"
+                   of a compiler-built block are pieces of ONE source statement,
+                   and cutting a temp loose between them would free an interface
+                   while the rest of the statement is still using what it held.
+                   The mark keeps the same accident from happening one level
+                   up: a statement nested inside another only releases temps
+                   handed out since it started, never its parent's. }
                  if bnf_source_block in blocknodeflags then
-                   hlcg.finalize_statement_temps(current_asmdata.CurrAsmList);
+                   hlcg.finalize_statement_temps(current_asmdata.CurrAsmList,stmtmark);
                end;
               location_copy(location,hp.location);
               hp:=tstatementnode(hp.right);

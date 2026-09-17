@@ -647,9 +647,12 @@ unit hlcgobj;
           procedure gen_exit_code(list:TAsmList);virtual;
 
           { VibePascal: release the COM interface temps whose statement just
-            ended. Called from tcgblocknode after every statement of a real
-            begin..end block. }
-          procedure finalize_statement_temps(list:TAsmList);virtual;
+            ended. Called from tcgblocknode after every statement of a source
+            statement list (begin..end, repeat..until, try/finally/except
+            bodies, case-else) with the value ttgobj.stmtcounter had when that
+            statement started: only temps handed out at or after that mark
+            belong to the statement and may be released here. }
+          procedure finalize_statement_temps(list:TAsmList;stmtmark:longint);virtual;
 
          protected
           { helpers called by gen_initialize_code/gen_finalize_code }
@@ -5165,11 +5168,16 @@ implementation
        begin
          if hp^.fini and
             assigned(hp^.def) and
-            is_managed_type(hp^.def) and
-            { VibePascal: an interface temp that was already released at the end
-              of its statement holds nil here, so the routine-exit finalise is
-              dead code. Skip it rather than emit it. }
-            not (hp^.stmtfini and not hp^.dirty) then
+            is_managed_type(hp^.def) then
+          { VibePascal: an interface temp released at the end of its statement
+            is NOT skipped here even though it is nil on the normal path.  The
+            normal path is not the only one: exit, break, continue, goto and a
+            raised exception all leave the statement before its release runs,
+            and then this routine-exit sweep (inside the implicit finally) is
+            the only thing that releases the reference.  Sweeping a nil slot
+            costs one compare in fpc_intf_decr_ref; skipping a live one leaks
+            the object for good.  Measured on the first cut of this change:
+            every one of those escapes leaked exactly once. }
           begin
             include(current_procinfo.flags,pi_needs_implicit_finally);
             tg.temp_to_ref(hp,href);
@@ -5186,7 +5194,7 @@ implementation
     the object checked out long past its line. Release every such temp that is
     no longer in use as soon as its statement ends. g_finalize nils the slot,
     so the routine-exit sweep and any later reuse both find it clean. }
-  procedure thlcgobj.finalize_statement_temps(list: TAsmList);
+  procedure thlcgobj.finalize_statement_temps(list: TAsmList; stmtmark: longint);
     var
       hp : ptemprecord;
       href : treference;
@@ -5196,6 +5204,12 @@ implementation
        begin
          if hp^.stmtfini and
             hp^.dirty and
+            { only temps handed out by THIS statement (or one nested in it,
+              which has already released its own): a temp older than the
+              mark belongs to an enclosing statement that is still running --
+              the with/if/while/case whose expression produced it -- and
+              releasing it here frees an object that statement still uses }
+            (hp^.stmtseq>=stmtmark) and
             assigned(hp^.def) and
             { only once nothing holds it any more: tt_persistent means the tree
               is still using it, and this must not run early }

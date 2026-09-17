@@ -210,6 +210,10 @@ implementation
            end;
          consume(_END);
          statements_til_end:=cblocknode.create(first);
+         { VibePascal: a source-level statement list (case/match else, finally
+           and except bodies) -- its statements are separate source statements,
+           which is where interface temps die }
+         Include(tblocknode(statements_til_end).blocknodeflags,bnf_source_block);
          if assigned(first) then
            statements_til_end.fileinfo:=first.fileinfo;
       end;
@@ -774,6 +778,8 @@ implementation
          consume(_UNTIL);
 
          first:=cblocknode.create(first);
+         { VibePascal: the repeat body is a source-level statement list too }
+         Include(tblocknode(first).blocknodeflags,bnf_source_block);
          p_e:=comp_expr([ef_accept_equal]);
          result:=cwhilerepeatnode.create(p_e,first,false,true);
       end;
@@ -2020,6 +2026,8 @@ implementation
                   consume_emptystats;
                end;
              p_try_block:=cblocknode.create(first);
+             { VibePascal: and so is the try body }
+             Include(tblocknode(p_try_block).blocknodeflags,bnf_source_block);
            end;
 
          if current_scanner.token=_FINALLY then

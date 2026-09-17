@@ -58,6 +58,14 @@ unit tgobj;
                of it was still in flight). }
          stmtfini   : boolean;
          dirty      : boolean;
+         { VibePascal: value of ttgobj.stmtcounter when this slot was handed
+           out, i.e. WHICH source statement owns the reference it holds.  The
+           end-of-statement release only touches slots whose stmtseq is not
+           older than the statement that is ending, so a statement nested
+           inside another (the body of a with/if/while/case whose expression
+           produced a temp) can never release its parent's temp while the
+           parent is still using what that temp holds. }
+         stmtseq    : longint;
          alignment  : shortint;
          pos        : asizeint;
          size       : asizeint;
@@ -91,6 +99,11 @@ unit tgobj;
                and if all requested alignments are also a power of 2) }
           alignmismatch: longint;
           direction : shortint;
+          { VibePascal: sequence number of the source statement whose code is
+            being generated right now; tcgblocknode bumps it before every
+            statement of a source block and alloctemp stamps it into
+            ttemprecord.stmtseq.  Per routine, like every other temp state. }
+          stmtcounter : longint;
           constructor create;virtual;reintroduce;
           {# Clear and free the complete linked list of temporary memory
              locations. The list is set to nil.}
@@ -199,6 +212,7 @@ implementation
      begin
        tempfreelist:=nil;
        templist:=nil;
+       stmtcounter:=0;
        { we could create a new child class for this but I don't if it is worth the effort (FK) }
 {$if defined(powerpc) or defined(powerpc64) or defined(avr) or defined(jvm) or defined(aarch64) or defined(xtensa) or defined(wasm32) or defined(loongarch64)}
        direction:=1;
@@ -233,6 +247,7 @@ implementation
         firsttemp:=0;
         lasttemp:=0;
         alignmismatch:=0;
+        stmtcounter:=0;
 {$ifdef EXTDEBUG}
          Comment(V_Note,'tgobj: (ResetTempGen) all temps freed');
 {$endif}
@@ -437,6 +452,7 @@ implementation
             tl^.nextfree:=nil;
             tl^.stmtfini:=fini and is_interfacecom(def);
             tl^.dirty:=tl^.stmtfini;
+            tl^.stmtseq:=stmtcounter;
           end
          else
           begin
@@ -472,6 +488,7 @@ implementation
             tl^.fini:=fini;
             tl^.stmtfini:=fini and is_interfacecom(def);
             tl^.dirty:=tl^.stmtfini;
+            tl^.stmtseq:=stmtcounter;
             tl^.alignment:=alignment;
             tl^.size:=size;
             tl^.next:=templist;
