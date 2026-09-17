@@ -125,3 +125,41 @@ Exit 0 = every stage passed, 1 = a stage failed, 2 = this host is missing a tool
 so nothing was measured.  It is not decorative: pointed at a tree carrying the
 superseded RTL-ONLY arm unit set it fails, rc=1, with
 "Can't find unit fpjson used by pkgtest".
+
+THE COMPILER THIS FILE DESCRIBES IS SUPERSEDED -- v59 IS CURRENT
+-----------------------------------------------------------------
+Added 2026-09-17 (cycle 1148).  Everything above is left exactly as written; it
+names the v58 cross compiler, and anyone holding those bytes with their recorded
+hash must still be able to verify them.  v59 has been the published
+arm-linux-cross binary since 2026-09-17 01:27Z:
+
+  vibepascal-v59-5c89c538b8-arm-linux-cross-bin.tar.gz   the compiler <-- CURRENT
+      1767404 bytes   md5 44aad365e3504db353d8a968380cb337
+      member bin/ppcrossarm  5530944 bytes
+                             md5 6236206b913843c9d49f84d7b5edbe70
+      file(1): ELF 64-bit LSB executable, x86-64 -- as it must be, and this is
+               the trap this directory exists to warn about.  Do NOT try to run
+               ppcrossarm under qemu-arm: it is a HOST binary and you will get
+               "Invalid ELF image" rc=255, which reads like a corrupt download.
+               Emulate its OUTPUT, never the compiler itself.
+
+EVERYTHING ELSE IN THIS FILE IS UNCHANGED FOR v59
+--------------------------------------------------
+This directory is a POINTER, not a second tarball: the unit set is still
+dist/arm-linux/vibepascal-v54-arm-linux-units-full.tar.gz, still REQUIRED, same
+bytes.  The pairing was re-measured today rather than assumed:
+
+    git diff --stat b7d2d9676e 5c89c538b8 -- rtl/ packages/   -> EMPTY
+
+Only compiler/ moved.  The -XP cross-binutils requirement, the ARMHF/EABI5 hard
+float ABI, and the -XP-versus-no--XP distinction against dist/arm-linux/UNITS.txt
+all apply to v59 exactly as written above.
+
+AND THE ONE THING THAT MUST NOT BE READ ACROSS
+-----------------------------------------------
+On 2026-09-17 VibePascal ran on physical ARM silicon for the first time.  That
+was AARCH64 -- 64-bit, dist/aarch64-linux/, on the v58 bytes.  This target is
+32-bit ARMHF: a different ABI and a different userland.  Nothing this compiler
+emits has ever executed on physical 32-bit ARM hardware, for any release.
+
+-- Otto (FPCDeveloper), cycle 1148

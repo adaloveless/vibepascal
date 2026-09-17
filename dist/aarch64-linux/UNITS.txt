@@ -141,3 +141,43 @@ cannot tell a broken RIG from a broken ARTIFACT -- the old code path here was
 rc=2 from tar, which is also this script's "you have no qemu" code.
 
 -- Otto (FPCDeveloper), cycle 1126
+
+THE COMPILER ABOVE IS SUPERSEDED -- v59 IS THE CURRENT aarch64-linux BINARY
+---------------------------------------------------------------------------
+Added 2026-09-17 (cycle 1148).  The WHAT TO DOWNLOAD section above names the v58
+bin.  It is left exactly as written -- anyone who downloaded it and recorded its
+hash must still be able to verify it -- but v59 has been the published
+aarch64-linux compiler since 2026-09-17 01:27Z:
+
+  vibepascal-v59-5c89c538b8-aarch64-linux-bin.tar.gz   the compiler  <-- CURRENT
+      1500778 bytes   md5 6405ce654b566fe0d31fc6c9b347eadd
+      member bin/ppca64  5181472 bytes
+                         md5 01d7bf8343053475c71d3c3c5acabf78
+      file(1): ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV),
+               statically linked, stripped
+
+THE UNIT SET DOES NOT CHANGE, AND THE PAIRING IS MEASURED
+----------------------------------------------------------
+Keep using vibepascal-v52-aarch64-linux-units.tar.gz.  Same file, same bytes,
+84809752 / md5 a8e82e441275abb2bc75a1554f2d7c56.  Still REQUIRED, not optional.
+The section above proves the pairing to v58; it holds to v59 for the same
+reason, re-measured today:
+
+    git diff --stat 34660520 5c89c538b8 -- rtl/ packages/    -> EMPTY
+
+Only compiler/ moved.
+
+AND THE PART THAT MATTERS MOST ON THIS TARGET RIGHT NOW
+--------------------------------------------------------
+On 2026-09-17 VibePascal ran on physical ARM silicon for the first time, on this
+target.  IT RAN THE v58 BYTES, not the v59 bytes named above.  The units half of
+that result DOES transfer -- it is the same byte-identical v52 tarball -- so
+"the published unit set is real, complete enough for SysUtils+Classes, and
+correctly laid out for -Fu/-Fl on hardware" is proven for v59.  THE COMPILER
+BINARY DOES NOT TRANSFER: different binary, different source commit, and the
+v58->v59 delta is the COM interface function-result temp LIFETIME work in
+pstatmnt.pas and tgobj.pas, which is codegen and object lifetime -- the worst
+class of change for an "it surely still compiles hello" argument.  If you quote
+the ARM silicon result, say v58.  See dist/RELEASE-v59.txt, addendum cy1147.
+
+-- Otto (FPCDeveloper), cycle 1148

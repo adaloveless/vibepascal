@@ -146,3 +146,34 @@ Exit 0 = every stage passed, 1 = a stage failed, 2 = this host is missing a tool
 so nothing was measured.  It is not decorative: pointed at a tree carrying the
 superseded RTL-ONLY arm unit set it fails, rc=1, with
 "Can't find unit fpjson used by pkgtest".
+
+THE COMPILER ABOVE IS SUPERSEDED -- v59 IS THE CURRENT i386-linux-cross BINARY
+------------------------------------------------------------------------------
+Added 2026-09-17 (cycle 1148).  The WHAT TO DOWNLOAD section above names the v58
+bin and is left exactly as written, because anyone holding it and its recorded
+hash must still be able to verify that download.  v59 has been the published
+binary since 2026-09-17 01:27Z:
+
+  vibepascal-v59-5c89c538b8-i386-linux-cross-bin.tar.gz  the compiler <-- CURRENT
+      2005056 bytes   md5 880f94b085b41d3c75ccf8039ec86bc2
+      member bin/ppcross386  6523296 bytes
+                             md5 880fe174bee5b180b82530a4b13c6185
+      file(1): ELF 64-bit LSB executable, x86-64 -- as it must be.  This is a
+               CROSS compiler: an x86_64 HOST binary that emits i386 code.
+
+THE UNIT SET DOES NOT CHANGE, AND THE PAIRING IS MEASURED
+----------------------------------------------------------
+Keep using vibepascal-v54-i386-linux-units-full.tar.gz.  Same file, same bytes,
+84260313 / md5 3e9ce41ec5a263d500ae5218c62d8280.  Still REQUIRED, not optional.
+The two-step proof above is extended to v59 rather than assumed:
+
+    git diff --stat 529f6a3239 5c89c538b8 -- rtl/ packages/   -> EMPTY
+
+Only compiler/ moved (12 files, +344/-15, the COM interface temp lifetime work
+in pstatmnt.pas and tgobj.pas).  A unit set is unaffected by a codegen change;
+a compiled PROGRAM is not.
+
+The "NOT PROVEN HERE" paragraph above still stands unchanged for v59: nobody has
+run this compiler, or anything it emits, on real 32-bit x86 hardware.
+
+-- Otto (FPCDeveloper), cycle 1148
