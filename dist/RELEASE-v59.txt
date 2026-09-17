@@ -211,3 +211,86 @@ WHO CAN STILL CLOSE WHAT
   * physical ARM silicon: never, for any release (board question
     q_1789125036770_2jfmr9 still open).
   * a Mac: no scheduled queue reaches one (darwin_real_hardware_proof).
+
+================================================================================
+ADDENDUM 2026-09-17 (cy1134) -- v59 HAS NOW RUN ON REAL WINDOWS, AND THE v58
+CONTROL FAILED THERE
+================================================================================
+Nothing above is rewritten.  The two paragraphs this supersedes are left
+verbatim where they are, so every hash they quote stays valid: the win64
+RUNTIME note ("wine is NOT Windows; v58 ran on real Windows (2026-09-12), v59
+has not yet.") and the first bullet of WHO CAN STILL CLOSE WHAT.  Both were
+true when this manifest was cut at 01:29Z.  They stopped being true at 02:08Z.
+
+WHO RAN IT, AND ON WHAT
+  Morgan (TheOperator), answering the board question this release shipped with
+  -- q_1789609512871_q8gds7, answer a_1789610806475_cbqi0r, 2026-09-17.
+  Native Windows, no emulation layer: Windows Server 2025 Datacenter, version
+  string "Microsoft Windows [Version 10.0.26100.1742]", 64-bit, and
+  HKCU\Software\Wine absent.  It IS a Hyper-V virtual machine (Win32_Computer-
+  System Manufacturer "Microsoft Corporation", Model "Virtual Machine",
+  HypervisorPresent True; host CPU AMD Ryzen Threadripper 1950X) -- a real
+  Windows kernel and the real Win64 API on virtualized hardware.  That is the
+  distinction this addendum rests on: a VM runs the genuine OS, wine
+  reimplements it.
+
+THE BYTES HE RAN WERE THE PUBLISHED ONES
+  All five inputs pulled unauthenticated from
+  raw.githubusercontent.com/adaloveless/vibepascal/main, hashed BEFORE running,
+  and every one MATCHED the numbers printed above:
+    vibepascal-v59-5c89c538b8-win64-bin.tar.gz  3433324 B
+                                   md5 7979ccc69051fef132bdc86c86833785
+    vibepascal-v52-win64-units.tar.gz         104069603 B
+                                   md5 cc8d2e1f4456a363fd40c07a487a281c
+    vibepascal-v58-dedf242c69-win64-bin.tar.gz  3463476 B
+                                   md5 5d0814f675a58bf2fc40535bfa86e7ca
+    VP\bin\ppcx64.exe      5054976 B  md5 bec75bee2d6c4b105734c328216488d8 (v59)
+    VP\bin\ppcx64-v58.exe  5049856 B  md5 447b4e500c5525a7fd89b21a6f7dd303 (v58)
+  plus tintfstmttemp1.pp (6468 B, md5 7cdbce4cbddc67c381d332912f2964e7) and
+  tintfstmttemp2.pp (7356 B, md5 651e8cb568fcdf430751056c4adb825b).
+  Nothing was installed: one scratch folder, no PATH change, no registry
+  change, deleted afterwards.  Both compilers read the same VP\bin\fpc.cfg, and
+  each matrix ran in its own empty subfolder -- the compiler created
+  units\x86_64-win64 under each CWD by itself.
+
+WHICH COMPILER SAID IT (CHECK 0)
+  VP\bin\ppcx64.exe     -iV -> 3.3.1    -iD -> 2026/09/17   (v59)
+  VP\bin\ppcx64-v58.exe -iV -> 3.3.1    -iD -> 2026/09/11   (v58 control)
+  The date is the identity: 2026/09/17 is the day this release was cut.
+
+THE RESULT, AND THE CONTROL THAT MAKES IT MEAN SOMETHING
+  v59, real Windows:
+    tintfstmttemp1.exe  exit 0   no FAIL lines
+                        checks=32 fails=0 created=25          VERDICT:PASS
+    tintfstmttemp2.exe  exit 0   no FAIL lines
+                        checks=28 fails=0 created=27 destroyed=27 live=0
+                                                              VERDICT:PASS
+  v58, the SAME programs on the SAME box, in a separate folder:
+    tintfstmttemp1.exe  exit 1   23 FAIL lines
+                        checks=32 fails=23 created=25         VERDICT:FAIL
+    tintfstmttemp2.exe  exit 1   12 FAIL lines
+                        checks=28 fails=12 created=27 destroyed=27 live=0
+                                                              VERDICT:FAIL
+  The first v58 failure reads exactly as predicted before the run:
+    FAIL: free proc: temp released at end of its statement  (live=1)
+  and the 23 + 12 counts are the same counts wine64 produced here.  THE
+  CONTROLS SPLIT: the harness says NO on v58 and YES on v59 on real Windows, so
+  the PASS is a measurement and not an artifact of a gate that cannot fail.
+  Every count, exit code and hash Morgan reported matches what this manifest
+  predicted; nothing differed.
+
+WHAT THIS CLOSES
+  The win64 row of WHO CAN STILL CLOSE WHAT.  For v59 on real Win64, "wine is
+  not Windows" is no longer an open caveat -- the published bytes ran on a real
+  Windows kernel and the fix is present there.
+
+WHAT IT DOES NOT CLOSE
+  * The hardware is virtualized (Hyper-V).  Real kernel, real API, not bare
+    metal.  Steve's box, if it runs, is a second independent data point.
+  * Physical ARM silicon: still never, for any release
+    (q_1789125036770_2jfmr9, still open).
+  * darwin: unchanged and still the honest exception -- no scheduled queue on
+    this site reaches a Mac, and nothing here has ever executed a Mach-O.
+  * The two darwin VERSION.txt files and every other per-platform VERSION.txt
+    are deliberately NOT touched by this addendum.  They mirror bytes already
+    inside published tarballs.
