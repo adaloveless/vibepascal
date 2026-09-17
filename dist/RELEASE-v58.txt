@@ -552,3 +552,73 @@ ADDENDUM 2026-09-16 (cy1128) -- THE v58 win64 BYTES HAVE NOW RUN ON REAL WINDOWS
   and is only an untruncated file.  Print the .ppu length before and after the
   chop and refuse to read step 6 unless it says 797 -> 796; use absolute paths,
   or set [Environment]::CurrentDirectory first.
+
+================================================================================
+ADDENDUM 2026-09-17 (cy1147) -- aarch64-linux HAS NOW RUN ON PHYSICAL ARM SILICON
+================================================================================
+  The paragraph above under linux64/ -- "This is the only platform with real,
+  non-emulated runtime proof" -- is left VERBATIM and was true when written.  It
+  is superseded as of today.  aarch64-linux now has real, non-emulated runtime
+  proof too, and it is the first time in this fork's history that published
+  VibePascal bytes have done real work on real ARM hardware.
+
+  WHO, AND ON WHAT.  Wes (SiteManager_gx10-3c9a), a native aarch64 Linux box,
+  2026-09-17 16:24-16:26 UTC.  Not this build host, and not an emulator.  He
+  extracted the two PUBLISHED tarballs into one empty scratch directory with
+  nothing of ours installed and nothing on his box changed, and ran the sequence
+  from Q&A thread q_1789125036770_2jfmr9 (now closed, his answer accepted):
+
+    command -v as ld  -> /usr/bin/as, /usr/bin/ld  (present; we ship neither,
+                         same as every FPC distribution)
+    uname -m          -> aarch64
+    ./bin/ppca64 -iV  -> 3.3.1                                   exit 0
+    ./bin/ppca64 -iSP -> aarch64                                 exit 0
+    compile a SysUtils + Classes + TStringList program against the published
+    unit tree, -n -FU. -Fuunits/aarch64-linux -Flunits/aarch64-linux
+                      -> exit 0, no warnings           <-- THE ONE THAT MATTERS
+    ./hello           -> HELLO vibepascal aarch64-linux 2        exit 0
+
+  THE BYTES HE RAN, all re-downloaded unauthenticated and re-hashed from disk:
+    vibepascal-v58-dedf242c69-aarch64-linux-bin.tar.gz
+       1508828 bytes  md5 f0e5da8a60468be2ef2e390747bbdb87
+    vibepascal-v52-aarch64-linux-units.tar.gz
+      84809752 bytes  md5 a8e82e441275abb2bc75a1554f2d7c56
+    member bin/ppca64  md5 78c729e8addfb7a8e80ddb245ca57049 -- matches VERSION.txt
+  Independently re-fetched and re-hashed on the build host the same hour: all
+  three identical.  Morgan (TheOperator) pulled the same two tarballs from
+  x86-64 Windows and got the same numbers.  Three boxes, three architectures.
+
+  WHY AN EXIT CODE ALONE WOULD NOT HAVE BEEN ENOUGH, disclosed by the tester
+  himself and worth keeping: that box has qemu-x86_64 wired into binfmt_misc, so
+  x86-64 binaries also exit 0 on it.  He fetched the x86_64 control
+  (vibepascal-v58-dedf242c69-linux-x86_64-bin.tar.gz, 2455789 bytes,
+  md5 98948446d672fb0709f256632317fc56) and showed its ppcx64 runs there too.
+  The silicon evidence is therefore NOT rc: it is uname -m plus file(1) on both
+  ends -- bin/ppca64 is an ARM aarch64 ELF, and so is the hello it produced, so
+  the CODEGEN is native and not only the compiler.  Nobody emulates aarch64 on
+  aarch64.  -iSP is corroborating only: it reports the compiler's own host CPU
+  compiled into the binary, which separates a native compiler from a cross
+  compiler wearing the same name, but is not by itself proof of hardware.
+
+  NEGATIVE CONTROL, so a pass means something: with units/ moved aside and no
+  -Fu path, the same compile fails "Can't find unit system used by hello",
+  exit 1.  The tester reported that his FIRST attempt at this control was
+  INVALID (he had passed -Fu at the hidden path, which rigged it to pass) and
+  published the valid redo.  Recorded here because a control nobody can fail is
+  not a control.
+
+  WHAT THIS DOES NOT CLOSE, AND IT IS NOT A FORMALITY:
+  * 32-bit ARM (arm-linux / armhf) REMAINS UNPROVEN ON HARDWARE.  aarch64 and
+    armhf are different targets and a 64-bit box cannot answer a 32-bit
+    question.  There is still NO armhf hardware candidate anywhere in the fleet.
+    Every armhf claim in this file is still qemu-arm-static only.
+  * dist/aarch64-linux/VERSION.txt is UNCHANGED and its warning -- do not quote
+    a qemu pass as a hardware pass -- stands exactly as written.  That file
+    mirrors bytes inside a published tarball and must not move; it describes the
+    emulated run it was written for, and that run was and is emulated.
+  * The units tarball is v52 and the compiler is v58.  That pairing is what was
+    tested; it is deliberate and it works.  The units set is REQUIRED, not
+    optional -- four earlier releases shipped an aarch64 compiler with no units
+    at all, so on a clean box the published bytes could not compile one line.
+    That, not the compiler, was the real gap, and closing it is what made this
+    test possible.
