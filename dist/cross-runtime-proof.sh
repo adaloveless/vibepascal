@@ -55,6 +55,12 @@ rm -rf "$W"; mkdir -p "$W/arm" "$W/i386"
 # already had latest_bin() for exactly this reason and STILL hardcoded the units
 # name on the next line, so publishing a better unit set would have left it
 # printing PASS over superseded bytes forever.
+# ...and it is NOT the filename token for linux64, which is why that target is ABSENT from
+# this script rather than merely untested.  Measured 2026-09-18 (cy1156): $1=linux64 returns
+# rc=0 with an EMPTY string -- dir linux64, bin named -linux-x86_64-, units named -x86_64-linux-,
+# three spellings and no match.  rc=0-on-empty is this function's contract (the pipeline ends in
+# cut, which succeeds on no input), so a caller MUST test the string; latest_units below returns
+# 1 instead and does not share that contract.
 latest_bin() { # $1 = dist subdir (which for a cross compiler IS the filename token)
     find "$VP/dist/$1" -maxdepth 1 -type f -name "vibepascal-v*-$1-bin.tar.gz" 2>/dev/null |
     while IFS= read -r t; do

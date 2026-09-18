@@ -112,6 +112,19 @@ avail=$(df -Pk "$W" | awk 'NR==2 {print $4}')
 # build-release.sh get_latest_vp_bin_tarball uses.  Hardcoding v54 here meant
 # that shipping v55 for a target left this proof silently measuring the OLD
 # bytes -- a proof that cannot follow the release is not a proof.
+# THE ONE-ARGUMENT FORM ASSUMES dist SUBDIR == FILENAME TOKEN, and that holds ONLY for
+# the targets this script actually passes.  Measured 2026-09-18 (cy1156) against the real
+# dist/: $1=arm-linux resolves the v59 bin and the v54 units-full, $1=aarch64-linux resolves
+# the v59 bin and the v52 units -- and $1=linux64 resolves NOTHING, because dist/linux64/
+# spells its target THREE different ways: the directory is linux64, the bin tarball is named
+# OS-first (vibepascal-v59-5c89c538b8-linux-x86_64-bin.tar.gz) and the units tarball CPU-first
+# (vibepascal-v59-x86_64-linux-units.tar.gz, and note it carries no git-sha segment at all
+# while the bin beside it does).  Do NOT extend these one-argument resolvers to linux64 --
+# take the two-argument shape cross-runtime-proof.sh already grew for i386.
+# AND THE TWO FUNCTIONS REPORT NOT-FOUND DIFFERENTLY, which is worth knowing before you
+# branch on either: latest_units returns 1, but latest_bin is a pipeline ending in cut and
+# returns rc=0 WITH AN EMPTY STRING.  Only the callers' `[ -n "$X" ] || die` below catches
+# that.  Score latest_bin on its OUTPUT, never on its exit code.
 latest_bin() { # $1 = dist subdir / target token
     find "$VP/dist/$1" -maxdepth 1 -type f -name "vibepascal-v*-$1-bin.tar.gz" 2>/dev/null |
     while IFS= read -r t; do
