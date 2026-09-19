@@ -546,6 +546,21 @@ implementation
                 end;
                freetemphook(list,hp);
                { set this block to free }
+               { VibePascal: re-stamp the owning statement when a managed
+                 interface temp is freed. A "with Make do" prefix is allocated
+                 as tt_persistent at the with-statement but only deleted AFTER
+                 the with-body (a nested source block) has advanced stmtcounter,
+                 so its original stmtseq is older than every later end-of-
+                 statement mark and finalize_statement_temps would never
+                 release it -- leaking the reference until routine exit. The
+                 statement that frees a slot is the one that must own its
+                 release: freeing means nothing in the tree holds it any more,
+                 and raw pointers taken from it cannot outlive the statement
+                 doing the freeing. Same-statement temps (alloc and free share
+                 a stmtcounter) keep their original seq, so behavior elsewhere
+                 is unchanged. }
+               if hp^.stmtfini then
+                 hp^.stmtseq:=stmtcounter;
                hp^.temptype:=Used2Free[hp^.temptype];
                { Update tempfreelist }
                if assigned(hprevfree) then
