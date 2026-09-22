@@ -1,0 +1,51 @@
+VibePascal v60 Win64 compiler -- a with-statement COM interface prefix is released when the with statement ends, not at routine exit
+Source commit: 407ef9bb3ad8278361f2f0f21adca37555f3df12
+Compiler commit: 407ef9bb3a (GOD, 2026-09-19) "tgobj: release a with-statement interface prefix when its statement ends, not at routine exit" -- compiler/tgobj.pas, +15 lines, the only compiler source change since v59
+Parent release: v59 (5c89c538b8fb1f00c83fb5cabd9260f6e71caba4)
+Cut by: Bruno (BuildMaster_lazdev), 2026-09-22, on GOD's dashboard orders mu8wfodj (2026-09-19, "publish v60 of the compiler") and mucrbmvr (2026-09-22, "get the latest compiler out STAT"). Otto (FPCDeveloper) cuts every other VibePascal dist; this one was cut by the build master because the order sat three days and named STAT. Built in a scratch clone (/home/jason/bruno_work/c062/vp); nothing was written in the shared vibepascal tree.
+Built: 2026-09-22, cross-compiled Linux x86_64 -> Win64 (-Apecoff -Xi) from the
+       self-hosted Linux compiler 997ec5ec57e8a534a0c16109a71fcbc9 (v60 stage 2; stage 2 == stage 3
+       byte-identical), bootstrapped from the published v59 Linux ppcx64 12220bfd5b3a9b1ee6db7b68297f0844,
+       in a clean compiler/x86_64/units/x86_64-win64 tree: 249 units compiled (526,412 lines), tgobj among them.
+ppcx64.exe md5:    17497551D287106C4B6D12BCB1F4B0AE
+ppcx64.exe sha256: DD980655359B9E55EB325FD585AD9268148FF70DD983FED8E60C39473AA3C248
+                   5054976 bytes, PE32+ console x86-64, reports -iV 3.3.1, -iTO win64, -iTP x86_64,
+                   -iD 2026/09/19 (the compiler stamps the SOURCE COMMIT date via SOURCE_DATE_EPOCH,
+                   which is why LATEST.txt says date: 2026-09-19 while cut_date: is 2026-09-22;
+                   dist/win64-runtime-proof.sh reconciles -iD against date:).
+                   SIZE TRAP: v59's ppcx64.exe is ALSO exactly 5054976 bytes. Verify by md5, never by byte count.
+Every other binary in bin/ is BYTE-IDENTICAL to the v59 tarball (18/18 members measured by md5;
+the only DIFF is bin/ppcx64.exe). fpc.cfg unchanged.
+
+WHAT CHANGED IN v60 -- A WITH-STATEMENT INTERFACE PREFIX DIES WITH ITS STATEMENT
+  GOD's commit message, verbatim in substance: a 'with Make do' prefix is allocated as
+  tt_persistent with the with's stmtseq, but only deleted AFTER the with-body -- a
+  nested source block -- has advanced stmtcounter. By then its stmtseq is older than
+  every later end-of-statement mark, so finalize_statement_temps never releases it and
+  the COM interface leaks until routine exit (UT_HolderVerbose scenario 3c). The fix
+  re-stamps stmtseq to the freeing statement's counter when a stmtfini temp is freed:
+  the statement that frees a slot owns its release. Same-statement temps keep their
+  original seq, so no other behaviour changes. GOD measured UT_HolderVerbose 24/24 PASS,
+  created=2019 destroyed=2019, still-live=0 on the fixed compiler.
+
+  COMPILER BINARY ONLY. No RTL change, no package change, no PPU FORMAT change, so
+  THE UNITS ARE STILL THE v52 SET and auto-update.bat can take the ~3.4 MB bin tarball alone.
+
+HOW THIS CUT WAS VERIFIED ON THIS BOX (lazdev, 2026-09-22; evidence /home/jason/bruno_work/c062/)
+  * Self-host fixpoint on x86_64-linux: stage 2 == stage 3 byte-identical (997ec5ec57e8a534a0c16109a71fcbc9).
+  * tests/test/tintfstmttemp1.pp + tintfstmttemp2.pp (60 corners): 60/60 with the v60 Linux
+    compiler at -O- and -O2; 60/60 with the published v59 Linux compiler (regression control);
+    the published v58 Linux compiler scores 23 + 12 = 35 FAILS on the same programs, exactly
+    the number RELEASE-v59.txt records, so the harness can fail.
+  * WIN64 RUNTIME under wine64 on THESE EXACT BYTES: this ppcx64.exe compiled both matrices
+    against the v52 units and the products RAN: 32/32 and 28/28 (created=27 destroyed=27 live=0).
+    Same run with the published v59 ppcx64.exe: 60/60. With the published v58 ppcx64.exe: 35 FAILS.
+  * dist/win64-runtime-proof.sh: see RELEASE-v60.txt for the run on the published tarball.
+  * HONEST LIMIT 1: no reproducer for the scenario-3c leak was found on this box. Sixteen
+    with-prefix corners (block body, single-statement body, nested if, for/if/repeat bodies,
+    with-in-with) all PASS on BOTH v59 and v60, so the effect of the fix is attested by GOD's
+    own UT_HolderVerbose run (24/24 on the fix, per the commit message), not measured here.
+    What IS measured here: the fix is in the bytes (source commit, fixpoint), and it regresses
+    nothing the 60-corner matrices cover.
+  * HONEST LIMIT 2: wine is NOT Windows. v59 has run on native Windows (2026-09-17); this build
+    has so far run only under wine64. GOD's IHolder<> test on real Windows is the sign-off.

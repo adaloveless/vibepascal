@@ -1,0 +1,98 @@
+# VibePascal v60 -- status manifest (WIN64 ONLY)
+# Cut by BuildMaster_lazdev (Bruno), 2026-09-22 (c062), on GOD's dashboard orders
+# mu8wfodj (2026-09-19: "i've made changes to the compiler to fix the 'with' interface
+# condition (UT_HolderVerbose). The tests pass... i need you to publish v60 of the
+# compiler ... work with Otto on that") and mucrbmvr (2026-09-22: "get the latest
+# compiler out STAT").  Every previous dist was cut by FPCDeveloper (Otto); this one
+# was cut by the build master because the 09-19 order sat unactioned for three days
+# in MY inbox (it was addressed to me alone) and the 09-22 order says STAT.  Otto owns
+# this dist and was mailed the full evidence the same hour so he can audit or retract.
+# This file is the authoritative answer to "which platforms have v60": ONE, win64.
+
+source_commit: 407ef9bb3ad8278361f2f0f21adca37555f3df12
+compiler_fix:  407ef9bb3a  (GOD, 2026-09-19 -- compiler/tgobj.pas, +15 lines; the ONLY
+                            compiler source change since v59's 5c89c538b8; the other two
+                            files in v59..v60 are dist/arm-runtime-proof.sh and
+                            dist/cross-runtime-proof.sh, +19 lines of gate script)
+parent:        v59 (5c89c538b8fb1f00c83fb5cabd9260f6e71caba4)
+pushed_by:     this dist commit carries 407ef9bb3a to origin/main; before it, GOD's
+               commit existed only in the lazdev worktree /home/jason/src/vibepascal-wt-main
+
+WHAT CHANGED IN v60 -- A WITH-STATEMENT INTERFACE PREFIX DIES WITH ITS STATEMENT
+  GOD's commit message: a 'with Make do' prefix is allocated as tt_persistent with the
+  with's stmtseq, but only deleted AFTER the with-body -- a nested source block -- has
+  advanced stmtcounter.  By then its stmtseq is older than every later end-of-statement
+  mark, so finalize_statement_temps never releases it and the COM interface leaks until
+  routine exit (UT_HolderVerbose scenario 3c).  Re-stamp stmtseq to the freeing
+  statement's counter when a stmtfini temp is freed: the statement that frees a slot
+  owns its release.  Same-statement temps keep their original seq, so no other behaviour
+  changes.  Verified by GOD: UT_HolderVerbose 24/24 PASS, created=2019 destroyed=2019,
+  still-live=0.
+
+  COMPILER BINARY ONLY.  No RTL change, no package change, no PPU FORMAT change, so every
+  existing unit set stays valid.  Win64 units are STILL the v52 set.
+
+PLATFORMS CARRYING v60
+  win64/           vibepascal-v60-407ef9bb3a-win64-bin.tar.gz   3431311 B
+                   md5 aaddb2623d0b8aef14bec04fa7c03efe
+                   sha256 c3b1e043281ccb0cad97f2e79d7bbbf0d956b096afe9e9711dc583e3f76069dc
+                   ppcx64.exe md5 17497551d287106c4b6d12bcb1f4b0ae  (5054976 B -- SAME
+                   byte count as v59's bec75bee...; verify by md5, never by size)
+                   -- also published as vibepascal-latest-win64-bin.tar.gz (byte copy) and
+                      named by dist/win64/LATEST.txt (the auto-update pointer)
+                   -- every bin/ member but ppcx64.exe is byte-identical to v59 (18/18 by md5)
+                   -- RUNTIME: both lifetime matrices compiled by THIS exe against the v52
+                      units and RUN under wine64: 32/32 and 28/28 (created=27 destroyed=27
+                      live=0).  Controls in the same sitting: published v59 exe 60/60,
+                      published v58 exe 35 FAILS (23 + 12), so the harness can fail.
+                      dist/win64-runtime-proof.sh result: see the RUN RECORD below.
+                      wine is NOT Windows; v59 ran on native Windows (2026-09-17), v60 has
+                      not yet -- GOD's IHolder<> test on real Windows is the sign-off.
+
+PLATFORMS STILL AT v59 (NOT rebuilt for this cut)
+  linux64, aarch64-linux, arm-linux, arm-linux-cross, i386-linux-cross, x86_64-darwin,
+  aarch64-darwin.  dist/RELEASE-v59.txt stays authoritative for them.  Their VERSION.txt
+  files are untouched.  A v60 cut for them is Otto's call and Otto's recipe (RELEASE-v59.txt
+  names the gates each one needs); the source is the same 407ef9bb3a.
+
+HOW THIS CUT WAS BUILT AND PROVEN (lazdev, 2026-09-22; evidence /home/jason/bruno_work/c062/)
+  * Scratch clone of the shared repo at 407ef9bb3a (branch main); nothing written in the
+    shared tree or in any worktree of Otto's.
+  * Bootstrap: the published v59 Linux ppcx64 (12220bfd5b3a9b1ee6db7b68297f0844).
+    rtl_all (linux) -> stage 1 -> clean compiler units -> stage 2 -> clean -> stage 3:
+    stage 2 == stage 3 byte-identical (997ec5ec57e8a534a0c16109a71fcbc9).
+  * rtl_all CPU_TARGET=x86_64 OS_TARGET=win64 OPT="-Apecoff -Xi" with stage 2 (90 RTL ppu),
+    then make -C compiler compiler ... OS_TARGET=win64 from a clean
+    compiler/x86_64/units/x86_64-win64 tree: 249 units, 526,412 lines, tgobj among them.
+    ppcx64.exe: PE32+ console x86-64; -iV 3.3.1, -iTO win64, -iTP x86_64, -iD 2026/09/19
+    (the compiler stamps the source-commit date; LATEST.txt date: matches it, cut_date:
+    records 2026-09-22).
+  * Regression: tests/test/tintfstmttemp1.pp + tintfstmttemp2.pp (60 corners) 60/60 with
+    the v60 Linux compiler at -O- and -O2; 60/60 with the v59 Linux compiler; 35 FAILS
+    with the v58 Linux compiler (exactly RELEASE-v59.txt's number for v58).
+  * Tarball staged by copying the v59 tarball tree and swapping bin/ppcx64.exe (Otto's
+    compiler-binary-only refresh recipe); member list identical to v59's.
+  * HONEST LIMIT: no reproducer for the scenario-3c leak was found on this box.  Sixteen
+    with-prefix corners (block body, single-statement body, nested if, for/if/repeat
+    bodies, with-in-with) PASS on BOTH v59 and v60.  So this manifest does not claim to
+    have measured the fix's effect; it claims the fix is in the bytes (source commit +
+    fixpoint) and that nothing the 60 corners cover regressed.  The effect is GOD's
+    measurement (UT_HolderVerbose 24/24), and the real-Windows IHolder<> run is his.
+  * NOT run for this cut: the 1983-test corpus A/B (Otto's gate), ppu-truncation-check,
+    unit-set-loadcheck.  The change is 15 lines in temp bookkeeping with no PPU/RTL
+    effect; Otto may run his full ladder on the same bytes and append here.
+
+RUN RECORD
+  (appended below by the cut itself, from the PUBLISHED tarball in this tree)
+  2026-09-22 ~14:45Z, lazdev, on the tarball and LATEST.txt in this tree (the bytes this commit publishes):
+    sh dist/win64-runtime-proof.sh /home/jason/bruno_work/c062/proof_w   -> rc=0, "ALL STAGES PASSED"
+      stage 0 md5 gate PASS (17497551d287106c4b6d12bcb1f4b0ae); stage 1 -iTO win64 / -iTP x86_64 /
+      -iD 2026/09/19 == date:; stage 2 NativeInt matrix 45/45 in -Munleashed and -Mdelphiunicode,
+      vp_win64_smoke rc=0; stage 2b fresh-dir PASS with the pre-v55 control failing for the -FU
+      reason; stage 2c real-inference 52/52 and 49/49 with the pre-v56 control failing; stage 3
+      pre-v54 negative control rc=1 (the harness can fail).  18 PASS / 0 FAIL / 0 SKIP.
+    pwsh -File dist/win64-latest-pointer-check.ps1 -DistDir dist/win64   -> rc=0, RESULT: PASS
+      Lars's Read-LATESTTxt/Get-VPArchiveSet (extracted verbatim from auto-update.ps1) resolve
+      this pointer to [vibepascal-v52-win64-units.tar.gz, vibepascal-v60-407ef9bb3a-win64-bin.tar.gz];
+      the latest_tarball control degrades to a 1-item set as documented.
+    Both lifetime matrices under wine64 with the exact bin/ppcx64.exe of this tarball: 32/32, 28/28.
