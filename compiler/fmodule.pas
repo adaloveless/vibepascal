@@ -1208,6 +1208,38 @@ implementation
           end;
           if not m.do_reload and is_reload_needed(dm) then
           begin
+            if not m.fromppu then
+              begin
+                { m is being compiled from source in this run and has already
+                  resolved symbols out of our symtables, which are about to be
+                  freed because we are being recompiled.  A reload cannot fix
+                  that: re_resolve only re-resolves the deref tables, and for a
+                  source module only the interface derefs exist at this point
+                  (built by getppucrc).  Everything on its implementation side
+                  -- the local symtables of its routines, inline bodies, the
+                  code already generated -- holds direct pointers with no deref
+                  table to re-resolve from, so after the reload writeppu walks
+                  freed defs (Lazarus IDE incremental build: EAccessViolation in
+                  tderef.build <- tabstractpointerdef.buildderef <-
+                  tprocdef.buildderefimpl <- writeppu; reproduced deterministically
+                  with the scheduler trace, vibepascal cy1168/cy1169).
+                  Mark it for a full recompile from source instead, exactly as
+                  dependent_module_crc_mismatch does for a source module whose
+                  used unit changed its crc: the scheduler resets it
+                  (recompile_pending -> recompile_module -> recompile_from_sources)
+                  and flags its own dependents again when it is reset. }
+                {$IFDEF DEBUG_PPU_CYCLES}
+                writeln('PPUALGO tmodule.flagdependent ',modulename^,' state=',statestr,', is used by ',BoolToStr(dm.in_interface,'interface','implementation'),' of ',m.modulename^,' ',m.statestr,' -> recompile (compiled from source, no derefs to re-resolve)');
+                {$ENDIF}
+                m.recompile_reason:=rr_crcchanged;
+                m.do_recompile:=true;
+                m.do_reload:=true;
+                m.state:=ms_compile;
+                Message2(unit_u_recompile_crc_change,m.modulename^,modulename^);
+                m.flagdependent;
+                dm:=tdependent_unit(dm.next);
+                continue;
+              end;
             {$IFDEF DEBUG_PPU_CYCLES}
             writeln('PPUALGO tmodule.flagdependent ',modulename^,' state=',statestr,', is used by ',BoolToStr(dm.in_interface,'interface','implementation'),' of ',m.modulename^,' ',m.statestr);
             {$ENDIF}
