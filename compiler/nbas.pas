@@ -855,6 +855,25 @@ implementation
                           blockn:
                             if (bnf_strippable in TBlockNode(p.left).blocknodeflags) and
                               not assigned(TBlockNode(p.left).blocksymtable) and
+                              { VibePascal: never splice a compiler-built statement
+                                list (internalstatements -- the hidden pieces of ONE
+                                source statement: a with prefix's temp create, its
+                                assignment, the body, the temp deletes) into a
+                                SOURCE block.  tcgblocknode numbers and finalizes
+                                every statement of a source block on its own, so a
+                                spliced piece became a "statement" of its own: the
+                                interface temp behind "with Make.o do" was released
+                                by the assignment piece before the body ran (a raw
+                                pointer into a freed object), and the prefix temps
+                                of "with Make do" were deleted under marks newer
+                                than their own stamp (a leak until routine exit).
+                                Both only when the with was NOT the first statement
+                                of its block, because this merge looks one
+                                statement ahead.  A nested begin..end is a source
+                                block itself and may still be merged: its
+                                statements are real source statements. }
+                              not ((bnf_source_block in blocknodeflags) and
+                                   not (bnf_source_block in TBlockNode(p.left).blocknodeflags)) and
                               ((p.left.flags * [nf_block_with_exit] = []) or not has_node_of_type(p.left, [exitn])) then
                               begin
                                 { Attempt to merge this block into the main statement
