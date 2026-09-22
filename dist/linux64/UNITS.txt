@@ -267,3 +267,6 @@ surfaced, reproduced here on a different host.
 
 2026-09-22 (cycle 1168): the v61 compiler (2df7b40d2a, bin/ppcx64 7775a119b0d4d3583f4456b9d80cff72) pairs with
 this SAME v59 unit set -- no RTL, package or PPU-format change since v59.  v60 was never cut for linux64.
+
+2026-09-22 (cycle 1169): the v62 compiler (ade0c47fc4, bin/ppcx64 fc7bccac34a80b2bf5fc67a45d72ce19) pairs with this SAME v59 unit set --
+no RTL, package or PPU-format change since v59.

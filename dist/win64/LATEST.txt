@@ -4,18 +4,18 @@
 # -- or just always fetch vibepascal-latest-win64-bin.tar.gz (byte copy of the
 # versioned tarball below) and read VERSION.txt inside it.
 
-version: v61
-source_commit: 2df7b40d2a
-dist_commit: (the commit that introduced this v61 pointer -- git log -1 -- dist/win64/LATEST.txt; the pointer and the bytes it names land together)
-versioned_tarball: vibepascal-v61-2df7b40d2a-win64-bin.tar.gz
+version: v62
+source_commit: ade0c47fc4
+dist_commit: (the commit that introduced this v62 pointer -- git log -1 -- dist/win64/LATEST.txt; the pointer and the bytes it names land together)
+versioned_tarball: vibepascal-v62-ade0c47fc4-win64-bin.tar.gz
 latest_tarball: vibepascal-latest-win64-bin.tar.gz
 units_tarball: vibepascal-v52-win64-units.tar.gz
-tarball_md5: d76790e50bbd0792a8b238e4d01b0850
-tarball_sha256: 201161b1e680114aab305871950d868a2e2ac1cdac21e6d021ac44fc24b0fc99
+tarball_md5: e08d8e9b7dd0d0d5f10304f437560388
+tarball_sha256: da3084ea3d3bc71422a2bc449f8da7feb2b4cd4eb7603a94cf640dadfea28042
 units_tarball_md5: cc8d2e1f4456a363fd40c07a487a281c
 units_tarball_sha256: 6e33f24ad06f35cf41a5032689a316ba1e7254f948250451044940a0a6c9bb97
-ppcx64_exe_md5: 034926c4cb1a4809293ef316c5537c7a
-ppcx64_exe_sha256: 41c1fe952f32f0aa1656187651bec2cac389a52d86d07853d2246198a6cc6935
+ppcx64_exe_md5: 6fd9ad77ac1bd1b0b8edbb717add48df
+ppcx64_exe_sha256: 1417ffb09d6a8100d71a0cb2ce5ba6c91299132c2d51c4e69d14786cf203030e
 date: 2026-09-22
 cut_date: 2026-09-22
-notes: v61 makes a with-statement COM interface prefix live exactly as long as its statement. Two defects, one cause, both only when the with was NOT the first statement of its begin..end: (1) "with Make.o do begin ... end" released the interface behind Make BEFORE the body ran, so the body worked on a freed object -- present in v59 AND in v60 (measured on the exact published exes under wine64: 5 failing corners); (2) "with Make do begin ... end" leaked the prefix until routine exit in v59, which GOD's 407ef9bb3a (v60) fixed and which stays in. Cause: tblocknode.simplify spliced the with's hidden statement list into the enclosing block, and each spliced piece was then released as a statement of its own. Fix 2df7b40d2a (compiler/nbas.pas, +19 lines): never merge a compiler-built list into a source block. Compiler-binary-only refresh on the v60 tarball tree: no PPU format, RTL or package change, so UNITS ARE STILL THE v52 SET and auto-update.bat can take the ~3.5 MB bin tarball alone; every bin/ member but ppcx64.exe is byte-identical to v60 and v59. ppcx64.exe is 5054976 bytes for the THIRD release running -- verify by md5, never by size. date: is the compiler's own -iD stamp. VERIFIED on lazdev under wine64 with this exact exe against the v52 units: tests/test/tintfwithprefix1.pp (new, 62 corners) 62/62 at -O- and -O2 where the v60 exe fails 5 and the v59 exe 16; tintfstmttemp1/2 32/32 and 28/28; the x86_64-linux compiler from the same source passed the 1987-test corpus A/B against v60 with the new test as the only (intended) DIFF. HONEST LIMIT: wine is NOT Windows; v59 ran on native Windows (2026-09-17), v60 and v61 have not yet -- GOD's IHolder<> run on real Windows is the sign-off. Full record: dist/RELEASE-v61.txt and dist/win64/staging-v61/VERSION.txt.
+notes: v62 fixes the compiler crash Lars hit in every incremental Lazarus IDE build since v59: when a unit that other units had already been compiled against turned out to need recompiling (its implementation uses a unit whose checksum changed -- a uses-cycle through an implementation section defers that check), the compiler "reloaded" those source-compiled units, which only re-resolves deref tables; a source unit has none for its implementation side, so it kept pointers into the freed symtable and crashed in tderef.build under writeppu (EAccessViolation, exit 217). Fix ade0c47fc4 (compiler/fmodule.pas +32): such a dependent is recompiled from source instead, exactly as the checksum-mismatch path already did; units loaded from a .ppu keep the reload. The same defect is in upstream FPC main. Compiler-binary-only refresh on the v61 tarball tree: no PPU format, RTL or package change, so UNITS ARE STILL THE v52 SET and auto-update.bat can take the ~3.5 MB bin tarball alone; every bin/ member but ppcx64.exe is byte-identical to v61/v60/v59. ppcx64.exe is 5055488 bytes here, which is NOT the 5054976 the v59, v60 and v61 exes all shared -- the size moved for the first time in four releases, which is exactly why the rule is to verify by md5 and never by size. date: is the compiler's own -iD stamp. VERIFIED with the x86_64-linux compiler from the same source on the two-step Lazarus rig (v59 and v61 die, this source links the IDE) and dist/ppu-reload-check.sh (v59/v61 FAIL, v62 PASS); this exe passed dist/win64-runtime-proof.sh under wine64. HONEST LIMIT: wine is NOT Windows; v59 ran on native Windows (2026-09-17), v60/v61/v62 have not. Full record: dist/RELEASE-v62.txt and dist/win64/staging-v62/VERSION.txt.

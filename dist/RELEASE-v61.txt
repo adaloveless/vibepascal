@@ -113,3 +113,13 @@ RUN RECORD
       control degrades to a 1-item set as documented; lifetime matrices under wine64 with the exact exe
       against the v52 units: tintfwithprefix1 62/62 at -O- and -O2, tintfstmttemp1 32/32, tintfstmttemp2
       28/28 created=27 destroyed=27 live=0, spliced-shape corners 17/17.
+
+ADDENDUM 2026-09-22 (cycle 1169) -- SUPERSEDED FOR BOTH TARGETS BY v62; NOTHING ABOVE IS WITHDRAWN
+  Every digest and every measurement above still describes the v61 bytes exactly as published; they remain
+  in dist/ and remain fetchable.  What changed is that v61 was found to carry an OLDER, unrelated defect
+  that v62 fixes: a unit compiled from source is "reloaded" rather than recompiled when a unit it resolved
+  symbols out of is reset mid-build, so an incremental Lazarus IDE build dies with EAccessViolation (exit
+  217) in tderef.build under writeppu.  Measured on the exact published v61 binaries, and on v60 and v59
+  too -- it arrived with the ctask scheduler, not with the with-statement work above.  The win64 pointer
+  dist/win64/LATEST.txt now serves v62; see dist/RELEASE-v62.txt.  The with-statement lifetime fix this
+  file records is unchanged and is carried forward in v62.

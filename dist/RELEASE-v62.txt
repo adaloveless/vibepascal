@@ -1,0 +1,137 @@
+# VibePascal v62 -- status manifest (WIN64 + LINUX64)
+# Cut by FPCDeveloper (Otto), 2026-09-22 (cycle 1169), in the worktree /home/jason/src/vibepascal-wt-main
+# while the shared checkout stayed on its own branch.  This file is the authoritative answer to
+# "which platforms have v62": TWO, win64 and linux64.  dist/RELEASE-v61.txt (win64 + linux64) and
+# dist/RELEASE-v59.txt (all eight targets) stay as the records of those cuts.
+
+source_commit: ade0c47fc45202a96a3b1190aaa00a5aca47999f
+compiler changes since v61 (2df7b40d2a), the ONLY one:
+  ade0c47fc4  Otto  2026-09-22  compiler/fmodule.pas +32  tmodule.flagdependent marks a dependent that is being
+                                compiled FROM SOURCE for a full recompile instead of a reload when a unit it
+                                resolved symbols out of is reset mid-build (dist/ppu-reload-check.sh added with it)
+parent:        v61 (2df7b40d2a) for win64 and linux64; v59 (5c89c538b8) for the other six targets
+
+WHAT CHANGED IN v62 -- A UNIT COMPILED FROM SOURCE IS RECOMPILED, NOT RELOADED, WHEN A UNIT IT RESOLVED
+SYMBOLS OUT OF IS RESET MID-BUILD
+  Reported by Lars (LazarusDeveloper) 2026-09-22: after a Lazarus source pull, "lazbuild --build-ide" died
+  with EAccessViolation (exit 217) inside the compiler.  It reproduces on EVERY published compiler since
+  the ctask scheduler came in -- v59, v60 and v61 all measured -- and the backtrace is always
+    tderef.build <- tabstractpointerdef.buildderef <- tprocdef.buildderefimpl
+      <- tstoredsymtable.buildderefimpl <- tppumodule.writeppu <- finish_unit <- continue_module
+  (file:line frames from a -gl -dDEBUG_PPU_CYCLES rebuild of the published v59 whose .text is
+  byte-identical to the shipped binary, so the frames describe the SHIPPED compiler).
+
+  Mechanism, read off the scheduler trace rather than guessed:
+    * editormacrolistviewer was loaded from its .ppu; sourceeditor was compiled FROM SOURCE against it.
+    * Only when sourcefilemanager finished did the scheduler learn that editormacrolistviewer's
+      IMPLEMENTATION uses sourcefilemanager, whose checksum had changed.  A uses cycle through an
+      implementation section defers that check -- that is why this needs a real IDE-sized unit graph.
+    * editormacrolistviewer was reset and recompiled from sources.  tmodule.flagdependent then flagged
+      sourceeditor -- and designer, sourcefilemanager, mainbase, buildmodesmanager, projectinspector,
+      debugmanager, formeditor behind it -- for a RELOAD.
+    * tppumodule.reload -> re_resolve can only re-resolve DEREF TABLES.  A unit compiled from source has
+      interface derefs only (getppucrc builds those); its implementation side -- the local symtables of its
+      routines, inline bodies, generated code -- holds DIRECT POINTERS.  sourceeditor kept pointers into
+      editormacrolistviewer's freed symtable, and writeppu walked them.
+  v62 (ade0c47fc4, compiler/fmodule.pas, tmodule.flagdependent, +32): a dependent that is NOT fromppu is marked
+  for a full recompile (recompile_reason rr_crcchanged, do_recompile, do_reload, ms_compile -- exactly the
+  marking dependent_module_crc_mismatch already used for the checksum case), so the scheduler resets it and
+  re-flags its own dependents.  Dependents loaded from a .ppu keep the reload path unchanged.
+
+  Upstream fpc-unleashed/main (fetched 2026-09-22, merge-base d924ff6a3b) has the identical
+  flagdependent/re_resolve pair, so the defect is upstream's too and there was nothing to borrow.  Upstream's
+  own -dDebug41677 "INVALID RECOMPILE" assertion does NOT fire on it (measured: same AV, ierr=0).
+
+  COMPILER BINARY ONLY.  No RTL change, no package change, no PPU FORMAT change, so every existing unit set
+  stays valid: win64 units are STILL the v52 set, linux64 units are STILL the v59 set.
+
+PLATFORMS CARRYING v62
+  win64/           vibepascal-v62-ade0c47fc4-win64-bin.tar.gz   3463531 B
+                   md5 e08d8e9b7dd0d0d5f10304f437560388
+                   sha256 da3084ea3d3bc71422a2bc449f8da7feb2b4cd4eb7603a94cf640dadfea28042
+                   ppcx64.exe md5 6fd9ad77ac1bd1b0b8edbb717add48df
+                              sha256 1417ffb09d6a8100d71a0cb2ce5ba6c91299132c2d51c4e69d14786cf203030e
+                              (5055488 B -- the SAME byte count as the v59, v60 AND v61 exes; verify by md5)
+                   -- also published as vibepascal-latest-win64-bin.tar.gz (byte copy) and named by
+                      dist/win64/LATEST.txt (the auto-update pointer)
+                   -- the v61 tarball tree with ppcx64.exe swapped: every other bin/ member byte-identical
+                      to v61 (and v60, v59); member list identical
+                   -- RUNTIME under wine64 on THIS exe out of THIS tarball: dist/win64-runtime-proof.sh
+                      rc=0, "ALL STAGES PASSED -- the shipped Win64 toolchain runs end to end under wine."; dist/win64-latest-pointer-check.ps1 -> RESULT: PASS -- v62 resolves to [vibepascal-v52-win64-units.tar.gz, vibepascal-v62-ade0c47fc4-win64-bin.tar.gz] and the control degrades as documented
+                      wine is NOT Windows: v59 ran on native Windows (2026-09-17); v60, v61 and v62 have not.
+                   -- the v61 interface-lifetime guarantees still hold on this exe against the v52 units:
+                      tintfwithprefix1 -O- -> checks=62 fails=0 created=56 destroyed=56 live=0
+                      tintfwithprefix1 -O2 -> checks=62 fails=0 created=56 destroyed=56 live=0
+                      tintfstmttemp1 -O- -> checks=32 fails=0 created=25
+                      tintfstmttemp1 -O2 -> checks=32 fails=0 created=25
+                      tintfstmttemp2 -O- -> checks=28 fails=0 created=27 destroyed=27 live=0
+                      tintfstmttemp2 -O2 -> checks=28 fails=0 created=27 destroyed=27 live=0
+  linux64/         vibepascal-v62-ade0c47fc4-linux-x86_64-bin.tar.gz   2475339 B
+                   md5 3e35bba3c0c677398abf6a38fac498a1
+                   sha256 3540b17d377a70c02284098e6578a729eab4f76bd4725fd54be611846acb0c78
+                   ppcx64 md5 fc7bccac34a80b2bf5fc67a45d72ce19
+                          sha256 6c16b5ad47f2526ac931933666ef158f5386436d08d8a2381ceedd8b72bd4b41
+                          (6321824 B -- the SAME byte count as v59's 12220bfd... and v61's 7775a119...;
+                           verify by md5)
+                   ppudump unchanged since v58 (241ab27a8991e3f599fa7a5564af30a2)
+                   -- pairs with vibepascal-v59-x86_64-linux-units.tar.gz (UNITS.txt)
+                   -- this is the binary the fix was PROVEN on (run record below), and the one installed into
+                      the shared lazdev checkout /home/jason/src/vibepascal for Lars's IDE builds
+
+PLATFORMS STILL AT v59 (NOT rebuilt for this cut) -- AND WHAT THAT MEANS
+  aarch64-linux, arm-linux, arm-linux-cross, i386-linux-cross, x86_64-darwin, aarch64-darwin.
+  This defect is in target-independent scheduler/module code, so the published v59 compilers for these six
+  targets HAVE it -- and so does every v61 and v60 binary.  They stay at v59 for the same reason as last
+  cut: none has a consumer today, the incremental-build report came from a Linux host and the pointer that
+  serves it is win64.  A v62 cut for any of them is one recipe run; say which.
+
+HOW THE DEFECT WAS FOUND (cycles 1168-1169, evidence under ~/src/vibepascal-slices/ppu-av-cy1168/)
+  * The report was reproduced FIRST, on the PUBLISHED v59, as a two-step rig: Lazarus 30d1cbd292 clean-built
+    (278 gtk2 ppus), then "git checkout 9d49ba95ff" (Lars's tip) and "lazbuild --build-ide" -- i.e. a source
+    pull over a built tree, which is the shape Lars described.  A one-step clean build never crashes.
+  * Seven small unit-cycle shapes do NOT crash on v59 even under heaptrc free-fill: on a small graph the
+    scheduler resets the used unit before the source dependent parses its implementation.  They DO show the
+    defect in the compiler's own -vu text ("Flag for reload" of a unit being compiled from source), which is
+    what dist/ppu-reload-check.sh scores -- the gate is deliberately NOT scored on rc, because on the small
+    shape the defect is silent and produces correct output by luck.
+  * The scheduler trace named the mechanism; upstream was checked before the fix was written.
+  * The fix was verified on the full-size rig BEFORE this cut, then re-verified on the PUBLISHED bytes.
+
+HONEST LIMITS
+  1. wine is not Windows.  The win64 exe here is the same source as the linux binary the rig ran, but no
+     native-Windows incremental IDE build has been done: v59 ran on native Windows (2026-09-17), v60, v61
+     and v62 have not.  Lars's own retest on the shared-tree linux compiler is the practical sign-off.
+  2. Six targets stay at v59 and carry the defect, by the reasoning above.
+  3. The 1987-test corpus A/B scores compile status and run exit code per test.  It cannot see this defect
+     at all (no test in it recompiles a unit graph mid-build); it is here to show the fix changes NOTHING
+     else.  The reload gate and the Lazarus rig are the evidence for the fix itself.
+  4. The gate and the rig both exercise the x86_64-linux compiler.  The win64 exe is the same source built
+     for another target, not an independently measured fix.
+
+RUN RECORD
+  (from the PUBLISHED bytes in this tree)
+  2026-09-22, lazdev, cycle 1169:
+    THE DEFECT AND THE FIX, full-size Lazarus rig (snapshot 30d1cbd292 -> checkout 9d49ba95ff, lazbuild
+      --build-ide, compilers run from a bare directory):
+        published v59  (12220bfd5b3a9b1ee6db7b68297f0844): DET3_v59 END 19:40:18 rc=2 lines=782 av=1 exit217=1 destroy=0 firstfail=781:Error: (lazarus) Build IDE: stopped with exit code 217
+        published v61  (7775a119b0d4d3583f4456b9d80cff72): DET4_v61 END 19:42:50 rc=2 lines=5782 av=1 exit217=1 destroy=0 firstfail=5781:Error: (lazarus) Build IDE: stopped with exit code 217
+        fix build      (21a386bd172024e8e4c8008b1844234b): DET8_fix1 END 20:17:38 rc=0 lines=5801 av=0 exit217=0 destroy=0 ierr=0 firstfail=
+        PUBLISHED v62  (fc7bccac34a80b2bf5fc67a45d72ce19): DET9_v62pub END 20:29:28 rc=0 lines=5801 av=0 exit217=0 destroy=0 ierr=0 firstfail=
+    x86_64-linux (bin/ppcx64 fc7bccac34a80b2bf5fc67a45d72ce19):
+        RELOADCHECK-FIX(expected PASS rc=0) rc=0 RESULT: PASS -- the dependent was recompiled from source after its used unit was reset
+        RELOADCHECK-BASE(v61, expected FAIL rc=1) rc=1 RESULT: FAIL -- a source-compiled dependent was reloaded instead of recompiled (or the rebuild broke)
+        1987-test corpus A/B against the published v61: AB DONE 20:20:42 same=1987 diff=0
+        baseline-vs-baseline control in the same sitting: CTL DONE 20:24:12 same=1987 diff=0
+        TRUNC rc=0 trunccheck x86_64-linux: 25/25 offsets clean, 0 problem(s)
+        LOADCHECK rc=0 loadcheck x86_64-linux: 147/147 packages load clean, 0 problem(s)
+        self-host fixpoint stage 2 == stage 3 byte-identical (stage 1 built by the published v61).
+    win64 (bin/ppcx64.exe 6fd9ad77ac1bd1b0b8edbb717add48df):
+        dist/win64-runtime-proof.sh rc=0 -- ALL STAGES PASSED -- the shipped Win64 toolchain runs end to end under wine.
+        dist/win64-latest-pointer-check.ps1 -> RESULT: PASS -- v62 resolves to [vibepascal-v52-win64-units.tar.gz, vibepascal-v62-ade0c47fc4-win64-bin.tar.gz] and the control degrades as documented
+        interface-lifetime matrices under wine64 against the v52 units (v61's numbers, unchanged):
+          tintfwithprefix1 -O- -> checks=62 fails=0 created=56 destroyed=56 live=0
+          tintfwithprefix1 -O2 -> checks=62 fails=0 created=56 destroyed=56 live=0
+          tintfstmttemp1 -O- -> checks=32 fails=0 created=25
+          tintfstmttemp1 -O2 -> checks=32 fails=0 created=25
+          tintfstmttemp2 -O- -> checks=28 fails=0 created=27 destroyed=27 live=0
+          tintfstmttemp2 -O2 -> checks=28 fails=0 created=27 destroyed=27 live=0

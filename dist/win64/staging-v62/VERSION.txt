@@ -1,0 +1,45 @@
+VibePascal v62 Win64 compiler -- a unit compiled from source is recompiled, not reloaded, when a unit it resolved symbols out of is reset mid-build
+Source commit: ade0c47fc45202a96a3b1190aaa00a5aca47999f
+Compiler commits since v61: ade0c47fc4 (Otto, 2026-09-22, compiler/fmodule.pas +32: tmodule.flagdependent marks a source-compiled dependent for recompile instead of reload)
+Parent release: v61 (win64 + linux64, 2df7b40d2a, cut by Otto 2026-09-22)
+Built: 2026-09-22 (Otto, cycle 1169) in the worktree /home/jason/src/vibepascal-wt-main: the x86_64-linux compiler
+       self-hosted to a fixpoint from the published v61 (7775a119b0d4d3583f4456b9d80cff72; stage 2 == stage 3
+       byte-identical, fc7bccac34a80b2bf5fc67a45d72ce19), then rtl_all CPU_TARGET=x86_64 OS_TARGET=win64 OPT="-Apecoff -Xi"
+       and make -C compiler compiler OS_TARGET=win64 from a clean x86_64-win64 unit tree
+ppcx64.exe md5:    6fd9ad77ac1bd1b0b8edbb717add48df
+ppcx64.exe sha256: 1417ffb09d6a8100d71a0cb2ce5ba6c91299132c2d51c4e69d14786cf203030e
+                   5055488 bytes -- and note it MOVED: the v59, v60 and v61 exes were all 5054976 B, so
+                   anyone who had pinned that number sees a change here.  Compare by md5, never by size:
+                   the size is a property of the link, and three releases sharing one is a coincidence
+                   PE32+ console x86-64; -iV 3.3.1, -iTO win64, -iTP x86_64, -iD 2026/09/22
+
+Contents: the v61 win64 tarball tree with bin/ppcx64.exe swapped -- a COMPILER-BINARY-ONLY refresh.  Every other bin/
+member is byte-identical to v61 (and v60, v59).  UNITS ARE STILL THE v52 SET (vibepascal-v52-win64-units.tar.gz): no RTL
+change, no package change, no PPU format change.  auto-update.bat can take this ~3.5 MB bin tarball alone.
+
+WHAT CHANGED IN v62 -- A UNIT COMPILED FROM SOURCE IS RECOMPILED, NOT RELOADED, WHEN A UNIT IT RESOLVED
+SYMBOLS OUT OF IS RESET MID-BUILD
+  Lars's incremental Lazarus IDE builds (lazbuild --build-ide after a Lazarus source pull) died with
+  EAccessViolation (exit 217) in
+    tderef.build <- tabstractpointerdef.buildderef <- tprocdef.buildderefimpl <- tppumodule.writeppu
+  on every compiler since the ctask scheduler came in: v59, v60 and v61 measured.  The scheduler trace showed
+  the sequence: editormacrolistviewer was loaded from its .ppu, sourceeditor was compiled from source against
+  it, and only when sourcefilemanager finished did the scheduler learn that editormacrolistviewer's
+  IMPLEMENTATION uses sourcefilemanager whose checksum had changed (a uses-cycle through an implementation
+  section defers that check).  editormacrolistviewer was reset and recompiled; tmodule.flagdependent flagged
+  sourceeditor (and seven units behind it) for a RELOAD, and a reload can only re-resolve deref tables -- a
+  source unit has none for its implementation side (getppucrc builds the interface derefs only; the local
+  symtables of its routines, inline bodies and generated code hold direct pointers).  sourceeditor kept
+  pointers into the freed symtable and writeppu walked them.
+  v62 (compiler/fmodule.pas, tmodule.flagdependent, +32): a dependent being compiled from source in this run
+  is marked for a FULL RECOMPILE (the marking dependent_module_crc_mismatch already uses for the checksum
+  case) instead of a reload; the scheduler resets it and flags its own dependents again when it does.  Units
+  loaded from a .ppu keep the reload path.  Upstream FPC main (fetched 2026-09-22) has the same
+  flagdependent/re_resolve, so the defect is upstream's too.
+  COMPILER BINARY ONLY.  No RTL change, no package change, no PPU FORMAT change: win64 units are STILL the
+  v52 set, linux64 units are STILL the v59 set.
+
+VERIFIED: the x86_64-linux compiler from the same source (stage 3, fc7bccac34a80b2bf5fc67a45d72ce19) on the two-step Lazarus rig
+  (v59 and v61 EAccessViolation exit 217, this source rc=0 with the IDE linked), dist/ppu-reload-check.sh PASS
+  (v59 and v61 FAIL), 1987-test corpus A/B against v61 (AB DONE 20:20:42 same=1987 diff=0), fixpoint stage 2 == stage 3.  This exe: the
+  win64 runtime proof under wine64 -- see the RUN RECORD in dist/RELEASE-v62.txt.  wine is NOT Windows.
