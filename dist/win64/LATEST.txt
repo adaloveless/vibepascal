@@ -4,18 +4,18 @@
 # -- or just always fetch vibepascal-latest-win64-bin.tar.gz (byte copy of the
 # versioned tarball below) and read VERSION.txt inside it.
 
-version: v60
-source_commit: 407ef9bb3a
-dist_commit: (the commit that introduced this v60 pointer -- git log -1 -- dist/win64/LATEST.txt; the pointer and the bytes it names land together)
-versioned_tarball: vibepascal-v60-407ef9bb3a-win64-bin.tar.gz
+version: v61
+source_commit: 2df7b40d2a
+dist_commit: (the commit that introduced this v61 pointer -- git log -1 -- dist/win64/LATEST.txt; the pointer and the bytes it names land together)
+versioned_tarball: vibepascal-v61-2df7b40d2a-win64-bin.tar.gz
 latest_tarball: vibepascal-latest-win64-bin.tar.gz
 units_tarball: vibepascal-v52-win64-units.tar.gz
-tarball_md5: aaddb2623d0b8aef14bec04fa7c03efe
-tarball_sha256: c3b1e043281ccb0cad97f2e79d7bbbf0d956b096afe9e9711dc583e3f76069dc
+tarball_md5: d76790e50bbd0792a8b238e4d01b0850
+tarball_sha256: 201161b1e680114aab305871950d868a2e2ac1cdac21e6d021ac44fc24b0fc99
 units_tarball_md5: cc8d2e1f4456a363fd40c07a487a281c
 units_tarball_sha256: 6e33f24ad06f35cf41a5032689a316ba1e7254f948250451044940a0a6c9bb97
-ppcx64_exe_md5: 17497551d287106c4b6d12bcb1f4b0ae
-ppcx64_exe_sha256: dd980655359b9e55eb325fd585ad9268148ff70dd983fed8e60c39473aa3c248
-date: 2026-09-19
+ppcx64_exe_md5: 034926c4cb1a4809293ef316c5537c7a
+ppcx64_exe_sha256: 41c1fe952f32f0aa1656187651bec2cac389a52d86d07853d2246198a6cc6935
+date: 2026-09-22
 cut_date: 2026-09-22
-notes: v60 releases a with-statement COM interface prefix ("with Make do begin ... end") when the with statement ends instead of at routine exit -- GOD's compiler commit 407ef9bb3a (2026-09-19, compiler/tgobj.pas, +15 lines, UT_HolderVerbose scenario 3c: a with-prefix temp allocated at the with statement but freed only after the nested body had advanced the statement counter was never matched by the end-of-statement release, so the interface leaked until routine exit; the fix re-stamps the temp to the freeing statement). GOD measured UT_HolderVerbose 24/24, created=2019 destroyed=2019 live=0 on the fixed compiler. Compiler-binary-only refresh on v59: no PPU format, RTL or package change, so UNITS ARE STILL THE v52 SET and auto-update.bat can take the ~3.4 MB bin tarball alone; every bin/ member but ppcx64.exe is byte-identical to v59 (18/18 measured). date: above is the compiler's own -iD stamp (the compiler stamps the source-commit date), cut_date: is when these bytes were cut and published. Cut by Bruno (BuildMaster_lazdev) on GOD's orders mu8wfodj (2026-09-19) and mucrbmvr (2026-09-22, STAT) in a scratch clone -- Otto (FPCDeveloper) owns this dist and was mailed the full evidence the same hour. VERIFIED on this box: self-host fixpoint stage2 == stage3; both lifetime matrices (tests/test/tintfstmttemp1.pp, tintfstmttemp2.pp) 60/60 with the v60 Linux compiler at -O- and -O2; WIN64 RUNTIME under wine64 on these exact bytes: this ppcx64.exe compiled both matrices against the v52 units and the products ran 32/32 and 28/28 (created=27 destroyed=27 live=0); controls: the published v59 exe also 60/60 (regression control), the published v58 exe 35 FAILS (the harness can fail). HONEST LIMITS: (1) no reproducer for the scenario-3c leak was found here -- sixteen with-prefix corners pass on BOTH v59 and v60, so the fix's effect is attested by GOD's UT_HolderVerbose run, not measured on this box; what is measured is that the fix is in the bytes and regresses nothing the 60 corners cover. (2) wine is NOT Windows: v59 ran on native Windows (2026-09-17); v60 has so far run only under wine64 -- GOD's IHolder<> test on real Windows is the sign-off. Full record: dist/RELEASE-v60.txt and dist/win64/staging-v60/VERSION.txt.
+notes: v61 makes a with-statement COM interface prefix live exactly as long as its statement. Two defects, one cause, both only when the with was NOT the first statement of its begin..end: (1) "with Make.o do begin ... end" released the interface behind Make BEFORE the body ran, so the body worked on a freed object -- present in v59 AND in v60 (measured on the exact published exes under wine64: 5 failing corners); (2) "with Make do begin ... end" leaked the prefix until routine exit in v59, which GOD's 407ef9bb3a (v60) fixed and which stays in. Cause: tblocknode.simplify spliced the with's hidden statement list into the enclosing block, and each spliced piece was then released as a statement of its own. Fix 2df7b40d2a (compiler/nbas.pas, +19 lines): never merge a compiler-built list into a source block. Compiler-binary-only refresh on the v60 tarball tree: no PPU format, RTL or package change, so UNITS ARE STILL THE v52 SET and auto-update.bat can take the ~3.5 MB bin tarball alone; every bin/ member but ppcx64.exe is byte-identical to v60 and v59. ppcx64.exe is 5054976 bytes for the THIRD release running -- verify by md5, never by size. date: is the compiler's own -iD stamp. VERIFIED on lazdev under wine64 with this exact exe against the v52 units: tests/test/tintfwithprefix1.pp (new, 62 corners) 62/62 at -O- and -O2 where the v60 exe fails 5 and the v59 exe 16; tintfstmttemp1/2 32/32 and 28/28; the x86_64-linux compiler from the same source passed the 1987-test corpus A/B against v60 with the new test as the only (intended) DIFF. HONEST LIMIT: wine is NOT Windows; v59 ran on native Windows (2026-09-17), v60 and v61 have not yet -- GOD's IHolder<> run on real Windows is the sign-off. Full record: dist/RELEASE-v61.txt and dist/win64/staging-v61/VERSION.txt.

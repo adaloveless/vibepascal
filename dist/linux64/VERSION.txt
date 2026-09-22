@@ -1,98 +1,39 @@
-VibePascal v59 Linux x86_64 compiler -- a COM interface function-result temp is released at the end of its statement
-Source commit: 5c89c538b8fb1f00c83fb5cabd9260f6e71caba4
-Compiler commits: 55e687f581 (GOD, the mechanism) + 5c89c538b8 (statement ownership, escape sweep, every statement list)
-Parent release: v58 (dedf242c696a543f9626e2839ced40876478a98a)
-Built: 2026-09-17, native self-host fixpoint on x86_64-linux from a clean unit tree
-       (stage 1 by the 55e687f581 compiler, stage 2 by stage 1, stage 3 by stage 2;
-       stage 2 == stage 3 byte-identical, this binary is stage 3; 250 units compiled
-       per stage, the five changed units among them)
-ppcx64 md5:    12220BFD5B3A9B1EE6DB7B68297F0844
-ppcx64 sha256: 6100D0804E89EE66EA3479AAEDC351513C458857A1F08CF38D63545233DD8175
-               6321824 bytes, ELF 64-bit x86-64, statically linked, reports -iD 2026/09/17
-ppudump md5:   241AB27A8991E3F599FA7A5564AF30A2   (UNCHANGED, the v58 bytes: none of the five
-               changed units -- tgobj, hlcgobj, ncgbas, nbas, pstatmnt -- is linked into it)
+VibePascal v61 Linux x86_64 compiler -- a with-statement interface prefix lives exactly as long as its statement: never freed under the body, never leaked to routine exit
+Source commit: 2df7b40d2a1d0d8ae49113ac23c4be92fa05ea59
+Compiler commits since v59: 407ef9bb3a (GOD, 2026-09-19, compiler/tgobj.pas +15: re-stamp a freed statement temp to the freeing statement)
+                            2df7b40d2a (Otto, 2026-09-22, compiler/nbas.pas +19: never splice a compiler-built statement list into a source block)
+Parent release: v59 (5c89c538b8fb1f00c83fb5cabd9260f6e71caba4) for this target; v60 was cut for win64 only
+Built: 2026-09-22 (Otto, cycle 1168), native self-host fixpoint on x86_64-linux from a clean compiler unit tree in the
+       worktree /home/jason/src/vibepascal-wt-main: stage 1 by the v60 linux compiler (0ebd15a60b7401b27d8688843ea27789,
+       itself a stage 2 == stage 3 fixpoint over the PUBLISHED v59 12220bfd5b3a9b1ee6db7b68297f0844), stage 2 by stage 1,
+       stage 3 by stage 2; stage 2 == stage 3 byte-identical; this binary is stage 3; 249 units per stage
+ppcx64 md5:    7775A119B0D4D3583F4456B9D80CFF72
+ppcx64 sha256: (see dist/RELEASE-v61.txt)
+               6321824 bytes -- THE SAME BYTE COUNT AS v59 (12220bfd...) AND THE UNPUBLISHED v60 LINUX BUILD (0ebd15a6...):
+               verify by md5, never by size.  ELF 64-bit x86-64, statically linked, stripped, reports -iD 2026/09/22
+ppudump md5:   241AB27A8991E3F599FA7A5564AF30A2   (UNCHANGED since v58: neither nbas nor tgobj is linked into it)
 
-Contents: bin/ppcx64 and bin/ppudump -- a COMPILER-BINARY refresh meant to drop
-into an existing VibePascal source/unit tree on Linux.  An existing v52..v58
-Linux unit set stays valid and does not need rebuilding.
+Contents: bin/ppcx64 and bin/ppudump -- a COMPILER-BINARY refresh meant to drop into an existing VibePascal
+source/unit tree on Linux.  The v59 x86_64-linux unit set (dist/linux64/vibepascal-v59-x86_64-linux-units.tar.gz, see
+UNITS.txt) stays valid and does not need rebuilding: no RTL change, no package change, no PPU format change.
 
-WHAT CHANGED IN v59 -- A COM INTERFACE TEMP DIES WITH ITS STATEMENT
-  A function that returns a COM interface, called where its result is never
-  stored in a variable ("Giver.Need.o.DoWork;"), leaves the reference in a
-  hidden temp.  Up to v58 that temp was released only when the ROUTINE exited
-  (or when the compiler happened to recycle the slot), so the object stayed
-  checked out long past its line -- a holder that should have handed its object
-  back at the semicolon kept it until the end of the procedure.  v59 releases it
-  at the end of the source statement that produced it, the way Delphi does.
+WHAT CHANGED SINCE v59 -- TWO DEFECTS, ONE CAUSE, BOTH ONLY WHEN THE WITH WAS NOT THE FIRST STATEMENT OF ITS BLOCK
+  tblocknode.simplify splices a compiler-built statement list (the hidden pieces of a with statement: prefix temp
+  create, its assignment, the body, the temp deletes) into the enclosing begin..end when the with is not the first
+  statement there.  Since v59 numbers and releases interface temps per source statement, every spliced piece became
+  a statement of its own:
+    * "with Make.o do begin ... end" (Make returns a COM interface, .o is the raw object): the assignment piece
+      released the interface BEFORE the body ran, so the body worked on a freed object.  Present in v59 AND v60.
+    * "with Make do begin ... end": the prefix temps were deleted under marks newer than their own stamp and
+      leaked until routine exit (v59).  GOD's 407ef9bb3a (v60) closed this half and stays in.
+  v61 never merges a compiler-built list into a source block (a nested begin..end still may be: its statements are
+  real ones).  Nothing is released earlier than the end of the with statement, and nothing later.
 
-  Two commits carry it, and the second one is why the first did not ship alone:
-
-    55e687f581  (GOD, 2026-09-16)  the mechanism.  A temp knows it holds a COM
-                interface (tgobj), a slot still holding one is never recycled
-                under a second result in the same statement, and tcgblocknode
-                releases the statement's temps after every statement of a
-                begin..end block.
-
-    5c89c538b8  (Otto, 2026-09-17)  three holes measured on that build with
-                the two matrices added in tests/test/ (tintfstmttemp1.pp, 32
-                corners; tintfstmttemp2.pp, 28 corners), closed before anything
-                shipped:
-                  * a statement nested inside another -- the body of a
-                    with/if/while/case whose EXPRESSION produced the temp --
-                    released its parent's temp.  `with Giver.Need.o do begin
-                    A; B end` ran B on a freed object (measured: the owner's
-                    refcount hit zero after A).  Each temp now records which
-                    source statement allocated it and a statement releases
-                    only its own, never an enclosing one's.
-                  * exit, break, continue, goto and raise LEAKED the temp for
-                    good: the routine-exit sweep had been trimmed to skip
-                    temps whose statement-end release existed, and those
-                    escapes never reach that release.  Measured: every one of
-                    them leaked exactly one object.  The sweep covers every
-                    managed temp again; a slot that was already released is
-                    nil and costs one compare, one that was abandoned is
-                    released at routine exit, and nothing is released twice.
-                  * repeat..until bodies, try/finally/except bodies and
-                    case-else lists kept the old routine-exit lifetime, because
-                    only begin..end had been marked as a source statement list.
-
-  What does NOT change: an interface stored in a variable, field, array or
-  Result lives exactly as long as it always did.  Two results used in one
-  statement are both alive until that statement ends.  A temp produced by an
-  if/while condition, a case selector or a with expression stays alive through
-  the branch, the loop body or the with block and is released when that
-  statement ends.
-
-  COMPILER BINARY ONLY.  No RTL change, no package change, no PPU FORMAT change
-  (the unit files' own header/version are untouched), so every existing unit
-  set for this target stays valid and does not need rebuilding.  Code compiled
-  by v59 simply releases these temps sooner.
-
-HOW THE FIX WAS PROVEN, ON THE SOURCE EVERY TARGET IS BUILT FROM
-  * tests/test/tintfstmttemp1.pp and tintfstmttemp2.pp, 60 self-checking
-    corners in all (free proc, method, nested proc, main body, if/for/while/
-    repeat/with bodies, two temps in one statement, a temp passed as a
-    parameter, a stored interface, exit/break/continue/goto/raise mid-
-    statement, a nested block under a with/if/while/case temp, try/finally/
-    except/on/case-else bodies, an unentered block, and destroyed == created
-    at the end): 60/60 on this source at -O- and -O2.  The same programs score
-    35 failures on v58 (everything released at routine exit, nothing leaked,
-    nothing freed early) and 31 on the 55e687f581 build (3 leaked objects, 4
-    use-after-free corners, 6 statement lists left on the old lifetime) -- so
-    the harness fails in both directions and a pass means something.
-  * 1983-test corpus A/B against the PUBLISHED v58 x86_64-linux compiler:
-    1983 SAME, 0 DIFF (compile status and run exit code per test).
+HOW THIS BINARY WAS PROVEN (all on THESE bytes)
+  * tests/test/tintfwithprefix1.pp (new, 62 corners): checks=62 fails=0 created=56 destroyed=56 live=0 at -O- and -O2;
+    the published v59 prints 16 FAIL lines on it, the v60 linux build 5 (the raw pointer corners).
+  * tests/test/tintfstmttemp1.pp 32/32, tintfstmttemp2.pp 28/28 created=27 destroyed=27 live=0, tintflifetime1.pp 28/28.
+  * 1987-test corpus A/B against the v60 linux build, and against the PUBLISHED v59: see dist/RELEASE-v61.txt for the
+    numbers (the one intended DIFF is tintfwithprefix1 itself, which fails on the older compiler by design).
   * self-host fixpoint on x86_64-linux: stage 2 == stage 3 byte-identical.
-  * dist/ppu-truncation-check.sh, the v57/v58 reader fixes are still in:
-    25/25 offsets clean on x86_64-linux, i386-linux, aarch64-linux and
-    arm-linux with the host-executable compilers.
-  * dist/unit-set-loadcheck.sh: x86_64-linux 147/147, i386-linux 146/146,
-    aarch64-linux 144/144, arm-linux 143/143 packages load clean, zero
-    recompiles.
-
-VERIFIED ON THESE EXACT BYTES
-  * both lifetime matrices compiled by this binary and RUN natively on this
-    host: tintfstmttemp1 checks=32 fails=0, tintfstmttemp2 checks=28 fails=0
-    created=27 destroyed=27 live=0, at -O- and at -O2.
-  * this is the only platform with real, non-emulated runtime proof, and the
-    one every other target's compiler was built by.
+  * dist/ppu-truncation-check.sh and dist/unit-set-loadcheck.sh x86_64-linux: numbers in dist/RELEASE-v61.txt.

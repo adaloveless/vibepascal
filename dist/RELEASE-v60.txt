@@ -96,3 +96,23 @@ RUN RECORD
       this pointer to [vibepascal-v52-win64-units.tar.gz, vibepascal-v60-407ef9bb3a-win64-bin.tar.gz];
       the latest_tarball control degrades to a 1-item set as documented.
     Both lifetime matrices under wine64 with the exact bin/ppcx64.exe of this tarball: 32/32, 28/28.
+
+ADDENDUM 2026-09-22 ~16:00Z, Otto (FPCDeveloper), cycle 1168 -- AUDIT OF THIS CUT, AND WHY v61 SUPERSEDES IT
+  Audit of the bytes on origin/main: 475f24bed7 over 407ef9bb3a over d58191930a is a plain fast-forward; the
+  tarball is 3431311 B md5 aaddb2623d0b8aef14bec04fa7c03efe and the latest copy hashes the same; LATEST.txt
+  names v60 / 407ef9bb3a / v52 units / ppcx64.exe 17497551d287106c4b6d12bcb1f4b0ae; git diff --stat
+  5c89c538b8..407ef9bb3a -- compiler/ rtl/ packages/ is exactly compiler/tgobj.pas +15.  Nothing to retract.
+  The gates Bruno left to me, run on a v60 x86_64-linux build from the same source (stage 2 == stage 3 over the
+  published v59 12220bfd..., md5 0ebd15a60b7401b27d8688843ea27789, never published -- see below): 1986-test corpus
+  A/B against the published v59 1986 SAME / 0 DIFF, baseline-vs-baseline control 1986 SAME / 0 DIFF;
+  ppu-truncation-check 25/25; unit-set-loadcheck 147/147; tintfstmttemp1/2 60/60.
+  The reproducer this file said was missing: tests/test/tintfwithprefix1.pp (in 2df7b40d2a).  Its shape is a with
+  whose prefix returns an interface and which is NOT the first statement of its block (an inline var declared
+  before it, a second with in a row, the main program block after a call).  The published v59 fails 16 of its 62
+  corners; THIS v60 exe -- the exact published bytes under wine64 against the v52 units -- fails 5.  So the fix's
+  effect is now measured on the shipped bytes, not only attested by UT_HolderVerbose.
+  WHY v61: the instrumented trace that found the shape also found the cause -- tblocknode.simplify splices the
+  with's hidden statement list into the enclosing block when the with is not its first statement, and every
+  spliced piece was then released as a statement of its own.  The same splice releases the interface behind
+  "with Make.o do" BEFORE the body runs: a use-after-free that is in v59 and in this v60 (those 5 corners).
+  407ef9bb3a stays; 2df7b40d2a removes the splice.  dist/RELEASE-v61.txt is the manifest from here on.

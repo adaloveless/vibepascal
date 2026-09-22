@@ -1,0 +1,115 @@
+# VibePascal v61 -- status manifest (WIN64 + LINUX64)
+# Cut by FPCDeveloper (Otto), 2026-09-22 (cycle 1168), in the worktree /home/jason/src/vibepascal-wt-main
+# while the shared checkout stayed on its own branch.  This file is the authoritative answer to
+# "which platforms have v61": TWO, win64 and linux64.  dist/RELEASE-v60.txt (win64 only, Bruno's cut of
+# GOD's 407ef9bb3a) and dist/RELEASE-v59.txt (all eight targets) stay as the records of those cuts.
+
+source_commit: 2df7b40d2a1d0d8ae49113ac23c4be92fa05ea59
+compiler changes since v59 (5c89c538b8), the ONLY two:
+  407ef9bb3a  GOD   2026-09-19  compiler/tgobj.pas +15  re-stamp a freed statement-scoped interface temp to the
+                                freeing statement (shipped as v60 for win64 by BuildMaster_lazdev on GOD's order)
+  2df7b40d2a  Otto  2026-09-22  compiler/nbas.pas  +19  never splice a compiler-built statement list into a
+                                source block (this release; tests/test/tintfwithprefix1.pp added with it)
+parent:        v60 (win64, 407ef9bb3a); v59 (5c89c538b8) for linux64 and every other target
+
+WHAT CHANGED IN v61 -- A WITH-STATEMENT INTERFACE PREFIX LIVES EXACTLY AS LONG AS ITS STATEMENT
+  Two shipped defects, one cause, and both fired only when the with statement was NOT the first statement
+  of its begin..end block.  tblocknode.simplify merges a strippable block into the enclosing statement
+  list when that block is not the first statement there (the merge looks one statement ahead).  The
+  hidden statement list a with statement is built from (internalstatements: prefix temp create, its
+  assignment, the body, the temp deletes) is such a block.  Since v59 numbers and releases interface temps
+  per source statement, every spliced piece became a source statement of its own:
+    * "with Make.o do begin ... end"  (Make returns a COM interface, .o is the raw object inside it): the
+      assignment piece released the interface BEFORE the body ran, so the body worked on a freed object.
+      In v59 AND v60, x86_64-linux and win64, -O- and -O2.  This is the defect v61 exists for.
+    * "with Make do begin ... end": the prefix temps were deleted under statement marks newer than their
+      own stamp and leaked until routine exit (v59).  GOD's 407ef9bb3a closed this half in v60; it stays.
+  v61 never merges a compiler-built list into a source block.  A nested begin..end is a source block
+  itself and may still be merged: its statements are real ones.  Measured consequence: nothing is
+  released earlier than the end of the with statement, nothing later, and a temp made INSIDE the body is
+  still released at the end of its own statement.
+
+  What does NOT change: everything v59 promised (a function-result interface temp dies with its
+  statement; stored interfaces live as long as they always did; escapes are swept at routine exit).
+
+  COMPILER BINARY ONLY.  No RTL change, no package change, no PPU FORMAT change, so every existing unit
+  set stays valid: win64 units are STILL the v52 set, linux64 units are STILL the v59 set.
+
+PLATFORMS CARRYING v61
+  win64/           vibepascal-v61-2df7b40d2a-win64-bin.tar.gz   3463090 B
+                   md5 d76790e50bbd0792a8b238e4d01b0850
+                   sha256 201161b1e680114aab305871950d868a2e2ac1cdac21e6d021ac44fc24b0fc99
+                   ppcx64.exe md5 034926c4cb1a4809293ef316c5537c7a
+                              sha256 41c1fe952f32f0aa1656187651bec2cac389a52d86d07853d2246198a6cc6935
+                              (5054976 B -- the SAME byte count as the v59 AND v60 exes; verify by md5)
+                   -- also published as vibepascal-latest-win64-bin.tar.gz (byte copy) and named by
+                      dist/win64/LATEST.txt (the auto-update pointer)
+                   -- the v60 tarball tree with ppcx64.exe swapped: every other bin/ member byte-identical
+                      to v60 (and v59); member list identical
+                   -- RUNTIME under wine64, THIS exe against the v52 units: tests/test/tintfwithprefix1.pp
+                      62/62 at -O- and -O2 (the published v60 exe fails 5 corners of it, the v59 exe 16);
+                      tintfstmttemp1 32/32, tintfstmttemp2 28/28 created=27 destroyed=27 live=0; 17
+                      further spliced-shape corners 17/17 (v60 exe 5 FAIL, v59 exe 7 FAIL).
+                      dist/win64-runtime-proof.sh and dist/win64-latest-pointer-check.ps1: RUN RECORD below.
+                      wine is NOT Windows: v59 ran on native Windows (2026-09-17); v60 and v61 have not.
+  linux64/         vibepascal-v61-2df7b40d2a-linux-x86_64-bin.tar.gz   2474740 B
+                   md5 e9a6485c2fe61141ee774513488470c2
+                   sha256 aaac4b2850b25e4f0774c744339082c17f43acdb59a866f5556828f78da96e28
+                   ppcx64 md5 7775a119b0d4d3583f4456b9d80cff72
+                          sha256 86b61a65a694009e86dfa3ead3433547f38044a6d26911eccceaaa674088aad9
+                          (6321824 B -- the SAME byte count as v59's 12220bfd...; verify by md5)
+                   ppudump unchanged since v58 (241ab27a8991e3f599fa7a5564af30a2)
+                   -- pairs with vibepascal-v59-x86_64-linux-units.tar.gz (UNITS.txt)
+                   -- RUNTIME native: tintfwithprefix1 62/62 at -O- and -O2 (published v59 16 FAIL, the v60
+                      linux build 5 FAIL); tintfstmttemp1/2 60/60; tintflifetime1 28/28; self-host fixpoint
+                      stage 2 == stage 3 byte-identical (stage 1 by the v60 linux build 0ebd15a6..., itself a
+                      fixpoint over the published v59); 1987-test corpus A/B against the v60 linux build:
+                      1986 SAME / 1 DIFF, the DIFF being tintfwithprefix1 itself (base COK_RUN1, fix COK_RUN0
+                      -- the older compiler fails the new test by design); control run, truncation gate and
+                      loadcheck: RUN RECORD below.
+                   -- INSTALLED in the shared lazdev checkout /home/jason/src/vibepascal (compiler/ppcx64 and
+                      bin/ppcx64 via dist/linux-bin-layout.sh): Lars's IDE builds use it from here on.
+
+PLATFORMS STILL AT v59 (NOT rebuilt for this cut) -- AND WHAT THAT MEANS
+  aarch64-linux, arm-linux, arm-linux-cross, i386-linux-cross, x86_64-darwin, aarch64-darwin.
+  The defect above is target-independent codegen, so the published v59 compilers for these six targets
+  HAVE it.  They were left at v59 because none has a consumer today (darwin has never executed a program,
+  armhf has never run on hardware, aarch64 ran once as a verification on Gray's box), the order that
+  produced v60 and v61 named Windows, and a cross cut is not a five-minute job (RELEASE-v59.txt names the
+  qemu/loadcheck/truncation gates each one needs).  A v61 cut for any of them is one recipe run; say which.
+
+HOW THE DEFECT WAS FOUND (cycle 1168, evidence under ~/src/vibepascal-slices/v60-3c-cy1168/)
+  * Bruno's sixteen with-prefix corners for the v60 cut compile to byte-identical code on v59 and v60 (the
+    only assembly difference is the version string), so they never touched the changed path.
+  * A Delphi-style matrix (generic IHolder<T>, inline vars, raw .o) found nine corners v59 leaks and v60
+    releases -- every one a with that is NOT the first statement of its block.
+  * A throwaway compiler that prints every temp's stamp, every statement mark and every release decision
+    showed the with's hidden statement list numbered as separate statements from the second statement of
+    a block on, and the merge site in tblocknode.simplify confirmed it (forinline is true in pass_1, so it
+    happens at every optimisation level).
+  * The same trace predicted the raw-pointer early release; a second matrix measured it on v59, on v60,
+    on the v60 linux build and on the exact published v60 win64 exe under wine64.
+
+HONEST LIMITS
+  1. wine is not Windows.  GOD's UT_HolderVerbose (and, if it exists, a 3b-shaped test that is not the
+     first statement of its routine) on real Windows is the sign-off for v61 as it was for v60.
+  2. Six targets stay at v59 with the defect, by the reasoning above.
+  3. The corpus A/B scores compile status and run exit code per test, not object lifetimes; the lifetime
+     programs (tintfwithprefix1, tintfstmttemp1/2, tintflifetime1) are the lifetime gate.
+
+RUN RECORD
+  (appended below by the cut, from the PUBLISHED bytes in this tree)
+  2026-09-22 ~15:50Z, lazdev, cycle 1168, on the tarballs and LATEST.txt in this tree (the bytes this commit publishes):
+    x86_64-linux (bin/ppcx64 7775a119b0d4d3583f4456b9d80cff72): 1987-test corpus A/B against the v60 linux
+      build 1986 SAME / 1 DIFF -- tintfwithprefix1, base COK_RUN1 fix COK_RUN0, the intended one; the
+      baseline-vs-baseline control in the same sitting 1987 SAME / 0 DIFF (no nondeterministic set this run);
+      dist/ppu-truncation-check.sh x86_64-linux 25/25 offsets clean; dist/unit-set-loadcheck.sh x86_64-linux
+      147/147 packages load clean, 0 recompiles, against the shared checkout's package units; self-host
+      fixpoint stage 2 == stage 3.
+    win64 (bin/ppcx64.exe 034926c4cb1a4809293ef316c5537c7a): sh dist/win64-runtime-proof.sh -> rc=0,
+      "ALL STAGES PASSED -- the shipped Win64 toolchain runs end to end under wine" ();
+      pwsh -File dist/win64-latest-pointer-check.ps1 -DistDir dist/win64 -> RESULT: PASS, v61 resolves to
+      [vibepascal-v52-win64-units.tar.gz, vibepascal-v61-2df7b40d2a-win64-bin.tar.gz], the latest_tarball
+      control degrades to a 1-item set as documented; lifetime matrices under wine64 with the exact exe
+      against the v52 units: tintfwithprefix1 62/62 at -O- and -O2, tintfstmttemp1 32/32, tintfstmttemp2
+      28/28 created=27 destroyed=27 live=0, spliced-shape corners 17/17.

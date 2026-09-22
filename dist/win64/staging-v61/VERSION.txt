@@ -1,0 +1,37 @@
+VibePascal v61 Win64 compiler -- a with-statement interface prefix lives exactly as long as its statement: never freed under the body, never leaked to routine exit
+Source commit: 2df7b40d2a1d0d8ae49113ac23c4be92fa05ea59
+Compiler commits since v59: 407ef9bb3a (GOD, 2026-09-19, compiler/tgobj.pas +15: re-stamp a freed statement temp to the freeing statement)
+                            2df7b40d2a (Otto, 2026-09-22, compiler/nbas.pas +19: never splice a compiler-built statement list into a source block)
+Parent release: v60 (win64 only, 407ef9bb3a, cut by BuildMaster_lazdev 2026-09-22); v59 for every other target
+Built: 2026-09-22 (Otto, cycle 1168) in the worktree /home/jason/src/vibepascal-wt-main: the x86_64-linux compiler
+       self-hosted to a fixpoint from the v60 linux compiler (0ebd15a60b7401b27d8688843ea27789; stage 2 == stage 3
+       byte-identical, 7775a119b0d4d3583f4456b9d80cff72), then rtl_all CPU_TARGET=x86_64 OS_TARGET=win64 OPT="-Apecoff -Xi"
+       (90 RTL ppu) and make -C compiler compiler OS_TARGET=win64 from a clean x86_64-win64 unit tree (249 units, nbas among them)
+ppcx64.exe md5:    034926c4cb1a4809293ef316c5537c7a
+ppcx64.exe sha256: 41c1fe952f32f0aa1656187651bec2cac389a52d86d07853d2246198a6cc6935
+                   5054976 bytes -- THE SAME BYTE COUNT AS THE v59 AND v60 EXES (bec75bee..., 17497551...): verify by md5, never by size.
+                   PE32+ console x86-64; -iV 3.3.1, -iTO win64, -iTP x86_64, -iD 2026/09/22
+
+Contents: the v60 win64 tarball tree with bin/ppcx64.exe swapped -- a COMPILER-BINARY-ONLY refresh.  Every other bin/
+member is byte-identical to v60 (and v59).  UNITS ARE STILL THE v52 SET (vibepascal-v52-win64-units.tar.gz): no RTL
+change, no package change, no PPU format change.  auto-update.bat can take this ~3.4 MB bin tarball alone.
+
+WHAT CHANGED IN v61 -- TWO DEFECTS, ONE CAUSE, BOTH ONLY WHEN THE WITH WAS NOT THE FIRST STATEMENT OF ITS BLOCK
+  tblocknode.simplify splices a compiler-built statement list (the hidden pieces of a with statement: prefix temp
+  create, its assignment, the body, the temp deletes) into the enclosing begin..end when the with is not the first
+  statement there.  Since v59 numbers and releases interface temps per source statement, every spliced piece became
+  a statement of its own:
+    * "with Make.o do begin ... end" (Make returns a COM interface, .o is the raw object): the assignment piece
+      released the interface BEFORE the body ran, so the body worked on a freed object.  Present in v59 AND v60.
+    * "with Make do begin ... end": the prefix temps were deleted under marks newer than their own stamp and
+      leaked until routine exit (v59).  GOD's 407ef9bb3a (v60) closed this half and stays in.
+  v61 never merges a compiler-built list into a source block (a nested begin..end still may be: its statements are
+  real ones).  Nothing is released earlier than the end of the with statement, and nothing later.
+
+VERIFIED ON THESE EXACT BYTES, under wine64 on lazdev, this exe against the v52 units:
+  * tests/test/tintfwithprefix1.pp (new, 62 corners): checks=62 fails=0 created=56 destroyed=56 live=0 at -O- and -O2.
+    The v60 exe (17497551...) prints 5 FAIL lines on the same program, the v59 exe (bec75bee...) 16.
+  * tests/test/tintfstmttemp1.pp 32/32, tintfstmttemp2.pp 28/28 created=27 destroyed=27 live=0.
+  * 17 further spliced-shape corners (raw .o after an inline var, after a preceding call, nested, two in a row,
+    exit out of the body, main block): 17/17; the v60 exe fails 5 of them, the v59 exe 7.
+  wine is NOT Windows.  v59 ran on native Windows (2026-09-17); v60 and v61 have not yet.
