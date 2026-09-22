@@ -51,7 +51,8 @@ PLATFORMS CARRYING v62
                    sha256 da3084ea3d3bc71422a2bc449f8da7feb2b4cd4eb7603a94cf640dadfea28042
                    ppcx64.exe md5 6fd9ad77ac1bd1b0b8edbb717add48df
                               sha256 1417ffb09d6a8100d71a0cb2ce5ba6c91299132c2d51c4e69d14786cf203030e
-                              (5055488 B -- the SAME byte count as the v59, v60 AND v61 exes; verify by md5)
+                              (5055488 B -- NOT the 5054976 B that the v59, v60 and v61 exes all shared: the size MOVED for the first
+                               time in four releases, so anything pinning 5054976 now scores a good download as broken; verify by md5)
                    -- also published as vibepascal-latest-win64-bin.tar.gz (byte copy) and named by
                       dist/win64/LATEST.txt (the auto-update pointer)
                    -- the v61 tarball tree with ppcx64.exe swapped: every other bin/ member byte-identical
