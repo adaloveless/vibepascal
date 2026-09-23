@@ -225,3 +225,36 @@ HONEST LIMITS
      compiled against the published unit sets themselves.
   4. The 1987-test corpus A/B for v62 ran on x86_64-linux (RUN RECORD above), not
      per target; the source is the same.
+
+================================================================================
+ADDENDUM 2026-09-23 (cycle 1179) -- r27 NOW SHIPS v62 ON ALL FIVE OF ITS PLATFORMS
+================================================================================
+Nothing above is rewritten.  The cycle-1176 WHY NOW says BuildMaster_lazdev's r27
+"could only ship v59 for aarch64-linux and both darwins".  That was true when it
+was written.  It stopped being true today, when he re-rolled those three legs
+from the v62 bytes above.
+
+READ FROM THE PUBLISHED BYTES (github.com/adaloveless/Lazarus, release tag
+lazarus-4.99-vp-20260923-r27).  Every asset was downloaded unauthenticated between
+08:04Z and 09:30Z, its sha256 matches its line in SHA256SUMS-20260923-r27.txt as
+re-published at 09:22:16Z, and the compiler was extracted by full member path:
+  platform        asset updated (UTC)   compiler            bytes     md5
+  x86_64-win64    2026-09-23 06:31:22   ppcx64.exe          5055488   6fd9ad77ac1bd1b0b8edbb717add48df
+  x86_64-linux    2026-09-23 09:22:15   ppcx64              6321824   fc7bccac34a80b2bf5fc67a45d72ce19
+  aarch64-linux   2026-09-23 07:14:26   ppca64              5181472   fa2e580b58f04d424a961e3804c77fbc
+  x86_64-darwin   2026-09-23 07:31:07   ppcx64 (signed)     9393296   bdd4a4be0dd67e58aa2f26669a2f967c
+  aarch64-darwin  2026-09-23 08:34:26   ppca64 (signed)     7338736   e196e3a52d1d3d2775514c5d5ee1fdab
+  Each is a v62 compiler named above: win64 and linux64 in the first section, the
+  other three under PLATFORMS ADDED TO v62, with the darwin two as signed by the
+  Lazarus packaging.  The darwin rows are EXACTLY the "predicted as shipped signed"
+  digests above, so both predictions now hold on shipped bytes.  A Mac user checks
+  r27's compiler against those signed digests; the unsigned ones can never match
+  a file inside a Lazarus darwin tarball, because signing appends bytes.
+  r27 aarch64-linux also carries compiler/ppcrossaarch64 (4944560 B, md5
+  f458adcc4ffa10fbf209d8bcfac172a9, x86-64 host, reports 3.3.1 2026/09/22).  It is
+  BuildMaster_lazdev's own cross build, not from this dist/, and is not classified
+  here.
+
+HONEST LIMITS above are unchanged.  This records which bytes r27 ships, not that
+they run: no Mac has executed a Mach-O from this fork, and v62 has not run on
+physical aarch64 silicon.
