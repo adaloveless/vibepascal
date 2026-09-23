@@ -1,156 +1,86 @@
-VibePascal v59 -- x86_64-darwin native compiler (runs on Intel macOS).
-A COM interface function-result temp is released at the end of its statement.
-
-Source commit:  5c89c538b8fb1f00c83fb5cabd9260f6e71caba4  (5c89c538b8)
-Compiler fixes: 55e687f581  (GOD -- the mechanism)
-                5c89c538b8  (statement ownership, escape sweep, every statement list)
-Parent release: v58 (dedf242c69)
-Built: 2026-09-17, cross-built on x86_64-linux against MacOSX26.2.sdk (osxcross
-       ld, -XPx86_64-darwin-), driven by the v59 native ppcx64 (md5 12220bfd5b3a9b1ee6db7b68297f0844);
+VibePascal v62 -- x86_64-darwin native compiler (runs on Intel macOS).
+Source commit:  ade0c47fc45202a96a3b1190aaa00a5aca47999f  (ade0c47fc4)
+Compiler commits since v59: 407ef9bb3a (GOD, v60) + 2df7b40d2a (v61) + ade0c47fc4 (v62)
+Parent release: v59 (5c89c538b8)
+Built: 2026-09-23, cross-built on x86_64-linux against MacOSX26.2.sdk (osxcross
+       ld, -XPx86_64-darwin-), driven by the PUBLISHED v62 linux ppcx64 (md5 fc7bccac34a80b2bf5fc67a45d72ce19);
        250 units compiled from a clean compiler/x86_64/units/x86_64-darwin
-Binary: bin/ppcx64  size   9269400
-                    md5    a1a5e4639ca5118b58245285f05eca2e
-                    sha256 2ce1bfae552a40cbecf80d57582927af5345fc208323f7873d7586491d4e4202
-
+Binary: bin/ppcx64  size   9269392
+                    md5    beff65086452ebcc4339f035de3ab3a3
+                    sha256 faf477f972ae84e4b4b5e854d245ade45fcdb078829694b20fcd85c1f49dd44c
 COMPILER BINARY ONLY.  No RTL change, no package change, no PPU FORMAT change, so
 an existing x86_64-darwin unit set stays valid and the utility binaries are
 unchanged and not re-shipped.
 
-WHAT CHANGED IN v59 -- A COM INTERFACE TEMP DIES WITH ITS STATEMENT
-  A function that returns a COM interface, called where its result is never
-  stored in a variable ("Giver.Need.o.DoWork;"), leaves the reference in a
-  hidden temp.  Up to v58 that temp was released only when the ROUTINE exited
-  (or when the compiler happened to recycle the slot), so the object stayed
-  checked out long past its line -- a holder that should have handed its object
-  back at the semicolon kept it until the end of the procedure.  v59 releases it
-  at the end of the source statement that produced it, the way Delphi does.
-
-  Two commits carry it, and the second one is why the first did not ship alone:
-
-    55e687f581  (GOD, 2026-09-16)  the mechanism.  A temp knows it holds a COM
-                interface (tgobj), a slot still holding one is never recycled
-                under a second result in the same statement, and tcgblocknode
-                releases the statement's temps after every statement of a
-                begin..end block.
-
-    5c89c538b8  (Otto, 2026-09-17)  three holes measured on that build with
-                the two matrices added in tests/test/ (tintfstmttemp1.pp, 32
-                corners; tintfstmttemp2.pp, 28 corners), closed before anything
-                shipped:
-                  * a statement nested inside another -- the body of a
-                    with/if/while/case whose EXPRESSION produced the temp --
-                    released its parent's temp.  `with Giver.Need.o do begin
-                    A; B end` ran B on a freed object (measured: the owner's
-                    refcount hit zero after A).  Each temp now records which
-                    source statement allocated it and a statement releases
-                    only its own, never an enclosing one's.
-                  * exit, break, continue, goto and raise LEAKED the temp for
-                    good: the routine-exit sweep had been trimmed to skip
-                    temps whose statement-end release existed, and those
-                    escapes never reach that release.  Measured: every one of
-                    them leaked exactly one object.  The sweep covers every
-                    managed temp again; a slot that was already released is
-                    nil and costs one compare, one that was abandoned is
-                    released at routine exit, and nothing is released twice.
-                  * repeat..until bodies, try/finally/except bodies and
-                    case-else lists kept the old routine-exit lifetime, because
-                    only begin..end had been marked as a source statement list.
-
-  What does NOT change: an interface stored in a variable, field, array or
-  Result lives exactly as long as it always did.  Two results used in one
-  statement are both alive until that statement ends.  A temp produced by an
-  if/while condition, a case selector or a with expression stays alive through
-  the branch, the loop body or the with block and is released when that
-  statement ends.
-
-  COMPILER BINARY ONLY.  No RTL change, no package change, no PPU FORMAT change
-  (the unit files' own header/version are untouched), so every existing unit
-  set for this target stays valid and does not need rebuilding.  Code compiled
-  by v59 simply releases these temps sooner.
-
-HOW THE FIX WAS PROVEN, ON THE SOURCE EVERY TARGET IS BUILT FROM
-  * tests/test/tintfstmttemp1.pp and tintfstmttemp2.pp, 60 self-checking
-    corners in all (free proc, method, nested proc, main body, if/for/while/
-    repeat/with bodies, two temps in one statement, a temp passed as a
-    parameter, a stored interface, exit/break/continue/goto/raise mid-
-    statement, a nested block under a with/if/while/case temp, try/finally/
-    except/on/case-else bodies, an unentered block, and destroyed == created
-    at the end): 60/60 on this source at -O- and -O2.  The same programs score
-    35 failures on v58 (everything released at routine exit, nothing leaked,
-    nothing freed early) and 31 on the 55e687f581 build (3 leaked objects, 4
-    use-after-free corners, 6 statement lists left on the old lifetime) -- so
-    the harness fails in both directions and a pass means something.
-  * 1983-test corpus A/B against the PUBLISHED v58 x86_64-linux compiler:
-    1983 SAME, 0 DIFF (compile status and run exit code per test).
-  * self-host fixpoint on x86_64-linux: stage 2 == stage 3 byte-identical.
-  * dist/ppu-truncation-check.sh, the v57/v58 reader fixes are still in:
-    25/25 offsets clean on x86_64-linux, i386-linux, aarch64-linux and
-    arm-linux with the host-executable compilers.
-  * dist/unit-set-loadcheck.sh: x86_64-linux 147/147, i386-linux 146/146,
-    aarch64-linux 144/144, arm-linux 143/143 packages load clean, zero
-    recompiles.
+WHAT CHANGED SINCE v59 ON THIS TARGET -- THREE COMPILER FIXES, ALL TARGET-INDEPENDENT
+  This target goes straight from v59 to v62, so it takes v60, v61 and v62 at once.
+  git diff --stat 5c89c538b8 ade0c47fc4 -- compiler/ is exactly fmodule.pas +32,
+  nbas.pas +19, tgobj.pas +15; nothing under rtl/ or packages/ moved.
+    407ef9bb3a  GOD   (v60)  tgobj.pas  a freed statement-scoped interface temp is
+                re-stamped to the statement that freed it, so the prefix temps of
+                "with Make do begin ... end" no longer leak until routine exit.
+    2df7b40d2a  Otto  (v61)  nbas.pas   a compiler-built statement list is never
+                spliced into a source block.  "with Make.o do begin ... end" (Make
+                returns a COM interface, .o the object inside it) released the
+                interface BEFORE the body ran whenever the with statement was not
+                the first statement of its block -- the body worked on a FREED
+                object.  A use-after-free on every target, at -O- and -O2.
+    ade0c47fc4  Otto  (v62)  fmodule.pas  a unit compiled FROM SOURCE is recompiled,
+                not reloaded, when a unit it resolved symbols out of is reset in
+                the middle of a build.  The reload left pointers into the freed
+                unit; incremental Lazarus IDE builds died with EAccessViolation
+                (exit 217).  Measured on v59, v60 and v61 before the fix.
+  COMPILER BINARY ONLY.  No RTL change, no package change, no PPU FORMAT change,
+  so the unit set this target already pairs with stays valid.
 
 HOW FAR THE VERIFICATION GOES ON THIS TARGET -- READ THIS BEFORE QUOTING IT
   THIS BINARY HAS NEVER BEEN EXECUTED.  The build host is x86_64-linux, there is
-  no macOS on it, and no packaged emulator on this box runs a Mach-O.  That was
-  equally true of every darwin binary before it; it is not a new gap, but it is
-  a real one.
-
+  no macOS on it and nothing here runs a Mach-O.  That was equally true of every
+  darwin binary before it; no scheduled queue on this site reaches a Mac.
   What IS established:
-    - Format and architecture checked with file(1) on the exact bytes in this
-      tarball (Mach-O 64-bit, flags NOUNDEFS/DYLDLINK/TWOLEVEL/PIE).
-    - The build really recompiled the patched code rather than relinking stale
-      units: the per-target unit dir was wiped first and the five changed
-      units (tgobj, hlcgobj, ncgbas, nbas, pstatmnt) plus version were written
-      fresh; the unit COUNT is asserted, never the hash.
-    - The fix is compiled in, by a SINGLE-AXIS Mach-O section triage: the v58
-      source commit and the v59 source commit were each cross-built HERE,
-      TODAY, with the same host compiler, the same RTL units and the same
-      flags, and only then compared (numbers below).  The control that makes
-      the delta a source measurement and not build noise is that the v58
-      rebuild reproduces the v58 binary shipped on 2026-09-11 section for
-      section.
-    - The BEHAVIOUR of this source was proven by EXECUTION on this host, on the
-      SAME CPU: the 60-corner lifetime matrices compiled and ran clean through
-      the Linux-hosted compiler for this CPU (see HOW THE FIX WAS PROVEN).  The
-      temp-lifetime change lives in CPU-independent code (tgobj, hlcgobj,
-      ncgbas, the parser), so those runs are evidence about the source this
-      binary was built from -- and only that.
-
+    - Format and architecture by file(1) on the exact bytes in this tarball.
+    - The patched code was really recompiled: the per-target unit dir was wiped
+      first and fmodule, nbas and tgobj were written fresh; the unit COUNT is
+      asserted, never the hash.
+    - The fixes are compiled in, by a SINGLE-AXIS Mach-O section triage: the v59
+      source (5c89c538b8, the three changed files swapped back) and the v62
+      source were each cross-built HERE, TODAY, with the SAME driver compiler,
+      the same RTL units and the same flags.  The control that makes the delta a
+      SOURCE measurement is that the v59 rebuild reproduces the v59 binary
+      shipped on 2026-09-17 SECTION FOR SECTION (numbers below).
+    - The BEHAVIOUR of this source was proven by EXECUTION on this host for the
+      same CPU: the lifetime matrices, the with-prefix matrix and the reload gate
+      pass on the Linux compilers built from this commit, and the published v59
+      compilers fail the with-prefix matrix (16 FAIL) and the reload gate on the
+      same harness.  All three fixes live in CPU- and OS-independent code.
   What is NOT established: that this binary starts, compiles or links on a Mac.
-  If you have a macOS box, the one number worth sending back is the exit code of
-  the compiler run with -iV (expect 0, printing 3.3.1) -- it needs no SDK and
+  If you have a macOS box, the one number worth sending back is the exit code
+  of the compiler run with -iV (expect 0, printing 3.3.1) -- it needs no SDK and
   no unit set.  An unsigned arm64 binary is KILLED by Apple Silicon macOS
   (Killed: 9) as a policy result, not a compiler verdict; codesign -f -s - it
   and retry.
-
 AD-HOC SIGNING CHANGES THIS HASH -- A MISMATCH IS NOT CORRUPTION
-  Every md5/sha256 above describes the binary AS STAGED, UNSIGNED.  Darwin
-  packaging in Lazarus build-release.sh ad-hoc signs every bundled Mach-O with
-  rcodesign, and the compiler is hard-linked into the .app, so the signature
-  rewrites the top-level copy too.  A signature appends bytes and changes the
-  hash, so the number above CANNOT match the file inside a Lazarus darwin
-  tarball.  The predicted AS-SHIPPED digests below are a CROSS-CHECK, not the
-  authority: build-release.sh stamps an "AS SHIPPED IN THIS TARBALL" block
-  computed after packaging, and that block wins if the two disagree.  The
-  prediction procedure was validated in the same run against known answers:
-  signing the v58 compilers under their shipped names reproduces their
-  documented digests exactly (ppcx64 9393168 / 3c4caf87a0167b016a615579aef40fe7,
-  ppca64 7338624 / b49919f66d9eee4f06fe6fff8f137c04).
-
+  Every md5/sha256 above describes the binary AS STAGED, UNSIGNED.  Lazarus
+  build-release.sh ad-hoc signs every bundled Mach-O with rcodesign and the
+  compiler is hard-linked into the .app, so the top-level copy is rewritten too.
+  The predicted AS-SHIPPED digests below are a CROSS-CHECK, not the authority:
+  build-release.sh's "AS SHIPPED IN THIS TARBALL" stamp wins if they disagree.
+  The prediction was validated in the same run against known answers: signing
+  the v59 bytes under their shipped names reproduces exactly what the r27
+  Lazarus release ships (ppcx64 9393312 / 0ab83bbf196fc6ca8b29cf94231750b0,
+  ppca64 7338752 / ab3d20b8ea24b56a291dc23c82510528), and re-signing is a no-op.
   Section triage, x86_64 (x86_64-apple-darwin25.2-size -m):
-    v58 shipped 2026-09-11        __TEXT,__text 4383694   __DATA,__const 1581664   9269256 bytes
-    v58 source rebuilt today      __TEXT,__text 4383694   __DATA,__const 1581664   9269256 bytes
-                                  (differs from the shipped file in 17 bytes, the
-                                  linker-generated LC_UUID; every section identical)
-    v59 (this binary)             __TEXT,__text 4384318   __DATA,__const 1581784   9269400 bytes
-    delta v58 -> v59              __text +624, __DATA __const +120: the fix.
-
+    v59 shipped 2026-09-17        __TEXT,__text 4384318   __DATA,__const 1581784   9269400 bytes
+    v59 source rebuilt today      __TEXT,__text 4384318   __DATA,__const 1581784   9269400 bytes
+                                  (differs from the shipped file in 18 bytes: the 16-byte
+                                  LC_UUID and 2 digits of the date in the
+                                  "FPC Unleashed [yyyy/mm/dd]" banner; every section identical)
+    v62 (this binary)             __TEXT,__text 4384590   __DATA,__const 1581784   9269392 bytes
+    delta v59 -> v62              __text +272, __const +0: the three fixes.
   Predicted AS-SHIPPED digests, if this binary is signed with no other mutation:
-    ppcx64   9393312 bytes
-      md5    0ab83bbf196fc6ca8b29cf94231750b0
-      sha256 ff48af2179c66781468751c404d1b435f6f1e88b7881fd8cbf3fdcee17f1c963
+    ppcx64   9393296 bytes
+      md5    bdd4a4be0dd67e58aa2f26669a2f967c
+      sha256 2edd1f0f5ce28fbcf6e2c87fc471524d6b4e5fe990a48f450065e95982d7f586
   VERIFY UNDER THE REAL FILENAME OR THE NUMBER IS WRONG: rcodesign takes the
   Mach-O binary identifier from the FILE'S NAME when none is embedded, and that
-  identifier is covered by the signature -- signing a copy called ppcx64.tmp
-  yields a different hash than signing one called ppcx64.
+  identifier is covered by the signature.

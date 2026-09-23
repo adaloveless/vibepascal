@@ -1,109 +1,74 @@
-VibePascal v59 -- arm-linux CROSS compiler -- runs on x86_64-linux, emits 32-bit arm-linux
-A COM interface function-result temp is released at the end of its statement.
-Source commit: 5c89c538b8fb1f00c83fb5cabd9260f6e71caba4
-Compiler commits: 55e687f581 (GOD, the mechanism) + 5c89c538b8 (statement ownership, escape sweep, every statement list)
-Parent release for THIS target: v58 (dedf242c69)
-Built: 2026-09-17 on x86_64-linux, from a CLEAN compiler/arm unit tree (241 units
-       compiled, the five changed units among them), driven by the v59 native
-       ppcx64 (md5 12220bfd5b3a9b1ee6db7b68297f0844), -dFPC_ARMHF
-Binary: bin/ppcrossarm  md5 6236206b913843c9d49f84d7b5edbe70
-                        sha256 5ebe32e6455057609c88a5532b408eb8da61123d6a9f95ebbb18c71d37736378
-                        5530944 bytes, ELF 64-bit x86-64, statically linked, stripped
+VibePascal v62 -- arm-linux CROSS compiler -- runs on x86_64-linux, emits 32-bit arm-linux
+Source commit: ade0c47fc45202a96a3b1190aaa00a5aca47999f
+Compiler commits since v59: 407ef9bb3a (GOD, v60) + 2df7b40d2a (v61) + ade0c47fc4 (v62)
+Parent release for THIS target: v59 (5c89c538b8)
+Built: 2026-09-23 on x86_64-linux, from a CLEAN compiler/arm unit tree
+       (241 units compiled), driven by the PUBLISHED v62 linux ppcx64
+       (md5 fc7bccac34a80b2bf5fc67a45d72ce19), -dFPC_ARMHF
+Binary: bin/ppcrossarm  md5 f5ed81b3aedacdc3c025748be306523d
+                        sha256 08b830eb24a30ade2e2a1f2863763583ac0ea69f8aa9e339cb3931f6d55e1e49
+                        5530944 bytes, ELF 64-bit x86-64, statically linked, stripped,
+                        reports -iV 3.3.1 / -iD 2026/09/22 / -iTP arm
+                        -- the SAME byte count as the v59 ppcrossarm: verify by md5
 
 ABI: ARMHF (ARM EABI5, HARD float / VFP) -- the ABI of 32-bit Raspberry Pi OS and
-of Debian/Ubuntu armhf.  It is NOT compatible with an armel (soft-float) system.
-The tree's own default is armel (compiler/fpcdefs.inc), so this build passes
--dFPC_ARMHF explicitly; unchanged since v54.
+of Debian/Ubuntu armhf; its output reads "0x5000400, Version5 EABI, hard-float ABI".
+NOT compatible with an armel (soft-float) system.
 
 UNITS: this compiler consumes the SAME unit set as the native arm compiler --
 dist/arm-linux/vibepascal-v54-arm-linux-units-full.tar.gz (see UNITS.txt here).
-No RTL, package or PPU-format change, so it stays valid.
 
-WHAT CHANGED IN v59 -- A COM INTERFACE TEMP DIES WITH ITS STATEMENT
-  A function that returns a COM interface, called where its result is never
-  stored in a variable ("Giver.Need.o.DoWork;"), leaves the reference in a
-  hidden temp.  Up to v58 that temp was released only when the ROUTINE exited
-  (or when the compiler happened to recycle the slot), so the object stayed
-  checked out long past its line -- a holder that should have handed its object
-  back at the semicolon kept it until the end of the procedure.  v59 releases it
-  at the end of the source statement that produced it, the way Delphi does.
+WHAT CHANGED SINCE v59 ON THIS TARGET -- THREE COMPILER FIXES, ALL TARGET-INDEPENDENT
+  This target goes straight from v59 to v62, so it takes v60, v61 and v62 at once.
+  git diff --stat 5c89c538b8 ade0c47fc4 -- compiler/ is exactly fmodule.pas +32,
+  nbas.pas +19, tgobj.pas +15; nothing under rtl/ or packages/ moved.
+    407ef9bb3a  GOD   (v60)  tgobj.pas  a freed statement-scoped interface temp is
+                re-stamped to the statement that freed it, so the prefix temps of
+                "with Make do begin ... end" no longer leak until routine exit.
+    2df7b40d2a  Otto  (v61)  nbas.pas   a compiler-built statement list is never
+                spliced into a source block.  "with Make.o do begin ... end" (Make
+                returns a COM interface, .o the object inside it) released the
+                interface BEFORE the body ran whenever the with statement was not
+                the first statement of its block -- the body worked on a FREED
+                object.  A use-after-free on every target, at -O- and -O2.
+    ade0c47fc4  Otto  (v62)  fmodule.pas  a unit compiled FROM SOURCE is recompiled,
+                not reloaded, when a unit it resolved symbols out of is reset in
+                the middle of a build.  The reload left pointers into the freed
+                unit; incremental Lazarus IDE builds died with EAccessViolation
+                (exit 217).  Measured on v59, v60 and v61 before the fix.
+  COMPILER BINARY ONLY.  No RTL change, no package change, no PPU FORMAT change,
+  so the unit set this target already pairs with stays valid.
 
-  Two commits carry it, and the second one is why the first did not ship alone:
+VERIFIED ON THESE EXACT BYTES -- BY RUNNING THEM, WITH THE PUBLISHED v59 AS THE CONTROL
+  * Four self-checking programs from tests/test/ were compiled BY THIS BINARY
+    against the PUBLISHED unit set this target pairs with, and the products
+    RAN (under qemu-arm-static; the compiler is a host binary):
+      tintfstmttemp1    -O- checks=32 fails=0 created=25
+                        -O2 checks=32 fails=0 created=25
+      tintfstmttemp2    -O- checks=28 fails=0 created=27 destroyed=27 live=0
+                        -O2 checks=28 fails=0 created=27 destroyed=27 live=0
+      tintfwithprefix1  -O- checks=62 fails=0 created=56 destroyed=56 live=0
+                        -O2 checks=62 fails=0 created=56 destroyed=56 live=0
+      tintflifetime1    -O- checks=28 fails=0
+                        -O2 checks=28 fails=0
+    tintfstmttemp1/2 cover v59's statement-end release, tintfwithprefix1 the
+    v60 + v61 with-statement fixes, tintflifetime1 the four published
+    interface lifetime rules.
+  * THE CONTROL SAYS NO: the published v59 binary for this target (md5 6236206b913843c9d49f84d7b5edbe70),
+    run through the identical harness, scores
+      tintfwithprefix1  -O- checks=62 fails=16 created=56 destroyed=55 live=1
+                        -O2 checks=62 fails=16 created=56 destroyed=55 live=1
+    so the pass above is a measurement, not a harness that cannot fail.
+  * dist/ppu-reload-check.sh (the v62 fix, scored on the compiler's own -vu
+    text): RESULT: PASS on this binary; the v59 control: RESULT: FAIL.
+  * dist/ppu-truncation-check.sh against the published units/arm-linux/aspelldyn.ppu:
+    25/25 offsets clean (run with TRUNCCHECK_VMCAP_KB=8388608).
+  * dist/unit-set-loadcheck.sh was NOT run for this target: no tree on this box
+    holds a packages/*/units/arm-linux unit set today (the published set is one flat
+    units/ dir), and none was rebuilt to manufacture one.  The programs above
+    were compiled against the published set itself.
 
-    55e687f581  (GOD, 2026-09-16)  the mechanism.  A temp knows it holds a COM
-                interface (tgobj), a slot still holding one is never recycled
-                under a second result in the same statement, and tcgblocknode
-                releases the statement's temps after every statement of a
-                begin..end block.
-
-    5c89c538b8  (Otto, 2026-09-17)  three holes measured on that build with
-                the two matrices added in tests/test/ (tintfstmttemp1.pp, 32
-                corners; tintfstmttemp2.pp, 28 corners), closed before anything
-                shipped:
-                  * a statement nested inside another -- the body of a
-                    with/if/while/case whose EXPRESSION produced the temp --
-                    released its parent's temp.  `with Giver.Need.o do begin
-                    A; B end` ran B on a freed object (measured: the owner's
-                    refcount hit zero after A).  Each temp now records which
-                    source statement allocated it and a statement releases
-                    only its own, never an enclosing one's.
-                  * exit, break, continue, goto and raise LEAKED the temp for
-                    good: the routine-exit sweep had been trimmed to skip
-                    temps whose statement-end release existed, and those
-                    escapes never reach that release.  Measured: every one of
-                    them leaked exactly one object.  The sweep covers every
-                    managed temp again; a slot that was already released is
-                    nil and costs one compare, one that was abandoned is
-                    released at routine exit, and nothing is released twice.
-                  * repeat..until bodies, try/finally/except bodies and
-                    case-else lists kept the old routine-exit lifetime, because
-                    only begin..end had been marked as a source statement list.
-
-  What does NOT change: an interface stored in a variable, field, array or
-  Result lives exactly as long as it always did.  Two results used in one
-  statement are both alive until that statement ends.  A temp produced by an
-  if/while condition, a case selector or a with expression stays alive through
-  the branch, the loop body or the with block and is released when that
-  statement ends.
-
-  COMPILER BINARY ONLY.  No RTL change, no package change, no PPU FORMAT change
-  (the unit files' own header/version are untouched), so every existing unit
-  set for this target stays valid and does not need rebuilding.  Code compiled
-  by v59 simply releases these temps sooner.
-
-HOW THE FIX WAS PROVEN, ON THE SOURCE EVERY TARGET IS BUILT FROM
-  * tests/test/tintfstmttemp1.pp and tintfstmttemp2.pp, 60 self-checking
-    corners in all (free proc, method, nested proc, main body, if/for/while/
-    repeat/with bodies, two temps in one statement, a temp passed as a
-    parameter, a stored interface, exit/break/continue/goto/raise mid-
-    statement, a nested block under a with/if/while/case temp, try/finally/
-    except/on/case-else bodies, an unentered block, and destroyed == created
-    at the end): 60/60 on this source at -O- and -O2.  The same programs score
-    35 failures on v58 (everything released at routine exit, nothing leaked,
-    nothing freed early) and 31 on the 55e687f581 build (3 leaked objects, 4
-    use-after-free corners, 6 statement lists left on the old lifetime) -- so
-    the harness fails in both directions and a pass means something.
-  * 1983-test corpus A/B against the PUBLISHED v58 x86_64-linux compiler:
-    1983 SAME, 0 DIFF (compile status and run exit code per test).
-  * self-host fixpoint on x86_64-linux: stage 2 == stage 3 byte-identical.
-  * dist/ppu-truncation-check.sh, the v57/v58 reader fixes are still in:
-    25/25 offsets clean on x86_64-linux, i386-linux, aarch64-linux and
-    arm-linux with the host-executable compilers.
-  * dist/unit-set-loadcheck.sh: x86_64-linux 147/147, i386-linux 146/146,
-    aarch64-linux 144/144, arm-linux 143/143 packages load clean, zero
-    recompiles.
-
-VERIFIED ON THESE EXACT BYTES
-  * EXECUTION, not inspection: this compiler built both lifetime matrices into
-    32-bit ARM EABI5 hard-float binaries which RAN under qemu-arm-static:
-    tintfstmttemp1 checks=32 fails=0, tintfstmttemp2 checks=28 fails=0
-    created=27 destroyed=27 live=0.
-  * dist/ppu-truncation-check.sh ppcrossarm arm-linux: 25/25 offsets clean,
-    0 problems, exit 0.
-  * dist/unit-set-loadcheck.sh arm-linux with this binary: 143/143 packages
-    load clean, zero recompiles.
-  * dist/cross-runtime-proof.sh exercises this tarball end to end.
-
-NOT PROVEN HERE: qemu-user is an emulator.  It runs the real shipped bytes and
-real ARM encodings, so codegen and RTL defects do surface, but it is not a
-Raspberry Pi.  Nobody has run this compiler's output on physical ARM silicon.
+NOT PROVEN HERE, AND SAID PLAINLY: qemu-user is an emulator.  It runs the real
+shipped bytes and real ARM instruction encodings, so codegen and RTL defects DO
+surface -- but it is not physical hardware.
+Nobody has run this compiler's output on physical ARM silicon.

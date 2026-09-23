@@ -136,3 +136,92 @@ RUN RECORD
           tintfstmttemp1 -O2 -> checks=32 fails=0 created=25
           tintfstmttemp2 -O- -> checks=28 fails=0 created=27 destroyed=27 live=0
           tintfstmttemp2 -O2 -> checks=28 fails=0 created=27 destroyed=27 live=0
+
+================================================================================
+ADDENDUM 2026-09-23 (cycle 1176) -- v62 IS NOW ON ALL EIGHT TARGETS
+================================================================================
+Nothing above is rewritten.  "PLATFORMS STILL AT v59" is left verbatim so the
+record of the first cut stays readable; it stopped being true today.  The six
+targets it named now carry v62, cut from the SAME source commit
+(ade0c47fc45202a96a3b1190aaa00a5aca47999f) as the win64 and linux64 binaries above.
+
+WHY NOW
+  GOD's standing order to release new compilers for all platforms (dashboard
+  mu460o3b, 2026-09-16; "get the latest compiler out STAT", mucrbmvr, 2026-09-22),
+  and BuildMaster_lazdev's r27 Lazarus release (tag lazarus-4.99-vp-20260923-r27),
+  which ships v62 on win64 and linux64 but could only ship v59 for aarch64-linux
+  and both darwins -- binaries that carry the v61 use-after-free and the v62
+  reload access violation.  All three fixes since v59 are target-independent.
+
+HOW
+  Compiler-binary-only refresh.  The v59 cut's make lines, unchanged but for the
+  -DD date, from a clean per-target unit dir each, in the worktree, driven by the
+  PUBLISHED v62 linux ppcx64 (fc7bccac34a80b2bf5fc67a45d72ce19) and by v62 cross
+  compilers it built.  Unit counts equal v59's for every target.  No unit set was
+  rebuilt: every target pairs with the unit set it paired with at v59 (UNITS.txt).
+
+PLATFORMS ADDED TO v62
+  aarch64-linux/   vibepascal-v62-ade0c47fc4-aarch64-linux-bin.tar.gz
+                     1499232 B  md5 2be71937d50c67b3a43dc78aad1418f8
+                     sha256 8fc432dbae8a9db13807dabd9bf514e0dcfface853a31b35e13ca7aa3b69ebaa
+                     bin/ppca64  5181472 B  md5 fa2e580b58f04d424a961e3804c77fbc
+  arm-linux/       vibepascal-v62-ade0c47fc4-arm-linux-bin.tar.gz
+                     1695946 B  md5 2b39681c93dc1c7c314de3a36d4c3c17
+                     sha256 4187b8096f22f5d3bf23617ab3f7462fc3af7d49856f8435e6cde254f678c939
+                     bin/ppcarm  5671192 B  md5 3d6d6d062a8bb7fa4ef4aedb078b8cac
+  arm-linux-cross/ vibepascal-v62-ade0c47fc4-arm-linux-cross-bin.tar.gz
+                     1766343 B  md5 32b7c90376d8ec5e3dde28f8fd33864b
+                     sha256 e1dbef701c43322a273e602e0c5d452fe79efef766b0bdd3059c340a63fe5baf
+                     bin/ppcrossarm  5530944 B  md5 f5ed81b3aedacdc3c025748be306523d
+  i386-linux-cross/ vibepascal-v62-ade0c47fc4-i386-linux-cross-bin.tar.gz
+                     2004355 B  md5 3440e63bd53b21ce15466d1365b4d839
+                     sha256 5233bbc01589d531e8b292c5647b08a8ffbf0ab1cc26eb9ddeb8bbd176a451f9
+                     bin/ppcross386  6523296 B  md5 bb7b07dee0abf06179b2f7d79b9869de
+  x86_64-darwin/   vibepascal-v62-ade0c47fc4-x86_64-darwin-bin.tar.gz
+                     2655161 B  md5 bd33c9c2dc395ed8d220e3d9bea0ab09
+                     sha256 50df6fa46f1d927cd551a106ca8e37ea2fe0dd14b43572c122a8aac83b0f651a
+                     bin/ppcx64  9269392 B  md5 beff65086452ebcc4339f035de3ab3a3
+                       (UNSIGNED; predicted as shipped signed: 9393296 B, md5 bdd4a4be0dd67e58aa2f26669a2f967c)
+  aarch64-darwin/  vibepascal-v62-ade0c47fc4-aarch64-darwin-bin.tar.gz
+                     2055851 B  md5 e56cb98f61eb6d41caf0d414e6d04383
+                     sha256 f7c6aea7db6b99737356d20bb7744739d6cb8cd9d50be2f387d4751b6538c024
+                     bin/ppca64  7333258 B  md5 496e5dd91ab0f87f515a445c5cf8b4b2
+                       (UNSIGNED; predicted as shipped signed: 7338736 B, md5 e196e3a52d1d3d2775514c5d5ee1fdab)
+  Byte counts: ppca64 (linux), ppcrossarm and ppcross386 are the SAME size as their
+  v59 predecessors, like linux64's ppcx64 before them.  Verify by md5, never by size.
+
+RUN RECORD (2026-09-23, lazdev, cycle 1176; per-target detail in each VERSION.txt,
+evidence under ~/src/vibepascal-slices/v62-rest-cy1176/)
+  The five runnable binaries (aarch64-linux and arm-linux natives under
+  qemu-user, the three x86_64-hosted cross compilers), each against the PUBLISHED
+  unit set its target pairs with, the published v59 binaries through the same
+  harness as the control:
+    lifetime matrices tintfstmttemp1, tintfstmttemp2, tintfwithprefix1 and
+    tintflifetime1 at -O- and -O2, compiled by the binary and RUN:
+        v62: 40/40 clean
+        v59: tintfwithprefix1 FAILS in 10/10 runs (checks=62 fails=16 destroyed=55 live=1),
+             the other three clean in 30/30 -- the control says NO exactly where it should
+    dist/ppu-reload-check.sh:   v62 PASS 5/5, v59 FAIL 5/5
+    dist/ppu-truncation-check.sh: 25/25 offsets clean on 5/5 (TRUNCCHECK_VMCAP_KB=8388608)
+    dist/arm-runtime-proof.sh on the tarballs in THIS tree: ARM RUNTIME PROOF: PASS (both ARM targets resolved to v62)
+    dist/cross-runtime-proof.sh on the tarballs in THIS tree: CROSS RUNTIME PROOF: PASS (13 assertions)
+  The two darwin binaries (nothing here executes a Mach-O): single-axis section
+  triage -- the v59 source rebuilt today by the SAME drivers with the same flags
+  reproduces the shipped v59 binaries SECTION FOR SECTION on both arches, and v62
+  differs from that control by __text +272 on x86_64 and +272 on arm64, every
+  other section unchanged.  The signed-digest predictions were validated in the
+  same run: signing the v59 bytes reproduces what r27 ships (9393312 / 0ab83bbf...,
+  7338752 / ab3d20b8...).
+
+HONEST LIMITS
+  1. qemu-user is not hardware.  The v59 aarch64 compiler ran once on physical
+     aarch64 silicon (2026-09-18); v62 has not.  Nothing from this fork has ever
+     run on physical 32-bit ARM.
+  2. darwin: no Mac has ever executed a Mach-O from this fork; no scheduled queue
+     on this site reaches one.
+  3. dist/unit-set-loadcheck.sh was NOT run for aarch64-linux, arm-linux or
+     i386-linux: no tree on this box holds packages/*/units for those targets
+     today, and none was rebuilt to manufacture one.  The gate programs were
+     compiled against the published unit sets themselves.
+  4. The 1987-test corpus A/B for v62 ran on x86_64-linux (RUN RECORD above), not
+     per target; the source is the same.

@@ -177,3 +177,18 @@ The "NOT PROVEN HERE" paragraph above still stands unchanged for v59: nobody has
 run this compiler, or anything it emits, on real 32-bit x86 hardware.
 
 -- Otto (FPCDeveloper), cycle 1148
+
+================================================================================
+ADDENDUM 2026-09-23 (cycle 1176) -- v62 SUPERSEDES v59 AS THE CURRENT BINARY
+================================================================================
+  vibepascal-v62-ade0c47fc4-i386-linux-cross-bin.tar.gz   the compiler  <-- CURRENT
+      member bin/ppcross386  md5 bb7b07dee0abf06179b2f7d79b9869de
+  vibepascal-v54-i386-linux-units-full.tar.gz   the unit set -- UNCHANGED, keep using it
+v62 is a compiler-binary-only refresh: no RTL, package or PPU-format change since
+v59.  Measured on this exact pairing, not assumed: the v62 compiler compiled
+tests/test/tintfstmttemp1, tintfstmttemp2, tintfwithprefix1 and tintflifetime1
+against the published unit set named above and every program ran clean (the v59
+binary fails tintfwithprefix1 on the same harness).  Detail: VERSION.txt here and
+the cycle 1176 addendum to dist/RELEASE-v62.txt.
+
+-- Otto (FPCDeveloper), cycle 1176

@@ -226,3 +226,18 @@ This check is committed and repeatable -- dist/arm-runtime-proof.sh runs it on
 both ARM targets, so it cannot quietly stop being true.
 
 -- Otto (FPCDeveloper), cycle 1151
+
+================================================================================
+ADDENDUM 2026-09-23 (cycle 1176) -- v62 SUPERSEDES v59 AS THE CURRENT BINARY
+================================================================================
+  vibepascal-v62-ade0c47fc4-arm-linux-bin.tar.gz   the compiler  <-- CURRENT
+      member bin/ppcarm  md5 3d6d6d062a8bb7fa4ef4aedb078b8cac
+  vibepascal-v54-arm-linux-units-full.tar.gz   the unit set -- UNCHANGED, keep using it
+v62 is a compiler-binary-only refresh: no RTL, package or PPU-format change since
+v59.  Measured on this exact pairing, not assumed: the v62 compiler compiled
+tests/test/tintfstmttemp1, tintfstmttemp2, tintfwithprefix1 and tintflifetime1
+against the published unit set named above and every program ran clean (the v59
+binary fails tintfwithprefix1 on the same harness).  Detail: VERSION.txt here and
+the cycle 1176 addendum to dist/RELEASE-v62.txt.
+
+-- Otto (FPCDeveloper), cycle 1176
