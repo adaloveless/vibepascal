@@ -156,6 +156,29 @@ trap 'on_signal 1'  HUP
 trap 'on_signal 2'  INT
 trap 'on_signal 15' TERM
 
+# KEEP THE LOG OF ANYTHING THAT FAILS (cy1176). Every per-package log lives in $SCRATCH and the
+# EXIT trap above deletes $SCRATCH, so until now a failure left nothing but the few Fatal|Error
+# lines echoed below it. Measured 2026-09-23 04:03Z in BuildMaster's r27 x86_64-linux roll: the
+# v62 ppcx64 printed "Error: Compilation raised exception internally" / "Fatal: Compilation
+# aborted" on fcl-css, and never again in 80 re-runs by hand. That text is the compiler's generic
+# on-Exception catch-all (compiler/compiler.pas: out-of-memory, I/O and OS errors each print their
+# own message) and the compiler RE-RAISES after it, so the RTL's report naming the exception class
+# and address was in the log -- which this script then deleted. A rare failure is exactly the one
+# that cannot be reproduced on demand, so the full log now survives the cleanup and its tail is
+# printed. EVERY LINE THIS ADDS IS INDENTED: BuildMaster's gate reads a line that starts with an
+# ALL-CAPS token as a problem header and reconciles that count against the summary line, so a
+# kept log must never add a header. Override the directory with LOADCHECK_KEEP_DIR.
+KEEPDIR="${LOADCHECK_KEEP_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/vibepascal-loadcheck}"
+keep_log() {            # name logfile indent
+  kept="$KEEPDIR/$TARGET-$1-$(date -u +%Y%m%dT%H%M%SZ)-$$.log"
+  if mkdir -p "$KEEPDIR" 2>/dev/null && cp "$2" "$kept" 2>/dev/null; then
+    echo "$3full log kept: $kept ($(wc -l < "$2") lines); its last lines:"
+  else
+    echo "$3full log could NOT be kept under $KEEPDIR; its last lines:"
+  fi
+  tail -n 40 "$2" | sed "s/^/$3| /"
+}
+
 # DEFAULT THE COMPILER FROM THE TARGET'S CPU, never to ppcx64 (cy1112). One FPC binary
 # serves every OS of one CPU but no other CPU at all, so `unit-set-loadcheck.sh
 # aarch64-linux` with the x86_64 compiler makes EVERY package fail identically with
@@ -204,6 +227,7 @@ if ! "$PPC" $TARGS -n -s -Cn -Fu"$RTL" -FU"$SCRATCH/out" "$SCRATCH/work/prefligh
   echo "FATAL: $PPC cannot build an empty program for $TARGET -- the harness is unusable,"
   echo "       which says nothing about the unit set. First error:"
   grep -E 'Fatal|Error' "$SCRATCH/work/preflight.log" | head -3 | sed 's/^/       /'
+  keep_log preflight "$SCRATCH/work/preflight.log" "       "
   echo "       pass a compiler that targets ${TARGET%%-*} as argument 2, e.g. $DEFPPC"
   emit_summary 0 0 1
   exit 2
@@ -320,6 +344,7 @@ for d in "$VPDIR"/packages/*/units/"$TARGET"; do
     bad=$((bad+1))
     echo "FAILED $pkg:"
     grep -E 'Fatal|Error' "$log" | head -4 | sed 's/^/    /'
+    keep_log "$pkg" "$log" "    "
   fi
 done
 
