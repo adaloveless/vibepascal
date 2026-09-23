@@ -11,8 +11,9 @@
 #   e.g.   ppu-truncation-check.sh compiler/ppcx64 x86_64-linux \
 #             packages/aspell/units/x86_64-linux/aspelldyn.ppu \
 #             rtl/units/x86_64-linux
-#   <rtl-unit-dir> and the current directory must not hold the unit under
-#   test (.ppu or source): a flat units/<target> dir that has it is refused.
+#   Nothing the compiler searches may hold the unit under test (.ppu or
+#   source) -- not <rtl-unit-dir>, the current directory, the compiler's own
+#   directory or a wrapper's -Fu: a flat units/<target> dir is refused.
 #
 # exit 0 = every truncation offset terminated with a message and a nonzero rc,
 #          and the intact .ppu still compiled;
@@ -92,20 +93,39 @@ FULL=$(stat -c%s "$REALPPU") || { echo "TRUNCCHECK FATAL: cannot stat $REALPPU" 
 # compiler does not stop at the truncated copy: it refuses it and keeps
 # looking, so a real <unit>.ppu, or a source to rebuild it from, anywhere else
 # it looks makes every offset compile with rc=0 and score ACCEPTED -- a healthy
-# compiler convicted.  Measured on v62 with the unguarded gate, 1/25 and exit 1 every
-# time: a flat PUBLISHED units/<target> dir (rtl and packages together) passed
-# as <rtl-unit-dir>; the unit's source in that dir; and a .ppu or a source in
-# the CURRENT directory, which fppu.pas searches before any -Fu path.  The same
-# runs score 25/25 against an rtl-only dir from a clean cwd.  Matched without
-# case because FindFile also tries the upper-case name.
-for d in . "$RTL"; do
-  dup=$(find "$d/" -mindepth 1 -maxdepth 1 \( -iname "$UNIT.ppu" -o -iname "$UNIT.pp" -o -iname "$UNIT.pas" -o -iname "$UNIT.p" \) -print -quit)
-  [ -n "$dup" ] || continue
-  if [ "$d" = . ]; then fix="run it from a directory that holds no $UNIT.* (the compiler searches the current one first)"
-  else fix="pass an <rtl-unit-dir> without $UNIT.* -- an rtl-only dir or symlink farm, not a flat unit set"; fi
-  echo "TRUNCCHECK FATAL: intact copy of the unit under test on the search path: $dup -- every truncated offset would compile from it and score ACCEPTED; $fix" >&2
+# compiler convicted.  Measured on v62 with the unguarded gate, 1/25 and exit 1
+# every time, in six places: a flat PUBLISHED units/<target> dir (rtl and
+# packages together) passed as <rtl-unit-dir>; the unit's source in that dir;
+# a .ppu or a source in the CURRENT directory, which fppu.pas searches before
+# any -Fu path; the compiler's own directory, which FPC appends to the unit
+# path; and a -Fu that a wrapper script adds.  The same runs score 25/25
+# against an rtl-only dir from a clean cwd.
+# So the list is the compiler's, not ours: one probe compile with -vt prints
+# every "Using unit path:" it will search (the exe dir resolved through a
+# wrapper to the binary it execs), plus "." which it searches unlisted.
+# Matched without case because FindFile also tries the upper-case name.
+PROBE=$(mktemp -d) || { echo "TRUNCCHECK FATAL: mktemp failed" >&2; echo "trunccheck: 0/0 offsets clean, 1 problem(s)"; exit 2; }
+mkdir "$PROBE/u" "$PROBE/w"
+printf 'program p;\nuses %s;\nbegin end.\n' "$UNIT" > "$PROBE/p.pp"
+SEARCH=$( [ "$CAPPED" = yes ] && ulimit -v "$VMCAP"
+          timeout 30 "$PPC" -n -s -T"$OS" -P"$CPU" -Cn -vt -Fu"$PROBE/u" -Fu"$RTL" -FU"$PROBE/w" "$PROBE/p.pp" 2>&1 |
+          sed -n 's/^Using unit path: //p')
+[ -n "$SEARCH" ] || echo "trunccheck: WARNING the compiler printed no unit path under -vt -- only . and $RTL were checked for an intact copy of $UNIT" >&2
+dup=
+while IFS= read -r d; do
+  case "$d" in ""|"$PROBE"/*) continue ;; esac
+  dup=$(find "${d%/}/" -mindepth 1 -maxdepth 1 \( -iname "$UNIT.ppu" -o -iname "$UNIT.pp" -o -iname "$UNIT.pas" -o -iname "$UNIT.p" \) -print -quit)
+  [ -n "$dup" ] && break
+done <<EOF
+.
+$RTL
+$SEARCH
+EOF
+rm -rf "$PROBE"
+if [ -n "$dup" ]; then
+  echo "TRUNCCHECK FATAL: intact copy of the unit under test on the compiler's search path: $dup -- every truncated offset would compile from it and score ACCEPTED; take $UNIT.* off the path (run from a directory without it, pass an rtl-only <rtl-unit-dir>, keep it out of the compiler's own directory and out of any -Fu a wrapper adds)" >&2
   echo "trunccheck: 0/0 offsets clean, 1 problem(s)"; exit 2
-done
+fi
 
 SCRATCH=$(mktemp -d) || { echo "TRUNCCHECK FATAL: mktemp failed" >&2; echo "trunccheck: 0/0 offsets clean, 1 problem(s)"; exit 2; }
 total=0; bad=0; rc_final=0
