@@ -127,6 +127,7 @@ interface
           procedure ppuwrite(ppufile:tcompilerppufile);override;final;
           procedure buildderef;override;
           procedure deref;override;
+          procedure resolve_unitsym;
        end;
        tnamespacesymclass = class of tnamespacesym;
 
@@ -1031,7 +1032,20 @@ implementation
     procedure tnamespacesym.deref;
       begin
         inherited deref;
-        unitsym:=tsym(unitsymderef.resolve);
+        { Do NOT resolve unitsym here. For a dotted unit that also uses a unit named like its
+          namespace (commonx: stringx.ansi uses stringx), unitsym is the hidden "$hidden<ns>"
+          unitsym in the module's IMPLEMENTATION symtable, which is not loaded yet when the
+          interface is dereferenced -- in a unit cycle that made the deref hit a nil symlist
+          slot, report "PPU corruption detected ... scheduling recompile" and delete a perfectly
+          good .ppu. fppu resolves it via resolve_unitsym once the local symtable is loaded; the
+          only reader (pbase, while parsing source) runs long after that. }
+        unitsym:=nil;
+      end;
+
+    procedure tnamespacesym.resolve_unitsym;
+      begin
+        if not assigned(unitsym) then
+          unitsym:=tsym(unitsymderef.resolve);
       end;
 
 

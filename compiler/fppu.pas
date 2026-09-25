@@ -159,7 +159,7 @@ uses
   SysUtils,
   cfileutl,
   systems,version,options,
-  symtable, symsym,
+  symtable, symsym, symconst,
   wpoinfo,
   scanner,
   aasmbase,ogbase,
@@ -2241,6 +2241,21 @@ var
         end;
 {$endif DEBUG_PPU_LIST_DIAGS}
 
+    procedure resolve_namespace_unitsyms(st: TSymtable);
+      var
+        i: longint;
+        sym: tsym;
+      begin
+        if not assigned(st) then
+          exit;
+        for i:=0 to st.SymList.Count-1 do
+          begin
+            sym:=tsym(st.SymList[i]);
+            if sym.typ=namespacesym then
+              tnamespacesym(sym).resolve_unitsym;
+          end;
+      end;
+
     function tppumodule.load_usedunits: boolean;
       { self is a ppu (or in a package) }
       begin
@@ -2323,6 +2338,13 @@ var
               there) }
             if assigned(localsymtable) then
               tstoredsymtable(localsymtable).derefimpl(false);
+            if state=ms_compile then
+              exit(false);
+
+            { namespace syms point at a unitsym that may live in the local symtable just
+              loaded above; see tnamespacesym.deref }
+            resolve_namespace_unitsyms(globalsymtable);
+            resolve_namespace_unitsyms(localsymtable);
             if state=ms_compile then
               exit(false);
 
