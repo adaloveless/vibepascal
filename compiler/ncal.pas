@@ -2141,8 +2141,7 @@ implementation
 
     procedure tcallnode.add_init_statement(n:tnode);
       var
-        lastinitstatement, before_firstpass : tstatementnode;
-        was_first_statement : boolean;
+        lastinitstatement, previousstatement : tstatementnode;
       begin
         if not assigned(n) then
           exit;
@@ -2155,27 +2154,24 @@ implementation
             exit;
           end;
         lastinitstatement:=laststatement(callinitblock);
-        was_first_statement:=(lastinitstatement=callinitblock.statements);
-        { all these nodes must be immediately typechecked, because this routine }
-        { can be called from pass_1 (i.e., after typecheck has already run) and }
-        { moreover, the entire blocks themselves are also only typechecked in   }
-        { pass_1, while the the typeinfo is already required after the          }
-        { typecheck pass for simplify purposes (not yet perfect, because the    }
-        { statementnodes themselves are not typechecked this way)               }
+        if not assigned(lastinitstatement) then
+          begin
+            callinitblock.statements:=cstatementnode.create(n,nil);
+            firstpass(callinitblock.left);
+            callinitblock.expectloc:=callinitblock.statements.expectloc;
+            exit;
+          end;
+        previousstatement:=lastinitstatement;
         addstatement(lastinitstatement,n);
-        before_firstpass:=lastinitstatement;
-        firstpass(tnode(lastinitstatement));
-        if was_first_statement and (lastinitstatement<>before_firstpass) then
-          callinitblock.statements:=lastinitstatement;
-        { Update expectloc for callinitblock }
-        callinitblock.expectloc:=lastinitstatement.expectloc;
+        { firstpass may replace/free the appended statement. Pass its owning
+          link, not a local alias, so the list never retains a freed node. }
+        firstpass(previousstatement.right);
+        callinitblock.expectloc:=previousstatement.right.expectloc;
       end;
-
 
     procedure tcallnode.add_done_statement(n:tnode);
       var
-        lastdonestatement, before_firstpass : tstatementnode;
-        was_first_statement : boolean;
+        lastdonestatement, previousstatement : tstatementnode;
       begin
         if not assigned(n) then
           exit;
@@ -2188,17 +2184,20 @@ implementation
             exit;
           end;
         lastdonestatement:=laststatement(callcleanupblock);
-        was_first_statement:=(lastdonestatement=callcleanupblock.statements);
-        { see comments in add_init_statement }
+        if not assigned(lastdonestatement) then
+          begin
+            callcleanupblock.statements:=cstatementnode.create(n,nil);
+            firstpass(callcleanupblock.left);
+            callcleanupblock.expectloc:=callcleanupblock.statements.expectloc;
+            exit;
+          end;
+        previousstatement:=lastdonestatement;
         addstatement(lastdonestatement,n);
-        before_firstpass:=lastdonestatement;
-        firstpass(tnode(lastdonestatement));
-        if was_first_statement and (lastdonestatement<>before_firstpass) then
-          callcleanupblock.statements:=lastdonestatement;
-        { Update expectloc for callcleanupblock }
-        callcleanupblock.expectloc:=lastdonestatement.expectloc;
+        { firstpass may replace/free the appended statement. Pass its owning
+          link, not a local alias, so the list never retains a freed node. }
+        firstpass(previousstatement.right);
+        callcleanupblock.expectloc:=previousstatement.right.expectloc;
       end;
-
 
     function tcallnode.para_count:longint;
       var

@@ -781,7 +781,8 @@ var
 
     if (m.state=ms_compiling_waitfinish) and assigned(m.waitingforunit) then
       begin
-        for i:=0 to m.waitingforunit.Count do
+        { Count is not a valid index, including for an empty wait list. }
+        for i:=0 to m.waitingforunit.Count-1 do
           begin
             um:=tmodule(m.waitingforunit[i]);
             if um=pas_mod then

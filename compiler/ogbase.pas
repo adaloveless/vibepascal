@@ -3263,75 +3263,78 @@ implementation
 
         procedure ResolveDirectObjectDefinitions(const stage:string);
         var
-          i,
-          j,
-          k       : longint;
+          i,j,k,index : longint;
           objdata : TObjData;
-          exesym  : TExeSymbol;
-          candidate,
-          objsym  : TObjSymbol;
+          exesym : TExeSymbol;
+          candidate,objsym : TObjSymbol;
+          definitions : TFPHashList;
           duplicate : boolean;
         begin
-          for i:=0 to UnresolvedExeSymbols.Count-1 do
-            begin
-              exesym:=TExeSymbol(UnresolvedExeSymbols[i]);
-              if not assigned(exesym) or
-                 (exesym.State<>symstate_undefined) then
-                continue;
+          { Index eligible definitions once. Scanning every object symbol for
+            every unresolved reference made large PE links quadratic. A nil
+            entry records duplicates, preserving the unique-definition rule. }
+          definitions:=TFPHashList.Create;
+          try
+            for j:=0 to ObjDataList.Count-1 do
+              begin
+                objdata:=TObjData(ObjDataList[j]);
+                for k:=0 to objdata.ObjSymbolList.Count-1 do
+                  begin
+                    objsym:=TObjSymbol(objdata.ObjSymbolList[k]);
+                    if assigned(objsym.objsection) and
+                       (objsym.bind in [AB_GLOBAL,AB_PRIVATE_EXTERN]) then
+                      begin
+                        index:=definitions.FindIndexOf(objsym.name);
+                        if index<0 then
+                          definitions.Add(objsym.name,objsym)
+                        else
+                          definitions[index]:=nil;
+                      end;
+                  end;
+              end;
 
-              candidate:=nil;
-              duplicate:=false;
-              for j:=0 to ObjDataList.Count-1 do
-                begin
-                  objdata:=TObjData(ObjDataList[j]);
-                  for k:=0 to objdata.ObjSymbolList.Count-1 do
-                    begin
-                      objsym:=TObjSymbol(objdata.ObjSymbolList[k]);
-                      if (objsym.name=exesym.name) and
-                         assigned(objsym.objsection) and
-                         (objsym.bind in [AB_GLOBAL,AB_PRIVATE_EXTERN]) then
-                        begin
+            for i:=0 to UnresolvedExeSymbols.Count-1 do
+              begin
+                exesym:=TExeSymbol(UnresolvedExeSymbols[i]);
+                if not assigned(exesym) or
+                   (exesym.State<>symstate_undefined) then
+                  continue;
+                index:=definitions.FindIndexOf(exesym.name);
+                candidate:=nil;
+                duplicate:=false;
+                if index>=0 then
+                  begin
+                    candidate:=TObjSymbol(definitions[index]);
+                    duplicate:=not assigned(candidate);
+                  end;
+                if assigned(candidate) and
+                   (candidate.bind in [AB_GLOBAL,AB_PRIVATE_EXTERN]) then
+                  begin
+                    exesym.ObjSymbol:=candidate;
+                    exesym.State:=symstate_defined;
+                    candidate.ExeSymbol:=exesym;
+                    if candidate.bind=AB_PRIVATE_EXTERN then
+                      candidate.bind:=AB_LOCAL;
+                    Comment(V_Debug,'Resolved external '+exesym.name+
+                      ' by direct object index '+stage);
 {$ifdef DEBUG_C387_LINK_DIAGS}
-                          if IsC387LinkDiagSymbol(exesym.name) then
-                            TraceC387LinkObjSymbol('direct-scan candidate '+stage,objsym,exesym);
+                    if IsC387LinkDiagSymbol(exesym.name) then
+                      TraceC387LinkExeSymbol('direct-scan resolved '+stage,exesym);
 {$endif DEBUG_C387_LINK_DIAGS}
-                          if assigned(candidate) then
-                            begin
-                              duplicate:=true;
-                              break;
-                            end
-                          else
-                            candidate:=objsym;
-                        end;
-                    end;
-                  if duplicate then
-                    break;
-                end;
-
-              if assigned(candidate) and not duplicate then
-                begin
-                  exesym.ObjSymbol:=candidate;
-                  exesym.State:=symstate_defined;
-                  candidate.ExeSymbol:=exesym;
-                  if candidate.bind=AB_PRIVATE_EXTERN then
-                    candidate.bind:=AB_LOCAL;
-                  Comment(V_Debug,'Resolved external '+exesym.name+
-                    ' by direct object scan '+stage);
+                  end
 {$ifdef DEBUG_C387_LINK_DIAGS}
-                  if IsC387LinkDiagSymbol(exesym.name) then
-                    TraceC387LinkExeSymbol('direct-scan resolved '+stage,exesym);
+                else if IsC387LinkDiagSymbol(exesym.name) then
+                  begin
+                    if duplicate then
+                      TraceC387LinkExeSymbol('direct-scan duplicate '+stage,exesym)
+                    else
+                      TraceC387LinkExeSymbol('direct-scan no-candidate '+stage,exesym);
+                  end;
 {$endif DEBUG_C387_LINK_DIAGS}
-                end
-{$ifdef DEBUG_C387_LINK_DIAGS}
-              else if IsC387LinkDiagSymbol(exesym.name) then
-                begin
-                  if duplicate then
-                    TraceC387LinkExeSymbol('direct-scan duplicate '+stage,exesym)
-                  else
-                    TraceC387LinkExeSymbol('direct-scan no-candidate '+stage,exesym);
-                end;
-{$endif DEBUG_C387_LINK_DIAGS}
-            end;
+              end;
+          finally
+            definitions.Free;
+          end;
         end;
 
         procedure LoadLibrary(lib:TStaticLibrary);
