@@ -348,13 +348,16 @@ begin
 
       add('SECTIONS');
       add('{');
-      add('  .data           :');
+      { extra by FPC. A separate output section placed after .data, rather than more .data
+        placed after .data1: the NDK has shipped only lld since r23, and lld can only INSERT
+        relative to a section that exists -- .data1 never does, so the old fragment failed
+        every Android link with "unable to insert .data after .data1". GNU ld accepts both. }
+      add('  .fpcdata        :');
       add('  {');
-      { extra by FPC }
       add('    KEEP (*(.fpc .fpc.n_version .fpc.n_links))');
       add('  }');
       add('}');
-      add('INSERT AFTER .data1');
+      add('INSERT AFTER .data');
 
       // Define different aliases for normal and JNI libraries
       if FJNIOnLoadName <> '' then
