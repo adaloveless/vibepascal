@@ -53,6 +53,11 @@ interface
       class procedure sym_maybe_initialize(p: TObject; arg: pointer);
       { generates the code for finalisation of local variables }
       class procedure local_varsyms_finalize(p:TObject;arg:pointer);
+      { block-scoped inline vars split by whether an anonymous function captured
+        them (vsa_different_scope): the uncaptured ones die at their block's end,
+        the captured ones keep procedure-exit finalization }
+      class procedure block_varsyms_finalize_uncaptured(p:TObject;arg:pointer);
+      class procedure block_varsyms_finalize_captured(p:TObject;arg:pointer);
       { generates the code for finalization of static symtable and
         all local (static) typed consts }
       class procedure static_syms_finalize(p: TObject; arg: pointer);
@@ -579,9 +584,12 @@ implementation
            begin
              if assigned(pd.blocklocalsymtables) then
                for blk_i:=0 to pd.blocklocalsymtables.count-1 do
-                 { cy1096: skip blocks already finalized at their own end }
+                 { cy1096: skip blocks already finalized at their own end --
+                   except their captured vars, which are never finalized there }
                  if not tblocksymtable(pd.blocklocalsymtables[blk_i]).finalized_inline then
-                   TSymtable(pd.blocklocalsymtables[blk_i]).SymList.ForEachCall(@local_varsyms_finalize,@stat);
+                   TSymtable(pd.blocklocalsymtables[blk_i]).SymList.ForEachCall(@local_varsyms_finalize,@stat)
+                 else
+                   TSymtable(pd.blocklocalsymtables[blk_i]).SymList.ForEachCall(@block_varsyms_finalize_captured,@stat);
            end;
          else
            begin
@@ -589,9 +597,12 @@ implementation
              { also finalize managed vars in block-scoped symtables (m_inline_var) }
              if assigned(pd.blocklocalsymtables) then
                for blk_i:=0 to pd.blocklocalsymtables.count-1 do
-                 { cy1096: skip blocks already finalized at their own end }
+                 { cy1096: skip blocks already finalized at their own end --
+                   except their captured vars, which are never finalized there }
                  if not tblocksymtable(pd.blocklocalsymtables[blk_i]).finalized_inline then
-                   TSymtable(pd.blocklocalsymtables[blk_i]).SymList.ForEachCall(@local_varsyms_finalize,@stat);
+                   TSymtable(pd.blocklocalsymtables[blk_i]).SymList.ForEachCall(@local_varsyms_finalize,@stat)
+                 else
+                   TSymtable(pd.blocklocalsymtables[blk_i]).SymList.ForEachCall(@block_varsyms_finalize_captured,@stat);
            end;
       end;
     end;
@@ -610,14 +621,41 @@ implementation
            not(vo_is_default_var in tabstractvarsym(p).varoptions) or
            (tabstractvarsym(p).varspez<>vs_const)
          ) and
-         is_managed_type(tlocalvarsym(p).vardef) then
+         is_managed_type(tlocalvarsym(p).vardef) and
+         { a captured var is not finalized at block end (see below) }
+         not tabstractvarsym(p).different_scope then
         inc(plongint(arg)^);
     end;
 
 
   class procedure tnodeutils.block_add_implicit_finalize_nodes(st: TSymtable; var stat: tstatementnode);
     begin
-      st.SymList.ForEachCall(@local_varsyms_finalize,@stat);
+      st.SymList.ForEachCall(@block_varsyms_finalize_uncaptured,@stat);
+    end;
+
+
+  { A block-scoped inline var referenced from an anonymous function is marked
+    vsa_different_scope while the anonymous function is parsed, i.e. before its
+    block ends (a block-local var is out of scope for ordinary nested routines,
+    so this mark means "captured"). Its block-end finalization must NOT be
+    emitted: it is built here at parse time, and convert_captured_syms later
+    rewrites every load of the var -- this one included -- into the capturer
+    field, so the finally would clear the value the closure still holds
+    (LazyWork(procedure begin ... s ... end) inside an if-block ran with s=''
+    and interfaces nil). The routine-exit sweep finalizes it instead, which is
+    the pre-cy1096 behaviour that worked for captured vars. }
+  class procedure tnodeutils.block_varsyms_finalize_uncaptured(p: TObject; arg: pointer);
+    begin
+      if (tsym(p).typ=localvarsym) and tabstractvarsym(p).different_scope then
+        exit;
+      local_varsyms_finalize(p,arg);
+    end;
+
+
+  class procedure tnodeutils.block_varsyms_finalize_captured(p: TObject; arg: pointer);
+    begin
+      if (tsym(p).typ=localvarsym) and tabstractvarsym(p).different_scope then
+        local_varsyms_finalize(p,arg);
     end;
 
 
