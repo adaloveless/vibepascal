@@ -3599,7 +3599,8 @@ implementation
          first,last : tnode;
          filepos : tfileposinfo;
          blockst : tblocksymtable;
-         finalcode : tnode;
+         finalcode,
+         finalinner : tnode;
          finalstat : tstatementnode;
 
       begin
@@ -3705,9 +3706,17 @@ implementation
                fallthrough, exception, exit, break, continue and goto.
                tblocknode.left must also stay a tstatementnode chain
                (pass_typecheck walks it via hp.right), so it goes in a
-               statement node. }
+               statement node.
+               The try half is a SOURCE block of its own, like try_statement's
+               body: tcgblocknode releases COM interface temps only between the
+               statements of a source block, so a bare chain here turned the
+               whole block into ONE statement for that purpose -- "Make.Touch;"
+               inside a block with a managed inline var kept its object until
+               the block ended, and past it on break/raise (README rule 4). }
+             finalinner:=cblocknode.create(first);
+             Include(tblocknode(finalinner).blocknodeflags,bnf_source_block);
              first:=cstatementnode.create(
-                      ctryfinallynode.create(first,finalcode),nil);
+                      ctryfinallynode.create(finalinner,finalcode),nil);
              blockst.finalized_inline:=true;
            end;
 

@@ -394,6 +394,14 @@ implementation
                     (symtable.symtablelevel<>current_procinfo.procdef.localst.symtablelevel) or
                     (current_procinfo.procdef.proctypeoption=potype_unitfinalize)
                   ) then
+                 make_not_regable(self,[ra_different_scope])
+               { an inline var in a nested main-body / init-section block has
+                 static storage in a blocksymtable (inlinevar_needs_static_storage);
+                 a load from another routine level is an anonymous function
+                 capturing it, which must keep it out of block-end finalization }
+               else if assigned(current_procinfo) and
+                  (symtable.symtabletype=blocksymtable) and
+                  (symtable.symtablelevel<>current_procinfo.procdef.localst.symtablelevel) then
                  make_not_regable(self,[ra_different_scope]);
                resultdef:=tabstractvarsym(symtableentry).vardef;
                if vo_is_thread_var in tstaticvarsym(symtableentry).varoptions then

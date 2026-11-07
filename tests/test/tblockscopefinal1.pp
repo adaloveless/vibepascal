@@ -312,12 +312,11 @@ begin
     var h := MakeH(15);
   end;
   C15AtBlockEnd := Kills;
-  { C15 is a KNOWN PRE-EXISTING GAP, identical on baseline and patched: in the
-    main program body inline vars are staticvarsym, not localvarsym, and
-    local_varsyms_finalize gates on localvarsym -- so neither compiler releases
-    them at block end. Out of scope for this fix; reported, not counted. }
-  WriteLn(Format('  note C15 MAIN BODY (proginit)           %d  (pre-existing gap, baseline=patched)',
-                 [C15AtBlockEnd]));
+  { C15 was reported, not counted, until the block finalizers learned that a
+    main-body block var is a staticvarsym, not a localvarsym: it was never
+    released at all, not even at program end. Counted now; the main-body
+    matrix is tblockscopemain1. }
+  Chk('C15 main body (proginit): released', C15AtBlockEnd, 1);
 
   WriteLn;
   if Fails = 0 then
