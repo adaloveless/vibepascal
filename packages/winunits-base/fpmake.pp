@@ -74,6 +74,8 @@ begin
           AddUnit('urlmon');
           AddUnit('httpapi');
           AddUnit('winmanutf8lfn');
+          AddUnit('tlhelp32');
+          AddUnit('winsvc');
         end;
     T:=P.Targets.AddImplicitUnit('activex.pp');
     T:=P.Targets.AddImplicitUnit('urlmon.pp');
@@ -115,7 +117,7 @@ begin
     T.Dependencies.AddInclude('tmschema.inc');
     T:=P.Targets.AddImplicitUnit('tlhelp32.pp');
     T:=P.Targets.AddImplicitUnit('winsvc.pp');
-    T:=P.Targets.AddImplicitUnit('winmanutf8lfn');
+    T:=P.Targets.AddImplicitUnit('winmanutf8lfn.pp');
 
     P.Sources.AddSrcFiles('src/w32default.*', P.Directory);
     P.InstallFiles.Add('src/w32default.res',AllWindowsOSes,'$(unitinstalldir)');
