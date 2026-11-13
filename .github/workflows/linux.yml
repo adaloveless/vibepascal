@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
   workflow_call:
 
+permissions:
+  contents: read
+
 jobs:
   check-for-changes:
     runs-on: ubuntu-latest
@@ -11,7 +14,7 @@ jobs:
       should_build: ${{ steps.check.outputs.should_build }}
     steps:
       - name: Checkout HEAD only
-        uses: actions/checkout@v3
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 1
 
@@ -39,6 +42,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: check-for-changes
+    permissions:
+      contents: write
     if: needs.check-for-changes.outputs.should_build == 'true'
 
     steps:
@@ -50,7 +55,9 @@ jobs:
         sudo apt-get install -y --no-install-recommends fpc-3.2.2
 
     - name: Checkout source
-      uses: actions/checkout@v3
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      with:
+        persist-credentials: false
 
     - name: Build FPC x86_64 (native)
       run: |
@@ -75,19 +82,19 @@ jobs:
         zip -j linux-ppcross386.zip fpc/bin/ppcross386
 
     - name: Upload linux-bundle.zip
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: linux-bundle.zip
         path: linux-bundle.zip
 
     - name: Upload linux-ppcx64.zip
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: linux-ppcx64.zip
         path: linux-ppcx64.zip
 
     - name: Upload linux-ppcross386.zip
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: linux-ppcross386.zip
         path: linux-ppcross386.zip
@@ -105,14 +112,14 @@ jobs:
         } > release-body.txt
 
     - name: Update tag
-      uses: richardsimko/update-tag@v1
+      uses: richardsimko/update-tag@aab2434e9a5040687874aa39d1c6377ec0cb0d94 # v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: nightly
 
     - name: Release
-      uses: ncipollo/release-action@v1
+      uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1.21.0
       with:
         artifacts: linux-bundle.zip,linux-ppcx64.zip,linux-ppcross386.zip
         tag: ${{ env.TAG }}
