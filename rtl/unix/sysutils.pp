@@ -28,7 +28,9 @@ interface
 
 {$modeswitch typehelpers}
 {$modeswitch advancedrecords}
+{$if FPC_FULLVERSION>=30301}
 {$modeswitch functionreferences}
+{$endif}
 
 {$if (defined(BSD) or defined(SUNOS)) and defined(FPC_USE_LIBC)}
 {$define USE_VFORK}

@@ -469,7 +469,9 @@ Type
 { Delphi-compatible reference-to type aliases (System.SysUtils).
   Requires {$modeswitch functionreferences} at the unit level. The
   non-generic TProc plus its generic arity siblings rely on the
-  compiler allowing arity-based overloading of the same bare name. }
+  compiler allowing arity-based overloading of the same bare name.
+  Guarded so the RTL still builds with the 3.2.x bootstrap compiler. }
+{$if FPC_FULLVERSION>=30301}
 type
   TProc                      = reference to procedure;
   generic TProc<T>           = reference to procedure(Arg1: T);
@@ -484,6 +486,7 @@ type
   generic TFunc<T1,T2,T3,T4,TResult>  = reference to function(Arg1: T1; Arg2: T2; Arg3: T3; Arg4: T4): TResult;
 
   generic TPredicate<T> = reference to function(Arg1: T): Boolean;
+{$endif FPC_FULLVERSION>=30301}
 
   Function GetCompiledArchitecture : TOSVersion.TArchitecture;
   Function GetCompiledPlatform : TOSVersion.TPlatform;

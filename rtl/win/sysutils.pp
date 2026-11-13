@@ -28,7 +28,9 @@ interface
 {$ENDIF}
 {$modeswitch typehelpers}
 {$modeswitch advancedrecords}
+{$if FPC_FULLVERSION>=30301}
 {$modeswitch functionreferences}
+{$endif}
 
 {$IFDEF FPC_DOTTEDUNITS}
 uses
