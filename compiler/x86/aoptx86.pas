@@ -114,6 +114,21 @@ unit aoptx86;
           if no free register could be found }
         function GetMMRegisterBetween(RegSize: TSubRegister; var AUsedRegs: TAllUsedRegs; p, hp: tai; DontAlloc: Boolean = False): TRegister;
 
+        { cmp_p is a CMP or TEST that the caller is about to make narrower (e.g.
+          cmpl -> cmpb) and whose equality and unsigned results it has shown to
+          be the same at the new size.  The signed ones are not: the top bit of
+          the narrow register reads as a sign, so 250 is "<= 1" as a signed
+          byte.  Returns True if every instruction that reads the flags set by
+          cmp_p is a Jcc, SETcc or CMOVcc testing equality or an unsigned
+          ordering -- or, when SignedToUnsigned, a signed ordering, which is
+          then changed into its unsigned twin (L -> B, LE -> BE, G -> A,
+          GE -> AE).  SignedToUnsigned is for operands both known to be
+          non-negative at the old size (a zero-extended or masked register and a
+          constant in 0..high(new size)), where the two orderings agree.  Returns
+          False, changing nothing, for any other reader (S, O, P, ADC, a jump,
+          a reader after a label...): the comparison must then keep its size. }
+        function PrepareNarrowedCmp(const cmp_p: tai; SignedToUnsigned: Boolean): Boolean;
+
         { checks whether loading a new value in reg1 overwrites the entirety of reg2 }
         class function Reg1WriteOverwritesReg2Entirely(reg1, reg2: tregister): boolean; static;
         { checks whether reading the value in reg1 depends on the value of reg2. This
@@ -11809,16 +11824,14 @@ unit aoptx86;
         { Data flow analysis }
         TestValMin, TestValMax, TestValSignedMax: TCgInt;
         BitwiseOnly, OrXorUsed,
-        ShiftDownOverflow, UpperSignedOverflow, UpperUnsignedOverflow, LowerSignedOverflow, LowerUnsignedOverflow: Boolean;
+        ShiftDownOverflow, UpperSignedOverflow, UpperUnsignedOverflow, LowerUnsignedOverflow: Boolean;
+        SignedToUnsigned: Boolean;
 
         function CheckOverflowConditions: Boolean;
           begin
             Result := True;
             if (TestValSignedMax > SignedUpperLimit) then
               UpperSignedOverflow := True;
-
-            if (TestValSignedMax > SignedLowerLimit) or (TestValSignedMax < SignedLowerLimitBottom) then
-              LowerSignedOverflow := True;
 
             if (TestValMin > LowerLimit) or (TestValMax > LowerLimit) then
               LowerUnsignedOverflow := True;
@@ -12216,6 +12229,23 @@ unit aoptx86;
               end;
           end;
 
+        { True if every instruction between the MOVZX and the comparison
+          added or subtracted a constant, so that TestValMin..TestValMax is
+          exactly the range of the value }
+        function OnlyAddSubConst: Boolean;
+          var
+            LocalIndex: Integer;
+          begin
+            Result := True;
+            for LocalIndex := 0 to InstrMax do
+              if not MatchInstruction(InstrList[LocalIndex], A_INC, A_DEC, []) and
+                not (
+                  MatchInstruction(InstrList[LocalIndex], A_ADD, A_SUB, []) and
+                  (InstrList[LocalIndex].oper[0]^.typ = top_const)
+                ) then
+                Exit(False);
+          end;
+
       begin
         Result := False;
         p_removed := False;
@@ -12390,7 +12420,6 @@ unit aoptx86;
         BitwiseOnly := True;
         OrXorUsed := False;
         UpperSignedOverflow := False;
-        LowerSignedOverflow := False;
         UpperUnsignedOverflow := False;
         LowerUnsignedOverflow := False;
 
@@ -12472,16 +12501,42 @@ unit aoptx86;
                     begin
                       { Make sure the comparison or any previous instructions
                         hasn't pushed the test values outside of the range of
-                        MinSize }
+                        MinSize.  The signed bookkeeping does not bound the
+                        register (TestValSignedMax starts at SignedLowerLimit,
+                        while a zero-extended byte reaches 255): narrowing
+                        whenever it stayed in range (a LowerSignedOverflow
+                        flag, now gone) made "movzbl; subl $1; cmpl $255; sete"
+                        into "subb $1; cmpb $255; sete", true for 0, and
+                        "movzbl; subl $1; cmpl $5; setl" true for 200.  So: }
                       if LowerUnsignedOverflow and not UpperUnsignedOverflow then
                         begin
                           { Exceeded lower bound but not upper bound }
                           Exit;
                         end
-                      else if not LowerSignedOverflow or not LowerUnsignedOverflow then
+                      else if not LowerUnsignedOverflow and (taicpu(hp1).oper[0]^.val >= 0) then
                         begin
-                          { Size didn't exceed lower bound }
+                          { Size didn't exceed lower bound: the value and the
+                            constant are both in 0..LowerLimit, where a signed
+                            condition can become an unsigned one }
                           TargetSize := MinSize;
+                          SignedToUnsigned := True;
+                        end
+                      else if OnlyAddSubConst and
+                        (TestValMax <= LowerLimit) and
+                        (taicpu(hp1).oper[0]^.val >= 0) and
+                        (taicpu(hp1).oper[0]^.val <= LowerLimit + TestValMin) then
+                        begin
+                          { A range check such as "x in [35..69]":
+                              movzbl %al,%eax; subl $35,%eax; cmpl $34,%eax; jc
+                            Only constants were added or subtracted, so the
+                            value is exactly in TestValMin..TestValMax; at the
+                            narrow size its negative part reads as
+                            LowerLimit+1+TestValMin..LowerLimit, above the
+                            constant, as it is above it unsigned at the old size.
+                            Equality and the unsigned conditions keep their
+                            answer, the signed ones do not }
+                          TargetSize := MinSize;
+                          SignedToUnsigned := False;
                         end
                       else
                         Break;
@@ -12499,6 +12554,9 @@ unit aoptx86;
 
                       if TargetSize <> MaxSize then
                         begin
+                          if not PrepareNarrowedCmp(hp1, SignedToUnsigned) then
+                            Break;
+
                           { Update the register to its new size }
                           setsubreg(ThisReg, TargetSubReg);
 
@@ -16020,12 +16078,99 @@ unit aoptx86;
 {$endif x86_64}
 
 
+    function TX86AsmOptimizer.PrepareNarrowedCmp(const cmp_p: tai; SignedToUnsigned: Boolean): Boolean;
+
+      { Rewrite = False only checks; the caller runs it again with True when
+        every reader passed, so nothing changes unless the whole set does }
+      function ScanFlagReaders(Rewrite: Boolean): Boolean;
+        var
+          hp: tai;
+          { Past a label or an instruction that sets some of the flags, a
+            reader might not be reading (only) what cmp_p set }
+          Uncertain: Boolean;
+        begin
+          Result := False;
+          Uncertain := False;
+          hp := cmp_p;
+          repeat
+            hp := tai(hp.Next);
+            if not Assigned(hp) then
+              Exit;
+            case hp.typ of
+              ait_regalloc:
+                if (tai_regalloc(hp).ratype = ra_dealloc) and
+                  SuperRegistersEqual(tai_regalloc(hp).reg, NR_DEFAULTFLAGS) then
+                  { The flags are dead: every reader has been seen }
+                  Break;
+              ait_label:
+                { The code generator often releases the flags just after
+                  the label that follows the last jump.  A label nothing
+                  jumps to (often one about to be removed) changes nothing }
+                if tai_label(hp).labsym.is_used and
+                  (tai_label(hp).labsym.labeltype = alt_jump) then
+                  Uncertain := True;
+              ait_instruction:
+                if MatchInstruction(hp, A_Jcc, A_SETcc, A_CMOVcc, []) then
+                  begin
+                    if Uncertain then
+                      Exit;
+                    case taicpu(hp).condition of
+                      C_E, C_Z, C_NE, C_NZ,
+                      C_A, C_NBE, C_AE, C_NB, C_NC,
+                      C_B, C_C, C_NAE, C_BE, C_NA:
+                        { The caller has shown that these give the same
+                          answer at either size };
+                      C_G, C_NLE, C_GE, C_NL, C_L, C_NGE, C_LE, C_NG:
+                        if not SignedToUnsigned then
+                          Exit
+                        else if Rewrite then
+                          case taicpu(hp).condition of
+                            C_G, C_NLE:
+                              taicpu(hp).condition := C_A;
+                            C_GE, C_NL:
+                              taicpu(hp).condition := C_AE;
+                            C_L, C_NGE:
+                              taicpu(hp).condition := C_B;
+                            else
+                              taicpu(hp).condition := C_BE;
+                          end;
+                      else
+                        { S, O, P and their complements }
+                        Exit;
+                    end;
+                  end
+                else if InstrReadsFlags(hp) or is_calljmp(taicpu(hp).opcode) then
+                  Exit
+                else if RegLoadedWithNewValue(NR_DEFAULTFLAGS, hp) then
+                  { The flags are overwritten: every reader has been seen }
+                  Break
+                else if RegModifiedByInstruction(NR_DEFAULTFLAGS, hp) then
+                  { Partly overwritten (INC, DEC, CLC...) }
+                  Uncertain := True;
+              else
+                ;
+            end;
+          until False;
+          Result := True;
+        end;
+
+      begin
+        Result := ScanFlagReaders(False);
+        if Result then
+          begin
+            ScanFlagReaders(True);
+            DebugMsg(SPeepholeOptimization + 'Narrowed comparison: its flag readers use equality or unsigned conditions', cmp_p);
+          end;
+      end;
+
+
     function TX86AsmOptimizer.OptPass1AND(var p : tai) : boolean;
       var
         hp1, hp2 : tai;
         MaskLength : Cardinal;
         MaskedBits : TCgInt;
         ActiveReg : TRegister;
+        MaskSize : TOpSize;
       begin
         Result:=false;
 
@@ -16100,35 +16245,56 @@ unit aoptx86;
                             dealloc reg
                           to
                             cmp  val<=$ff/val<=$ffff/val<=$ffffffff, resized reg
+
+                          A comparison no wider than the mask reads no bit the
+                          AND changes and keeps its size (widening "cmpb" to
+                          "cmpw" after "and $ffff" compared bits 8..15 too).  A
+                          wider one is narrowed to the mask's size, which gives
+                          the old answer only for a constant in 0..mask (-6 is
+                          never equal to a masked value, but $FA as a byte is)
+                          and with unsigned conditions: 250 is "<= 1" as a
+                          signed byte, so PrepareNarrowedCmp turns signed
+                          ones into unsigned ones, or refuses.
                         }
                       begin
                         TransferUsedRegs(TmpUsedRegs);
                         UpdateUsedRegs(TmpUsedRegs, tai(p.Next));
                         if not RegUsedAfterInstruction(taicpu(p).oper[1]^.reg, hp1, TmpUsedRegs) then
                           begin
-                            DebugMsg(SPeepholeOptimization + 'AND/CMP -> CMP', p);
                             case taicpu(p).oper[0]^.val of
                               $ff:
-                                begin
-                                  setsubreg(taicpu(hp1).oper[1]^.reg, R_SUBL);
-                                  taicpu(hp1).opsize:=S_B;
-                                end;
+                                MaskSize:=S_B;
                               $ffff:
-                                begin
-                                  setsubreg(taicpu(hp1).oper[1]^.reg, R_SUBW);
-                                  taicpu(hp1).opsize:=S_W;
-                                end;
+                                MaskSize:=S_W;
                               $ffffffff:
-                                begin
-                                  setsubreg(taicpu(hp1).oper[1]^.reg, R_SUBD);
-                                  taicpu(hp1).opsize:=S_L;
-                                end;
+                                MaskSize:=S_L;
                               else
                                 Internalerror(2023030401);
                             end;
-                            RemoveCurrentP(p);
-                            Result := True;
-                            Exit;
+                            if topsize2memsize[taicpu(hp1).opsize]<=topsize2memsize[MaskSize] then
+                              begin
+                                DebugMsg(SPeepholeOptimization + 'AND/CMP -> CMP (no resize)', p);
+                                RemoveCurrentP(p);
+                                Result := True;
+                                Exit;
+                              end
+                            else if (taicpu(hp1).oper[0]^.val>=0) and
+                              PrepareNarrowedCmp(hp1, True) then
+                              begin
+                                DebugMsg(SPeepholeOptimization + 'AND/CMP -> CMP', p);
+                                case MaskSize of
+                                  S_B:
+                                    setsubreg(taicpu(hp1).oper[1]^.reg, R_SUBL);
+                                  S_W:
+                                    setsubreg(taicpu(hp1).oper[1]^.reg, R_SUBW);
+                                  else
+                                    setsubreg(taicpu(hp1).oper[1]^.reg, R_SUBD);
+                                end;
+                                taicpu(hp1).opsize:=MaskSize;
+                                RemoveCurrentP(p);
+                                Result := True;
+                                Exit;
+                              end;
                           end;
                       end;
 
@@ -18138,6 +18304,7 @@ unit aoptx86;
       var
         hp1, hp2 : tai;
         SizeChange: Boolean;
+        SourceSize: TOpSize;
         PreMessage: string;
       begin
         Result := False;
@@ -18160,7 +18327,24 @@ unit aoptx86;
 
               Also allow if the smaller of the two registers is being checked,
               as this still removes the false dependency.
+
+              A comparison no wider than the source reads no bit the movzx
+              changes and keeps its size (widening "cmpb" to "cmpw" after
+              "movzwl" compared bits 8..15 too).  A wider one is narrowed to
+              the source's size, which gives the old answer only for a
+              constant in the source's unsigned range and with unsigned
+              conditions: 250 is "<= 1" as a signed byte, so
+              PrepareNarrowedCmp turns signed ones into unsigned ones, or
+              refuses.
             }
+            case taicpu(p).opsize of
+              S_BW, S_BL:
+                SourceSize := S_B;
+              S_WL:
+                SourceSize := S_W;
+              else
+                SourceSize := S_NO;
+            end;
             if
               (
                 (
@@ -18174,34 +18358,39 @@ unit aoptx86;
               (reg2opsize(taicpu(hp1).oper[1]^.reg) <= reg2opsize(taicpu(p).oper[1]^.reg)) and
               SuperRegistersEqual(taicpu(p).oper[1]^.reg, taicpu(hp1).oper[1]^.reg) then
               begin
+                if SourceSize = S_NO then
+                  InternalError(2020112701);
+                SizeChange := topsize2memsize[taicpu(hp1).opsize] > topsize2memsize[SourceSize];
+                if SizeChange and
+                  (
+                    (
+                      (taicpu(hp1).opcode = A_CMP) and
+                      (taicpu(hp1).oper[0]^.val < 0)
+                    ) or
+                    not PrepareNarrowedCmp(hp1, True)
+                  ) then
+                  Exit;
+
                 PreMessage := debug_op2str(taicpu(hp1).opcode) + debug_opsize2str(taicpu(hp1).opsize) + ' ' + debug_operstr(taicpu(hp1).oper[0]^) + ',' + debug_regname(taicpu(hp1).oper[1]^.reg) + ' -> ' + debug_op2str(taicpu(hp1).opcode);
 
                 asml.Remove(hp1);
                 asml.InsertBefore(hp1, p);
 
+                { A comparison as wide as the source, or wider, now reads the
+                  source register itself (%ah after "movzbl %ah,%eax"); a
+                  narrower one keeps its own, which holds the same bits }
+                if topsize2memsize[taicpu(hp1).opsize] >= topsize2memsize[SourceSize] then
+                  begin
+                    taicpu(hp1).oper[1]^.reg := taicpu(p).oper[0]^.reg;
+                    taicpu(hp1).changeopsize(SourceSize);
+                  end;
+
                 { Swap instructions in the case of cmp 0,%reg or test %reg,%reg }
                 if (taicpu(hp1).opcode = A_TEST) or (taicpu(hp1).oper[0]^.val = 0) then
                   begin
                     taicpu(hp1).opcode := A_TEST;
-                    taicpu(hp1).loadreg(0, taicpu(p).oper[0]^.reg);
+                    taicpu(hp1).loadreg(0, taicpu(hp1).oper[1]^.reg);
                   end;
-
-                taicpu(hp1).oper[1]^.reg := taicpu(p).oper[0]^.reg;
-
-                case taicpu(p).opsize of
-                  S_BW, S_BL:
-                    begin
-                      SizeChange := taicpu(hp1).opsize <> S_B;
-                      taicpu(hp1).changeopsize(S_B);
-                    end;
-                  S_WL:
-                    begin
-                      SizeChange := taicpu(hp1).opsize <> S_W;
-                      taicpu(hp1).changeopsize(S_W);
-                    end
-                  else
-                    InternalError(2020112701);
-                end;
 
                 UpdateUsedRegs(tai(p.Next));
 

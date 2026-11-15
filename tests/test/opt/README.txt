@@ -9,4 +9,6 @@ Common subexpression elimination (assembler)
   web bug 972............................ tcse3.pp
 Peephole
   CMOV optimize ......................... tcmov.pp
+  Narrowed compare of a zero-extended
+  value (signed conditions, -O1/2/3) .... tnarrowcmp1.pp tnarrowcmp2.pp tnarrowcmp3.pp
 
