@@ -824,10 +824,14 @@ implementation
 {$if not(defined(i386)) and not(defined(i8086)) and not(defined(avr))}
         if uses_registers(R_FPUREGISTER) then
           alloccpuregisters(list,R_FPUREGISTER,paramanager.get_volatile_registers_fpu(pocall_default));
-{$ifdef cpumm}
+{ aarch64 has no cpumm define, but its floats live in the mm registers (s0/d0 ...): a helper call
+  made here (FPC_MOVE for a big record copy, ...) clobbers v0-v7/v16-v31 as any call does -- ncgcal
+  allocates them for an ordinary call. Without this a float parameter held in s0 across
+  "bt := Default(TBigRecord)" came back as the zeros FPC_MOVE had just copied. }
+{$if defined(cpumm) or defined(aarch64)}
         if uses_registers(R_MMREGISTER) then
           alloccpuregisters(list,R_MMREGISTER,paramanager.get_volatile_registers_mm(pocall_default));
-{$endif cpumm}
+{$endif}
 {$endif not(defined(i386)) and not(defined(i8086)) and not(defined(avr))}
       end;
 
@@ -849,10 +853,10 @@ implementation
 {$if not(defined(i386)) and not(defined(i8086)) and not(defined(avr))}
         if uses_registers(R_FPUREGISTER) then
           dealloccpuregisters(list,R_FPUREGISTER,paramanager.get_volatile_registers_fpu(pocall_default));
-{$ifdef cpumm}
+{$if defined(cpumm) or defined(aarch64)}   { (see allocallcpuregisters) }
         if uses_registers(R_MMREGISTER) then
           dealloccpuregisters(list,R_MMREGISTER,paramanager.get_volatile_registers_mm(pocall_default));
-{$endif cpumm}
+{$endif}
 {$endif not(defined(i386)) and not(defined(i8086)) and not(defined(avr))}
       end;
 
