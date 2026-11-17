@@ -11,4 +11,7 @@ Peephole
   CMOV optimize ......................... tcmov.pp
   Narrowed compare of a zero-extended
   value (signed conditions, -O1/2/3) .... tnarrowcmp1.pp tnarrowcmp2.pp tnarrowcmp3.pp
+Loop strength reduction (-O3)
+  One multiplication typed Int64 and
+  LongInt in the same loop .............. tloopstrength1.pp
 

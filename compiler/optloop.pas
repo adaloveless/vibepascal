@@ -46,7 +46,7 @@ unit optloop;
 {$endif i386}
       verbose,
       symbase,symconst,symdef,symsym,symtype,
-      defutil,
+      defutil,defcmp,
       nutils,
       nadd,nbas,nflw,ncon,ninl,ncal,nld,nmem,ncnv,
       ncgmem,
@@ -335,8 +335,14 @@ unit optloop;
         result:=false;
         for i:=0 to ninductions-1 do
           begin
-            { do we already maintain one expression? }
-            if inductions[i].expr.isequal(n) then
+            { do we already maintain one expression? isequal compares the operands only, not
+              the result type: "g*3" typed Int64 (in a sizeint array index) and "g*3" typed
+              LongInt (in a 32-bit sum) are both "g*3" to it. A muln's temp has its expression's
+              type, so handing an Int64 temp to a LongInt use put a 64-bit register into a 32-bit
+              instruction (aarch64: "add w0,x21,w27", rejected by the assembler), and a LongInt
+              temp handed to an Int64 use would wrap at 32 bits. Different types: a temp of its own. }
+            if inductions[i].expr.isequal(n) and
+              equal_defs(inductions[i].expr.resultdef,n.resultdef) then
               begin
                 case n.nodetype of
                   muln:
